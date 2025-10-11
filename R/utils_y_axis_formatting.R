@@ -172,6 +172,10 @@ format_y_axis_time <- function(qic_data) {
 #' @return Formatted string
 #' @keywords internal
 format_scaled_number <- function(val, scale, suffix) {
+  if (is.na(val)) {
+    return(NA_character_)
+  }
+
   scaled <- val / scale
   if (scaled == round(scaled)) {
     paste0(round(scaled), suffix)
@@ -187,6 +191,10 @@ format_scaled_number <- function(val, scale, suffix) {
 #' @return Formatted string
 #' @keywords internal
 format_unscaled_number <- function(val) {
+  if (is.na(val)) {
+    return(NA_character_)
+  }
+
   if (val == round(val)) {
     format(round(val), big.mark = ".", decimal.mark = ",")
   } else {
