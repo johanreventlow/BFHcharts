@@ -32,7 +32,9 @@ Imports:
     digest,
     systemfonts (>= 1.0.0),
     ragg (>= 1.2.0),
-    lemon
+    lemon,
+    marquee (>= 0.1.0),
+    grid
 Suggests:
     testthat (>= 3.0.0),
     knitr,
