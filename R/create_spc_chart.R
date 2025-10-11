@@ -13,8 +13,8 @@ NULL
 #' Create Complete SPC Chart from Raw Data
 #'
 #' Convenience function that combines qicharts2::qic() calculation with
-#' BFH-styled visualization. Handles the entire workflow from raw data
-#' to finished plot.
+#' BFH-styled visualization and automatic label placement. Handles the
+#' entire workflow from raw data to finished plot with intelligent labels.
 #'
 #' @param data Data frame with measurements
 #' @param x Name of x-axis column (unquoted, NSE). Usually date/time column.
@@ -55,9 +55,15 @@ NULL
 #' - `part`: Vector of positions where phase splits occur (e.g., `c(12, 24)`)
 #' - `freeze`: Position to freeze baseline calculation
 #'
+#' **Automatic Label Placement:**
+#' Labels are automatically added to the plot showing:
+#' - Current level (CL) from the most recent phase
+#' - Target value (if specified via `target_value` or `target_text`)
+#' - Intelligent collision avoidance with multi-level fallback strategy
+#'
 #' **Arrow Symbol Suppression:**
-#' If `target_text` contains arrow symbols (↑ ↓), the target line will be
-#' suppressed and only the directional indicator shown.
+#' If `target_text` contains arrow symbols (↑ ↓ or < >), the target line will be
+#' suppressed and only the directional indicator shown at the plot edge.
 #'
 #' @export
 #' @examples
@@ -248,6 +254,16 @@ create_spc_chart <- function(data,
     plot_config = plot_config,
     viewport = viewport,
     colors = colors
+  )
+
+  # Add SPC labels automatically
+  plot <- add_spc_labels(
+    plot = plot,
+    qic_data = qic_data,
+    y_axis_unit = y_axis_unit,
+    label_size = viewport$base_size / 14 * 6,  # Responsive label sizing
+    target_text = target_text,
+    verbose = FALSE
   )
 
   return(plot)

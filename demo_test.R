@@ -2,7 +2,8 @@
 # Demonstrerer at pakken fungerer korrekt
 
 # Load required packages
-library(BFHcharts)
+# library(BFHcharts)
+devtools::load_all()
 library(ggplot2)
 
 # Create example data: Monthly hospital-acquired infections
@@ -40,7 +41,7 @@ print("✓ Run chart created successfully")
 print("")
 
 # Test 2: I-Chart with Phase Split (intervention at month 12)
-print("Test 2: Creating I-chart with intervention...")
+print("Test 2: Creating I-chart with intervention and labels...")
 plot2 <- create_spc_chart(
   data = demo_data,
   x = month,
@@ -49,14 +50,16 @@ plot2 <- create_spc_chart(
   y_axis_unit = "count",
   chart_title = "Infections Before/After Intervention - I-Chart",
   part = c(12),  # Phase split after 12 months
-  freeze = 12    # Freeze baseline at month 12
+  freeze = 12,   # Freeze baseline at month 12
+  target_value = 18,
+  target_text = "<18"
 )
 
-print("✓ I-chart with phase split created successfully")
+print("✓ I-chart with phase split and labels created successfully")
 print("")
 
 # Test 3: P-Chart with denominator and target
-print("Test 3: Creating P-chart with target line...")
+print("Test 3: Creating P-chart with arrow symbol...")
 plot3 <- create_spc_chart(
   data = demo_data,
   x = month,
@@ -65,11 +68,10 @@ plot3 <- create_spc_chart(
   chart_type = "p",
   y_axis_unit = "percent",
   chart_title = "Infection Rate per 100 Surgeries - P-Chart",
-  target_value = 15.0,
-  target_text = "↓ Target: 15%"
+  target_text = "<"  # Arrow symbol - suppresses target line
 )
 
-print("✓ P-chart with target created successfully")
+print("✓ P-chart with arrow symbol and labels created successfully")
 print("")
 
 # Test 4: Custom colors

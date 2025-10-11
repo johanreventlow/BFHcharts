@@ -94,6 +94,11 @@ bfh_spc_plot <- function(qic_data,
     ))
   }
 
+  # Add anhoej.signal column if missing (for linetype switching)
+  if (!"anhoej.signal" %in% names(qic_data)) {
+    qic_data$anhoej.signal <- FALSE
+  }
+
   # Calculate responsive geom sizes based on base_size
   scale_factor <- viewport$base_size / 14
 
