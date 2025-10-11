@@ -25,35 +25,105 @@ devtools::install_github("johanreventlow/BFHcharts")
 ```r
 library(BFHcharts)
 
-# Create an SPC chart with one function call
-chart <- create_spc_chart(
-  data = my_data,
-  x = "Date",
-  y = "Count",
-  chart_type = "run",
-  title = "Patient Admissions"
+# Example data: Monthly hospital-acquired infections
+data <- data.frame(
+  month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+  infections = rpois(24, lambda = 15),
+  surgeries = rpois(24, lambda = 100)
 )
 
-# Apply BFH hospital theme
-chart + bfh_theme()
+# Example 1: Simple run chart
+create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "run",
+  y_axis_unit = "count",
+  chart_title = "Monthly Hospital-Acquired Infections"
+)
+
+# Example 2: P-chart with target line
+create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  n = surgeries,
+  chart_type = "p",
+  y_axis_unit = "percent",
+  chart_title = "Infection Rate per 100 Surgeries",
+  target_value = 2.0,
+  target_text = "↓ Target: 2%"
+)
+
+# Example 3: I-chart with intervention (phase split)
+create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Infections Before/After Intervention",
+  part = c(12),  # Intervention after 12 months
+  freeze = 12    # Freeze baseline at month 12
+)
 ```
 
 ## Advanced Usage
 
-For more control, use the low-level API:
+### Low-Level API for Fine Control
 
 ```r
-# Configure plot parameters
+# Step 1: Calculate QIC data using qicharts2
+library(qicharts2)
+
+qic_data <- qic(
+  x = month,
+  y = infections,
+  n = surgeries,
+  data = data,
+  chart = "p",
+  return.data = TRUE
+)
+
+# Step 2: Configure plot
 plot_cfg <- spc_plot_config(
   chart_type = "p",
   y_axis_unit = "percent",
-  target_value = 95
+  chart_title = "Custom Infection Rate",
+  target_value = 2.0,
+  target_text = "Target: 2%"
 )
 
-# Create plot
-qic_data <- qicharts2::qic(x = date, y = numerator, n = denominator,
-                            chart = "p", return.data = TRUE)
-plot <- bfh_spc_plot(qic_data, plot_cfg)
+viewport <- viewport_dims(base_size = 14)
+
+# Step 3: Generate plot
+plot <- bfh_spc_plot(qic_data, plot_cfg, viewport)
+plot
+```
+
+### Custom Hospital Branding
+
+```r
+# Create custom color palette for your organization
+my_hospital_colors <- create_color_palette(
+  primary = "#003366",    # Your primary brand color
+  secondary = "#808080",  # Secondary/text color
+  accent = "#FF9900"      # Accent/highlight color
+)
+
+# Use custom colors in charts
+create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "run",
+  y_axis_unit = "count",
+  chart_title = "Custom Branded Chart",
+  colors = my_hospital_colors
+)
+
+# Or apply custom theme to existing plot
+plot + bfh_theme(colors = my_hospital_colors)
 ```
 
 ## Documentation
