@@ -1,0 +1,29 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+.RDataTmp
+
+# User-specific files
+.Ruserdata
+
+# RStudio files
+.Rproj.user/
+*.Rproj
+
+# OAuth2 token
+.httr-oauth
+
+# pkgdown site
+docs/
+
+# Translation temp files
+po/*~
+
+# R Environment Variables
+.Renviron
+
+# macOS
+.DS_Store
