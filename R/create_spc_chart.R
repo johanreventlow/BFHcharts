@@ -29,6 +29,8 @@ NULL
 #' @param part Positions for phase splits (optional numeric vector)
 #' @param freeze Position to freeze baseline (optional integer)
 #' @param base_size Base font size for responsive scaling (default: 14)
+#' @param width Plot width in inches (optional, improves label placement precision)
+#' @param height Plot height in inches (optional, improves label placement precision)
 #' @param colors Color palette (default: [BFH_COLORS])
 #'
 #' @return ggplot2 object with styled SPC chart
@@ -60,6 +62,7 @@ NULL
 #' - Current level (CL) from the most recent phase
 #' - Target value (if specified via `target_value` or `target_text`)
 #' - Intelligent collision avoidance with multi-level fallback strategy
+#' - Provide `width` and `height` for optimal label sizing and placement
 #'
 #' **Arrow Symbol Suppression:**
 #' If `target_text` contains arrow symbols (↑ ↓ or < >), the target line will be
@@ -131,6 +134,23 @@ NULL
 #'   colors = my_colors
 #' )
 #' plot
+#'
+#' # Example 5: Specify dimensions for optimal label placement
+#' plot <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Infections with Optimal Label Placement",
+#'   width = 10,   # inches - matches ggsave width
+#'   height = 6,   # inches - matches ggsave height
+#'   target_value = 15,
+#'   target_text = "<15"
+#' )
+#'
+#' # Save with same dimensions for perfect label sizing
+#' ggsave("output.png", plot, width = 10, height = 6, dpi = 300)
 #' }
 create_spc_chart <- function(data,
                               x,
@@ -145,6 +165,8 @@ create_spc_chart <- function(data,
                               part = NULL,
                               freeze = NULL,
                               base_size = 14,
+                              width = NULL,
+                              height = NULL,
                               colors = BFH_COLORS) {
   # Validate inputs
   if (!is.data.frame(data)) {
@@ -256,12 +278,19 @@ create_spc_chart <- function(data,
     colors = colors
   )
 
+  # Convert width/height to viewport dimensions (inches)
+  # This enables precise label placement even without open graphics device
+  viewport_width_inches <- width
+  viewport_height_inches <- height
+
   # Add SPC labels automatically
   plot <- add_spc_labels(
     plot = plot,
     qic_data = qic_data,
     y_axis_unit = y_axis_unit,
     label_size = viewport$base_size / 14 * 6,  # Responsive label sizing
+    viewport_width = viewport_width_inches,
+    viewport_height = viewport_height_inches,
     target_text = target_text,
     verbose = FALSE
   )

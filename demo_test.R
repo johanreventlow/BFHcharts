@@ -36,6 +36,7 @@ plot1 <- create_spc_chart(
   y_axis_unit = "count",
   chart_title = "Monthly Hospital-Acquired Infections - Run Chart"
 )
+plot1
 
 print("✓ Run chart created successfully")
 print("")
@@ -52,8 +53,12 @@ plot2 <- create_spc_chart(
   part = c(12),  # Phase split after 12 months
   freeze = 12,   # Freeze baseline at month 12
   target_value = 18,
-  target_text = "<18"
+  target_text = "<18",
+  width = 10,    # Specify dimensions for optimal label placement
+  height = 6
 )
+
+plot2
 
 print("✓ I-chart with phase split and labels created successfully")
 print("")
@@ -68,8 +73,12 @@ plot3 <- create_spc_chart(
   chart_type = "p",
   y_axis_unit = "percent",
   chart_title = "Infection Rate per 100 Surgeries - P-Chart",
-  target_text = "<"  # Arrow symbol - suppresses target line
+  target_text = "<",  # Arrow symbol - suppresses target line
+  width = 10,
+  height = 6
 )
+
+plot3
 
 print("✓ P-chart with arrow symbol and labels created successfully")
 print("")
@@ -91,6 +100,8 @@ plot4 <- create_spc_chart(
   chart_title = "Custom Branded Chart",
   colors = custom_colors
 )
+
+plot4
 
 print("✓ Custom colored chart created successfully")
 print("")

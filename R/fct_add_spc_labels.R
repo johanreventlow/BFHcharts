@@ -12,8 +12,8 @@
 #' @param qic_data data.frame fra qicharts2::qic() med columns: cl, target, part
 #' @param y_axis_unit character unit for y-akse ("count", "percent", "rate", "time", eller andet)
 #' @param label_size numeric base font size for responsive sizing (default 6)
-#' @param viewport_width numeric viewport width in pixels (optional, from clientData)
-#' @param viewport_height numeric viewport height in pixels (optional, from clientData)
+#' @param viewport_width numeric viewport width in inches (optional, for precise placement)
+#' @param viewport_height numeric viewport height in inches (optional, for precise placement)
 #' @param target_text character original målværdi text from user input (optional, for operator parsing)
 #' @param centerline_value numeric centerline value from user input (optional, for BASELINE label logic)
 #' @param has_frys_column logical TRUE if Frys column is selected (optional, for BASELINE label logic)
@@ -60,9 +60,9 @@ add_spc_labels <- function(
     verbose = FALSE,
     debug_mode = FALSE) {
 
-  # Convert viewport dimensions from pixels to inches (renderPlot uses res=96)
-  viewport_width_inches <- if (!is.null(viewport_width)) viewport_width / 96 else NULL
-  viewport_height_inches <- if (!is.null(viewport_height)) viewport_height / 96 else NULL
+  # Viewport dimensions are now in inches (direct input from create_spc_chart)
+  viewport_width_inches <- viewport_width
+  viewport_height_inches <- viewport_height
 
   # Input validation ----
   if (!inherits(plot, "gg")) {
