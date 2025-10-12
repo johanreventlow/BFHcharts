@@ -28,9 +28,9 @@ NULL
 #' @param comment_column Name of comment column for annotations (optional, quoted)
 #' @param part Positions for phase splits (optional numeric vector)
 #' @param freeze Position to freeze baseline (optional integer)
-#' @param base_size Base font size for responsive scaling (default: 14)
-#' @param width Plot width in inches (optional, improves label placement precision)
-#' @param height Plot height in inches (optional, improves label placement precision)
+#' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)
+#' @param width Plot width in inches (optional, enables responsive font scaling and precise label placement)
+#' @param height Plot height in inches (optional, enables responsive font scaling and precise label placement)
 #' @param colors Color palette (default: [BFH_COLORS])
 #'
 #' @return ggplot2 object with styled SPC chart
@@ -56,6 +56,12 @@ NULL
 #' **Phase Configuration:**
 #' - `part`: Vector of positions where phase splits occur (e.g., `c(12, 24)`)
 #' - `freeze`: Position to freeze baseline calculation
+#'
+#' **Responsive Typography:**
+#' When `width` and `height` are provided, `base_size` is automatically
+#' calculated using geometric mean: `sqrt(width × height) / 3.5`
+#' This ensures fonts scale proportionally with plot size.
+#' Override by explicitly setting `base_size`.
 #'
 #' **Automatic Label Placement:**
 #' Labels are automatically added to the plot showing:
@@ -135,22 +141,39 @@ NULL
 #' )
 #' plot
 #'
-#' # Example 5: Specify dimensions for optimal label placement
-#' plot <- create_spc_chart(
-#'   data = data,
-#'   x = month,
-#'   y = infections,
-#'   chart_type = "i",
-#'   y_axis_unit = "count",
-#'   chart_title = "Infections with Optimal Label Placement",
-#'   width = 10,   # inches - matches ggsave width
-#'   height = 6,   # inches - matches ggsave height
-#'   target_value = 15,
-#'   target_text = "<15"
+#' # Example 5: Responsive typography with viewport dimensions
+#' # Small plot (6×4 inches) → base_size ≈ 14pt
+#' plot_small <- create_spc_chart(
+#'   data = data, x = month, y = infections,
+#'   chart_type = "i", y_axis_unit = "count",
+#'   chart_title = "Small Plot - Auto Scaled Typography",
+#'   width = 6, height = 4  # Auto: base_size ≈ 14pt
 #' )
 #'
-#' # Save with same dimensions for perfect label sizing
-#' ggsave("output.png", plot, width = 10, height = 6, dpi = 300)
+#' # Medium plot (10×6 inches) → base_size ≈ 22pt
+#' plot_medium <- create_spc_chart(
+#'   data = data, x = month, y = infections,
+#'   chart_type = "i", y_axis_unit = "count",
+#'   chart_title = "Medium Plot - Auto Scaled Typography",
+#'   width = 10, height = 6  # Auto: base_size ≈ 22pt
+#' )
+#'
+#' # Large plot (16×9 inches) → base_size ≈ 34pt
+#' plot_large <- create_spc_chart(
+#'   data = data, x = month, y = infections,
+#'   chart_type = "i", y_axis_unit = "count",
+#'   chart_title = "Large Plot - Auto Scaled Typography",
+#'   width = 16, height = 9  # Auto: base_size ≈ 34pt
+#' )
+#'
+#' # Override auto-scaling with explicit base_size
+#' plot_custom <- create_spc_chart(
+#'   data = data, x = month, y = infections,
+#'   chart_type = "i", y_axis_unit = "count",
+#'   chart_title = "Custom Typography Override",
+#'   width = 10, height = 6,
+#'   base_size = 18  # Explicit override
+#' )
 #' }
 create_spc_chart <- function(data,
                               x,
@@ -254,6 +277,16 @@ create_spc_chart <- function(data,
     } else {
       # No crossings data - use runs.signal only
       qic_data$anhoej.signal <- runs_sig_col
+    }
+  }
+
+  # Calculate responsive base_size if viewport dimensions provided
+  # Uses geometric mean approach: sqrt(width × height) / divisor
+  if (!is.null(width) && !is.null(height)) {
+    calculated_base_size <- calculate_base_size(width, height)
+    # Use calculated size unless user explicitly provided base_size
+    if (missing(base_size)) {
+      base_size <- calculated_base_size
     }
   }
 
