@@ -400,7 +400,7 @@ add_right_labels_marquee <- function(
   color_B <- if (!is.null(gpB$col)) gpB$col else "#565656"
 
   if (!is.na(yA_data)) {
-    label_data <- label_data %>%
+    label_data <- label_data |>
       dplyr::bind_rows(tibble::tibble(
         x = x_max,
         y = yA_data,
@@ -411,7 +411,7 @@ add_right_labels_marquee <- function(
   }
 
   if (!is.na(yB_data)) {
-    label_data <- label_data %>%
+    label_data <- label_data |>
       dplyr::bind_rows(tibble::tibble(
         x = x_max,
         y = yB_data,

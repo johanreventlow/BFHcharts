@@ -154,7 +154,7 @@ format_y_axis_time <- function(qic_data) {
   ggplot2::scale_y_continuous(
     expand = ggplot2::expansion(mult = c(.25, .25)),
     labels = function(x) {
-      sapply(x, function(val) format_time_with_unit(val, time_unit))
+      purrr::map_chr(x, ~ format_time_with_unit(.x, time_unit))
     }
   )
 }
