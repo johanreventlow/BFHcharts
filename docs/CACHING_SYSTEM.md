@@ -2,13 +2,15 @@
 
 BFHcharts implementerer et sofistikeret multi-level caching system for optimal performance ved label placement og plot generation.
 
+**⚠️ NOTE:** Caching er **disabled by default** i BFHcharts, da standalone pakker typisk bruges til isolerede plot-operationer. Se [Aktivering](#aktivering) for opt-in i interactive workflows.
+
 ## Overview
 
 Pakken bruger **3 cache layers**:
 
-1. **Marquee Style Cache** - Cacher marquee style objects
-2. **Grob Height Cache** - Cacher label height målinger (TTL-baseret)
-3. **Panel Height Cache** - Cacher panel dimensions (TTL-baseret)
+1. **Marquee Style Cache** - Cacher marquee style objects (altid aktiv)
+2. **Grob Height Cache** - Cacher label height målinger (disabled by default)
+3. **Panel Height Cache** - Cacher panel dimensions (disabled by default)
 
 ---
 
@@ -52,6 +54,8 @@ clear_marquee_style_cache()  # Clear all entries
 
 **Formål:** Cacher expensive grob height measurements for label sizing.
 
+**Status:** **Disabled by default** - kræver eksplicit aktivering.
+
 **Location:** `R/utils_label_placement.R`
 
 **Implementation:**
@@ -59,7 +63,7 @@ clear_marquee_style_cache()  # Clear all entries
 .grob_height_cache <- new.env(parent = emptyenv())
 
 .grob_cache_config <- list(
-  enabled = TRUE,
+  enabled = FALSE,            # Disabled by default (opt-in)
   ttl_seconds = 300,          # 5 minutes
   max_cache_size = 100,       # Max entries
   purge_check_interval = 50   # Check every 50 operations
@@ -133,6 +137,8 @@ auto_purge_grob_cache()           # Auto-purge if needed
 
 **Formål:** Cacher panel dimension målinger fra gtable objects.
 
+**Status:** **Disabled by default** - kræver eksplicit aktivering.
+
 **Location:** `R/utils_label_placement.R`
 
 **Implementation:**
@@ -140,7 +146,7 @@ auto_purge_grob_cache()           # Auto-purge if needed
 .panel_height_cache <- new.env(parent = emptyenv())
 
 .panel_cache_config <- list(
-  enabled = TRUE,
+  enabled = FALSE,            # Disabled by default (opt-in)
   ttl_seconds = 300,
   max_cache_size = 100,
   purge_check_interval = 50
@@ -184,6 +190,40 @@ clear_panel_height_cache()
 purge_panel_cache_expired()
 auto_purge_panel_cache()
 ```
+
+---
+
+## Aktivering
+
+**Caching er disabled by default** i BFHcharts. For at aktivere caching (nyttigt i interactive workflows):
+
+```r
+library(BFHcharts)
+
+# Aktivér grob height cache
+configure_grob_cache(enabled = TRUE)
+
+# Aktivér panel height cache
+configure_panel_cache(enabled = TRUE)
+
+# Nu vil plots drage fordel af caching
+plot1 <- create_spc_chart(...)  # Cache miss
+plot2 <- create_spc_chart(...)  # Cache hit (hvis samme dimensioner)
+```
+
+**Hvornår skal man aktivere caching?**
+
+✅ **Aktivér hvis:**
+- Interactive notebooks (Jupyter, RMarkdown)
+- Scripts der genererer mange plots med samme dimensioner
+- Development/testing workflows med `devtools::load_all()`
+- Long-running R sessions med gentagne plots
+
+❌ **Lad være disabled hvis:**
+- Batch reporting med diverse plot dimensioner
+- One-shot script execution
+- Memory-constrained environments
+- Korte R sessions
 
 ---
 
@@ -259,46 +299,51 @@ for (i in 1:9) {
 
 ## Configuration Recommendations
 
+### Default (Standalone Package)
+```r
+# Caching disabled by default - ingen konfiguration nødvendig
+library(BFHcharts)
+plot <- create_spc_chart(...)  # Works without caching
+```
+
+### Interactive Notebooks (RMarkdown, Jupyter)
+```r
+# Enable caching for repeated plot generation
+library(BFHcharts)
+configure_grob_cache(enabled = TRUE, ttl_seconds = 300, max_cache_size = 100)
+configure_panel_cache(enabled = TRUE, ttl_seconds = 300, max_cache_size = 100)
+```
+
 ### Development (devtools::load_all)
 ```r
 # Shorter TTL, smaller cache (faster iteration)
-configure_grob_cache(ttl_seconds = 60, max_cache_size = 50)
-configure_panel_cache(ttl_seconds = 60, max_cache_size = 50)
+configure_grob_cache(enabled = TRUE, ttl_seconds = 60, max_cache_size = 50)
+configure_panel_cache(enabled = TRUE, ttl_seconds = 60, max_cache_size = 50)
 ```
 
-### Production Shiny App
+### Shiny App Integration
 ```r
 # Longer TTL, larger cache (maximize performance)
-configure_grob_cache(ttl_seconds = 600, max_cache_size = 200)
-configure_panel_cache(ttl_seconds = 600, max_cache_size = 200)
-```
-
-### Batch Reporting
-```r
-# Moderate TTL, standard cache
-configure_grob_cache(ttl_seconds = 300, max_cache_size = 100)
-configure_panel_cache(ttl_seconds = 300, max_cache_size = 100)
+configure_grob_cache(enabled = TRUE, ttl_seconds = 600, max_cache_size = 200)
+configure_panel_cache(enabled = TRUE, ttl_seconds = 600, max_cache_size = 200)
 ```
 
 ### Memory-Constrained Environments
 ```r
-# Aggressive purging
+# Keep caching disabled (default)
+# Or enable with aggressive purging:
 configure_grob_cache(
+  enabled = TRUE,
   ttl_seconds = 120,
   max_cache_size = 25,
   purge_check_interval = 10
 )
 configure_panel_cache(
+  enabled = TRUE,
   ttl_seconds = 120,
   max_cache_size = 25,
   purge_check_interval = 10
 )
-```
-
-### Disable Caching (Debugging)
-```r
-configure_grob_cache(enabled = FALSE)
-configure_panel_cache(enabled = FALSE)
 ```
 
 ---
@@ -435,12 +480,15 @@ create_plot_with_custom_cache <- function(...) {
 
 **Caching in BFHcharts:**
 
-✅ **3 cache layers** working together for optimal performance
+✅ **3 cache layers** available for optimal performance
+✅ **Disabled by default** - opt-in for interactive workflows
 ✅ **TTL-based invalidation** prevents stale data
 ✅ **FIFO purging** prevents unbounded memory growth
-✅ **~85-95% hit rates** in typical usage
+✅ **~85-95% hit rates** when enabled in typical usage
 ✅ **Negligible memory** (~125 KB for 100 entries)
-✅ **Transparent** - works automatically, no user intervention needed
+✅ **Transparent** - works automatically once enabled
 ✅ **Configurable** - tune for your specific use case
 
-**Best Practice:** Just use defaults - the system is self-tuning! 🚀
+**Best Practice for standalone packages:** Keep caching disabled (default) for simplicity.
+
+**Best Practice for interactive workflows:** Enable caching with `configure_grob_cache(enabled = TRUE)` for ~5-10x speedup on repeated plots.

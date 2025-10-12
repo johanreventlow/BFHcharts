@@ -388,7 +388,7 @@ npc_mapper_from_plot <- function(p, panel = 1) {
 
 # Cache configuration med TTL og size limits
 .grob_cache_config <- list(
-  enabled = TRUE, # Master switch: Set to FALSE to disable cache completely
+  enabled = FALSE, # Master switch: Disabled by default (opt-in for interactive workflows)
   ttl_seconds = 300, # 5 minutes (layout genbruges typisk inden for få minutter)
   max_cache_size = 100, # Max entries før forced purge
   purge_check_interval = 50 # Check for expired entries hver N'te operation
@@ -664,7 +664,7 @@ configure_grob_cache <- function(
 
 # Cache configuration med TTL og size limits
 .panel_cache_config <- list(
-  enabled = TRUE, # Master switch: Set to FALSE to disable cache completely
+  enabled = FALSE, # Master switch: Disabled by default (opt-in for interactive workflows)
   ttl_seconds = 300, # 5 minutes (samme som grob cache)
   max_cache_size = 100, # Max entries før forced purge
   purge_check_interval = 50 # Check for expired entries hver N'te operation
