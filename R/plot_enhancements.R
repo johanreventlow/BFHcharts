@@ -52,8 +52,8 @@ add_plot_enhancements <- function(plot,
     extended_x <- last_x + (x_range * 0.20)
   }
 
-  # Build extended line data
-  extended_lines_data <- data.frame()
+  # Build extended line data using list then single bind
+  extended_lines_list <- list()
 
   # Centerline extension (only for latest part)
   if (!is.null(qic_data$cl) && any(!is.na(qic_data$cl))) {
@@ -72,13 +72,12 @@ add_plot_enhancements <- function(plot,
       }
 
       if (!is.na(cl_value)) {
-        extended_lines_data <- rbind(extended_lines_data, data.frame(
+        extended_lines_list$cl <- tibble::tibble(
           x = c(last_row$x, extended_x),
           y = c(cl_value, cl_value),
           type = "cl",
-          linetype = cl_linetype,
-          stringsAsFactors = FALSE
-        ))
+          linetype = cl_linetype
+        )
       }
     }
   }
@@ -87,14 +86,16 @@ add_plot_enhancements <- function(plot,
   if (!suppress_targetline && !is.null(qic_data$target) && any(!is.na(qic_data$target))) {
     target_value <- qic_data$target[!is.na(qic_data$target)][1]
 
-    extended_lines_data <- rbind(extended_lines_data, data.frame(
+    extended_lines_list$target <- tibble::tibble(
       x = c(last_x, extended_x),
       y = c(target_value, target_value),
       type = "target",
-      linetype = "42",
-      stringsAsFactors = FALSE
-    ))
+      linetype = "42"
+    )
   }
+
+  # Single bind operation - much more efficient
+  extended_lines_data <- dplyr::bind_rows(extended_lines_list)
 
   # Add extended lines to plot
   if (nrow(extended_lines_data) > 0) {

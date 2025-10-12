@@ -1572,11 +1572,11 @@ estimate_label_heights_npc <- function(
   )
 
   # Measure all texts with shared device
-  results <- lapply(texts, function(text) {
+  results <- purrr::map(texts, ~ {
     tryCatch(
       {
         .estimate_label_height_npc_internal(
-          text = text,
+          text = .x,
           style = style,
           panel_height_inches = panel_height_inches,
           device_width = device_width,
