@@ -20,7 +20,7 @@ NULL
 #' @section Main Functions:
 #' * [create_spc_chart()] - High-level wrapper for complete SPC workflow
 #' * [bfh_spc_plot()] - Low-level plotting from qic data
-#' * [bfh_theme()] - Apply BFH hospital theme styling
+#' * [BFHtheme::theme_bfh()] - Apply BFH hospital theme styling (from BFHtheme package)
 #' * [spc_plot_config()], [viewport_dims()], [phase_config()] - Configuration objects
 #'
 #' @section Design Philosophy:
@@ -43,8 +43,8 @@ NULL
 #'   chart_type = "run"
 #' )
 #'
-#' # Apply BFH theme
-#' chart + bfh_theme()
+#' # Apply BFH theme (from BFHtheme package)
+#' chart + BFHtheme::theme_bfh()
 #' }
 #'
 #' @docType package
