@@ -5,24 +5,24 @@ test_that("Package loads without errors", {
   expect_true(require(BFHcharts, quietly = TRUE))
 })
 
-test_that("BFH_COLORS palette exists", {
-  expect_type(BFH_COLORS, "list")
-  expect_true("primary" %in% names(BFH_COLORS))
-  expect_true("secondary" %in% names(BFH_COLORS))
-  expect_true("darkgrey" %in% names(BFH_COLORS))
+test_that("BFHtheme colors are accessible", {
+  # Test that we can get colors from BFHtheme
+  colors <- BFHtheme::bfh_cols("hospital_blue", "hospital_grey", "hospital_dark_grey")
+
+  expect_type(colors, "character")
+  expect_length(colors, 3)
+  expect_true(all(grepl("^#[0-9A-Fa-f]{6}$", colors)))
 })
 
-test_that("create_color_palette() creates valid palette", {
-  custom <- create_color_palette(
-    primary = "#003366",
-    secondary = "#808080",
-    accent = "#FF9900"
-  )
+test_that("get_spc_colors() returns valid color palette", {
+  # Test internal color mapping function
+  spc_colors <- BFHcharts:::get_spc_colors()
 
-  expect_type(custom, "list")
-  expect_equal(custom$primary, "#003366")
-  expect_equal(custom$secondary, "#808080")
-  expect_equal(custom$accent, "#FF9900")
+  expect_type(spc_colors, "list")
+  expect_true("primary" %in% names(spc_colors))
+  expect_true("darkgrey" %in% names(spc_colors))
+  expect_true("mediumgrey" %in% names(spc_colors))
+  expect_true(all(grepl("^#[0-9A-Fa-f]{6}$", unlist(spc_colors))))
 })
 
 test_that("spc_plot_config() creates valid config", {
@@ -73,10 +73,11 @@ test_that("Y_AXIS_UNITS_DA constants exist", {
   expect_equal(Y_AXIS_UNITS_DA["count"], "Antal")
 })
 
-test_that("bfh_theme() creates valid ggplot2 theme", {
+test_that("BFHtheme theme works with BFHcharts", {
   library(ggplot2)
 
-  theme_obj <- bfh_theme()
+  # Test that BFHtheme's theme_bfh() works
+  theme_obj <- BFHtheme::theme_bfh()
   expect_s3_class(theme_obj, "theme")
   expect_s3_class(theme_obj, "gg")
 })

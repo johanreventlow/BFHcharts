@@ -86,10 +86,14 @@ test_that("create_spc_chart() applies custom colors", {
     value = rnorm(12, 100, 10)
   )
 
-  custom_colors <- create_color_palette(
+  # Create custom color palette compatible with BFHcharts
+  custom_colors <- list(
     primary = "#003366",
     secondary = "#808080",
-    accent = "#FF9900"
+    darkgrey = "#333333",
+    lightgrey = "#cce5f1",
+    mediumgrey = "#646c6f",
+    dark = "#333333"
   )
 
   plot <- create_spc_chart(
