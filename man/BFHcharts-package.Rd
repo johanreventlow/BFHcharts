@@ -22,7 +22,7 @@ it offers:
 \itemize{
 \item \code{\link[=create_spc_chart]{create_spc_chart()}} - High-level wrapper for complete SPC workflow
 \item \code{\link[=bfh_spc_plot]{bfh_spc_plot()}} - Low-level plotting from qic data
-\item \code{\link[=bfh_theme]{bfh_theme()}} - Apply BFH hospital theme styling
+\item \code{\link[BFHtheme:theme_bfh]{BFHtheme::theme_bfh()}} - Apply BFH hospital theme styling (from BFHtheme package)
 \item \code{\link[=spc_plot_config]{spc_plot_config()}}, \code{\link[=viewport_dims]{viewport_dims()}}, \code{\link[=phase_config]{phase_config()}} - Configuration objects
 }
 }
@@ -51,8 +51,8 @@ chart <- create_spc_chart(
   chart_type = "run"
 )
 
-# Apply BFH theme
-chart + bfh_theme()
+# Apply BFH theme (from BFHtheme package)
+chart + BFHtheme::theme_bfh()
 }
 
 }
