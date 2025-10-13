@@ -8,8 +8,7 @@ bfh_spc_plot(
   qic_data,
   plot_config = spc_plot_config(),
   viewport = viewport_dims(),
-  phase = NULL,
-  colors = NULL
+  phase = NULL
 )
 }
 \arguments{
@@ -20,8 +19,6 @@ bfh_spc_plot(
 \item{viewport}{Viewport dimensions from \code{\link[=viewport_dims]{viewport_dims()}}}
 
 \item{phase}{Optional phase configuration from \code{\link[=phase_config]{phase_config()}}}
-
-\item{colors}{Color palette (default: NULL, uses BFHtheme colors). Can be a custom named list.}
 }
 \value{
 ggplot2 object

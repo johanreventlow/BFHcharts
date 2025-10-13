@@ -19,7 +19,6 @@ Bruges til UI validering og qicharts2 parameter passing.
 \details{
 Chart types requiring denominator:
 \itemize{
-\item \strong{run}: For ratio calculations
 \item \strong{p}, \strong{pp}: Proportion charts (numerator/denominator)
 \item \strong{u}, \strong{up}: Rate charts (events/exposure)
 }

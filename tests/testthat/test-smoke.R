@@ -14,16 +14,6 @@ test_that("BFHtheme colors are accessible", {
   expect_true(all(grepl("^#[0-9A-Fa-f]{6}$", colors)))
 })
 
-test_that("get_spc_colors() returns valid color palette", {
-  # Test internal color mapping function
-  spc_colors <- BFHcharts:::get_spc_colors()
-
-  expect_type(spc_colors, "list")
-  expect_true("primary" %in% names(spc_colors))
-  expect_true("darkgrey" %in% names(spc_colors))
-  expect_true("mediumgrey" %in% names(spc_colors))
-  expect_true(all(grepl("^#[0-9A-Fa-f]{6}$", unlist(spc_colors))))
-})
 
 test_that("spc_plot_config() creates valid config", {
   config <- spc_plot_config(
@@ -70,7 +60,7 @@ test_that("Y_AXIS_UNITS_DA constants exist", {
   expect_type(Y_AXIS_UNITS_DA, "character")
   expect_true("count" %in% names(Y_AXIS_UNITS_DA))
   expect_true("percent" %in% names(Y_AXIS_UNITS_DA))
-  expect_equal(Y_AXIS_UNITS_DA["count"], "Antal")
+  expect_equal(Y_AXIS_UNITS_DA[["count"]], "Antal")
 })
 
 test_that("BFHtheme theme works with BFHcharts", {

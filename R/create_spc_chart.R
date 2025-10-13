@@ -31,7 +31,6 @@ NULL
 #' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)
 #' @param width Plot width in inches (optional, enables responsive font scaling and precise label placement)
 #' @param height Plot height in inches (optional, enables responsive font scaling and precise label placement)
-#' @param colors Color palette (default: NULL, uses BFHtheme colors). Can be a custom named list.
 #'
 #' @return ggplot2 object with styled SPC chart
 #'
@@ -123,25 +122,7 @@ NULL
 #' )
 #' plot
 #'
-#' # Example 4: Custom hospital colors
-#' my_colors <- create_color_palette(
-#'   primary = "#003366",
-#'   secondary = "#808080",
-#'   accent = "#FF9900"
-#' )
-#'
-#' plot <- create_spc_chart(
-#'   data = data,
-#'   x = month,
-#'   y = infections,
-#'   chart_type = "run",
-#'   y_axis_unit = "count",
-#'   chart_title = "Custom Branded Chart",
-#'   colors = my_colors
-#' )
-#' plot
-#'
-#' # Example 5: Responsive typography with viewport dimensions
+#' # Example 4: Responsive typography with viewport dimensions
 #' # Small plot (6×4 inches) → base_size ≈ 14pt
 #' plot_small <- create_spc_chart(
 #'   data = data, x = month, y = infections,
@@ -189,8 +170,7 @@ create_spc_chart <- function(data,
                               freeze = NULL,
                               base_size = 14,
                               width = NULL,
-                              height = NULL,
-                              colors = NULL) {
+                              height = NULL) {
   # Validate inputs
   if (!is.data.frame(data)) {
     stop("data must be a data frame")
@@ -307,8 +287,7 @@ create_spc_chart <- function(data,
   plot <- bfh_spc_plot(
     qic_data = qic_data,
     plot_config = plot_config,
-    viewport = viewport,
-    colors = colors
+    viewport = viewport
   )
 
   # Convert width/height to viewport dimensions (inches)

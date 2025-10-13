@@ -20,7 +20,6 @@ NULL
 #' @param plot_config Plot configuration from [spc_plot_config()]
 #' @param viewport Viewport dimensions from [viewport_dims()]
 #' @param phase Optional phase configuration from [phase_config()]
-#' @param colors Color palette (default: NULL, uses BFHtheme colors). Can be a custom named list.
 #'
 #' @return ggplot2 object
 #'
@@ -78,8 +77,7 @@ NULL
 bfh_spc_plot <- function(qic_data,
                          plot_config = spc_plot_config(),
                          viewport = viewport_dims(),
-                         phase = NULL,
-                         colors = NULL) {
+                         phase = NULL) {
   # Validate inputs
   if (!is.data.frame(qic_data)) {
     stop("qic_data must be a data frame from qicharts2::qic(return.data = TRUE)")
@@ -98,9 +96,6 @@ bfh_spc_plot <- function(qic_data,
   if (!"anhoej.signal" %in% names(qic_data)) {
     qic_data$anhoej.signal <- FALSE
   }
-
-  # Ensure colors are set (use BFHtheme defaults if NULL)
-  colors <- ensure_color_names(colors)
 
   # Calculate responsive geom sizes based on base_size
   scale_factor <- viewport$base_size / 14
@@ -142,7 +137,7 @@ bfh_spc_plot <- function(qic_data,
     plot_layers <- c(plot_layers, list(
       ggplot2::geom_ribbon(
         ggplot2::aes(ymin = lcl, ymax = ucl),
-        fill = "#E6F5FD",
+        fill = BFHtheme::bfh_cols("very_light_blue"),
         alpha = 0.5
       ),
       geomtextpath::geom_textline(
@@ -152,7 +147,7 @@ bfh_spc_plot <- function(qic_data,
         vjust = -0.2,
         linewidth = ucl_linewidth,
         linecolour = NA,
-        textcolour = "#b5b5b9",
+        textcolour = BFHtheme::bfh_cols("hospital_grey"),
         size = 3.0,
         na.rm = TRUE
       ),
@@ -163,7 +158,7 @@ bfh_spc_plot <- function(qic_data,
         vjust = 1.2,
         linewidth = ucl_linewidth,
         linecolour = NA,
-        textcolour = "#b5b7b9",
+        textcolour = BFHtheme::bfh_cols("hospital_grey"),
         size = 3.0,
         na.rm = TRUE
       )
@@ -177,7 +172,7 @@ bfh_spc_plot <- function(qic_data,
         ggplot2::aes(y = target, x = x),
         inherit.aes = FALSE,
         linewidth = target_linewidth,
-        colour = colors$darkgrey,
+        colour = BFHtheme::bfh_cols("hospital_dark_grey"),
         linetype = "42",
         na.rm = TRUE
       )
@@ -188,19 +183,19 @@ bfh_spc_plot <- function(qic_data,
   plot_layers <- c(plot_layers, list(
     ggplot2::geom_line(
       ggplot2::aes(y = y, group = part),
-      colour = colors$lightgrey,
+      colour = BFHtheme::bfh_cols("hospital_grey"),
       linewidth = data_linewidth,
       na.rm = TRUE
     ),
     ggplot2::geom_point(
       ggplot2::aes(y = y, group = part),
-      colour = colors$mediumgrey,
+      colour = BFHtheme::bfh_cols("hospital_grey"),
       size = point_size,
       na.rm = TRUE
     ),
     ggplot2::geom_line(
       ggplot2::aes(y = cl, group = part, linetype = anhoej.signal),
-      color = colors$primary,
+      color = BFHtheme::bfh_cols("hospital_blue"),
       linewidth = cl_linewidth
     )
   ))
@@ -232,7 +227,6 @@ bfh_spc_plot <- function(qic_data,
     plot = plot,
     qic_data = qic_data,
     comment_data = comment_data,
-    colors = colors,
     cl_linewidth = cl_linewidth,
     target_linewidth = target_linewidth,
     comment_size = comment_size,
@@ -240,7 +234,7 @@ bfh_spc_plot <- function(qic_data,
   )
 
   # Apply theme ----
-  plot <- apply_spc_theme(plot, viewport$base_size, colors)
+  plot <- apply_spc_theme(plot, viewport$base_size)
 
   return(plot)
 }

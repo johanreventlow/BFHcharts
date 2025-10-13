@@ -78,36 +78,6 @@ test_that("create_spc_chart() handles phase splits correctly", {
   expect_s3_class(plot, "ggplot")
 })
 
-test_that("create_spc_chart() applies custom colors", {
-  library(ggplot2)
-
-  data <- data.frame(
-    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
-    value = rnorm(12, 100, 10)
-  )
-
-  # Create custom color palette compatible with BFHcharts
-  custom_colors <- list(
-    primary = "#003366",
-    secondary = "#808080",
-    darkgrey = "#333333",
-    lightgrey = "#cce5f1",
-    mediumgrey = "#646c6f",
-    dark = "#333333"
-  )
-
-  plot <- create_spc_chart(
-    data = data,
-    x = month,
-    y = value,
-    chart_type = "run",
-    y_axis_unit = "count",
-    colors = custom_colors
-  )
-
-  expect_s3_class(plot, "ggplot")
-})
-
 test_that("bfh_spc_plot() works with pre-calculated qic data", {
   library(ggplot2)
   library(qicharts2)

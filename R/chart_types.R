@@ -111,7 +111,6 @@ get_qic_chart_type <- function(danish_selection) {
 #'
 #' @details
 #' Chart types requiring denominator:
-#' - **run**: For ratio calculations
 #' - **p**, **pp**: Proportion charts (numerator/denominator)
 #' - **u**, **up**: Rate charts (events/exposure)
 #'
@@ -124,8 +123,8 @@ chart_type_requires_denominator <- function(chart_type) {
   # Normalisér til qicharts2-kode
   ct <- get_qic_chart_type(chart_type)
 
-  # Nævner er relevant for run, p, pp, u, up
-  return(ct %in% c("run", "p", "pp", "u", "up"))
+  # Nævner er relevant for p, pp, u, up
+  return(ct %in% c("p", "pp", "u", "up"))
 }
 
 #' Get Chart Type Description

@@ -8,7 +8,6 @@ add_plot_enhancements(
   plot,
   qic_data,
   comment_data = NULL,
-  colors = NULL,
   cl_linewidth = 1,
   target_linewidth = 1,
   comment_size = 6,
@@ -21,8 +20,6 @@ add_plot_enhancements(
 \item{qic_data}{QIC data frame}
 
 \item{comment_data}{Comment data frame (from extract_comment_data())}
-
-\item{colors}{Color palette (default: NULL, uses BFHtheme colors)}
 
 \item{cl_linewidth}{Centerline width (default: 1)}
 

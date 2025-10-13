@@ -22,13 +22,12 @@ NULL
 #'
 #' @param plot ggplot2 object
 #' @param base_size Base font size
-#' @param colors Color palette (not used directly, kept for signature compatibility)
 #'
 #' @return Modified ggplot2 object with theme applied
 #'
 #' @keywords internal
 #' @noRd
-apply_spc_theme <- function(plot, base_size = 14, colors = NULL) {
+apply_spc_theme <- function(plot, base_size = 14) {
   # Use BFHtheme's theme_bfh as base
   plot +
     BFHtheme::theme_bfh(base_size = base_size) +

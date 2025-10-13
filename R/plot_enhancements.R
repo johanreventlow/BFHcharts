@@ -17,7 +17,6 @@ NULL
 #' @param plot ggplot object
 #' @param qic_data QIC data frame
 #' @param comment_data Comment data frame (from extract_comment_data())
-#' @param colors Color palette (default: NULL, uses BFHtheme colors)
 #' @param cl_linewidth Centerline width (default: 1)
 #' @param target_linewidth Target line width (default: 1)
 #' @param comment_size Comment text size (default: 6)
@@ -28,13 +27,10 @@ NULL
 add_plot_enhancements <- function(plot,
                                   qic_data,
                                   comment_data = NULL,
-                                  colors = NULL,
                                   cl_linewidth = 1,
                                   target_linewidth = 1,
                                   comment_size = 6,
                                   suppress_targetline = FALSE) {
-  # Ensure colors are set (use BFHtheme defaults if NULL)
-  colors <- ensure_color_names(colors)
   # Calculate extended x position (20% beyond last data point)
   last_x <- max(qic_data$x, na.rm = TRUE)
   first_x <- min(qic_data$x, na.rm = TRUE)
@@ -108,7 +104,7 @@ add_plot_enhancements <- function(plot,
         ggplot2::geom_line(
           data = cl_ext,
           ggplot2::aes(x = x, y = y),
-          color = colors$primary,
+          color = BFHtheme::bfh_cols("hospital_blue"),
           linewidth = cl_linewidth,
           linetype = cl_ext$linetype[1],
           inherit.aes = FALSE
@@ -122,7 +118,7 @@ add_plot_enhancements <- function(plot,
         ggplot2::geom_line(
           data = target_ext,
           ggplot2::aes(x = x, y = y),
-          color = colors$darkgrey,
+          color = BFHtheme::bfh_cols("hospital_dark_grey"),
           linewidth = target_linewidth,
           linetype = "42",
           inherit.aes = FALSE
@@ -137,10 +133,10 @@ add_plot_enhancements <- function(plot,
         data = comment_data,
         ggplot2::aes(x = x, y = y, label = comment),
         size = comment_size,
-        color = colors$darkgrey,
+        color = BFHtheme::bfh_cols("hospital_dark_grey"),
         box.padding = 0.5,
         point.padding = 0.5,
-        segment.color = colors$mediumgrey,
+        segment.color = BFHtheme::bfh_cols("hospital_grey"),
         segment.size = 0.3,
         arrow = grid::arrow(length = grid::unit(0.015, "npc")),
         max.overlaps = Inf,
