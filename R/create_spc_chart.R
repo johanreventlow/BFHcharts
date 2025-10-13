@@ -31,7 +31,7 @@ NULL
 #' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)
 #' @param width Plot width in inches (optional, enables responsive font scaling and precise label placement)
 #' @param height Plot height in inches (optional, enables responsive font scaling and precise label placement)
-#' @param colors Color palette (default: [BFH_COLORS])
+#' @param colors Color palette (default: NULL, uses BFHtheme colors). Can be a custom named list.
 #'
 #' @return ggplot2 object with styled SPC chart
 #'
@@ -190,7 +190,7 @@ create_spc_chart <- function(data,
                               base_size = 14,
                               width = NULL,
                               height = NULL,
-                              colors = BFH_COLORS) {
+                              colors = NULL) {
   # Validate inputs
   if (!is.data.frame(data)) {
     stop("data must be a data frame")
