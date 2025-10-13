@@ -17,7 +17,7 @@ NULL
 #' @param plot ggplot object
 #' @param qic_data QIC data frame
 #' @param comment_data Comment data frame (from extract_comment_data())
-#' @param colors Color palette (default: BFH_COLORS)
+#' @param colors Color palette (default: NULL, uses BFHtheme colors)
 #' @param cl_linewidth Centerline width (default: 1)
 #' @param target_linewidth Target line width (default: 1)
 #' @param comment_size Comment text size (default: 6)
@@ -28,11 +28,13 @@ NULL
 add_plot_enhancements <- function(plot,
                                   qic_data,
                                   comment_data = NULL,
-                                  colors = BFH_COLORS,
+                                  colors = NULL,
                                   cl_linewidth = 1,
                                   target_linewidth = 1,
                                   comment_size = 6,
                                   suppress_targetline = FALSE) {
+  # Ensure colors are set (use BFHtheme defaults if NULL)
+  colors <- ensure_color_names(colors)
   # Calculate extended x position (20% beyond last data point)
   last_x <- max(qic_data$x, na.rm = TRUE)
   first_x <- min(qic_data$x, na.rm = TRUE)
