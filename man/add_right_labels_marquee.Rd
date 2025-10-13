@@ -12,8 +12,8 @@ add_right_labels_marquee(
   textB,
   params = list(label_height_npc = NULL, gap_line = NULL, gap_labels = NULL, pad_top =
     0.01, pad_bot = 0.01, pref_pos = c("under", "under"), priority = "A"),
-  gpA = grid::gpar(col = "#009CE8"),
-  gpB = grid::gpar(col = "#565656"),
+  gpA = grid::gpar(col = BFHtheme::bfh_cols("hospital_blue")),
+  gpB = grid::gpar(col = BFHtheme::bfh_cols("hospital_dark_grey")),
   label_size = 6,
   viewport_width = NULL,
   viewport_height = NULL,
