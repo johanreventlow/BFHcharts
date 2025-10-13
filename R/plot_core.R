@@ -20,7 +20,7 @@ NULL
 #' @param plot_config Plot configuration from [spc_plot_config()]
 #' @param viewport Viewport dimensions from [viewport_dims()]
 #' @param phase Optional phase configuration from [phase_config()]
-#' @param colors Color palette (default: [BFH_COLORS])
+#' @param colors Color palette (default: NULL, uses BFHtheme colors). Can be a custom named list.
 #'
 #' @return ggplot2 object
 #'
@@ -79,7 +79,7 @@ bfh_spc_plot <- function(qic_data,
                          plot_config = spc_plot_config(),
                          viewport = viewport_dims(),
                          phase = NULL,
-                         colors = BFH_COLORS) {
+                         colors = NULL) {
   # Validate inputs
   if (!is.data.frame(qic_data)) {
     stop("qic_data must be a data frame from qicharts2::qic(return.data = TRUE)")
@@ -98,6 +98,9 @@ bfh_spc_plot <- function(qic_data,
   if (!"anhoej.signal" %in% names(qic_data)) {
     qic_data$anhoej.signal <- FALSE
   }
+
+  # Ensure colors are set (use BFHtheme defaults if NULL)
+  colors <- ensure_color_names(colors)
 
   # Calculate responsive geom sizes based on base_size
   scale_factor <- viewport$base_size / 14
