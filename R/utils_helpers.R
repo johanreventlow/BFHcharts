@@ -43,7 +43,18 @@ has_arrow_symbol <- function(text) {
     return(FALSE)
   }
 
-  grepl("[\u2191\u2193\u2192\u2190]", text)
+  # Check for Unicode arrow symbols
+  if (grepl("[\u2191\u2193\u2192\u2190]", text)) {
+    return(TRUE)
+  }
+
+  # Check for < or > without numbers (will be converted to arrows)
+  # Match < or > at start, optionally followed by whitespace, but NOT followed by digit
+  if (grepl("^<\\s*$|^>\\s*$", text)) {
+    return(TRUE)
+  }
+
+  return(FALSE)
 }
 
 #' Format Target Prefix with Arrow Symbols

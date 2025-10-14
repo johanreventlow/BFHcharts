@@ -126,8 +126,18 @@ has_arrow_symbol <- function(text) {
     return(FALSE)
   }
 
-  # Check for down arrow (U+2193) or up arrow (U+2191)
-  grepl("\U2193|\U2191", text)
+  # Check for Unicode arrow symbols (down U+2193 or up U+2191)
+  if (grepl("\U2193|\U2191", text)) {
+    return(TRUE)
+  }
+
+  # Check for < or > without numbers (will be converted to arrows by format_target_prefix)
+  # Match < or > at start, optionally followed by whitespace, but NOT followed by digit
+  if (grepl("^<\\s*$|^>\\s*$", text)) {
+    return(TRUE)
+  }
+
+  return(FALSE)
 }
 
 #' Formatér målværdi med foranstillede tegn
