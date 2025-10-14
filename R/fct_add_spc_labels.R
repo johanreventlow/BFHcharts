@@ -269,6 +269,9 @@ add_spc_labels <- function(
     )
   }
 
+  # PERFORMANCE: Build plot én gang og genbruge
+  built_plot <- ggplot2::ggplot_build(plot)
+
   plot_with_labels <- add_right_labels_marquee(
     p = plot,
     yA = yA,
@@ -282,7 +285,8 @@ add_spc_labels <- function(
     viewport_width = viewport_width_inches,
     viewport_height = viewport_height_inches,
     verbose = verbose,
-    debug_mode = debug_mode
+    debug_mode = debug_mode,
+    .built_plot = built_plot
   )
 
   # Attach metadata about arrow detection for targetline suppression

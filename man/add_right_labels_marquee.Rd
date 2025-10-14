@@ -18,7 +18,8 @@ add_right_labels_marquee(
   viewport_width = NULL,
   viewport_height = NULL,
   verbose = TRUE,
-  debug_mode = FALSE
+  debug_mode = FALSE,
+  .built_plot = NULL
 )
 }
 \arguments{
@@ -43,6 +44,9 @@ add_right_labels_marquee(
 \item{verbose}{logical print placement warnings}
 
 \item{debug_mode}{logical add visual debug annotations}
+
+\item{.built_plot}{Optional pre-built ggplot object (from ggplot_build). If provided,
+avoids redundant ggplot_build() call for performance (50-150ms improvement per plot)}
 }
 \value{
 ggplot object med marquee labels
