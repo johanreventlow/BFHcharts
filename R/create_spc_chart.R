@@ -230,6 +230,53 @@ create_spc_chart <- function(data,
   validate_column_name(substitute(x), "x")
   validate_column_name(substitute(y), "y")
 
+  # SECURITY: Validate numeric parameters for bounds and sanity
+  # Prevents DoS attacks via memory exhaustion or crashes
+  if (!is.null(part)) {
+    if (!is.numeric(part) || any(part <= 0) || any(part > nrow(data))) {
+      stop(sprintf(
+        "part positions must be positive integers within data bounds (1-%d), got: %s",
+        nrow(data),
+        paste(part, collapse = ", ")
+      ), call. = FALSE)
+    }
+  }
+
+  if (!is.null(freeze)) {
+    if (!is.numeric(freeze) || freeze <= 0 || freeze > nrow(data)) {
+      stop(sprintf(
+        "freeze position must be a positive integer within data bounds (1-%d), got: %s",
+        nrow(data),
+        freeze
+      ), call. = FALSE)
+    }
+  }
+
+  if (!is.numeric(base_size) || base_size <= 0 || base_size > 100) {
+    stop(sprintf(
+      "base_size must be between 1 and 100, got: %s",
+      base_size
+    ), call. = FALSE)
+  }
+
+  if (!is.null(width)) {
+    if (!is.numeric(width) || width <= 0 || width > 1000) {
+      stop(sprintf(
+        "width must be between 0 and 1000 inches, got: %s",
+        width
+      ), call. = FALSE)
+    }
+  }
+
+  if (!is.null(height)) {
+    if (!is.numeric(height) || height <= 0 || height > 1000) {
+      stop(sprintf(
+        "height must be between 0 and 1000 inches, got: %s",
+        height
+      ), call. = FALSE)
+    }
+  }
+
   # Build qicharts2::qic() arguments using NSE
   qic_args <- list(
     data = data,
