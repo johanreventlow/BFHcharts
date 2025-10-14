@@ -85,3 +85,10 @@ plot <- bfh_spc_plot(qic_result, config, viewport)
 plot
 }
 }
+\seealso{
+\code{\link[=create_spc_chart]{create_spc_chart()}}, \code{\link[=spc_plot_config]{spc_plot_config()}}, \code{\link[=viewport_dims]{viewport_dims()}}, \code{\link[=phase_config]{phase_config()}}
+
+Other spc-plotting: 
+\code{\link{create_spc_chart}()}
+}
+\concept{spc-plotting}

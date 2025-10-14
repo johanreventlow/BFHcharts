@@ -23,3 +23,16 @@ cat(
   round(stats$grob_cache$hit_rate * 100, 1), "\% hit rate\n"
 )
 }
+\seealso{
+\code{\link[=configure_placement_cache]{configure_placement_cache()}}, \code{\link[=purge_expired_cache_entries]{purge_expired_cache_entries()}}
+
+Other placement-cache: 
+\code{\link{clear_all_placement_caches}()},
+\code{\link{clear_grob_height_cache}()},
+\code{\link{configure_grob_cache}()},
+\code{\link{configure_panel_cache}()},
+\code{\link{configure_placement_cache}()},
+\code{\link{purge_expired_cache_entries}()},
+\code{\link{unlock_placement_cache_bindings}()}
+}
+\concept{placement-cache}

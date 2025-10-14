@@ -32,16 +32,32 @@ NULL
 #' - Thousand separator: `.` (e.g., "1.250")
 #'
 #' @export
+#' @family spc-formatting
+#' @seealso [format_y_value()], [get_optimal_formatting()]
 #' @examples
 #' \dontrun{
 #' library(ggplot2)
-#' plot <- ggplot(qic_data, aes(x = x, y = y)) + geom_point()
 #'
-#' # Percentage formatting
-#' plot + apply_y_axis_formatting("percent", qic_data)
+#' count_data <- data.frame(
+#'   x = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+#'   y = seq(5, 16, length.out = 12)
+#' )
 #'
-#' # Count with K/M notation
-#' plot + apply_y_axis_formatting("count", qic_data)
+#' percent_data <- data.frame(
+#'   x = count_data$x,
+#'   y = seq(0.05, 0.25, length.out = 12)
+#' )
+#'
+#' count_plot <- ggplot(count_data, aes(x = x, y = y)) +
+#'   geom_line()
+#'
+#' # Apply percentage formatting
+#' percent_plot <- ggplot(percent_data, aes(x = x, y = y)) +
+#'   geom_line()
+#' apply_y_axis_formatting(percent_plot, "percent", percent_data)
+#'
+#' # Apply count formatting
+#' apply_y_axis_formatting(count_plot, "count", count_data)
 #' }
 apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL) {
   # Validate inputs

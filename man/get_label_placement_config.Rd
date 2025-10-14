@@ -19,3 +19,11 @@ gap_line <- config$relative_gap_line * label_height_npc
 gap_labels <- config$relative_gap_labels * label_height_npc
 
 }
+\seealso{
+\link{LABEL_PLACEMENT_CONFIG}, \code{\link[=get_label_placement_param]{get_label_placement_param()}}
+
+Other label-placement-config: 
+\code{\link{LABEL_PLACEMENT_CONFIG}},
+\code{\link{get_label_placement_param}()}
+}
+\concept{label-placement-config}

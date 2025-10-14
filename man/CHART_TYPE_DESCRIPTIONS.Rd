@@ -13,4 +13,15 @@ CHART_TYPE_DESCRIPTIONS
 \description{
 Danske beskrivelser af hver chart type til dokumentation og UI.
 }
+\seealso{
+\code{\link[=get_chart_description]{get_chart_description()}}, \link{CHART_TYPES_DA}
+
+Other spc-chart-types: 
+\code{\link{CHART_TYPES_DA}},
+\code{\link{CHART_TYPES_EN}},
+\code{\link{chart_type_requires_denominator}()},
+\code{\link{get_chart_description}()},
+\code{\link{get_qic_chart_type}()}
+}
+\concept{spc-chart-types}
 \keyword{datasets}

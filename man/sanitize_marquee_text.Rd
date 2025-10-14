@@ -16,4 +16,17 @@ Sanitized character string
 Escaper specialtegn der har betydning i marquee markup
 for at forhindre injection attacks
 }
+\seealso{
+\code{\link[=add_right_labels_marquee]{add_right_labels_marquee()}}
+
+Other label-placement: 
+\code{\link{add_right_labels_marquee}()},
+\code{\link{add_spc_labels}()},
+\code{\link{clear_marquee_style_cache}()},
+\code{\link{create_responsive_label}()},
+\code{\link{format_target_prefix}()},
+\code{\link{get_right_aligned_marquee_style}()},
+\code{\link{has_arrow_symbol}()}
+}
+\concept{label-placement}
 \keyword{internal}

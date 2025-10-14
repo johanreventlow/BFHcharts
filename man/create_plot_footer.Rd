@@ -35,3 +35,7 @@ create_plot_footer(
   date = Sys.Date()
 )
 }
+\seealso{
+\code{\link[=bfh_spc_plot]{bfh_spc_plot()}}, \code{\link[BFHtheme:theme_bfh]{BFHtheme::theme_bfh()}}
+}
+\concept{spc-themes}

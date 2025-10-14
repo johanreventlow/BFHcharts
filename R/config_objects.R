@@ -67,6 +67,8 @@ NULL
 #' - `target_value` must be numeric if provided
 #'
 #' @export
+#' @family spc-config
+#' @seealso [create_spc_chart()], [bfh_spc_plot()], [phase_config()], [viewport_dims()]
 #' @examples
 #' # Basic configuration
 #' cfg <- spc_plot_config(chart_type = "run", y_axis_unit = "count")
@@ -129,6 +131,8 @@ spc_plot_config <- function(
 #'
 #' @return Invisibly returns x
 #' @export
+#' @family spc-config
+#' @seealso [spc_plot_config()]
 print.spc_plot_config <- function(x, ...) {
   cat("SPC Plot Configuration:\n")
   cat("  Chart Type:", x$chart_type, "\n")
@@ -162,6 +166,8 @@ print.spc_plot_config <- function(x, ...) {
 #' - Reference: base_size 14 provides original sizing
 #'
 #' @export
+#' @family spc-config
+#' @seealso [create_spc_chart()], [spc_plot_config()]
 #' @examples
 #' # Auto-sized viewport with default font
 #' vp <- viewport_dims()
@@ -205,6 +211,8 @@ viewport_dims <- function(
 #'
 #' @return Invisibly returns x
 #' @export
+#' @family spc-config
+#' @seealso [viewport_dims()]
 print.viewport_dims <- function(x, ...) {
   cat("Viewport Dimensions:\n")
   cat("  Width:", if (is.null(x$width)) "Auto" else paste(x$width, "px"), "\n")
@@ -235,6 +243,8 @@ print.viewport_dims <- function(x, ...) {
 #' - These are passed directly to qicharts2::qic()
 #'
 #' @export
+#' @family spc-config
+#' @seealso [spc_plot_config()], [create_spc_chart()]
 #' @examples
 #' # No phases
 #' phases <- phase_config()
@@ -277,6 +287,8 @@ phase_config <- function(
 #'
 #' @return Invisibly returns x
 #' @export
+#' @family spc-config
+#' @seealso [phase_config()]
 print.phase_config <- function(x, ...) {
   cat("Phase Configuration:\n")
   cat("  Part Positions:", if (is.null(x$part_positions)) "NULL" else paste(x$part_positions, collapse = ", "), "\n")

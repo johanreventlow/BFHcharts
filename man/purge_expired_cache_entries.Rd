@@ -26,3 +26,16 @@ cat(
 # Force purge (clears all caches)
 purged <- purge_expired_cache_entries(force = TRUE)
 }
+\seealso{
+\code{\link[=clear_all_placement_caches]{clear_all_placement_caches()}}, \code{\link[=configure_placement_cache]{configure_placement_cache()}}
+
+Other placement-cache: 
+\code{\link{clear_all_placement_caches}()},
+\code{\link{clear_grob_height_cache}()},
+\code{\link{configure_grob_cache}()},
+\code{\link{configure_panel_cache}()},
+\code{\link{configure_placement_cache}()},
+\code{\link{get_placement_cache_stats}()},
+\code{\link{unlock_placement_cache_bindings}()}
+}
+\concept{placement-cache}

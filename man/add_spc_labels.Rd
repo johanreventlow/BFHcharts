@@ -77,3 +77,16 @@ plot_with_labels <- add_spc_labels(
 }
 
 }
+\seealso{
+\code{\link[=add_right_labels_marquee]{add_right_labels_marquee()}}, \code{\link[=create_responsive_label]{create_responsive_label()}}, \code{\link[=format_y_value]{format_y_value()}}
+
+Other label-placement: 
+\code{\link{add_right_labels_marquee}()},
+\code{\link{clear_marquee_style_cache}()},
+\code{\link{create_responsive_label}()},
+\code{\link{format_target_prefix}()},
+\code{\link{get_right_aligned_marquee_style}()},
+\code{\link{has_arrow_symbol}()},
+\code{\link{sanitize_marquee_text}()}
+}
+\concept{label-placement}

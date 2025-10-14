@@ -20,3 +20,14 @@ get_qic_chart_type("I-kort (Individuelle værdier)")  # Returns "i"
 get_qic_chart_type("i")  # Returns "i" (already English)
 get_qic_chart_type(NULL)  # Returns "run" (default)
 }
+\seealso{
+\link{CHART_TYPES_DA}, \link{CHART_TYPES_EN}
+
+Other spc-chart-types: 
+\code{\link{CHART_TYPES_DA}},
+\code{\link{CHART_TYPES_EN}},
+\code{\link{CHART_TYPE_DESCRIPTIONS}},
+\code{\link{chart_type_requires_denominator}()},
+\code{\link{get_chart_description}()}
+}
+\concept{spc-chart-types}

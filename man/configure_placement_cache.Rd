@@ -31,3 +31,16 @@ configure_placement_cache(ttl_seconds = 60, max_cache_size = 50)
 # Configure for long-running sessions (10 minutes TTL, larger cache)
 configure_placement_cache(ttl_seconds = 600, max_cache_size = 200)
 }
+\seealso{
+\code{\link[=configure_grob_cache]{configure_grob_cache()}}, \code{\link[=configure_panel_cache]{configure_panel_cache()}}, \code{\link[=purge_expired_cache_entries]{purge_expired_cache_entries()}}
+
+Other placement-cache: 
+\code{\link{clear_all_placement_caches}()},
+\code{\link{clear_grob_height_cache}()},
+\code{\link{configure_grob_cache}()},
+\code{\link{configure_panel_cache}()},
+\code{\link{get_placement_cache_stats}()},
+\code{\link{purge_expired_cache_entries}()},
+\code{\link{unlock_placement_cache_bindings}()}
+}
+\concept{placement-cache}

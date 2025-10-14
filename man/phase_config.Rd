@@ -40,3 +40,16 @@ phases <- phase_config(
   freeze_position = 15
 )
 }
+\seealso{
+\code{\link[=spc_plot_config]{spc_plot_config()}}, \code{\link[=create_spc_chart]{create_spc_chart()}}
+
+Other spc-config: 
+\code{\link{FONT_SCALING_CONFIG}},
+\code{\link{calculate_base_size}()},
+\code{\link{print.phase_config}()},
+\code{\link{print.spc_plot_config}()},
+\code{\link{print.viewport_dims}()},
+\code{\link{spc_plot_config}()},
+\code{\link{viewport_dims}()}
+}
+\concept{spc-config}

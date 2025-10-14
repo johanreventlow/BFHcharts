@@ -7,6 +7,11 @@
 
 ## 🔴 Critical Priority
 
+### 0. Facetting Support (#1) – Deferred
+- **Status:** Udskudt til senere release; facettering er ikke implementeret i den aktuelle version.
+- **Handling:** Følg planen dokumenteret i `docs/ROADMAP.md` (afsnit “Issue #1 Facetting Support”) før arbejdet genoptages.
+- **Åben risiko:** Brugere kan ikke producere multi-panel sammenligninger; kommunikér begrænsningen tydeligt i dokumentationen.
+
 ### 1. Security Issues
 **Must address immediately before any production use:**
 

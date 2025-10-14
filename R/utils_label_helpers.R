@@ -20,6 +20,8 @@
 #' @param lineheight numeric lineheight værdi (default 0.9)
 #' @return marquee style object
 #' @keywords internal
+#' @family label-placement
+#' @seealso [add_right_labels_marquee()]
 #' @export
 get_right_aligned_marquee_style <- function(lineheight = 0.9) {
   cache_key <- paste0("right_aligned_", lineheight)
@@ -43,6 +45,8 @@ get_right_aligned_marquee_style <- function(lineheight = 0.9) {
 #' Clear marquee style cache (for testing or memory management)
 #'
 #' @keywords internal
+#' @family label-placement
+#' @seealso [get_right_aligned_marquee_style()]
 #' @export
 clear_marquee_style_cache <- function() {
   rm(list = ls(envir = .marquee_style_cache), envir = .marquee_style_cache)
@@ -61,6 +65,8 @@ clear_marquee_style_cache <- function() {
 #' @param text Character string to sanitize
 #' @return Sanitized character string
 #' @keywords internal
+#' @family label-placement
+#' @seealso [add_right_labels_marquee()]
 #' @export
 sanitize_marquee_text <- function(text) {
   if (is.null(text) || length(text) == 0) {
@@ -120,6 +126,8 @@ sanitize_marquee_text <- function(text) {
 #' @param text character string to check
 #' @return logical TRUE hvis pil-symbol detekteret, FALSE ellers
 #' @keywords internal
+#' @family label-placement
+#' @seealso [format_target_prefix()]
 #' @export
 has_arrow_symbol <- function(text) {
   if (is.null(text) || length(text) == 0 || !is.character(text)) {
@@ -168,6 +176,8 @@ has_arrow_symbol <- function(text) {
 #' }
 #'
 #' @export
+#' @family label-placement
+#' @seealso [has_arrow_symbol()], [add_spc_labels()]
 format_target_prefix <- function(target_text) {
   # Håndter NULL og tomme strenge
   if (is.null(target_text) || length(target_text) == 0) {
@@ -265,6 +275,8 @@ format_target_prefix <- function(target_text) {
 #' }
 #'
 #' @export
+#' @family label-placement
+#' @seealso [add_spc_labels()], [sanitize_marquee_text()]
 create_responsive_label <- function(header, value, label_size = 6, header_pt = 10, value_pt = 30) {
   # Input validation
   if (!is.numeric(label_size) || length(label_size) != 1 || label_size <= 0) {

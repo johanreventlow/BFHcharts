@@ -29,3 +29,16 @@ get_grob_cache_stats() # cache_size skal være 0
 }
 
 }
+\seealso{
+\code{\link[=configure_grob_cache]{configure_grob_cache()}}, \code{\link[=clear_all_placement_caches]{clear_all_placement_caches()}}
+
+Other placement-cache: 
+\code{\link{clear_all_placement_caches}()},
+\code{\link{configure_grob_cache}()},
+\code{\link{configure_panel_cache}()},
+\code{\link{configure_placement_cache}()},
+\code{\link{get_placement_cache_stats}()},
+\code{\link{purge_expired_cache_entries}()},
+\code{\link{unlock_placement_cache_bindings}()}
+}
+\concept{placement-cache}

@@ -19,3 +19,14 @@ Henter dansk beskrivelse for et givent chart type.
 get_chart_description("run")
 get_chart_description("I-kort (Individuelle værdier)")
 }
+\seealso{
+\link{CHART_TYPE_DESCRIPTIONS}, \code{\link[=get_qic_chart_type]{get_qic_chart_type()}}
+
+Other spc-chart-types: 
+\code{\link{CHART_TYPES_DA}},
+\code{\link{CHART_TYPES_EN}},
+\code{\link{CHART_TYPE_DESCRIPTIONS}},
+\code{\link{chart_type_requires_denominator}()},
+\code{\link{get_qic_chart_type}()}
+}
+\concept{spc-chart-types}

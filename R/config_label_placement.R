@@ -41,6 +41,8 @@
 #'   \item{height_fallback_npc}{Fallback højde hvis måling fejler (NPC)}
 #' }
 #'
+#' @family label-placement-config
+#' @seealso [get_label_placement_config()], [get_label_placement_param()], [add_spc_labels()]
 #' @export
 LABEL_PLACEMENT_CONFIG <- list(
   # === Gap Configuration (relative til label_height_npc) ===
@@ -142,6 +144,8 @@ LABEL_PLACEMENT_CONFIG <- list(
 #' # Returns: 0.5
 #'
 #' @export
+#' @family label-placement-config
+#' @seealso [LABEL_PLACEMENT_CONFIG], [get_label_placement_config()]
 get_label_placement_param <- function(key, default = NULL) {
   # Hent konfiguration
   config <- LABEL_PLACEMENT_CONFIG
@@ -175,6 +179,8 @@ get_label_placement_param <- function(key, default = NULL) {
 #' gap_labels <- config$relative_gap_labels * label_height_npc
 #'
 #' @export
+#' @family label-placement-config
+#' @seealso [LABEL_PLACEMENT_CONFIG], [get_label_placement_param()]
 get_label_placement_config <- function() {
   # Returner en kopi for at undgå utilsigtet modification
   as.list(LABEL_PLACEMENT_CONFIG)

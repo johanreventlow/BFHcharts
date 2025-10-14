@@ -17,3 +17,16 @@ Invisibly returns x
 \description{
 Print Viewport Dimensions
 }
+\seealso{
+\code{\link[=viewport_dims]{viewport_dims()}}
+
+Other spc-config: 
+\code{\link{FONT_SCALING_CONFIG}},
+\code{\link{calculate_base_size}()},
+\code{\link{phase_config}()},
+\code{\link{print.phase_config}()},
+\code{\link{print.spc_plot_config}()},
+\code{\link{spc_plot_config}()},
+\code{\link{viewport_dims}()}
+}
+\concept{spc-config}

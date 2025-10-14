@@ -29,3 +29,11 @@ dates <- seq(as.Date("2024-01-01"), by = "month", length.out = 24)
 interval_info <- detect_date_interval(dates)
 get_optimal_formatting(interval_info)
 }
+\seealso{
+\code{\link[=detect_date_interval]{detect_date_interval()}}, \code{\link[=create_spc_chart]{create_spc_chart()}}
+
+Other spc-date-formatting: 
+\code{\link{detect_date_interval}()},
+\code{\link{parse_danish_dates}()}
+}
+\concept{spc-date-formatting}

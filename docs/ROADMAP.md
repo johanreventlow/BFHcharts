@@ -35,6 +35,25 @@ Komplet oversigt over alle planlagte forbedringer og features for BFHcharts pakk
 
 **Impact:** Blocking major use cases (facetting) and maintainability (file splitting)
 
+#### Issue #1 Facetting Support (Deferred)
+
+**Status:** Udskudt til en senere release; nuværende versioner af BFHcharts understøtter ikke `facets`.
+
+**Implementeringsplan:**
+1. Kortlæg ønsket facet-API (`facets`, `nrow`, `ncol`, `scales`) og afklar use cases samt edge cases (mange paneler, tomme paneler, uens datasæt).
+2. Udvid datapipelinen, så `create_spc_chart()` accepterer facet-parametre og propagere dem til `qicharts2::qic()` samt videre til `bfh_spc_plot()` med korrekt ggplot-facettering og konfigurationsobjekter.
+3. Refaktorer `add_spc_labels()` og `add_right_labels_marquee()` til at arbejde panel-for-panel med separate NPC-mappers, så labels placeres korrekt i hvert facet.
+4. Tilpas tema og layout (strip-styling, panelspacing, responsive størrelser) i `apply_spc_theme()` og relaterede helpers, så multipanel-opsætninger følger designguidelines.
+5. Design tests først: unit-tests for facet-flow, edge cases for manglende CL/target i enkelte paneler samt `vdiffr`-snapshots for visuelle regressioner.
+6. Opdater dokumentation (Roxygen, README, vignetter) med eksempler og kendte begrænsninger.
+
+**Risici og afbødning:**
+- Eksisterende label-system er single-panel; kræver panel-isolerede mappers og nye tests for at undgå regressioner.
+- Ekstra `ggplot_build()`-arbejde kan påvirke performance; genbrug byggede objekter og memoisér hvor muligt.
+- Facetterede QIC-data kan mangle værdier i enkelte paneler; implementér defensiv håndtering.
+- Layoutændringer (strips, spacing) kan påvirke viewport-beregninger; verificér manuelt og automatiserede tests.
+- Omfattende refaktor uden tests øger regressionsrisiko; TDD er derfor obligatorisk.
+
 ---
 
 ### High Priority 🟡

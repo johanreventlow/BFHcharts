@@ -25,3 +25,11 @@ custom_value <- get_label_placement_param("nonexistent_key", default = 0.5)
 # Returns: 0.5
 
 }
+\seealso{
+\link{LABEL_PLACEMENT_CONFIG}, \code{\link[=get_label_placement_config]{get_label_placement_config()}}
+
+Other label-placement-config: 
+\code{\link{LABEL_PLACEMENT_CONFIG}},
+\code{\link{get_label_placement_config}()}
+}
+\concept{label-placement-config}

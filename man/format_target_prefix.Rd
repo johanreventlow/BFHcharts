@@ -46,4 +46,17 @@ format_target_prefix("80") # → "80"
 }
 
 }
+\seealso{
+\code{\link[=has_arrow_symbol]{has_arrow_symbol()}}, \code{\link[=add_spc_labels]{add_spc_labels()}}
+
+Other label-placement: 
+\code{\link{add_right_labels_marquee}()},
+\code{\link{add_spc_labels}()},
+\code{\link{clear_marquee_style_cache}()},
+\code{\link{create_responsive_label}()},
+\code{\link{get_right_aligned_marquee_style}()},
+\code{\link{has_arrow_symbol}()},
+\code{\link{sanitize_marquee_text}()}
+}
+\concept{label-placement}
 \keyword{internal}

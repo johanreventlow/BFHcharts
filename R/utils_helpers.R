@@ -17,6 +17,8 @@ NULL
 #' @param y Second value (returned if x is NULL)
 #'
 #' @return x if not NULL, otherwise y
+#' @family spc-helpers
+#' @seealso [get_y_axis_unit_label()]
 #' @export
 #' @examples
 #' NULL %||% "default"  # Returns "default"
@@ -116,6 +118,8 @@ validate_qic_data <- function(qic_data) {
 #' Mapping of unit codes to Danish labels.
 #'
 #' @format Named character vector
+#' @family spc-helpers
+#' @seealso [get_y_axis_unit_label()], [create_spc_chart()]
 #' @export
 Y_AXIS_UNITS_DA <- c(
   count = "Antal",
@@ -132,6 +136,8 @@ Y_AXIS_UNITS_DA <- c(
 #' @param unit_code Unit code ("count", "percent", etc.)
 #'
 #' @return Danish unit label
+#' @family spc-helpers
+#' @seealso [Y_AXIS_UNITS_DA], [apply_y_axis_formatting()]
 #' @export
 #' @examples
 #' get_y_axis_unit_label("percent")  # Returns "Procent (%)"

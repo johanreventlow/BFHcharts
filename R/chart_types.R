@@ -15,6 +15,8 @@ NULL
 #' Mapping mellem danske UI labels og engelske qicharts2 koder.
 #'
 #' @format Named character vector med dansk label → engelsk kode
+#' @family spc-chart-types
+#' @seealso [CHART_TYPES_EN], [get_qic_chart_type()]
 #' @export
 #' @examples
 #' CHART_TYPES_DA["Seriediagram med SPC (Run Chart)"]  # Returns "run"
@@ -35,6 +37,8 @@ CHART_TYPES_DA <- c(
 #' Valid qicharts2 chart type codes.
 #'
 #' @format Character vector of valid chart codes
+#' @family spc-chart-types
+#' @seealso [CHART_TYPES_DA], [get_qic_chart_type()]
 #' @export
 CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t")
 
@@ -47,6 +51,8 @@ CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s
 #' Danske beskrivelser af hver chart type til dokumentation og UI.
 #'
 #' @format Named character vector med engelsk kode → dansk beskrivelse
+#' @family spc-chart-types
+#' @seealso [get_chart_description()], [CHART_TYPES_DA]
 #' @export
 CHART_TYPE_DESCRIPTIONS <- c(
   run = "Seriediagram der viser data over tid med median centerlinje",
@@ -71,6 +77,8 @@ CHART_TYPE_DESCRIPTIONS <- c(
 #' @param danish_selection Valgt chart type (dansk label eller engelsk kode)
 #' @return Engelsk qicharts2 kode (fx "i", "run", "p")
 #'
+#' @family spc-chart-types
+#' @seealso [CHART_TYPES_DA], [CHART_TYPES_EN]
 #' @export
 #' @examples
 #' get_qic_chart_type("I-kort (Individuelle værdier)")  # Returns "i"
@@ -114,6 +122,8 @@ get_qic_chart_type <- function(danish_selection) {
 #' - **p**, **pp**: Proportion charts (numerator/denominator)
 #' - **u**, **up**: Rate charts (events/exposure)
 #'
+#' @family spc-chart-types
+#' @seealso [get_qic_chart_type()], [create_spc_chart()]
 #' @export
 #' @examples
 #' chart_type_requires_denominator("p")  # TRUE
@@ -134,6 +144,8 @@ chart_type_requires_denominator <- function(chart_type) {
 #' @param chart_type Chart type (engelsk kode eller dansk navn)
 #' @return Dansk beskrivelse af chart type
 #'
+#' @family spc-chart-types
+#' @seealso [CHART_TYPE_DESCRIPTIONS], [get_qic_chart_type()]
 #' @export
 #' @examples
 #' get_chart_description("run")

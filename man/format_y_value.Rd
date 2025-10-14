@@ -43,3 +43,10 @@ format_y_value(120, "time", y_range = c(0, 200))
 }
 
 }
+\seealso{
+\code{\link[=apply_y_axis_formatting]{apply_y_axis_formatting()}}, \code{\link[=format_y_axis_count]{format_y_axis_count()}}
+
+Other spc-formatting: 
+\code{\link{apply_y_axis_formatting}()}
+}
+\concept{spc-formatting}

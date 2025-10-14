@@ -17,4 +17,17 @@ PERFORMANCE: Returnerer cached style object hvis tilgængelig.
 Style creation er relativt dyrt (~1-2ms), og styles er immutable baseret
 på lineheight parameter, så caching er sikkert.
 }
+\seealso{
+\code{\link[=add_right_labels_marquee]{add_right_labels_marquee()}}
+
+Other label-placement: 
+\code{\link{add_right_labels_marquee}()},
+\code{\link{add_spc_labels}()},
+\code{\link{clear_marquee_style_cache}()},
+\code{\link{create_responsive_label}()},
+\code{\link{format_target_prefix}()},
+\code{\link{has_arrow_symbol}()},
+\code{\link{sanitize_marquee_text}()}
+}
+\concept{label-placement}
 \keyword{internal}

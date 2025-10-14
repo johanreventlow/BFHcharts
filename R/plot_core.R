@@ -43,6 +43,8 @@ NULL
 #' - Anhoej signal linetype switching
 #'
 #' @export
+#' @family spc-plotting
+#' @seealso [create_spc_chart()], [spc_plot_config()], [viewport_dims()], [phase_config()]
 #' @examples
 #' \dontrun{
 #' library(qicharts2)

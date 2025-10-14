@@ -13,4 +13,15 @@ CHART_TYPES_EN
 \description{
 Valid qicharts2 chart type codes.
 }
+\seealso{
+\link{CHART_TYPES_DA}, \code{\link[=get_qic_chart_type]{get_qic_chart_type()}}
+
+Other spc-chart-types: 
+\code{\link{CHART_TYPES_DA}},
+\code{\link{CHART_TYPE_DESCRIPTIONS}},
+\code{\link{chart_type_requires_denominator}()},
+\code{\link{get_chart_description}()},
+\code{\link{get_qic_chart_type}()}
+}
+\concept{spc-chart-types}
 \keyword{datasets}

@@ -28,4 +28,12 @@ LABEL_PLACEMENT_CONFIG
 Centraliseret konfiguration for label placement system.
 Alle relative værdier er procent af label_height_npc for konsistent skalering.
 }
+\seealso{
+\code{\link[=get_label_placement_config]{get_label_placement_config()}}, \code{\link[=get_label_placement_param]{get_label_placement_param()}}, \code{\link[=add_spc_labels]{add_spc_labels()}}
+
+Other label-placement-config: 
+\code{\link{get_label_placement_config}()},
+\code{\link{get_label_placement_param}()}
+}
+\concept{label-placement-config}
 \keyword{datasets}

@@ -342,6 +342,14 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
   )
 }
 
+#' Opret konverteringsfunktioner mellem data-y værdier og NPC-koordinater.
+#'
+#' @param p ggplot object der skal bruges til beregning af mapper
+#' @param panel Hvilket panel (1-baseret) der skal aflæses
+#'
+#' @return Liste med mapping-funktioner (`y_to_npc`, `npc_to_y`) samt metadata
+#' @keywords internal
+#' @seealso [npc_mapper_from_built()]
 #' @examples
 #' p <- ggplot(mtcars, aes(wt, mpg)) +
 #'   geom_point()
@@ -423,6 +431,8 @@ npc_mapper_from_plot <- function(p, panel = 1) {
 #' get_grob_cache_stats() # cache_size skal være 0
 #' }
 #'
+#' @family placement-cache
+#' @seealso [configure_grob_cache()], [clear_all_placement_caches()]
 #' @export
 clear_grob_height_cache <- function() {
   # Clear all data entries (preserve metadata)
@@ -615,6 +625,8 @@ auto_purge_grob_cache <- function() {
 #' @param max_cache_size Maximum number of cache entries (default 100)
 #' @param purge_check_interval Operations between purge checks (default 50)
 #' @return Invisible: Previous configuration
+#' @family placement-cache
+#' @seealso [configure_panel_cache()], [configure_placement_cache()]
 #' @export
 configure_grob_cache <- function(
     enabled = NULL,
@@ -833,6 +845,8 @@ auto_purge_panel_cache <- function() {
 #' @param max_cache_size Maximum number of cache entries (default 100)
 #' @param purge_check_interval Operations between purge checks (default 50)
 #' @return Invisible: Previous configuration
+#' @family placement-cache
+#' @seealso [configure_grob_cache()], [configure_placement_cache()]
 #' @export
 configure_panel_cache <- function(
     enabled = NULL,
@@ -883,6 +897,8 @@ configure_panel_cache <- function(
 #' get re-locked.
 #'
 #' @return Invisible: TRUE if successful, FALSE otherwise
+#' @family placement-cache
+#' @seealso [configure_placement_cache()], [clear_all_placement_caches()]
 #' @export
 #'
 #' @examples
@@ -925,6 +941,8 @@ unlock_placement_cache_bindings <- function() {
 #' Returns statistics from both panel height and grob height caches in a unified format.
 #'
 #' @return List with panel_cache and grob_cache statistics
+#' @family placement-cache
+#' @seealso [configure_placement_cache()], [purge_expired_cache_entries()]
 #' @export
 #'
 #' @examples
@@ -952,6 +970,8 @@ get_placement_cache_stats <- function() {
 #'
 #' @param force Logical: If TRUE, purge all entries regardless of TTL
 #' @return Named list with purge counts for each cache
+#' @family placement-cache
+#' @seealso [clear_all_placement_caches()], [configure_placement_cache()]
 #' @export
 #'
 #' @examples
@@ -976,6 +996,8 @@ purge_expired_cache_entries <- function(force = FALSE) {
 #' Removes all cached entries and resets statistics for both panel height
 #' and grob height caches. Use for testing or troubleshooting.
 #'
+#' @family placement-cache
+#' @seealso [purge_expired_cache_entries()], [configure_placement_cache()]
 #' @export
 #'
 #' @examples
@@ -995,6 +1017,8 @@ clear_all_placement_caches <- function() {
 #' @param max_cache_size Maximum number of cache entries per cache (default 100)
 #' @param purge_check_interval Operations between purge checks (default 50)
 #' @return Invisible: Named list with previous configurations
+#' @family placement-cache
+#' @seealso [configure_grob_cache()], [configure_panel_cache()], [purge_expired_cache_entries()]
 #' @export
 #'
 #' @examples
@@ -1224,6 +1248,16 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
   return(panel_height)
 }
 
+#' Mål panelhøjden i inches for et givet ggplot objekt.
+#'
+#' @param p ggplot objekt
+#' @param panel Panel index (1-baseret)
+#' @param device_width,device_height Device dimensioner i inches (bruges hvis ingen device åben)
+#' @param use_cache Logical: om cache skal udnyttes
+#'
+#' @return Numerisk værdi (panelhøjde i inches) eller NULL ved fejl
+#' @keywords internal
+#' @seealso [measure_panel_height_from_gtable()]
 #' @examples
 #' p <- ggplot(mtcars, aes(wt, mpg)) +
 #'   geom_point()

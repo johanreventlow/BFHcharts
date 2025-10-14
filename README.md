@@ -126,11 +126,15 @@ create_spc_chart(
 plot + bfh_theme(colors = my_hospital_colors)
 ```
 
+## Limitations
+
+- Facettering (`facets`, `nrow`, `ncol`, `scales`) er endnu ikke understøttet i BFHcharts; multi-panel plots kræver manuel opbygning indtil issue #1 løses.
+
 ## Documentation
 
-- [Getting Started Vignette](vignettes/getting-started.Rmd)
-- [Customizing SPC Plots](vignettes/customization.Rmd)
-- [Multi-Hospital Theming](vignettes/theming.Rmd)
+- Roxygen reference topics, e.g. `?create_spc_chart` or `help(package = "BFHcharts")`
+- Architecture notes in [`docs/`](docs/DOCUMENTATION_OVERVIEW.md)
+- Vignettes are planned; links will be added once the articles ship
 
 ## License
 

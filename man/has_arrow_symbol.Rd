@@ -23,4 +23,17 @@ Used to suppress target lines when direction is indicated symbolically.
 Detekterer om tekst indeholder pil-symboler (↓ eller ↑) som kræver
 speciel label positionering uden targetline.
 }
+\seealso{
+\code{\link[=format_target_prefix]{format_target_prefix()}}
+
+Other label-placement: 
+\code{\link{add_right_labels_marquee}()},
+\code{\link{add_spc_labels}()},
+\code{\link{clear_marquee_style_cache}()},
+\code{\link{create_responsive_label}()},
+\code{\link{format_target_prefix}()},
+\code{\link{get_right_aligned_marquee_style}()},
+\code{\link{sanitize_marquee_text}()}
+}
+\concept{label-placement}
 \keyword{internal}

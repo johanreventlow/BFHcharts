@@ -17,3 +17,16 @@ Invisibly returns x
 \description{
 Print SPC Plot Configuration
 }
+\seealso{
+\code{\link[=spc_plot_config]{spc_plot_config()}}
+
+Other spc-config: 
+\code{\link{FONT_SCALING_CONFIG}},
+\code{\link{calculate_base_size}()},
+\code{\link{phase_config}()},
+\code{\link{print.phase_config}()},
+\code{\link{print.viewport_dims}()},
+\code{\link{spc_plot_config}()},
+\code{\link{viewport_dims}()}
+}
+\concept{spc-config}

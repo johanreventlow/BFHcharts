@@ -50,6 +50,8 @@ apply_spc_theme <- function(plot, base_size = 14) {
 #'
 #' @return Character string with formatted footer
 #'
+#' @family spc-themes
+#' @seealso [bfh_spc_plot()], [BFHtheme::theme_bfh()]
 #' @export
 #' @examples
 #' create_plot_footer(

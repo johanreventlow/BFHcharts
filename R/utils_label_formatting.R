@@ -34,6 +34,8 @@
 #' }
 #'
 #' @export
+#' @family spc-formatting
+#' @seealso [apply_y_axis_formatting()], [format_y_axis_count()]
 format_y_value <- function(val, y_unit, y_range = NULL) {
   # Input validation
   if (is.na(val)) {

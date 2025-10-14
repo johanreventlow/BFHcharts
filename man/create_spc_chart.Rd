@@ -259,3 +259,10 @@ plot_multiply <- create_spc_chart(
 )
 }
 }
+\seealso{
+\code{\link[=bfh_spc_plot]{bfh_spc_plot()}}, \code{\link[=spc_plot_config]{spc_plot_config()}}, \code{\link[=apply_y_axis_formatting]{apply_y_axis_formatting()}}
+
+Other spc-plotting: 
+\code{\link{bfh_spc_plot}()}
+}
+\concept{spc-plotting}

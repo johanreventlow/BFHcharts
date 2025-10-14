@@ -77,6 +77,8 @@ NULL
 #' suppressed and only the directional indicator shown at the plot edge.
 #'
 #' @export
+#' @family spc-plotting
+#' @seealso [bfh_spc_plot()], [spc_plot_config()], [apply_y_axis_formatting()]
 #' @examples
 #' \dontrun{
 #' library(BFHcharts)

@@ -23,7 +23,16 @@
 #'   avoids redundant ggplot_build() call for performance (50-150ms improvement per plot)
 #' @return ggplot object med marquee labels
 #'
+#' @details
+#' Funktionen benytter `marquee::geom_marquee()` til to-linjers tekster og
+#' forventer, at `get_label_placement_config()` er tilgængelig for at hente
+#' cache'et placerings-setup. Hvis viewport-dimensioner (`viewport_width`,
+#' `viewport_height`) gives, anvendes de til præcise grob-målinger; ellers falder
+#' funktionen tilbage til aktivt grafisk device.
+#'
 #' @export
+#' @family label-placement
+#' @seealso [add_spc_labels()], [get_label_placement_config()]
 add_right_labels_marquee <- function(
     p,
     yA,

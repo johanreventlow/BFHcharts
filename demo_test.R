@@ -30,6 +30,7 @@ demo_data <- data.frame(
 # print("Test 1: Creating simple run chart...")
 plot1 <- create_spc_chart(
   data = demo_data,
+  # notes = c("","","","","","","","","","","hej","","","","","","","","","","","","","test"), 
   x = month,
   y = infections,
   chart_type = "run",

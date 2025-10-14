@@ -21,3 +21,11 @@ Returns the first non-NULL value.
 NULL \%||\% "default"  # Returns "default"
 "value" \%||\% "default"  # Returns "value"
 }
+\seealso{
+\code{\link[=get_y_axis_unit_label]{get_y_axis_unit_label()}}
+
+Other spc-helpers: 
+\code{\link{Y_AXIS_UNITS_DA}},
+\code{\link{get_y_axis_unit_label}()}
+}
+\concept{spc-helpers}

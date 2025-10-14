@@ -36,3 +36,16 @@ vp <- viewport_dims()
 # Fixed size with larger text
 vp <- viewport_dims(width = 1200, height = 800, base_size = 18)
 }
+\seealso{
+\code{\link[=create_spc_chart]{create_spc_chart()}}, \code{\link[=spc_plot_config]{spc_plot_config()}}
+
+Other spc-config: 
+\code{\link{FONT_SCALING_CONFIG}},
+\code{\link{calculate_base_size}()},
+\code{\link{phase_config}()},
+\code{\link{print.phase_config}()},
+\code{\link{print.spc_plot_config}()},
+\code{\link{print.viewport_dims}()},
+\code{\link{spc_plot_config}()}
+}
+\concept{spc-config}

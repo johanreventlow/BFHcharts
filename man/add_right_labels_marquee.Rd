@@ -55,3 +55,23 @@ ggplot object med marquee labels
 Anvender marquee::geom_marquee for at placere to-linje labels ved højre kant
 med intelligent collision avoidance.
 }
+\details{
+Funktionen benytter \code{marquee::geom_marquee()} til to-linjers tekster og
+forventer, at \code{get_label_placement_config()} er tilgængelig for at hente
+cache'et placerings-setup. Hvis viewport-dimensioner (\code{viewport_width},
+\code{viewport_height}) gives, anvendes de til præcise grob-målinger; ellers falder
+funktionen tilbage til aktivt grafisk device.
+}
+\seealso{
+\code{\link[=add_spc_labels]{add_spc_labels()}}, \code{\link[=get_label_placement_config]{get_label_placement_config()}}
+
+Other label-placement: 
+\code{\link{add_spc_labels}()},
+\code{\link{clear_marquee_style_cache}()},
+\code{\link{create_responsive_label}()},
+\code{\link{format_target_prefix}()},
+\code{\link{get_right_aligned_marquee_style}()},
+\code{\link{has_arrow_symbol}()},
+\code{\link{sanitize_marquee_text}()}
+}
+\concept{label-placement}

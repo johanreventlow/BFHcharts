@@ -55,3 +55,16 @@ cfg <- spc_plot_config(
   target_text = "Target: 95\%"
 )
 }
+\seealso{
+\code{\link[=create_spc_chart]{create_spc_chart()}}, \code{\link[=bfh_spc_plot]{bfh_spc_plot()}}, \code{\link[=phase_config]{phase_config()}}, \code{\link[=viewport_dims]{viewport_dims()}}
+
+Other spc-config: 
+\code{\link{FONT_SCALING_CONFIG}},
+\code{\link{calculate_base_size}()},
+\code{\link{phase_config}()},
+\code{\link{print.phase_config}()},
+\code{\link{print.spc_plot_config}()},
+\code{\link{print.viewport_dims}()},
+\code{\link{viewport_dims}()}
+}
+\concept{spc-config}

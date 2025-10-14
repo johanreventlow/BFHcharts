@@ -19,3 +19,16 @@ get re-locked.
 unlock_placement_cache_bindings()
 configure_panel_cache(enabled = FALSE)
 }
+\seealso{
+\code{\link[=configure_placement_cache]{configure_placement_cache()}}, \code{\link[=clear_all_placement_caches]{clear_all_placement_caches()}}
+
+Other placement-cache: 
+\code{\link{clear_all_placement_caches}()},
+\code{\link{clear_grob_height_cache}()},
+\code{\link{configure_grob_cache}()},
+\code{\link{configure_panel_cache}()},
+\code{\link{configure_placement_cache}()},
+\code{\link{get_placement_cache_stats}()},
+\code{\link{purge_expired_cache_entries}()}
+}
+\concept{placement-cache}

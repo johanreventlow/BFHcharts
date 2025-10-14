@@ -64,4 +64,17 @@ base_size <- max(
   min(FONT_SCALING_CONFIG$max_size, diagonal / FONT_SCALING_CONFIG$divisor)
 )
 }
+\seealso{
+\code{\link[=calculate_base_size]{calculate_base_size()}}, \code{\link[=viewport_dims]{viewport_dims()}}
+
+Other spc-config: 
+\code{\link{calculate_base_size}()},
+\code{\link{phase_config}()},
+\code{\link{print.phase_config}()},
+\code{\link{print.spc_plot_config}()},
+\code{\link{print.viewport_dims}()},
+\code{\link{spc_plot_config}()},
+\code{\link{viewport_dims}()}
+}
+\concept{spc-config}
 \keyword{datasets}

@@ -1,10 +1,3 @@
-#' @keywords internal
-"_PACKAGE"
-
-## usethis namespace: start
-## usethis namespace: end
-NULL
-
 #' BFHcharts: SPC Visualization for Healthcare Quality Improvement
 #'
 #' @description
@@ -47,6 +40,9 @@ NULL
 #' chart + BFHtheme::theme_bfh()
 #' }
 #'
-#' @docType package
-#' @name BFHcharts-package
+#' @keywords internal
+"_PACKAGE"
+
+## usethis namespace: start
+## usethis namespace: end
 NULL

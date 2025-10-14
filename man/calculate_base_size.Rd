@@ -38,3 +38,16 @@ calculate_base_size(width = 10, height = 6)
 calculate_base_size(width = 16, height = 9)
 # Returns: ~34.4pt (clamped to max_size = 48)
 }
+\seealso{
+\link{FONT_SCALING_CONFIG}, \code{\link[=viewport_dims]{viewport_dims()}}
+
+Other spc-config: 
+\code{\link{FONT_SCALING_CONFIG}},
+\code{\link{phase_config}()},
+\code{\link{print.phase_config}()},
+\code{\link{print.spc_plot_config}()},
+\code{\link{print.viewport_dims}()},
+\code{\link{spc_plot_config}()},
+\code{\link{viewport_dims}()}
+}
+\concept{spc-config}

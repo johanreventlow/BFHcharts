@@ -29,3 +29,11 @@ based on the spacing between consecutive dates.
 dates <- seq(as.Date("2024-01-01"), by = "week", length.out = 52)
 detect_date_interval(dates)
 }
+\seealso{
+\code{\link[=get_optimal_formatting]{get_optimal_formatting()}}, \code{\link[=parse_danish_dates]{parse_danish_dates()}}
+
+Other spc-date-formatting: 
+\code{\link{get_optimal_formatting}()},
+\code{\link{parse_danish_dates}()}
+}
+\concept{spc-date-formatting}

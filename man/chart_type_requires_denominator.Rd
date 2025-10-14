@@ -28,3 +28,14 @@ chart_type_requires_denominator("p")  # TRUE
 chart_type_requires_denominator("i")  # FALSE
 chart_type_requires_denominator("P-kort (Andele)")  # TRUE
 }
+\seealso{
+\code{\link[=get_qic_chart_type]{get_qic_chart_type()}}, \code{\link[=create_spc_chart]{create_spc_chart()}}
+
+Other spc-chart-types: 
+\code{\link{CHART_TYPES_DA}},
+\code{\link{CHART_TYPES_EN}},
+\code{\link{CHART_TYPE_DESCRIPTIONS}},
+\code{\link{get_chart_description}()},
+\code{\link{get_qic_chart_type}()}
+}
+\concept{spc-chart-types}

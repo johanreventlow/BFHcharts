@@ -2,11 +2,10 @@
 % Please edit documentation in R/BFHcharts-package.R
 \docType{package}
 \name{BFHcharts-package}
+\alias{BFHcharts}
 \alias{BFHcharts-package}
 \title{BFHcharts: SPC Visualization for Healthcare Quality Improvement}
 \description{
-A modern R package for creating Statistical Process Control (SPC) charts in healthcare settings. Built on ggplot2 and qicharts2, BFHcharts provides beautiful, publication-ready SPC visualizations with configurable themes and multi-organizational branding support. Inspired by BBC's bbplot design philosophy.
-
 BFHcharts provides modern, publication-ready Statistical Process Control (SPC)
 charts for healthcare quality improvement. Built on ggplot2 and qicharts2,
 it offers:
@@ -57,13 +56,6 @@ chart + BFHtheme::theme_bfh()
 
 }
 \seealso{
-Useful links:
-\itemize{
-  \item \url{https://github.com/johanreventlow/BFHcharts}
-  \item Report bugs at \url{https://github.com/johanreventlow/BFHcharts/issues}
-}
-
-
 Useful links:
 \itemize{
   \item \url{https://github.com/johanreventlow/BFHcharts}
