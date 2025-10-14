@@ -169,3 +169,207 @@ test_that("create_spc_chart() validates input correctly", {
     "y_axis_unit must be one of"
   )
 })
+
+# ============================================================================
+# NEW QIC PARAMETERS TESTS
+# ============================================================================
+
+test_that("create_spc_chart() handles exclude parameter correctly", {
+  library(ggplot2)
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = c(15, 18, 50, 20, 16, 14, 19, 17, 13, 21, 18, 16) # Point 3 is outlier
+  )
+
+  # Exclude outlier from calculations
+  plot <- create_spc_chart(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "I-Chart with Excluded Outlier",
+    exclude = c(3)
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot$labels$title, "I-Chart with Excluded Outlier")
+})
+
+test_that("create_spc_chart() handles multiply parameter correctly", {
+  library(ggplot2)
+
+  # Data in proportions (0-1)
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    proportion = runif(12, 0.01, 0.05) # Proportions 1-5%
+  )
+
+  # Convert to percentages (0-100)
+  plot <- create_spc_chart(
+    data = data,
+    x = month,
+    y = proportion,
+    chart_type = "i",
+    y_axis_unit = "percent",
+    chart_title = "Proportions as Percentages",
+    multiply = 100
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot$labels$title, "Proportions as Percentages")
+})
+
+test_that("create_spc_chart() handles agg.fun parameter correctly", {
+  library(ggplot2)
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, 20, 5)
+  )
+
+  # Use median aggregation
+  plot_median <- create_spc_chart(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "I-Chart with Median",
+    agg.fun = "median"
+  )
+
+  expect_s3_class(plot_median, "ggplot")
+
+  # Use sum aggregation
+  plot_sum <- create_spc_chart(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count",
+    chart_title = "Run Chart with Sum",
+    agg.fun = "sum"
+  )
+
+  expect_s3_class(plot_sum, "ggplot")
+})
+
+test_that("create_spc_chart() validates exclude parameter", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, 20, 5)
+  )
+
+  # Invalid exclude position (out of bounds)
+  expect_error(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = value,
+      exclude = c(15) # Only 12 rows
+    ),
+    "exclude positions must be positive integers within data bounds"
+  )
+
+  # Negative exclude position
+  expect_error(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = value,
+      exclude = c(-1)
+    ),
+    "exclude positions must be positive integers"
+  )
+})
+
+test_that("create_spc_chart() validates multiply parameter", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, 20, 5)
+  )
+
+  # Non-numeric multiply
+  expect_error(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = value,
+      multiply = "hundred"
+    ),
+    "multiply must be a single positive number"
+  )
+
+  # Negative multiply
+  expect_error(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = value,
+      multiply = -100
+    ),
+    "multiply must be a single positive number"
+  )
+
+  # Multiple values
+  expect_error(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = value,
+      multiply = c(100, 200)
+    ),
+    "multiply must be a single positive number"
+  )
+})
+
+test_that("create_spc_chart() validates agg.fun parameter", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, 20, 5)
+  )
+
+  # Invalid aggregation function
+  expect_error(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = value,
+      agg.fun = "invalid_func"
+    ),
+    "'arg' should be one of"
+  )
+})
+
+test_that("create_spc_chart() combines new parameters correctly", {
+  library(ggplot2)
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+    proportion = c(
+      runif(12, 0.02, 0.05), # Before intervention
+      runif(12, 0.01, 0.03) # After intervention
+    )
+  )
+  # Add outlier
+  data$proportion[5] <- 0.15
+
+  # Combine exclude, multiply, and agg.fun
+  plot <- create_spc_chart(
+    data = data,
+    x = month,
+    y = proportion,
+    chart_type = "i",
+    y_axis_unit = "percent",
+    chart_title = "Combined Parameters Test",
+    exclude = c(5), # Exclude outlier
+    multiply = 100, # Convert to percent
+    agg.fun = "median", # Use median
+    part = c(12) # Phase split
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot$labels$title, "Combined Parameters Test")
+})

@@ -17,6 +17,9 @@ create_spc_chart(
   notes = NULL,
   part = NULL,
   freeze = NULL,
+  exclude = NULL,
+  multiply = 1,
+  agg.fun = c("mean", "median", "sum", "sd"),
   base_size = 14,
   width = NULL,
   height = NULL
@@ -46,6 +49,12 @@ create_spc_chart(
 \item{part}{Positions for phase splits (optional numeric vector)}
 
 \item{freeze}{Position to freeze baseline (optional integer)}
+
+\item{exclude}{Integer vector of data point positions to exclude from calculations (optional)}
+
+\item{multiply}{Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)}
+
+\item{agg.fun}{Aggregation function for run/I charts with multiple observations per subgroup: "mean" (default), "median", "sum", "sd"}
 
 \item{base_size}{Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)}
 
@@ -208,6 +217,45 @@ plot_custom <- create_spc_chart(
   chart_title = "Custom Typography Override",
   width = 10, height = 6,
   base_size = 18  # Explicit override
+)
+
+# Example 6: Exclude outliers from calculations
+plot_exclude <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "I-Chart with Excluded Outliers",
+  exclude = c(3, 15)  # Exclude data points 3 and 15
+)
+
+# Example 7: Use median instead of mean for aggregation
+plot_median <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "I-Chart Using Median",
+  agg.fun = "median"
+)
+
+# Example 8: Multiply y-values for unit conversion
+# Convert proportions (0-1) to percentages (0-100)
+data_prop <- data.frame(
+  month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+  proportion = runif(24, 0.01, 0.05)  # Proportions 0.01-0.05
+)
+
+plot_multiply <- create_spc_chart(
+  data = data_prop,
+  x = month,
+  y = proportion,
+  chart_type = "i",
+  y_axis_unit = "percent",
+  chart_title = "Proportions Converted to Percentages",
+  multiply = 100  # Convert 0.01 → 1\%
 )
 }
 }

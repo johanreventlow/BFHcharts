@@ -28,6 +28,9 @@ NULL
 #' @param notes Character vector of annotations for data points (optional, same length as data)
 #' @param part Positions for phase splits (optional numeric vector)
 #' @param freeze Position to freeze baseline (optional integer)
+#' @param exclude Integer vector of data point positions to exclude from calculations (optional)
+#' @param multiply Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)
+#' @param agg.fun Aggregation function for run/I charts with multiple observations per subgroup: "mean" (default), "median", "sum", "sd"
 #' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)
 #' @param width Plot width in inches (optional, enables responsive font scaling and precise label placement)
 #' @param height Plot height in inches (optional, enables responsive font scaling and precise label placement)
@@ -172,6 +175,45 @@ NULL
 #'   width = 10, height = 6,
 #'   base_size = 18  # Explicit override
 #' )
+#'
+#' # Example 6: Exclude outliers from calculations
+#' plot_exclude <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "I-Chart with Excluded Outliers",
+#'   exclude = c(3, 15)  # Exclude data points 3 and 15
+#' )
+#'
+#' # Example 7: Use median instead of mean for aggregation
+#' plot_median <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "I-Chart Using Median",
+#'   agg.fun = "median"
+#' )
+#'
+#' # Example 8: Multiply y-values for unit conversion
+#' # Convert proportions (0-1) to percentages (0-100)
+#' data_prop <- data.frame(
+#'   month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+#'   proportion = runif(24, 0.01, 0.05)  # Proportions 0.01-0.05
+#' )
+#'
+#' plot_multiply <- create_spc_chart(
+#'   data = data_prop,
+#'   x = month,
+#'   y = proportion,
+#'   chart_type = "i",
+#'   y_axis_unit = "percent",
+#'   chart_title = "Proportions Converted to Percentages",
+#'   multiply = 100  # Convert 0.01 → 1%
+#' )
 #' }
 create_spc_chart <- function(data,
                               x,
@@ -185,6 +227,9 @@ create_spc_chart <- function(data,
                               notes = NULL,
                               part = NULL,
                               freeze = NULL,
+                              exclude = NULL,
+                              multiply = 1,
+                              agg.fun = c("mean", "median", "sum", "sd"),
                               base_size = 14,
                               width = NULL,
                               height = NULL) {
@@ -277,6 +322,28 @@ create_spc_chart <- function(data,
     }
   }
 
+  # Validate exclude parameter
+  if (!is.null(exclude)) {
+    if (!is.numeric(exclude) || any(exclude <= 0) || any(exclude > nrow(data))) {
+      stop(sprintf(
+        "exclude positions must be positive integers within data bounds (1-%d), got: %s",
+        nrow(data),
+        paste(exclude, collapse = ", ")
+      ), call. = FALSE)
+    }
+  }
+
+  # Validate multiply parameter
+  if (!is.numeric(multiply) || length(multiply) != 1 || multiply <= 0) {
+    stop(sprintf(
+      "multiply must be a single positive number, got: %s",
+      paste(multiply, collapse = ", ")
+    ), call. = FALSE)
+  }
+
+  # Validate agg.fun parameter
+  agg.fun <- match.arg(agg.fun)
+
   # Build qicharts2::qic() arguments using NSE
   qic_args <- list(
     data = data,
@@ -306,6 +373,18 @@ create_spc_chart <- function(data,
 
   if (!is.null(notes)) {
     qic_args$notes <- notes
+  }
+
+  if (!is.null(exclude)) {
+    qic_args$exclude <- exclude
+  }
+
+  if (!is.null(multiply) && multiply != 1) {
+    qic_args$multiply <- multiply
+  }
+
+  if (!missing(agg.fun)) {
+    qic_args$agg.fun <- agg.fun
   }
 
   # Execute qicharts2::qic() to get calculation results
