@@ -20,14 +20,14 @@ demo_data <- data.frame(
   surgeries = rpois(24, lambda = 100)
 )
 
-print("=== BFHcharts Demo Test ===")
-print("")
-print("Demo data (first 6 rows):")
-print(head(demo_data))
-print("")
+# print("=== BFHcharts Demo Test ===")
+# print("")
+# print("Demo data (first 6 rows):")
+# print(head(demo_data))
+# print("")
 
 # Test 1: Simple Run Chart
-print("Test 1: Creating simple run chart...")
+# print("Test 1: Creating simple run chart...")
 plot1 <- create_spc_chart(
   data = demo_data,
   x = month,
@@ -38,11 +38,11 @@ plot1 <- create_spc_chart(
 )
 plot1
 
-print("✓ Run chart created successfully")
-print("")
+# print("✓ Run chart created successfully")
+# print("")
 
 # Test 2: I-Chart with Phase Split (intervention at month 12)
-print("Test 2: Creating I-chart with intervention and labels...")
+# print("Test 2: Creating I-chart with intervention and labels...")
 plot2 <- create_spc_chart(
   data = demo_data,
   x = month,
@@ -51,20 +51,20 @@ plot2 <- create_spc_chart(
   y_axis_unit = "count",
   chart_title = "Infections Before/After Intervention - I-Chart",
   part = c(12),  # Phase split after 12 months
-  freeze = 12,   # Freeze baseline at month 12
+  # freeze = 12,   # Freeze baseline at month 12
   target_value = 18,
   target_text = "<18",
-  width = 10,    # Specify dimensions for optimal label placement
-  height = 6
+  # width = 10,    # Specify dimensions for optimal label placement
+  # height = 6
 )
 
 plot2
 
-print("✓ I-chart with phase split and labels created successfully")
-print("")
+# print("✓ I-chart with phase split and labels created successfully")
+# print("")
 
 # Test 3: P-Chart with denominator and target
-print("Test 3: Creating P-chart with arrow symbol...")
+# print("Test 3: Creating P-chart with arrow symbol...")
 plot3 <- create_spc_chart(
   data = demo_data,
   x = month,
@@ -74,8 +74,8 @@ plot3 <- create_spc_chart(
   y_axis_unit = "percent",
   chart_title = "Infection Rate per 100 Surgeries - P-Chart",
   target_text = "<",  # Arrow symbol - suppresses target line
-  width = 10,
-  height = 6
+  # width = 10,
+  # height = 6
 )
 
 plot3

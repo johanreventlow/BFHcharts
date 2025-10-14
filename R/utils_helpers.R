@@ -184,68 +184,37 @@ format_time_value <- function(value, unit = "minutes") {
 # COMMENT DATA EXTRACTION
 # ============================================================================
 
-#' Extract Comment Data for Plot Annotations
+#' Extract Comment Data from QIC Notes Column
 #'
-#' Processes comment column from data for use in plot annotations.
-#' Handles row ID mapping to prevent comment drift when qicharts2
-#' reorders/filters data.
+#' Processes notes column from qicharts2::qic() output for plot annotations.
+#' The notes column is directly provided by qicharts2 and maps 1:1 with data points.
 #'
-#' @param data Original input data frame
-#' @param comment_column Column name containing comments
-#' @param qic_data QIC result data frame
+#' @param qic_data QIC result data frame with notes column
 #' @param max_length Maximum comment length (default: 100)
 #'
 #' @return Data frame with x, y, comment columns for plotting, or NULL
 #' @keywords internal
-extract_comment_data <- function(data, comment_column, qic_data, max_length = 100) {
-  # Returner NULL hvis ingen kommentar-kolonne er specificeret
-  if (is.null(comment_column) || !comment_column %in% names(data)) {
+extract_comment_data <- function(qic_data, max_length = 100) {
+  # Check if notes column exists in qic_data
+  if (!"notes" %in% names(qic_data)) {
     return(NULL)
   }
 
-  # STABLE ROW MAPPING: Use row-id to correctly map comments to qic_data points
-  if (!".original_row_id" %in% names(qic_data)) {
-    warning("Missing .original_row_id in qic_data - falling back to positional mapping")
-    # Fallback til positionsbaserede mapping
-    comments_raw <- data[[comment_column]]
-    comment_data <- data.frame(
-      x = qic_data$x,
-      y = qic_data$y,
-      comment = comments_raw[1:min(length(comments_raw), nrow(qic_data))],
-      stringsAsFactors = FALSE
-    )
-  } else {
-    # ROBUST MAPPING: Join på .original_row_id for korrekt kommentar-punkt mapping
-    original_data_with_comments <- data.frame(
-      .original_row_id = seq_len(nrow(data)),
-      comment = data[[comment_column]],
-      stringsAsFactors = FALSE
-    )
+  # Extract x, y, and notes
+  comment_data <- data.frame(
+    x = qic_data$x,
+    y = qic_data$y,
+    comment = qic_data$notes,
+    stringsAsFactors = FALSE
+  )
 
-    # Join qic_data med original kommentarer via row-id
-    qic_data_with_comments <- merge(
-      qic_data[, c("x", "y", ".original_row_id")],
-      original_data_with_comments,
-      by = ".original_row_id",
-      all.x = TRUE,
-      sort = FALSE
-    )
-
-    comment_data <- data.frame(
-      x = qic_data_with_comments$x,
-      y = qic_data_with_comments$y,
-      comment = qic_data_with_comments$comment,
-      stringsAsFactors = FALSE
-    )
-  }
-
-  # Filtrer til kun ikke-tomme kommentarer
+  # Filter to non-empty comments only
   comment_data <- comment_data[
     !is.na(comment_data$comment) &
       trimws(comment_data$comment) != "",
   ]
 
-  # Afkort meget lange kommentarer
+  # Truncate long comments
   if (nrow(comment_data) > 0) {
     comment_data$comment <- dplyr::if_else(
       nchar(comment_data$comment) > max_length,
@@ -254,6 +223,7 @@ extract_comment_data <- function(data, comment_column, qic_data, max_length = 10
     )
   }
 
+  # Return NULL if no valid comments
   if (nrow(comment_data) == 0) {
     return(NULL)
   }

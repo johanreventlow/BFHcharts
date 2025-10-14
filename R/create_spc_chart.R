@@ -25,7 +25,7 @@ NULL
 #' @param chart_title Plot title (optional)
 #' @param target_value Numeric target value (optional)
 #' @param target_text Target label text (optional)
-#' @param comment_column Name of comment column for annotations (optional, quoted)
+#' @param notes Character vector of annotations for data points (optional, same length as data)
 #' @param part Positions for phase splits (optional numeric vector)
 #' @param freeze Position to freeze baseline (optional integer)
 #' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)
@@ -122,7 +122,24 @@ NULL
 #' )
 #' plot
 #'
-#' # Example 4: Responsive typography with viewport dimensions
+#' # Example 4: Chart with annotations using notes
+#' notes_vec <- rep(NA, 24)
+#' notes_vec[3] <- "Start of intervention"
+#' notes_vec[12] <- "New protocol implemented"
+#' notes_vec[18] <- "Staff training completed"
+#'
+#' plot <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Infections with Annotated Events",
+#'   notes = notes_vec
+#' )
+#' plot
+#'
+#' # Example 5: Responsive typography with viewport dimensions
 #' # Small plot (6×4 inches) → base_size ≈ 14pt
 #' plot_small <- create_spc_chart(
 #'   data = data, x = month, y = infections,
@@ -165,7 +182,7 @@ create_spc_chart <- function(data,
                               chart_title = NULL,
                               target_value = NULL,
                               target_text = NULL,
-                              comment_column = NULL,
+                              notes = NULL,
                               part = NULL,
                               freeze = NULL,
                               base_size = 14,
@@ -218,6 +235,10 @@ create_spc_chart <- function(data,
 
   if (!is.null(target_value) && is.numeric(target_value)) {
     qic_args$target <- target_value
+  }
+
+  if (!is.null(notes)) {
+    qic_args$notes <- notes
   }
 
   # Execute qicharts2::qic() to get calculation results
@@ -276,8 +297,7 @@ create_spc_chart <- function(data,
     y_axis_unit = y_axis_unit,
     chart_title = chart_title,
     target_value = target_value,
-    target_text = target_text,
-    comment_column = comment_column
+    target_text = target_text
   )
 
   # Create viewport configuration

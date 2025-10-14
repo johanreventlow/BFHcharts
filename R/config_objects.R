@@ -53,7 +53,6 @@ NULL
 #' @param target_value Numeric target value (optional)
 #' @param target_text Text description of target (optional)
 #' @param centerline_value Custom centerline value (optional)
-#' @param comment_column Column name for comments/annotations (optional)
 #' @param chart_title Chart title (optional)
 #'
 #' @return List with class "spc_plot_config"
@@ -85,7 +84,6 @@ spc_plot_config <- function(
     target_value = NULL,
     target_text = NULL,
     centerline_value = NULL,
-    comment_column = NULL,
     chart_title = NULL) {
   # Validation
   valid_chart_types <- c("run", "i", "mr", "xbar", "s", "t", "p", "pp", "c", "u", "up", "g")
@@ -118,7 +116,6 @@ spc_plot_config <- function(
       target_value = target_value,
       target_text = target_text,
       centerline_value = centerline_value,
-      comment_column = comment_column,
       chart_title = chart_title
     ),
     class = "spc_plot_config"

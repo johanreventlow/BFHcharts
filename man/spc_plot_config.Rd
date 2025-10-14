@@ -10,7 +10,6 @@ spc_plot_config(
   target_value = NULL,
   target_text = NULL,
   centerline_value = NULL,
-  comment_column = NULL,
   chart_title = NULL
 )
 }
@@ -24,8 +23,6 @@ spc_plot_config(
 \item{target_text}{Text description of target (optional)}
 
 \item{centerline_value}{Custom centerline value (optional)}
-
-\item{comment_column}{Column name for comments/annotations (optional)}
 
 \item{chart_title}{Chart title (optional)}
 }

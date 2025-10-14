@@ -113,17 +113,8 @@ bfh_spc_plot <- function(qic_data,
     suppress_targetline <- has_arrow_symbol(plot_config$target_text)
   }
 
-  # Extract comment data if comment column specified
-  comment_data <- if (!is.null(plot_config$comment_column)) {
-    extract_comment_data(
-      data = qic_data, # Assuming original data is in qic_data attributes
-      comment_column = plot_config$comment_column,
-      qic_data = qic_data,
-      max_length = 100
-    )
-  } else {
-    NULL
-  }
+  # Extract comment data from qic notes column if present
+  comment_data <- extract_comment_data(qic_data, max_length = 100)
 
   # Build base plot ----
   plot <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y))

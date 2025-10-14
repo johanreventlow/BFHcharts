@@ -2,16 +2,12 @@
 % Please edit documentation in R/utils_helpers.R
 \name{extract_comment_data}
 \alias{extract_comment_data}
-\title{Extract Comment Data for Plot Annotations}
+\title{Extract Comment Data from QIC Notes Column}
 \usage{
-extract_comment_data(data, comment_column, qic_data, max_length = 100)
+extract_comment_data(qic_data, max_length = 100)
 }
 \arguments{
-\item{data}{Original input data frame}
-
-\item{comment_column}{Column name containing comments}
-
-\item{qic_data}{QIC result data frame}
+\item{qic_data}{QIC result data frame with notes column}
 
 \item{max_length}{Maximum comment length (default: 100)}
 }
@@ -19,8 +15,7 @@ extract_comment_data(data, comment_column, qic_data, max_length = 100)
 Data frame with x, y, comment columns for plotting, or NULL
 }
 \description{
-Processes comment column from data for use in plot annotations.
-Handles row ID mapping to prevent comment drift when qicharts2
-reorders/filters data.
+Processes notes column from qicharts2::qic() output for plot annotations.
+The notes column is directly provided by qicharts2 and maps 1:1 with data points.
 }
 \keyword{internal}
