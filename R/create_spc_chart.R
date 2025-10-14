@@ -211,6 +211,25 @@ create_spc_chart <- function(data,
     ))
   }
 
+  # SECURITY: Validate column names are simple identifiers
+  # Prevents NSE injection attacks where malicious code could be passed
+  validate_column_name <- function(col_expr, param_name) {
+    col_str <- deparse(col_expr)
+    # Allow only simple identifiers: letters, numbers, dots, underscores
+    # No parentheses, operators, or function calls
+    valid_pattern <- "^[a-zA-Z][a-zA-Z0-9._]*$"
+    if (!grepl(valid_pattern, col_str)) {
+      stop(sprintf(
+        "%s must be a simple column name, got: %s\nAvoid special characters, spaces, or expressions",
+        param_name, col_str
+      ), call. = FALSE)
+    }
+  }
+
+  # Validate x and y column names
+  validate_column_name(substitute(x), "x")
+  validate_column_name(substitute(y), "y")
+
   # Build qicharts2::qic() arguments using NSE
   qic_args <- list(
     data = data,
@@ -222,6 +241,7 @@ create_spc_chart <- function(data,
 
   # Add optional arguments
   if (!missing(n) && !is.null(substitute(n))) {
+    validate_column_name(substitute(n), "n")
     qic_args$n <- substitute(n)
   }
 
