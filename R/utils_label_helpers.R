@@ -77,20 +77,26 @@ sanitize_marquee_text <- function(text) {
     text <- text[1]
   }
 
-  # CRITICAL: Do NOT escape < and > for marquee rendering
-  # Marquee's markdown parser actually handles these characters correctly
-  # without escaping. Previous attempts with HTML entities and fullwidth
-  # characters caused parser errors and crashes.
-  # The characters are only problematic in raw HTML/XML contexts, not in
-  # marquee's markdown-based rendering pipeline.
+  # SECURITY: Escape ALL special characters including < and >
+  # While marquee's markdown parser may handle these, we escape them
+  # for defense-in-depth security to prevent any potential markup injection
+
+  # Escape HTML/XML special characters first
+  text <- gsub("&", "&amp;", text)   # Ampersand first (to avoid double-escaping)
+  text <- gsub("<", "&lt;", text)    # Less than
+  text <- gsub(">", "&gt;", text)    # Greater than
 
   # Escape marquee special characters
-  # Note: Marquee bruger {} til markup, ** bevar vi da det skal være bold i output
-  text <- gsub("\\{", "&#123;", text) # Escape {
-  text <- gsub("\\}", "&#125;", text) # Escape }
+  text <- gsub("\\{", "&#123;", text) # Left brace
+  text <- gsub("\\}", "&#125;", text) # Right brace
 
   # Fjern kontroltegn (men bevar \n for linjeskift)
-  text <- gsub("[[:cntrl:]&&[^\n]]", "", text)
+  # Remove common control characters
+  text <- gsub("\t", "", text)       # Tab
+  text <- gsub("\r", "", text)       # Carriage return
+  text <- gsub("\f", "", text)       # Form feed
+  text <- gsub("\v", "", text)       # Vertical tab
+  text <- gsub("\b", "", text)       # Backspace
 
   # Begræns længde for at forhindre memory exhaustion
   max_length <- 200
