@@ -44,7 +44,8 @@ plot1
 
 # Test 2: I-Chart with Phase Split (intervention at month 12)
 # print("Test 2: Creating I-chart with intervention and labels...")
-plot2 <- create_spc_chart(
+# plot2 <- 
+  create_spc_chart(
   data = demo_data,
   x = month,
   y = infections,
@@ -54,27 +55,28 @@ plot2 <- create_spc_chart(
   part = c(12),  # Phase split after 12 months
   # freeze = 12,   # Freeze baseline at month 12
   target_value = 18,
-  target_text = "<18",
+  target_text = ">=18",
   # width = 10,    # Specify dimensions for optimal label placement
   # height = 6
-)
+) |> BFHtheme::add_logo()
 
-plot2
+# plot2
 
 # print("✓ I-chart with phase split and labels created successfully")
 # print("")
 
 # Test 3: P-Chart with denominator and target
 # print("Test 3: Creating P-chart with arrow symbol...")
-plot3 <- create_spc_chart(
+create_spc_chart(
   data = demo_data,
   x = month,
   y = infections,
   n = surgeries,
   chart_type = "p",
   y_axis_unit = "percent",
-  chart_title = "Infection Rate per 100 Surgeries - P-Chart",
+  chart_title = "Infection Rate per 100 Surgeries",
   target_text = "<",  # Arrow symbol - suppresses target line
+  target_value = 25
   # width = 10,
   # height = 6
 )

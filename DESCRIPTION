@@ -1,8 +1,13 @@
 Package: BFHcharts
 Title: SPC Visualization for Healthcare Quality Improvement
 Version: 0.1.0
-Authors@R:
-    person("Johan", "Reventlow", , "noreply@example.com", role = c("aut", "cre"))
+Authors@R: c(
+    person(
+      "Johan", "Reventlow",
+      email = "johan.reventlow@regionh.dk",
+      role = c("aut", "cre")
+    )
+  )
 Description: A modern R package for creating Statistical Process Control (SPC)
     charts in healthcare settings. Built on ggplot2 and qicharts2, BFHcharts
     provides beautiful, publication-ready SPC visualizations with configurable

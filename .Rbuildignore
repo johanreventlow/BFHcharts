@@ -8,3 +8,12 @@
 ^docs$
 ^pkgdown$
 ^data-raw$
+^AGENTS\.md$
+^CLAUDE\.md$
+^PRIORITY_ISSUES\.md$
+^demo_output$
+^demo_performance_test\.R$
+^demo_test\.R$
+^test_labels\.R$
+^Rplots\.pdf$
+^tests/testthat/Rplots\.pdf$

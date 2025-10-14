@@ -64,7 +64,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Johan Reventlow \email{noreply@example.com}
+\strong{Maintainer}: Johan Reventlow \email{johan.reventlow@regionh.dk}
 
 }
 \keyword{internal}
