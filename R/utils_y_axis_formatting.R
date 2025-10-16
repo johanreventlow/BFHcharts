@@ -109,7 +109,7 @@ format_y_axis_percent <- function() {
 format_y_axis_count <- function() {
   ggplot2::scale_y_continuous(
     expand = ggplot2::expansion(mult = c(.25, .25)),
-    labels = function(x) {
+    labels = function(x, ...) {
       x |>
         purrr::map_chr(~ {
           dplyr::case_when(
@@ -131,7 +131,7 @@ format_y_axis_count <- function() {
 format_y_axis_rate <- function() {
   ggplot2::scale_y_continuous(
     expand = ggplot2::expansion(mult = c(.25, .25)),
-    labels = function(x) {
+    labels = function(x, ...) {
       ifelse(x == round(x),
         format(round(x), decimal.mark = ","),
         format(x, decimal.mark = ",", nsmall = 1)
@@ -169,7 +169,7 @@ format_y_axis_time <- function(qic_data) {
 
   ggplot2::scale_y_continuous(
     expand = ggplot2::expansion(mult = c(.25, .25)),
-    labels = function(x) {
+    labels = function(x, ...) {
       purrr::map_chr(x, ~ format_time_with_unit(.x, time_unit))
     }
   )

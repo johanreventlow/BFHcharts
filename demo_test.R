@@ -2,8 +2,8 @@
 # Demonstrerer at pakken fungerer korrekt
 
 # Load required packages
-# library(BFHcharts)
-devtools::load_all()
+library(BFHcharts)
+# devtools::load_all()
 library(ggplot2)
 
 # Create example data: Monthly hospital-acquired infections
