@@ -440,6 +440,15 @@ add_right_labels_marquee <- function(
   # Tilføj labels (marquee_size already calculated above)
   result <- p
   if (nrow(label_data) > 0) {
+    # Defensiv font fallback: Prøv BFHtheme font, ellers brug "sans"
+    font_family <- tryCatch(
+      BFHtheme::theme_bfh()$text$family,
+      error = function(e) "sans"
+    )
+    if (is.null(font_family) || length(font_family) == 0) {
+      font_family <- "sans"
+    }
+
     result <- result +
       marquee::geom_marquee(
         data = label_data,
@@ -448,7 +457,7 @@ add_right_labels_marquee <- function(
         style = right_aligned_style,
         size = marquee_size,
         lineheight = marquee_lineheight,
-        family = BFHtheme::theme_bfh()$text$family,
+        family = font_family,
         inherit.aes = FALSE
       ) +
       ggplot2::scale_color_identity()
