@@ -373,3 +373,94 @@ test_that("create_spc_chart() combines new parameters correctly", {
   expect_s3_class(plot, "ggplot")
   expect_equal(plot$labels$title, "Combined Parameters Test")
 })
+
+test_that("create_spc_chart() handles cl parameter correctly", {
+  library(ggplot2)
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, 20, 5)
+  )
+
+  # Use custom centerline value
+  plot <- create_spc_chart(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "I-Chart with Custom Centerline",
+    cl = 25  # Set custom centerline to 25
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot$labels$title, "I-Chart with Custom Centerline")
+})
+
+test_that("create_spc_chart() validates cl parameter", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, 20, 5)
+  )
+
+  # Non-numeric cl
+  expect_error(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = value,
+      cl = "not_a_number"
+    ),
+    "cl must be a single numeric value"
+  )
+
+  # Multiple values for cl
+  expect_error(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = value,
+      cl = c(20, 25)
+    ),
+    "cl must be a single numeric value"
+  )
+
+  # NA value for cl
+  expect_error(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = value,
+      cl = NA
+    ),
+    "cl must be a single numeric value"
+  )
+})
+
+test_that("create_spc_chart() uses cl with phase splits", {
+  library(ggplot2)
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+    value = c(
+      rnorm(12, mean = 20, sd = 3), # Before intervention
+      rnorm(12, mean = 15, sd = 2) # After intervention
+    )
+  )
+
+  # Generate plot with custom centerline and phase split
+  plot <- create_spc_chart(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "Custom CL with Phase Split",
+    cl = 18,
+    part = c(12)
+  )
+
+  # Validate plot structure
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot$labels$title, "Custom CL with Phase Split")
+})

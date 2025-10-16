@@ -29,6 +29,7 @@ NULL
 #' @param part Positions for phase splits (optional numeric vector)
 #' @param freeze Position to freeze baseline (optional integer)
 #' @param exclude Integer vector of data point positions to exclude from calculations (optional)
+#' @param cl Numeric value to set a custom centerline instead of calculating from data (optional)
 #' @param multiply Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)
 #' @param agg.fun Aggregation function for run/I charts with multiple observations per subgroup: "mean" (default), "median", "sum", "sd"
 #' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)
@@ -216,6 +217,18 @@ NULL
 #'   chart_title = "Proportions Converted to Percentages",
 #'   multiply = 100  # Convert 0.01 → 1%
 #' )
+#'
+#' # Example 9: Custom centerline (cl parameter)
+#' # Use a fixed benchmark or standard instead of calculating from data
+#' plot_cl <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Infections with Custom Centerline",
+#'   cl = 10  # Set centerline to fixed benchmark of 10
+#' )
 #' }
 create_spc_chart <- function(data,
                               x,
@@ -230,6 +243,7 @@ create_spc_chart <- function(data,
                               part = NULL,
                               freeze = NULL,
                               exclude = NULL,
+                              cl = NULL,
                               multiply = 1,
                               agg.fun = c("mean", "median", "sum", "sd"),
                               base_size = 14,
@@ -335,6 +349,16 @@ create_spc_chart <- function(data,
     }
   }
 
+  # Validate cl parameter
+  if (!is.null(cl)) {
+    if (!is.numeric(cl) || length(cl) != 1 || is.na(cl)) {
+      stop(sprintf(
+        "cl must be a single numeric value, got: %s",
+        paste(cl, collapse = ", ")
+      ), call. = FALSE)
+    }
+  }
+
   # Validate multiply parameter
   if (!is.numeric(multiply) || length(multiply) != 1 || multiply <= 0) {
     stop(sprintf(
@@ -379,6 +403,10 @@ create_spc_chart <- function(data,
 
   if (!is.null(exclude)) {
     qic_args$exclude <- exclude
+  }
+
+  if (!is.null(cl)) {
+    qic_args$cl <- cl
   }
 
   if (!is.null(multiply) && multiply != 1) {
