@@ -15,9 +15,11 @@ Useful in test contexts where .onLoad() may not have run or when bindings
 get re-locked.
 }
 \examples{
+\dontrun{
 # In tests:
 unlock_placement_cache_bindings()
 configure_panel_cache(enabled = FALSE)
+}
 }
 \seealso{
 \code{\link[=configure_placement_cache]{configure_placement_cache()}}, \code{\link[=clear_all_placement_caches]{clear_all_placement_caches()}}
@@ -32,3 +34,4 @@ Other placement-cache:
 \code{\link{purge_expired_cache_entries}()}
 }
 \concept{placement-cache}
+\keyword{internal}

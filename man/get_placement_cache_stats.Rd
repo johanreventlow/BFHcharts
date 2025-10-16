@@ -13,6 +13,7 @@ List with panel_cache and grob_cache statistics
 Returns statistics from both panel height and grob height caches in a unified format.
 }
 \examples{
+\dontrun{
 stats <- get_placement_cache_stats()
 cat(
   "Panel cache:", stats$panel_cache$cache_size, "entries,",
@@ -22,6 +23,7 @@ cat(
   "Grob cache:", stats$grob_cache$cache_size, "entries,",
   round(stats$grob_cache$hit_rate * 100, 1), "\% hit rate\n"
 )
+}
 }
 \seealso{
 \code{\link[=configure_placement_cache]{configure_placement_cache()}}, \code{\link[=purge_expired_cache_entries]{purge_expired_cache_entries()}}
@@ -36,3 +38,4 @@ Other placement-cache:
 \code{\link{unlock_placement_cache_bindings}()}
 }
 \concept{placement-cache}
+\keyword{internal}

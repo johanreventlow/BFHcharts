@@ -45,6 +45,7 @@
 #' @family spc-config
 #' @seealso [calculate_base_size()], [viewport_dims()]
 #' @examples
+#' \dontrun{
 #' # Default configuration
 #' FONT_SCALING_CONFIG
 #'
@@ -56,6 +57,7 @@
 #'   FONT_SCALING_CONFIG$min_size,
 #'   min(FONT_SCALING_CONFIG$max_size, diagonal / FONT_SCALING_CONFIG$divisor)
 #' )
+#' }
 FONT_SCALING_CONFIG <- list(
   divisor = 3.5,  # Viewport diagonal divisor (lower = larger fonts)
   min_size = 8,   # Minimum base_size in points

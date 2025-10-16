@@ -16,9 +16,11 @@ Engelsk qicharts2 kode (fx "i", "run", "p")
 Konverterer danske displaynavne til engelske qicharts2-koder for plot generation.
 }
 \examples{
+\dontrun{
 get_qic_chart_type("I-kort (Individuelle værdier)")  # Returns "i"
 get_qic_chart_type("i")  # Returns "i" (already English)
 get_qic_chart_type(NULL)  # Returns "run" (default)
+}
 }
 \seealso{
 \link{CHART_TYPES_DA}, \link{CHART_TYPES_EN}

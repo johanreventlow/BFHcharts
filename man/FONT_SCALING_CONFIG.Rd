@@ -52,6 +52,7 @@ not just one dimension.
 }
 }
 \examples{
+\dontrun{
 # Default configuration
 FONT_SCALING_CONFIG
 
@@ -63,6 +64,7 @@ base_size <- max(
   FONT_SCALING_CONFIG$min_size,
   min(FONT_SCALING_CONFIG$max_size, diagonal / FONT_SCALING_CONFIG$divisor)
 )
+}
 }
 \seealso{
 \code{\link[=calculate_base_size]{calculate_base_size()}}, \code{\link[=viewport_dims]{viewport_dims()}}

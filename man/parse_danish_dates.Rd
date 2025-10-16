@@ -16,7 +16,9 @@ POSIXct vector of parsed dates (NA for failed parses)
 Attempts to parse dates in common Danish formats (dd-mm-yyyy).
 }
 \examples{
+\dontrun{
 parse_danish_dates(c("01-01-2024", "15-03-2024", "31-12-2024"))
+}
 }
 \seealso{
 \code{\link[=detect_date_interval]{detect_date_interval()}}
@@ -26,3 +28,4 @@ Other spc-date-formatting:
 \code{\link{get_optimal_formatting}()}
 }
 \concept{spc-date-formatting}
+\keyword{internal}

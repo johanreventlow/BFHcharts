@@ -16,8 +16,10 @@ Dansk beskrivelse af chart type
 Henter dansk beskrivelse for et givent chart type.
 }
 \examples{
+\dontrun{
 get_chart_description("run")
 get_chart_description("I-kort (Individuelle værdier)")
+}
 }
 \seealso{
 \link{CHART_TYPE_DESCRIPTIONS}, \code{\link[=get_qic_chart_type]{get_qic_chart_type()}}

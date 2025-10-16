@@ -351,11 +351,13 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
 #' @keywords internal
 #' @seealso [npc_mapper_from_built()]
 #' @examples
+#' \dontrun{
 #' p <- ggplot(mtcars, aes(wt, mpg)) +
 #'   geom_point()
 #' mapper <- npc_mapper_from_plot(p)
 #' mapper$y_to_npc(20) # Konverter 20 mpg til NPC
 #' mapper$npc_to_y(0.5) # Konverter 0.5 NPC til mpg
+#' }
 npc_mapper_from_plot <- function(p, panel = 1) {
   # Validate ggplot object
   if (is.null(p) || !inherits(p, "ggplot")) {
@@ -925,9 +927,11 @@ configure_panel_cache <- function(
 #' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' # In tests:
 #' unlock_placement_cache_bindings()
 #' configure_panel_cache(enabled = FALSE)
+#' }
 unlock_placement_cache_bindings <- function() {
   ns <- asNamespace("BFHcharts")
 
@@ -969,6 +973,7 @@ unlock_placement_cache_bindings <- function() {
 #' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' stats <- get_placement_cache_stats()
 #' cat(
 #'   "Panel cache:", stats$panel_cache$cache_size, "entries,",
@@ -978,6 +983,7 @@ unlock_placement_cache_bindings <- function() {
 #'   "Grob cache:", stats$grob_cache$cache_size, "entries,",
 #'   round(stats$grob_cache$hit_rate * 100, 1), "% hit rate\n"
 #' )
+#' }
 get_placement_cache_stats <- function() {
   list(
     panel_cache = get_panel_height_cache_stats(),
@@ -998,6 +1004,7 @@ get_placement_cache_stats <- function() {
 #' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' # TTL-based purge (removes only expired entries)
 #' purged <- purge_expired_cache_entries()
 #' cat(
@@ -1007,6 +1014,7 @@ get_placement_cache_stats <- function() {
 #'
 #' # Force purge (clears all caches)
 #' purged <- purge_expired_cache_entries(force = TRUE)
+#' }
 purge_expired_cache_entries <- function(force = FALSE) {
   list(
     panel_cache = purge_panel_cache_expired(force = force),
@@ -1024,7 +1032,9 @@ purge_expired_cache_entries <- function(force = FALSE) {
 #' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' clear_all_placement_caches()
+#' }
 clear_all_placement_caches <- function() {
   clear_panel_height_cache()
   clear_grob_height_cache()
@@ -1045,11 +1055,13 @@ clear_all_placement_caches <- function() {
 #' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' # Configure for short-lived Shiny sessions (1 minute TTL)
 #' configure_placement_cache(ttl_seconds = 60, max_cache_size = 50)
 #'
 #' # Configure for long-running sessions (10 minutes TTL, larger cache)
 #' configure_placement_cache(ttl_seconds = 600, max_cache_size = 200)
+#' }
 configure_placement_cache <- function(
     ttl_seconds = NULL,
     max_cache_size = NULL,
@@ -1282,6 +1294,7 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
 #' @keywords internal
 #' @seealso [measure_panel_height_from_gtable()]
 #' @examples
+#' \dontrun{
 #' p <- ggplot(mtcars, aes(wt, mpg)) +
 #'   geom_point()
 #' panel_h <- measure_panel_height_inches(p)
@@ -1292,6 +1305,7 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
 #' panel_h <- measure_panel_height_inches(p) # Uses current 12x4 device
 #' # Returns ca. 3.6 inches (4 inches minus margener)
 #' dev.off()
+#' }
 measure_panel_height_inches <- function(p, panel = 1, device_width = 7, device_height = 7, use_cache = TRUE) {
   tryCatch(
     {
@@ -1707,7 +1721,9 @@ estimate_label_heights_npc <- function(
 #' - Forskellige base_size værdier
 #' - Forskellige font families
 #'
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' label <- "{.8 **CL**}  \n{.24 **45%**}"
 #' style <- marquee::modify_style(
 #'   marquee::classic_style(),
@@ -1723,6 +1739,7 @@ estimate_label_heights_npc <- function(
 #' # Detaljeret brug (ny API for fixed gaps)
 #' height_details <- estimate_label_height_npc(label, style = style, return_details = TRUE)
 #' # Returns list(npc = 0.12, inches = 0.5, panel_height_inches = 4.2)
+#' }
 estimate_label_height_npc <- function(
     text,
     style = NULL,
@@ -2008,7 +2025,9 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #'   - `warnings`: Character vector med warnings
 #'   - `debug_info`: (kun hvis debug=TRUE)
 #'
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' # Basic usage (backward compatible - NPC-baseret gap)
 #' result <- place_two_labels_npc(
 #'   yA_npc = 0.4,
@@ -2036,6 +2055,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #'   pref_pos = c("under", "under")
 #' )
 #' # Result: sideA = "under", sideB = "over"
+#' }
 place_two_labels_npc <- function(
     yA_npc,
     yB_npc,

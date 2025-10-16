@@ -11,7 +11,9 @@ Removes all cached entries and resets statistics for both panel height
 and grob height caches. Use for testing or troubleshooting.
 }
 \examples{
+\dontrun{
 clear_all_placement_caches()
+}
 }
 \seealso{
 \code{\link[=purge_expired_cache_entries]{purge_expired_cache_entries()}}, \code{\link[=configure_placement_cache]{configure_placement_cache()}}
@@ -26,3 +28,4 @@ Other placement-cache:
 \code{\link{unlock_placement_cache_bindings}()}
 }
 \concept{placement-cache}
+\keyword{internal}

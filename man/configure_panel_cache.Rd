@@ -39,3 +39,4 @@ Other placement-cache:
 \code{\link{unlock_placement_cache_bindings}()}
 }
 \concept{placement-cache}
+\keyword{internal}

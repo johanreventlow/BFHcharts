@@ -49,6 +49,7 @@ line_spacing, safety_margin) og giver præcis højde på:
 }
 }
 \examples{
+\dontrun{
 label <- "{.8 **CL**}  \n{.24 **45\%**}"
 style <- marquee::modify_style(
   marquee::classic_style(),
@@ -65,3 +66,5 @@ height <- estimate_label_height_npc(label, style = style)
 height_details <- estimate_label_height_npc(label, style = style, return_details = TRUE)
 # Returns list(npc = 0.12, inches = 0.5, panel_height_inches = 4.2)
 }
+}
+\keyword{internal}

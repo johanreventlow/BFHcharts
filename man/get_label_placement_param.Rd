@@ -18,11 +18,13 @@ Parameter værdi
 Utility funktion til at hente konfigurationsværdier med type checking.
 }
 \examples{
+\dontrun{
 gap_line_factor <- get_label_placement_param("relative_gap_line")
 # Returns: 0.08
 
 custom_value <- get_label_placement_param("nonexistent_key", default = 0.5)
 # Returns: 0.5
+}
 
 }
 \seealso{

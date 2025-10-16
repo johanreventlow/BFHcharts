@@ -137,11 +137,13 @@ LABEL_PLACEMENT_CONFIG <- list(
 #' @return Parameter værdi
 #'
 #' @examples
+#' \dontrun{
 #' gap_line_factor <- get_label_placement_param("relative_gap_line")
 #' # Returns: 0.08
 #'
 #' custom_value <- get_label_placement_param("nonexistent_key", default = 0.5)
 #' # Returns: 0.5
+#' }
 #'
 #' @keywords internal
 #' @family label-placement-config
@@ -174,9 +176,11 @@ get_label_placement_param <- function(key, default = NULL) {
 #' @return List med alle konfigurationsparametre
 #'
 #' @examples
+#' \dontrun{
 #' config <- get_label_placement_config()
 #' gap_line <- config$relative_gap_line * label_height_npc
 #' gap_labels <- config$relative_gap_labels * label_height_npc
+#' }
 #'
 #' @keywords internal
 #' @family label-placement-config

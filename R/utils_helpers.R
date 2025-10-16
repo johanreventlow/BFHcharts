@@ -140,7 +140,9 @@ Y_AXIS_UNITS_DA <- c(
 #' @seealso [Y_AXIS_UNITS_DA], [apply_y_axis_formatting()]
 #' @keywords internal
 #' @examples
+#' \dontrun{
 #' get_y_axis_unit_label("percent")  # Returns "Procent (%)"
+#' }
 get_y_axis_unit_label <- function(unit_code) {
   if (is.null(unit_code) || unit_code == "") {
     return("")

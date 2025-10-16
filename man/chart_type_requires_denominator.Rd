@@ -24,9 +24,11 @@ Chart types requiring denominator:
 }
 }
 \examples{
+\dontrun{
 chart_type_requires_denominator("p")  # TRUE
 chart_type_requires_denominator("i")  # FALSE
 chart_type_requires_denominator("P-kort (Andele)")  # TRUE
+}
 }
 \seealso{
 \code{\link[=get_qic_chart_type]{get_qic_chart_type()}}, \code{\link[=create_spc_chart]{create_spc_chart()}}

@@ -16,6 +16,7 @@ Named list with purge counts for each cache
 Runs TTL-based purge on both panel height and grob height caches.
 }
 \examples{
+\dontrun{
 # TTL-based purge (removes only expired entries)
 purged <- purge_expired_cache_entries()
 cat(
@@ -25,6 +26,7 @@ cat(
 
 # Force purge (clears all caches)
 purged <- purge_expired_cache_entries(force = TRUE)
+}
 }
 \seealso{
 \code{\link[=clear_all_placement_caches]{clear_all_placement_caches()}}, \code{\link[=configure_placement_cache]{configure_placement_cache()}}
@@ -39,3 +41,4 @@ Other placement-cache:
 \code{\link{unlock_placement_cache_bindings}()}
 }
 \concept{placement-cache}
+\keyword{internal}

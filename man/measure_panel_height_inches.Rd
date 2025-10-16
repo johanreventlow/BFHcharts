@@ -28,6 +28,7 @@ Numerisk værdi (panelhøjde i inches) eller NULL ved fejl
 Mål panelhøjden i inches for et givet ggplot objekt.
 }
 \examples{
+\dontrun{
 p <- ggplot(mtcars, aes(wt, mpg)) +
   geom_point()
 panel_h <- measure_panel_height_inches(p)
@@ -38,6 +39,7 @@ pdf("test.pdf", width = 12, height = 4)
 panel_h <- measure_panel_height_inches(p) # Uses current 12x4 device
 # Returns ca. 3.6 inches (4 inches minus margener)
 dev.off()
+}
 }
 \seealso{
 \code{\link[=measure_panel_height_from_gtable]{measure_panel_height_from_gtable()}}

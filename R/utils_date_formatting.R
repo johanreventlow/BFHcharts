@@ -31,8 +31,10 @@ NULL
 #' @family spc-date-formatting
 #' @seealso [get_optimal_formatting()], [parse_danish_dates()]
 #' @examples
+#' \dontrun{
 #' dates <- seq(as.Date("2024-01-01"), by = "week", length.out = 52)
 #' detect_date_interval(dates)
+#' }
 detect_date_interval <- function(dates, debug = FALSE) {
   insufficient_response <- function(n_obs) {
     list(
@@ -116,9 +118,11 @@ detect_date_interval <- function(dates, debug = FALSE) {
 #' @family spc-date-formatting
 #' @seealso [detect_date_interval()], [create_spc_chart()]
 #' @examples
+#' \dontrun{
 #' dates <- seq(as.Date("2024-01-01"), by = "month", length.out = 24)
 #' interval_info <- detect_date_interval(dates)
 #' get_optimal_formatting(interval_info)
+#' }
 get_optimal_formatting <- function(interval_info, debug = FALSE) {
   interval_type <- interval_info$type
   n_obs <- interval_info$n_obs
@@ -222,7 +226,9 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
 #' @family spc-date-formatting
 #' @seealso [detect_date_interval()]
 #' @examples
+#' \dontrun{
 #' parse_danish_dates(c("01-01-2024", "15-03-2024", "31-12-2024"))
+#' }
 parse_danish_dates <- function(date_strings) {
   # Try Danish format first (dd-mm-yyyy)
   parsed <- suppressWarnings(lubridate::dmy(date_strings))

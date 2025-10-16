@@ -81,9 +81,11 @@ CHART_TYPE_DESCRIPTIONS <- c(
 #' @seealso [CHART_TYPES_DA], [CHART_TYPES_EN]
 #' @keywords internal
 #' @examples
+#' \dontrun{
 #' get_qic_chart_type("I-kort (Individuelle værdier)")  # Returns "i"
 #' get_qic_chart_type("i")  # Returns "i" (already English)
 #' get_qic_chart_type(NULL)  # Returns "run" (default)
+#' }
 get_qic_chart_type <- function(danish_selection) {
   if (is.null(danish_selection) || danish_selection == "") {
     return("run") # Default fallback
@@ -126,9 +128,11 @@ get_qic_chart_type <- function(danish_selection) {
 #' @seealso [get_qic_chart_type()], [create_spc_chart()]
 #' @keywords internal
 #' @examples
+#' \dontrun{
 #' chart_type_requires_denominator("p")  # TRUE
 #' chart_type_requires_denominator("i")  # FALSE
 #' chart_type_requires_denominator("P-kort (Andele)")  # TRUE
+#' }
 chart_type_requires_denominator <- function(chart_type) {
   # Normalisér til qicharts2-kode
   ct <- get_qic_chart_type(chart_type)
@@ -148,8 +152,10 @@ chart_type_requires_denominator <- function(chart_type) {
 #' @seealso [CHART_TYPE_DESCRIPTIONS], [get_qic_chart_type()]
 #' @keywords internal
 #' @examples
+#' \dontrun{
 #' get_chart_description("run")
 #' get_chart_description("I-kort (Individuelle værdier)")
+#' }
 get_chart_description <- function(chart_type) {
   # Normalisér til engelsk kode
   code <- get_qic_chart_type(chart_type)
