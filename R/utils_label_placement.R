@@ -441,7 +441,12 @@ clear_grob_height_cache <- function() {
   entries_cleared <- length(data_keys)
   rm(list = data_keys, envir = .grob_height_cache)
 
-  # Reset statistics
+  # Reset statistics - unlock binding først hvis nødvendigt
+  ns <- asNamespace("BFHcharts")
+  if (bindingIsLocked(".grob_cache_stats", ns)) {
+    unlockBinding(".grob_cache_stats", ns)
+  }
+
   .grob_cache_stats$hits <<- 0L
   .grob_cache_stats$misses <<- 0L
   .grob_cache_stats$operations <<- 0L
@@ -461,7 +466,7 @@ clear_grob_height_cache <- function() {
 safe_update_cache_stat <- function(stat_name, value, cache_type = "grob", increment = TRUE) {
   tryCatch(
     {
-      ns <- asNamespace("SPCify")
+      ns <- asNamespace("BFHcharts")
       stats_name <- if (cache_type == "grob") ".grob_cache_stats" else ".panel_cache_stats"
 
       # Ensure binding is unlocked
@@ -621,6 +626,7 @@ auto_purge_grob_cache <- function() {
 
 #' Configure grob height cache TTL and limits
 #'
+#' @param enabled Enable or disable grob cache completely (default: NULL keeps current setting)
 #' @param ttl_seconds TTL for cache entries in seconds (default 300 = 5 min)
 #' @param max_cache_size Maximum number of cache entries (default 100)
 #' @param purge_check_interval Operations between purge checks (default 50)
@@ -634,6 +640,12 @@ configure_grob_cache <- function(
     max_cache_size = NULL,
     purge_check_interval = NULL) {
   old_config <- .grob_cache_config
+
+  # Unlock binding hvis nødvendigt
+  ns <- asNamespace("BFHcharts")
+  if (bindingIsLocked(".grob_cache_config", ns)) {
+    unlockBinding(".grob_cache_config", ns)
+  }
 
   if (!is.null(enabled)) {
     if (!is.logical(enabled)) {
@@ -699,7 +711,12 @@ clear_panel_height_cache <- function() {
   data_keys <- all_keys[!grepl("^\\.", all_keys)]
   rm(list = data_keys, envir = .panel_height_cache)
 
-  # Reset statistics
+  # Reset statistics - unlock binding først hvis nødvendigt
+  ns <- asNamespace("BFHcharts")
+  if (bindingIsLocked(".panel_cache_stats", ns)) {
+    unlockBinding(".panel_cache_stats", ns)
+  }
+
   .panel_cache_stats$hits <<- 0L
   .panel_cache_stats$misses <<- 0L
   .panel_cache_stats$operations <<- 0L
@@ -855,6 +872,12 @@ configure_panel_cache <- function(
     purge_check_interval = NULL) {
   old_config <- .panel_cache_config
 
+  # Unlock binding hvis nødvendigt
+  ns <- asNamespace("BFHcharts")
+  if (bindingIsLocked(".panel_cache_config", ns)) {
+    unlockBinding(".panel_cache_config", ns)
+  }
+
   if (!is.null(enabled)) {
     if (!is.logical(enabled)) {
       stop("enabled skal være TRUE eller FALSE")
@@ -906,7 +929,7 @@ configure_panel_cache <- function(
 #' unlock_placement_cache_bindings()
 #' configure_panel_cache(enabled = FALSE)
 unlock_placement_cache_bindings <- function() {
-  ns <- asNamespace("SPCify")
+  ns <- asNamespace("BFHcharts")
 
   success <- TRUE
   tryCatch(
@@ -1666,6 +1689,7 @@ estimate_label_heights_npc <- function(
 #' @param style marquee style object (default: classic_style med right align)
 #' @param panel_height_inches Panel højde i inches (hvis kendt, ellers NULL for auto-detect)
 #' @param fallback_npc Fallback værdi hvis grob-måling fejler (default 0.13)
+#' @param use_cache Use caching for measurements (default TRUE)
 #' @param return_details Hvis TRUE, returnér list med npc, inches og panel_height (default FALSE)
 #'
 #' @return Hvis return_details=FALSE: Numerisk værdi med label højde i NPC (0-1)

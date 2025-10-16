@@ -22,6 +22,8 @@ estimate_label_height_npc(
 
 \item{fallback_npc}{Fallback værdi hvis grob-måling fejler (default 0.13)}
 
+\item{use_cache}{Use caching for measurements (default TRUE)}
+
 \item{return_details}{Hvis TRUE, returnér list med npc, inches og panel_height (default FALSE)}
 }
 \value{

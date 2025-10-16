@@ -12,6 +12,8 @@ configure_grob_cache(
 )
 }
 \arguments{
+\item{enabled}{Enable or disable grob cache completely (default: NULL keeps current setting)}
+
 \item{ttl_seconds}{TTL for cache entries in seconds (default 300 = 5 min)}
 
 \item{max_cache_size}{Maximum number of cache entries (default 100)}
