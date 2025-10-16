@@ -17,3 +17,4 @@
 ^test_labels\.R$
 ^Rplots\.pdf$
 ^tests/testthat/Rplots\.pdf$
+^\.claude$

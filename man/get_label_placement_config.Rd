@@ -14,9 +14,11 @@ Returnerer en kopi af hele konfigurationsobjektet.
 Nyttig for debugging eller når flere parametre skal hentes på en gang.
 }
 \examples{
+\dontrun{
 config <- get_label_placement_config()
 gap_line <- config$relative_gap_line * label_height_npc
 gap_labels <- config$relative_gap_labels * label_height_npc
+}
 
 }
 \seealso{
@@ -27,3 +29,4 @@ Other label-placement-config:
 \code{\link{get_label_placement_param}()}
 }
 \concept{label-placement-config}
+\keyword{internal}

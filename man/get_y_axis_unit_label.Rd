@@ -16,7 +16,9 @@ Danish unit label
 Retrieves Danish label for a given unit code.
 }
 \examples{
+\dontrun{
 get_y_axis_unit_label("percent")  # Returns "Procent (\%)"
+}
 }
 \seealso{
 \link{Y_AXIS_UNITS_DA}, \code{\link[=apply_y_axis_formatting]{apply_y_axis_formatting()}}
@@ -26,3 +28,4 @@ Other spc-helpers:
 \code{\link{\%||\%}()}
 }
 \concept{spc-helpers}
+\keyword{internal}

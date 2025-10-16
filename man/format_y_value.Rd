@@ -50,3 +50,4 @@ Other spc-formatting:
 \code{\link{apply_y_axis_formatting}()}
 }
 \concept{spc-formatting}
+\keyword{internal}

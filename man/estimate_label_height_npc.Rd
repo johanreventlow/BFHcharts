@@ -22,6 +22,8 @@ estimate_label_height_npc(
 
 \item{fallback_npc}{Fallback værdi hvis grob-måling fejler (default 0.13)}
 
+\item{use_cache}{Use caching for measurements (default TRUE)}
+
 \item{return_details}{Hvis TRUE, returnér list med npc, inches og panel_height (default FALSE)}
 }
 \value{
@@ -47,6 +49,7 @@ line_spacing, safety_margin) og giver præcis højde på:
 }
 }
 \examples{
+\dontrun{
 label <- "{.8 **CL**}  \n{.24 **45\%**}"
 style <- marquee::modify_style(
   marquee::classic_style(),
@@ -63,3 +66,5 @@ height <- estimate_label_height_npc(label, style = style)
 height_details <- estimate_label_height_npc(label, style = style, return_details = TRUE)
 # Returns list(npc = 0.12, inches = 0.5, panel_height_inches = 4.2)
 }
+}
+\keyword{internal}

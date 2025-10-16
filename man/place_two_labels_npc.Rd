@@ -67,6 +67,7 @@ Core placement algoritme med multi-level collision avoidance:
 }
 }
 \examples{
+\dontrun{
 # Basic usage (backward compatible - NPC-baseret gap)
 result <- place_two_labels_npc(
   yA_npc = 0.4,
@@ -95,3 +96,5 @@ result <- place_two_labels_npc(
 )
 # Result: sideA = "under", sideB = "over"
 }
+}
+\keyword{internal}

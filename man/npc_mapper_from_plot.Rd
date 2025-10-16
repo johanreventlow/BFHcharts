@@ -18,11 +18,13 @@ Liste med mapping-funktioner (\code{y_to_npc}, \code{npc_to_y}) samt metadata
 Opret konverteringsfunktioner mellem data-y værdier og NPC-koordinater.
 }
 \examples{
+\dontrun{
 p <- ggplot(mtcars, aes(wt, mpg)) +
   geom_point()
 mapper <- npc_mapper_from_plot(p)
 mapper$y_to_npc(20) # Konverter 20 mpg til NPC
 mapper$npc_to_y(0.5) # Konverter 0.5 NPC til mpg
+}
 }
 \seealso{
 \code{\link[=npc_mapper_from_built]{npc_mapper_from_built()}}

@@ -30,7 +30,7 @@
 #' `viewport_height`) gives, anvendes de til præcise grob-målinger; ellers falder
 #' funktionen tilbage til aktivt grafisk device.
 #'
-#' @export
+#' @keywords internal
 #' @family label-placement
 #' @seealso [add_spc_labels()], [get_label_placement_config()]
 add_right_labels_marquee <- function(
@@ -136,9 +136,10 @@ add_right_labels_marquee <- function(
     # Open temporary device if needed for grob measurements
     if (!device_already_open) {
       if (verbose) {
-        message("[VIEWPORT_STRATEGY] Opening temporary PDF device for grob measurements")
+        message("[VIEWPORT_STRATEGY] Opening temporary Cairo PDF device for grob measurements")
       }
-      grDevices::pdf(NULL, width = viewport_width, height = viewport_height)
+      temp_pdf <- tempfile(fileext = ".pdf")
+      grDevices::cairo_pdf(filename = temp_pdf, width = viewport_width, height = viewport_height)
       temp_device_opened <- TRUE
     }
 
@@ -440,6 +441,20 @@ add_right_labels_marquee <- function(
   # Tilføj labels (marquee_size already calculated above)
   result <- p
   if (nrow(label_data) > 0) {
+    # Defensiv font fallback: Hvis BFHtheme font ikke er tilgængelig, brug "sans"
+    # BFHtheme bør håndtere fallback chain internt, men vi sikrer mod edge cases
+    font_family <- tryCatch(
+      {
+        family <- BFHtheme::theme_bfh()$text$family
+        if (is.null(family) || length(family) == 0 || nchar(family) == 0) {
+          "sans"
+        } else {
+          family
+        }
+      },
+      error = function(e) "sans"
+    )
+
     result <- result +
       marquee::geom_marquee(
         data = label_data,
@@ -448,7 +463,7 @@ add_right_labels_marquee <- function(
         style = right_aligned_style,
         size = marquee_size,
         lineheight = marquee_lineheight,
-        family = BFHtheme::theme_bfh()$text$family,
+        family = font_family,
         inherit.aes = FALSE
       ) +
       ggplot2::scale_color_identity()

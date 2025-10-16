@@ -351,11 +351,13 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
 #' @keywords internal
 #' @seealso [npc_mapper_from_built()]
 #' @examples
+#' \dontrun{
 #' p <- ggplot(mtcars, aes(wt, mpg)) +
 #'   geom_point()
 #' mapper <- npc_mapper_from_plot(p)
 #' mapper$y_to_npc(20) # Konverter 20 mpg til NPC
 #' mapper$npc_to_y(0.5) # Konverter 0.5 NPC til mpg
+#' }
 npc_mapper_from_plot <- function(p, panel = 1) {
   # Validate ggplot object
   if (is.null(p) || !inherits(p, "ggplot")) {
@@ -433,7 +435,7 @@ npc_mapper_from_plot <- function(p, panel = 1) {
 #'
 #' @family placement-cache
 #' @seealso [configure_grob_cache()], [clear_all_placement_caches()]
-#' @export
+#' @keywords internal
 clear_grob_height_cache <- function() {
   # Clear all data entries (preserve metadata)
   all_keys <- ls(.grob_height_cache)
@@ -441,7 +443,12 @@ clear_grob_height_cache <- function() {
   entries_cleared <- length(data_keys)
   rm(list = data_keys, envir = .grob_height_cache)
 
-  # Reset statistics
+  # Reset statistics - unlock binding først hvis nødvendigt
+  ns <- asNamespace("BFHcharts")
+  if (bindingIsLocked(".grob_cache_stats", ns)) {
+    unlockBinding(".grob_cache_stats", ns)
+  }
+
   .grob_cache_stats$hits <<- 0L
   .grob_cache_stats$misses <<- 0L
   .grob_cache_stats$operations <<- 0L
@@ -461,7 +468,7 @@ clear_grob_height_cache <- function() {
 safe_update_cache_stat <- function(stat_name, value, cache_type = "grob", increment = TRUE) {
   tryCatch(
     {
-      ns <- asNamespace("SPCify")
+      ns <- asNamespace("BFHcharts")
       stats_name <- if (cache_type == "grob") ".grob_cache_stats" else ".panel_cache_stats"
 
       # Ensure binding is unlocked
@@ -621,19 +628,26 @@ auto_purge_grob_cache <- function() {
 
 #' Configure grob height cache TTL and limits
 #'
+#' @param enabled Enable or disable grob cache completely (default: NULL keeps current setting)
 #' @param ttl_seconds TTL for cache entries in seconds (default 300 = 5 min)
 #' @param max_cache_size Maximum number of cache entries (default 100)
 #' @param purge_check_interval Operations between purge checks (default 50)
 #' @return Invisible: Previous configuration
 #' @family placement-cache
 #' @seealso [configure_panel_cache()], [configure_placement_cache()]
-#' @export
+#' @keywords internal
 configure_grob_cache <- function(
     enabled = NULL,
     ttl_seconds = NULL,
     max_cache_size = NULL,
     purge_check_interval = NULL) {
   old_config <- .grob_cache_config
+
+  # Unlock binding hvis nødvendigt
+  ns <- asNamespace("BFHcharts")
+  if (bindingIsLocked(".grob_cache_config", ns)) {
+    unlockBinding(".grob_cache_config", ns)
+  }
 
   if (!is.null(enabled)) {
     if (!is.logical(enabled)) {
@@ -699,7 +713,12 @@ clear_panel_height_cache <- function() {
   data_keys <- all_keys[!grepl("^\\.", all_keys)]
   rm(list = data_keys, envir = .panel_height_cache)
 
-  # Reset statistics
+  # Reset statistics - unlock binding først hvis nødvendigt
+  ns <- asNamespace("BFHcharts")
+  if (bindingIsLocked(".panel_cache_stats", ns)) {
+    unlockBinding(".panel_cache_stats", ns)
+  }
+
   .panel_cache_stats$hits <<- 0L
   .panel_cache_stats$misses <<- 0L
   .panel_cache_stats$operations <<- 0L
@@ -847,13 +866,19 @@ auto_purge_panel_cache <- function() {
 #' @return Invisible: Previous configuration
 #' @family placement-cache
 #' @seealso [configure_grob_cache()], [configure_placement_cache()]
-#' @export
+#' @keywords internal
 configure_panel_cache <- function(
     enabled = NULL,
     ttl_seconds = NULL,
     max_cache_size = NULL,
     purge_check_interval = NULL) {
   old_config <- .panel_cache_config
+
+  # Unlock binding hvis nødvendigt
+  ns <- asNamespace("BFHcharts")
+  if (bindingIsLocked(".panel_cache_config", ns)) {
+    unlockBinding(".panel_cache_config", ns)
+  }
 
   if (!is.null(enabled)) {
     if (!is.logical(enabled)) {
@@ -899,14 +924,16 @@ configure_panel_cache <- function(
 #' @return Invisible: TRUE if successful, FALSE otherwise
 #' @family placement-cache
 #' @seealso [configure_placement_cache()], [clear_all_placement_caches()]
-#' @export
+#' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' # In tests:
 #' unlock_placement_cache_bindings()
 #' configure_panel_cache(enabled = FALSE)
+#' }
 unlock_placement_cache_bindings <- function() {
-  ns <- asNamespace("SPCify")
+  ns <- asNamespace("BFHcharts")
 
   success <- TRUE
   tryCatch(
@@ -943,9 +970,10 @@ unlock_placement_cache_bindings <- function() {
 #' @return List with panel_cache and grob_cache statistics
 #' @family placement-cache
 #' @seealso [configure_placement_cache()], [purge_expired_cache_entries()]
-#' @export
+#' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' stats <- get_placement_cache_stats()
 #' cat(
 #'   "Panel cache:", stats$panel_cache$cache_size, "entries,",
@@ -955,6 +983,7 @@ unlock_placement_cache_bindings <- function() {
 #'   "Grob cache:", stats$grob_cache$cache_size, "entries,",
 #'   round(stats$grob_cache$hit_rate * 100, 1), "% hit rate\n"
 #' )
+#' }
 get_placement_cache_stats <- function() {
   list(
     panel_cache = get_panel_height_cache_stats(),
@@ -972,9 +1001,10 @@ get_placement_cache_stats <- function() {
 #' @return Named list with purge counts for each cache
 #' @family placement-cache
 #' @seealso [clear_all_placement_caches()], [configure_placement_cache()]
-#' @export
+#' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' # TTL-based purge (removes only expired entries)
 #' purged <- purge_expired_cache_entries()
 #' cat(
@@ -984,6 +1014,7 @@ get_placement_cache_stats <- function() {
 #'
 #' # Force purge (clears all caches)
 #' purged <- purge_expired_cache_entries(force = TRUE)
+#' }
 purge_expired_cache_entries <- function(force = FALSE) {
   list(
     panel_cache = purge_panel_cache_expired(force = force),
@@ -998,10 +1029,12 @@ purge_expired_cache_entries <- function(force = FALSE) {
 #'
 #' @family placement-cache
 #' @seealso [purge_expired_cache_entries()], [configure_placement_cache()]
-#' @export
+#' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' clear_all_placement_caches()
+#' }
 clear_all_placement_caches <- function() {
   clear_panel_height_cache()
   clear_grob_height_cache()
@@ -1019,14 +1052,16 @@ clear_all_placement_caches <- function() {
 #' @return Invisible: Named list with previous configurations
 #' @family placement-cache
 #' @seealso [configure_grob_cache()], [configure_panel_cache()], [purge_expired_cache_entries()]
-#' @export
+#' @keywords internal
 #'
 #' @examples
+#' \dontrun{
 #' # Configure for short-lived Shiny sessions (1 minute TTL)
 #' configure_placement_cache(ttl_seconds = 60, max_cache_size = 50)
 #'
 #' # Configure for long-running sessions (10 minutes TTL, larger cache)
 #' configure_placement_cache(ttl_seconds = 600, max_cache_size = 200)
+#' }
 configure_placement_cache <- function(
     ttl_seconds = NULL,
     max_cache_size = NULL,
@@ -1174,10 +1209,10 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
   # Gem den nuværende device
   current_dev <- grDevices::dev.cur()
 
-  # Open temporary PDF device for measurement (off-screen)
-  # NOTE: Vi bruger PDF fordi det er deterministisk (ikke skærmafhængigt)
+  # Open temporary Cairo PDF device for measurement (off-screen)
+  # NOTE: Vi bruger Cairo PDF fordi det understøtter OTF/TTF fonts og er deterministisk
   temp_file <- tempfile(fileext = ".pdf")
-  grDevices::pdf(file = temp_file, width = device_width, height = device_height)
+  grDevices::cairo_pdf(filename = temp_file, width = device_width, height = device_height)
   temp_dev <- grDevices::dev.cur()
 
   on.exit(
@@ -1259,6 +1294,7 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
 #' @keywords internal
 #' @seealso [measure_panel_height_from_gtable()]
 #' @examples
+#' \dontrun{
 #' p <- ggplot(mtcars, aes(wt, mpg)) +
 #'   geom_point()
 #' panel_h <- measure_panel_height_inches(p)
@@ -1269,6 +1305,7 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
 #' panel_h <- measure_panel_height_inches(p) # Uses current 12x4 device
 #' # Returns ca. 3.6 inches (4 inches minus margener)
 #' dev.off()
+#' }
 measure_panel_height_inches <- function(p, panel = 1, device_width = 7, device_height = 7, use_cache = TRUE) {
   tryCatch(
     {
@@ -1666,6 +1703,7 @@ estimate_label_heights_npc <- function(
 #' @param style marquee style object (default: classic_style med right align)
 #' @param panel_height_inches Panel højde i inches (hvis kendt, ellers NULL for auto-detect)
 #' @param fallback_npc Fallback værdi hvis grob-måling fejler (default 0.13)
+#' @param use_cache Use caching for measurements (default TRUE)
 #' @param return_details Hvis TRUE, returnér list med npc, inches og panel_height (default FALSE)
 #'
 #' @return Hvis return_details=FALSE: Numerisk værdi med label højde i NPC (0-1)
@@ -1683,7 +1721,9 @@ estimate_label_heights_npc <- function(
 #' - Forskellige base_size værdier
 #' - Forskellige font families
 #'
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' label <- "{.8 **CL**}  \n{.24 **45%**}"
 #' style <- marquee::modify_style(
 #'   marquee::classic_style(),
@@ -1699,6 +1739,7 @@ estimate_label_heights_npc <- function(
 #' # Detaljeret brug (ny API for fixed gaps)
 #' height_details <- estimate_label_height_npc(label, style = style, return_details = TRUE)
 #' # Returns list(npc = 0.12, inches = 0.5, panel_height_inches = 4.2)
+#' }
 estimate_label_height_npc <- function(
     text,
     style = NULL,
@@ -1984,7 +2025,9 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #'   - `warnings`: Character vector med warnings
 #'   - `debug_info`: (kun hvis debug=TRUE)
 #'
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' # Basic usage (backward compatible - NPC-baseret gap)
 #' result <- place_two_labels_npc(
 #'   yA_npc = 0.4,
@@ -2012,6 +2055,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #'   pref_pos = c("under", "under")
 #' )
 #' # Result: sideA = "under", sideB = "over"
+#' }
 place_two_labels_npc <- function(
     yA_npc,
     yB_npc,

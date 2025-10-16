@@ -28,16 +28,15 @@ demo_data <- data.frame(
 
 # Test 1: Simple Run Chart
 # print("Test 1: Creating simple run chart...")
-plot1 <- create_spc_chart(
+create_spc_chart(
   data = demo_data,
   # notes = c("","","","","","","","","","","hej","","","","","","","","","","","","","test"), 
   x = month,
   y = infections,
   chart_type = "run",
   y_axis_unit = "count",
-  chart_title = "Monthly Hospital-Acquired Infections - Run Chart"
+  chart_title = "Monthly **Hospital-Acquired** Infections - Run Chart"
 )
-plot1
 
 # print("✓ Run chart created successfully")
 # print("")
@@ -45,7 +44,7 @@ plot1
 # Test 2: I-Chart with Phase Split (intervention at month 12)
 # print("Test 2: Creating I-chart with intervention and labels...")
 # plot2 <- 
-  create_spc_chart(
+create_spc_chart(
   data = demo_data,
   x = month,
   y = infections,
@@ -81,33 +80,34 @@ create_spc_chart(
   # height = 6
 )
 
-plot3
-
-print("✓ P-chart with arrow symbol and labels created successfully")
-print("")
+# plot3
+# 
+# print("✓ P-chart with arrow symbol and labels created successfully")
+# print("")
 
 # Test 4: Custom colors
-print("Test 4: Creating chart with custom colors...")
+# print("Test 4: Creating chart with custom colors...")
 custom_colors <- create_color_palette(
   primary = "#003366",
   secondary = "#808080",
   accent = "#FF9900"
 )
 
-plot4 <- create_spc_chart(
+# plot4 <- 
+  create_spc_chart(
   data = demo_data,
   x = month,
   y = infections,
   chart_type = "run",
   y_axis_unit = "count",
   chart_title = "Custom Branded Chart",
-  colors = custom_colors
+  # colors = custom_colors
 )
 
-plot4
-
-print("✓ Custom colored chart created successfully")
-print("")
+# plot4
+# 
+# print("✓ Custom colored chart created successfully")
+# print("")
 
 # Save plots to output directory
 output_dir <- "demo_output"

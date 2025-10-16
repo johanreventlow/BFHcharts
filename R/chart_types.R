@@ -53,7 +53,7 @@ CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s
 #' @format Named character vector med engelsk kode → dansk beskrivelse
 #' @family spc-chart-types
 #' @seealso [get_chart_description()], [CHART_TYPES_DA]
-#' @export
+#' @keywords internal
 CHART_TYPE_DESCRIPTIONS <- c(
   run = "Seriediagram der viser data over tid med median centerlinje",
   i = "I-kort til individuelle målinger",
@@ -79,11 +79,13 @@ CHART_TYPE_DESCRIPTIONS <- c(
 #'
 #' @family spc-chart-types
 #' @seealso [CHART_TYPES_DA], [CHART_TYPES_EN]
-#' @export
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' get_qic_chart_type("I-kort (Individuelle værdier)")  # Returns "i"
 #' get_qic_chart_type("i")  # Returns "i" (already English)
 #' get_qic_chart_type(NULL)  # Returns "run" (default)
+#' }
 get_qic_chart_type <- function(danish_selection) {
   if (is.null(danish_selection) || danish_selection == "") {
     return("run") # Default fallback
@@ -124,11 +126,13 @@ get_qic_chart_type <- function(danish_selection) {
 #'
 #' @family spc-chart-types
 #' @seealso [get_qic_chart_type()], [create_spc_chart()]
-#' @export
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' chart_type_requires_denominator("p")  # TRUE
 #' chart_type_requires_denominator("i")  # FALSE
 #' chart_type_requires_denominator("P-kort (Andele)")  # TRUE
+#' }
 chart_type_requires_denominator <- function(chart_type) {
   # Normalisér til qicharts2-kode
   ct <- get_qic_chart_type(chart_type)
@@ -146,10 +150,12 @@ chart_type_requires_denominator <- function(chart_type) {
 #'
 #' @family spc-chart-types
 #' @seealso [CHART_TYPE_DESCRIPTIONS], [get_qic_chart_type()]
-#' @export
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' get_chart_description("run")
 #' get_chart_description("I-kort (Individuelle værdier)")
+#' }
 get_chart_description <- function(chart_type) {
   # Normalisér til engelsk kode
   code <- get_qic_chart_type(chart_type)

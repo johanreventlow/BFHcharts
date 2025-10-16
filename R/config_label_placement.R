@@ -43,7 +43,7 @@
 #'
 #' @family label-placement-config
 #' @seealso [get_label_placement_config()], [get_label_placement_param()], [add_spc_labels()]
-#' @export
+#' @keywords internal
 LABEL_PLACEMENT_CONFIG <- list(
   # === Gap Configuration (relative til label_height_npc) ===
   # Disse værdier balancerer "tæt placering" med "ingen overlap"
@@ -137,13 +137,15 @@ LABEL_PLACEMENT_CONFIG <- list(
 #' @return Parameter værdi
 #'
 #' @examples
+#' \dontrun{
 #' gap_line_factor <- get_label_placement_param("relative_gap_line")
 #' # Returns: 0.08
 #'
 #' custom_value <- get_label_placement_param("nonexistent_key", default = 0.5)
 #' # Returns: 0.5
+#' }
 #'
-#' @export
+#' @keywords internal
 #' @family label-placement-config
 #' @seealso [LABEL_PLACEMENT_CONFIG], [get_label_placement_config()]
 get_label_placement_param <- function(key, default = NULL) {
@@ -174,11 +176,13 @@ get_label_placement_param <- function(key, default = NULL) {
 #' @return List med alle konfigurationsparametre
 #'
 #' @examples
+#' \dontrun{
 #' config <- get_label_placement_config()
 #' gap_line <- config$relative_gap_line * label_height_npc
 #' gap_labels <- config$relative_gap_labels * label_height_npc
+#' }
 #'
-#' @export
+#' @keywords internal
 #' @family label-placement-config
 #' @seealso [LABEL_PLACEMENT_CONFIG], [get_label_placement_param()]
 get_label_placement_config <- function() {
