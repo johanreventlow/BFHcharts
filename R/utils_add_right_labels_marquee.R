@@ -30,7 +30,7 @@
 #' `viewport_height`) gives, anvendes de til præcise grob-målinger; ellers falder
 #' funktionen tilbage til aktivt grafisk device.
 #'
-#' @export
+#' @keywords internal
 #' @family label-placement
 #' @seealso [add_spc_labels()], [get_label_placement_config()]
 add_right_labels_marquee <- function(

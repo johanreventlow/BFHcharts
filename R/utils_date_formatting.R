@@ -27,7 +27,7 @@ NULL
 #'   \item{n_obs}{Number of observations}
 #' }
 #'
-#' @export
+#' @keywords internal
 #' @family spc-date-formatting
 #' @seealso [get_optimal_formatting()], [parse_danish_dates()]
 #' @examples
@@ -112,7 +112,7 @@ detect_date_interval <- function(dates, debug = FALSE) {
 #'   \item{use_smart_labels}{Logical, use scales::label_date_short()}
 #' }
 #'
-#' @export
+#' @keywords internal
 #' @family spc-date-formatting
 #' @seealso [detect_date_interval()], [create_spc_chart()]
 #' @examples
@@ -218,7 +218,7 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
 #'
 #' @return POSIXct vector of parsed dates (NA for failed parses)
 #'
-#' @export
+#' @keywords internal
 #' @family spc-date-formatting
 #' @seealso [detect_date_interval()]
 #' @examples

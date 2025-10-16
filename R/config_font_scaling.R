@@ -41,7 +41,7 @@
 #'   \item{max_size}{Maximum base_size in points (default: 48)}
 #' }
 #'
-#' @export
+#' @keywords internal
 #' @family spc-config
 #' @seealso [calculate_base_size()], [viewport_dims()]
 #' @examples

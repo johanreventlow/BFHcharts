@@ -433,7 +433,7 @@ npc_mapper_from_plot <- function(p, panel = 1) {
 #'
 #' @family placement-cache
 #' @seealso [configure_grob_cache()], [clear_all_placement_caches()]
-#' @export
+#' @keywords internal
 clear_grob_height_cache <- function() {
   # Clear all data entries (preserve metadata)
   all_keys <- ls(.grob_height_cache)
@@ -633,7 +633,7 @@ auto_purge_grob_cache <- function() {
 #' @return Invisible: Previous configuration
 #' @family placement-cache
 #' @seealso [configure_panel_cache()], [configure_placement_cache()]
-#' @export
+#' @keywords internal
 configure_grob_cache <- function(
     enabled = NULL,
     ttl_seconds = NULL,
@@ -864,7 +864,7 @@ auto_purge_panel_cache <- function() {
 #' @return Invisible: Previous configuration
 #' @family placement-cache
 #' @seealso [configure_grob_cache()], [configure_placement_cache()]
-#' @export
+#' @keywords internal
 configure_panel_cache <- function(
     enabled = NULL,
     ttl_seconds = NULL,
@@ -922,7 +922,7 @@ configure_panel_cache <- function(
 #' @return Invisible: TRUE if successful, FALSE otherwise
 #' @family placement-cache
 #' @seealso [configure_placement_cache()], [clear_all_placement_caches()]
-#' @export
+#' @keywords internal
 #'
 #' @examples
 #' # In tests:
@@ -966,7 +966,7 @@ unlock_placement_cache_bindings <- function() {
 #' @return List with panel_cache and grob_cache statistics
 #' @family placement-cache
 #' @seealso [configure_placement_cache()], [purge_expired_cache_entries()]
-#' @export
+#' @keywords internal
 #'
 #' @examples
 #' stats <- get_placement_cache_stats()
@@ -995,7 +995,7 @@ get_placement_cache_stats <- function() {
 #' @return Named list with purge counts for each cache
 #' @family placement-cache
 #' @seealso [clear_all_placement_caches()], [configure_placement_cache()]
-#' @export
+#' @keywords internal
 #'
 #' @examples
 #' # TTL-based purge (removes only expired entries)
@@ -1021,7 +1021,7 @@ purge_expired_cache_entries <- function(force = FALSE) {
 #'
 #' @family placement-cache
 #' @seealso [purge_expired_cache_entries()], [configure_placement_cache()]
-#' @export
+#' @keywords internal
 #'
 #' @examples
 #' clear_all_placement_caches()
@@ -1042,7 +1042,7 @@ clear_all_placement_caches <- function() {
 #' @return Invisible: Named list with previous configurations
 #' @family placement-cache
 #' @seealso [configure_grob_cache()], [configure_panel_cache()], [purge_expired_cache_entries()]
-#' @export
+#' @keywords internal
 #'
 #' @examples
 #' # Configure for short-lived Shiny sessions (1 minute TTL)
