@@ -136,9 +136,10 @@ add_right_labels_marquee <- function(
     # Open temporary device if needed for grob measurements
     if (!device_already_open) {
       if (verbose) {
-        message("[VIEWPORT_STRATEGY] Opening temporary PDF device for grob measurements")
+        message("[VIEWPORT_STRATEGY] Opening temporary Cairo PDF device for grob measurements")
       }
-      grDevices::pdf(NULL, width = viewport_width, height = viewport_height)
+      temp_pdf <- tempfile(fileext = ".pdf")
+      grDevices::cairo_pdf(filename = temp_pdf, width = viewport_width, height = viewport_height)
       temp_device_opened <- TRUE
     }
 
@@ -440,14 +441,19 @@ add_right_labels_marquee <- function(
   # Tilføj labels (marquee_size already calculated above)
   result <- p
   if (nrow(label_data) > 0) {
-    # Defensiv font fallback: Prøv BFHtheme font, ellers brug "sans"
+    # Defensiv font fallback: Hvis BFHtheme font ikke er tilgængelig, brug "sans"
+    # BFHtheme bør håndtere fallback chain internt, men vi sikrer mod edge cases
     font_family <- tryCatch(
-      BFHtheme::theme_bfh()$text$family,
+      {
+        family <- BFHtheme::theme_bfh()$text$family
+        if (is.null(family) || length(family) == 0 || nchar(family) == 0) {
+          "sans"
+        } else {
+          family
+        }
+      },
       error = function(e) "sans"
     )
-    if (is.null(font_family) || length(font_family) == 0) {
-      font_family <- "sans"
-    }
 
     result <- result +
       marquee::geom_marquee(

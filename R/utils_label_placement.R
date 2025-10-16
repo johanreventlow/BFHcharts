@@ -1209,10 +1209,10 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
   # Gem den nuværende device
   current_dev <- grDevices::dev.cur()
 
-  # Open temporary PDF device for measurement (off-screen)
-  # NOTE: Vi bruger PDF fordi det er deterministisk (ikke skærmafhængigt)
+  # Open temporary Cairo PDF device for measurement (off-screen)
+  # NOTE: Vi bruger Cairo PDF fordi det understøtter OTF/TTF fonts og er deterministisk
   temp_file <- tempfile(fileext = ".pdf")
-  grDevices::pdf(file = temp_file, width = device_width, height = device_height)
+  grDevices::cairo_pdf(filename = temp_file, width = device_width, height = device_height)
   temp_dev <- grDevices::dev.cur()
 
   on.exit(
