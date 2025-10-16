@@ -18,6 +18,7 @@ create_spc_chart(
   part = NULL,
   freeze = NULL,
   exclude = NULL,
+  cl = NULL,
   multiply = 1,
   agg.fun = c("mean", "median", "sum", "sd"),
   base_size = 14,
@@ -51,6 +52,8 @@ create_spc_chart(
 \item{freeze}{Position to freeze baseline (optional integer)}
 
 \item{exclude}{Integer vector of data point positions to exclude from calculations (optional)}
+
+\item{cl}{Numeric value to set a custom centerline instead of calculating from data (optional)}
 
 \item{multiply}{Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)}
 
@@ -256,6 +259,18 @@ plot_multiply <- create_spc_chart(
   y_axis_unit = "percent",
   chart_title = "Proportions Converted to Percentages",
   multiply = 100  # Convert 0.01 → 1\%
+)
+
+# Example 9: Custom centerline (cl parameter)
+# Use a fixed benchmark or standard instead of calculating from data
+plot_cl <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Infections with Custom Centerline",
+  cl = 10  # Set centerline to fixed benchmark of 10
 )
 }
 }
