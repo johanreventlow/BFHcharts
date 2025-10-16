@@ -36,4 +36,4 @@ Other label-placement-config:
 \code{\link{get_label_placement_param}()}
 }
 \concept{label-placement-config}
-\keyword{datasets}
+\keyword{internal}

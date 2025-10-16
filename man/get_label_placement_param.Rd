@@ -33,3 +33,4 @@ Other label-placement-config:
 \code{\link{get_label_placement_config}()}
 }
 \concept{label-placement-config}
+\keyword{internal}

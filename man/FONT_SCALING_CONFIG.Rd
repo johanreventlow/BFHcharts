@@ -77,4 +77,4 @@ Other spc-config:
 \code{\link{viewport_dims}()}
 }
 \concept{spc-config}
-\keyword{datasets}
+\keyword{internal}

@@ -30,3 +30,4 @@ Other spc-chart-types:
 \code{\link{get_qic_chart_type}()}
 }
 \concept{spc-chart-types}
+\keyword{internal}

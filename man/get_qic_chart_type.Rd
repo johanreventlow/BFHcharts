@@ -31,3 +31,4 @@ Other spc-chart-types:
 \code{\link{get_chart_description}()}
 }
 \concept{spc-chart-types}
+\keyword{internal}
