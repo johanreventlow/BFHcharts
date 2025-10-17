@@ -417,6 +417,12 @@ create_spc_chart <- function(data,
     qic_args$agg.fun <- agg.fun
   }
 
+  # Map y_axis_unit to qicharts2's y.percent parameter
+  # This enables percentage formatting (75% instead of 0.75) for compatible chart types
+  if (!is.null(y_axis_unit) && y_axis_unit == "percent") {
+    qic_args$y.percent <- TRUE
+  }
+
   # Execute qicharts2::qic() to get calculation results
   qic_data <- do.call(qicharts2::qic, qic_args, envir = parent.frame())
 

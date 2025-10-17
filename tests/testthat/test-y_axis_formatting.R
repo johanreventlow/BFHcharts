@@ -382,3 +382,122 @@ test_that("Danish number notation is consistent across formatters", {
   # Unscaled numbers should use dot as thousand separator
   expect_true(grepl("\\.", format_unscaled_number(1234)))
 })
+
+# ============================================================================
+# Y.PERCENT PARAMETER MAPPING TESTS
+# ============================================================================
+
+test_that("create_spc_chart maps y_axis_unit='percent' to qicharts2's y.percent parameter", {
+  # Create P-chart data (requires proportions as input)
+  data <- data.frame(
+    month = 1:12,
+    infections = c(15, 18, 12, 20, 14, 16, 13, 17, 15, 19, 14, 16),
+    procedures = rep(100, 12)
+  )
+
+  # Call with y_axis_unit = "percent"
+  plot <- suppressWarnings(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = infections,
+      n = procedures,
+      chart_type = "p",
+      y_axis_unit = "percent"
+    )
+  )
+
+  expect_s3_class(plot, "ggplot")
+
+  # Verify y-axis labels contain percentage symbols
+  # Extract y-axis breaks and labels from ggplot build
+  built <- ggplot2::ggplot_build(plot)
+
+  # Get y-axis labels - they should contain "%" if y.percent was applied
+  y_labels <- built$layout$panel_params[[1]]$y$get_labels()
+
+  # Verify at least one label contains percentage symbol
+  has_percent <- any(grepl("%", y_labels))
+  expect_true(
+    has_percent,
+    info = sprintf("Expected y-axis labels to contain '%%', got: %s", paste(y_labels, collapse = ", "))
+  )
+})
+
+test_that("create_spc_chart with y_axis_unit='count' does NOT apply percentage formatting", {
+  data <- data.frame(
+    month = 1:12,
+    value = rnorm(12, 15, 2)
+  )
+
+  plot <- suppressWarnings(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = value,
+      chart_type = "run",
+      y_axis_unit = "count"
+    )
+  )
+
+  expect_s3_class(plot, "ggplot")
+
+  # Verify y-axis labels do NOT contain percentage symbols
+  built <- ggplot2::ggplot_build(plot)
+  y_labels <- built$layout$panel_params[[1]]$y$get_labels()
+
+  has_percent <- any(grepl("%", y_labels))
+  expect_false(
+    has_percent,
+    info = sprintf("Expected y-axis labels NOT to contain '%%', got: %s", paste(y_labels, collapse = ", "))
+  )
+})
+
+test_that("y.percent parameter is passed correctly to qicharts2::qic", {
+  # This is a unit test for the parameter mapping logic
+  # We can't directly test qic_args without exposing internals,
+  # but we can verify the end result via the plot
+
+  data <- data.frame(
+    x = 1:12,
+    y = c(10, 12, 8, 15, 11, 13, 9, 14, 12, 16, 11, 13),
+    n = rep(100, 12)
+  )
+
+  # Create P-chart with percent unit
+  plot_pct <- suppressWarnings(
+    create_spc_chart(
+      data = data,
+      x = x,
+      y = y,
+      n = n,
+      chart_type = "p",
+      y_axis_unit = "percent"
+    )
+  )
+
+  # Create P-chart with count unit (should NOT format as percentage)
+  plot_count <- suppressWarnings(
+    create_spc_chart(
+      data = data,
+      x = x,
+      y = y,
+      n = n,
+      chart_type = "p",
+      y_axis_unit = "count"
+    )
+  )
+
+  # Extract y-axis labels from both plots
+  built_pct <- ggplot2::ggplot_build(plot_pct)
+  built_count <- ggplot2::ggplot_build(plot_count)
+
+  labels_pct <- built_pct$layout$panel_params[[1]]$y$get_labels()
+  labels_count <- built_count$layout$panel_params[[1]]$y$get_labels()
+
+  # Percent plot should have % symbols
+  expect_true(any(grepl("%", labels_pct)))
+
+  # Count plot should NOT have % symbols
+  expect_false(any(grepl("%", labels_count)))
+})
