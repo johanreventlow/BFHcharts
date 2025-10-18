@@ -2,8 +2,8 @@
 # Demonstrerer at pakken fungerer korrekt
 
 # Load required packages
-library(BFHcharts)
-# devtools::load_all()
+# library(BFHcharts)
+devtools::load_all()
 library(ggplot2)
 
 # Create example data: Monthly hospital-acquired infections
@@ -30,7 +30,7 @@ demo_data <- data.frame(
 # print("Test 1: Creating simple run chart...")
 create_spc_chart(
   data = demo_data,
-  # notes = c("","","","","","","","","","","hej","","","","","","","","","","","","","test"), 
+  notes = c("","","","","","","","","","","hej","","","","","","","","","","","","","test"),
   x = month,
   y = infections,
   chart_type = "run",
