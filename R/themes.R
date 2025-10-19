@@ -38,7 +38,7 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
 
   # Apply custom margins if provided
   if (!is.null(plot_margin)) {
-    if (inherits(plot_margin, "margin")) {
+    if (inherits(plot_margin, "ggplot2::margin")) {
       # User provided a margin object - use directly
       plot <- plot + ggplot2::theme(plot.margin = plot_margin)
     } else if (is.numeric(plot_margin) && length(plot_margin) == 4) {

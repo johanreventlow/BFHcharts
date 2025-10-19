@@ -408,8 +408,9 @@ create_spc_chart <- function(data,
   # Validate plot_margin parameter
   if (!is.null(plot_margin)) {
     # Check if it's a margin object (from ggplot2::margin())
-    if (inherits(plot_margin, "margin")) {
+    if (inherits(plot_margin, "ggplot2::margin")) {
       # margin() object - trust that user used it correctly
+      # Note: margin objects are grid::unit objects, cannot be compared with > or <
     } else if (is.numeric(plot_margin)) {
       # Numeric vector - validate length and values
       if (length(plot_margin) != 4) {
