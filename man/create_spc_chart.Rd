@@ -23,7 +23,8 @@ create_spc_chart(
   agg.fun = c("mean", "median", "sum", "sd"),
   base_size = 14,
   width = NULL,
-  height = NULL
+  height = NULL,
+  plot_margin = NULL
 )
 }
 \arguments{
@@ -64,6 +65,8 @@ create_spc_chart(
 \item{width}{Plot width in inches (optional, enables responsive font scaling and precise label placement)}
 
 \item{height}{Plot height in inches (optional, enables responsive font scaling and precise label placement)}
+
+\item{plot_margin}{Plot margins as either: (1) numeric vector c(top, right, bottom, left) in mm, or (2) ggplot2::margin() object. Default NULL uses BFHtheme defaults.}
 }
 \value{
 ggplot2 object with styled SPC chart
@@ -271,6 +274,39 @@ plot_cl <- create_spc_chart(
   y_axis_unit = "count",
   chart_title = "Infections with Custom Centerline",
   cl = 10  # Set centerline to fixed benchmark of 10
+)
+
+# Example 10: Custom plot margins (numeric vector in mm)
+plot_tight <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Chart with Tight Margins",
+  plot_margin = c(2, 2, 2, 2)  # 2mm on all sides
+)
+
+# Example 11: Custom margins with margin() object
+plot_custom_margin <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Chart with Custom Margins",
+  plot_margin = ggplot2::margin(t = 5, r = 15, b = 5, l = 10, unit = "mm")
+)
+
+# Example 12: Responsive margins using lines (scales with base_size)
+plot_responsive <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  base_size = 18,
+  plot_margin = ggplot2::margin(t = 0.5, r = 1, b = 0.5, l = 1, unit = "lines")
 )
 }
 }

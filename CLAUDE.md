@@ -1,10 +1,10 @@
-# Claude Instruktioner – BFHcharts
+# Claude Instruktioner – SPC App
 
 ## 1) Projektoversigt
 
-**BFHcharts** er en R package til **Statistical Process Control (SPC) visualisering** i healthcare settings. Built on ggplot2 og qicharts2 med fokus på beautiful defaults, publication-ready output og multi-organizational branding support.
+R Shiny applikation til **Statistical Process Control (SPC)**. Anvendes i klinisk kvalitetsarbejde med krav om stabilitet, forståelighed og dansk sprog.
 
-**Udviklingsstatus:** Standard R package development med test-driven development, defensive programming og stabil API design.
+**Udviklingsstatus:** Industristandard mønstre med test-driven development, centraliseret state management, robust error handling og moden build-/deploy-automation.
 
 ---
 
@@ -22,48 +22,28 @@
 **Test-kommandoer:**
 ```r
 # Alle tests
-devtools::test()
+R -e "library(SPCify); testthat::test_dir('tests/testthat')"
 
 # Specifik test-fil
-testthat::test_file("tests/testthat/test-*.R")
+R -e "source('global.R'); testthat::test_file('tests/testthat/test-*.R')"
 
-# Check package
-devtools::check()
-
-# Code coverage
-covr::package_coverage()
+# Performance benchmark
+R -e "microbenchmark::microbenchmark(package = library(SPCify), source = source('global.R'), times = 5)"
 ```
 
 ### 2.2 Defensive Programming
 
-* **Input validation** ved exported functions
-* **Error handling** via `tryCatch()` med informative messages
-* **Type checking** med `stopifnot()`, `is.*()` checks
-* **Graceful degradation** med fallback defaults
-* **NULL safety** – eksplicit NULL-håndtering
-
-```r
-# Eksempel: Input validation pattern
-create_spc_chart <- function(data, x, y, chart_type = "run", ...) {
-  # Input validation
-  stopifnot(
-    "data must be a data.frame" = is.data.frame(data),
-    "chart_type must be character" = is.character(chart_type)
-  )
-
-  if (nrow(data) == 0) {
-    stop("data cannot be empty", call. = FALSE)
-  }
-
-  # ... implementation
-}
-```
+* **Input validation** ved entry points
+* **Error handling** via `safe_operation()` og eksplicit `tryCatch()`
+* **Scope guards** med `exists()` checks
+* **Graceful degradation** med fallback-mønstre
+* **State consistency** gennem centraliseret `app_state`
 
 ### 2.3 Git Workflow (OBLIGATORISK)
 
 ✅ **KRITISKE REGLER:**
 
-1. **ALDRIG merge til main uden eksplicit godkendelse**
+1. **ALDRIG merge til master uden eksplicit godkendelse**
 2. **ALDRIG push til remote uden anmodning**
 3. **STOP efter feature branch commit – vent på instruktioner**
 4. **Do NOT add Claude co-authorship footer to commits**
@@ -83,534 +63,891 @@ git commit -m "beskrivelse"
 
 Undtagelse: Simple operationer (`git status`, `git diff`, `git log`)
 
-### 2.4 Code Quality Standards
+### 2.4 Issue Tracking
 
-* **Danske kommentarer**, engelske funktionsnavne
-* **snake_case** for all funktioner og objekter
-* **Roxygen2 documentation** for all exported functions
-* **Type safety**: eksplicit type checks før operationer
-* **`lintr`** via `devtools::lint()` før commits
-* **`styler`** for consistent formatting
+✅ **OBLIGATORISK:** Alle fejl, rettelser, todo-emner og forbedringsforslag skal dokumenteres som GitHub Issues.
 
-### 2.5 Architecture Principles
+**Issue workflow:**
+```bash
+# Opret issue via gh CLI
+gh issue create --title "Beskrivelse af problem/feature" --body "Detaljeret beskrivelse"
+
+# Link commit til issue
+git commit -m "fix: kort beskrivelse (fixes #123)"
+
+# Vis aktive issues
+gh issue list
+```
+
+**Issue labels:**
+* `bug` - Fejl der skal rettes
+* `enhancement` - Forbedringer og nye features
+* `documentation` - Dokumentationsændringer
+* `technical-debt` - Refaktorering og code quality
+* `performance` - Performance-relaterede issues
+* `testing` - Test coverage og test-relaterede opgaver
+
+**Best practices:**
+* Opret issue før arbejde påbegyndes på større features
+* Reference issue nummer i commits (`fixes #123`, `relates to #456`)
+* Luk issues automatisk via commit messages (`fixes`, `closes`, `resolves`)
+* Hold issues opdaterede med status og blokeringer
+
+### 2.5 Observability & Debugging
+
+**Struktureret logging:**
+* Brug centralt logger-API: `log_debug()`, `log_info()`, `log_warn()`, `log_error()`
+* Angiv `component`-felt (fx `[APP_SERVER]`, `[FILE_UPLOAD]`)
+* Tilføj data i `details` som named list
+* ALDRIG rå `cat()`-kald
+
+```r
+log_debug(
+  component = "[APP_SERVER]",
+  message = "Initialiserer data-upload observer",
+  details = list(session_id = session$token)
+)
+```
+
+### 2.6 Modularity & Architecture
 
 * **Single Responsibility** – én opgave pr. funktion
-* **Immutable patterns** – returnér nye ggplot objects, modificér ikke in-place
-* **Composition over complexity** – byg komplekse plots fra simple layers
-* **Configuration objects** – brug structured configs (spc_plot_config, viewport_dims)
-* **Minimal dependencies** – kun tilføj dependencies hvis strengt nødvendigt
+* **Immutable data flow** – returnér nye objekter
+* **Centralized state management** via `app_state`
+* **Event-driven patterns** gennem event-bus
+* **Dependency injection** som funktionsargumenter
 
 ---
 
-## 3) Package Development Best Practices
+## 3) Tekniske Best Practices
 
-### 3.1 R Package Structure
+### 3.1 Shiny Best Practices
 
-**File organization i `/R/`:**
-* `plot_core.R` – Core plotting functions (bfh_spc_plot, create_spc_chart)
-* `plot_enhancements.R` – Plot enhancement layers (target lines, labels, etc.)
-* `themes.R` – ggplot2 theme functions (bfh_theme)
-* `chart_types.R` – Chart type definitions og mappings
-* `config_objects.R` – Configuration constructors (spc_plot_config, viewport_dims)
-* `utils_*.R` – Utility functions (date formatting, y-axis formatting, helpers)
-* `*-package.R` – Package documentation
-
-### 3.2 Function Design Patterns
-
-**Exported functions:**
+**Unified Event Architecture:**
 ```r
-#' Create SPC Chart
-#'
-#' High-level convenience function for creating complete SPC charts
-#'
-#' @param data Data frame with time series data
-#' @param x Column name for x-axis (date/time)
-#' @param y Column name for y-axis (measurement)
-#' @param chart_type Character. One of: "run", "i", "p", "u", "c", "xbar"
-#' @param ... Additional arguments passed to qicharts2::qic()
-#'
-#' @return A ggplot2 object
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' create_spc_chart(data = my_data, x = date, y = count, chart_type = "run")
-#' }
-create_spc_chart <- function(data, x, y, chart_type = "run", ...) {
-  # Implementation
-}
-```
+# ✅ Korrekt: Consolidated event-bus
+emit$data_updated(context = "upload")     # Erstatter data_loaded + data_changed
+emit$auto_detection_completed()
+emit$ui_sync_requested()
 
-**Internal utilities (ikke exported):**
-```r
-# Danske kommentarer for interne funktioner
-# Beregn centerline position for label placement
-calculate_centerline_position <- function(qic_data) {
-  # Implementation
-}
-```
-
-### 3.3 ggplot2 Best Practices
-
-**Layer composition:**
-```r
-# ✅ Korrekt: Build plot incrementally
-base_plot <- ggplot(data, aes(x = x, y = y)) +
-  geom_line()
-
-enhanced_plot <- base_plot +
-  add_target_line(target_value) +
-  bfh_theme()
-
-# ❌ Forkert: Massive nested calls
-ggplot(...) + geom_line(...) + geom_hline(...) + theme(...) + labs(...) + ...
-```
-
-**Theme design:**
-```r
-# Themes skal returnere theme() objects
-bfh_theme <- function(base_size = 14, colors = NULL) {
-  # Defaults hvis colors ikke angivet
-  colors <- colors %||% default_bfh_colors()
-
-  theme_minimal(base_size = base_size) +
-    theme(
-      plot.title = element_text(size = rel(1.2), face = "bold"),
-      # ... more theme elements
-    )
-}
-```
-
-### 3.4 Configuration Objects
-
-**Structured configs via constructors:**
-```r
-#' Create SPC Plot Configuration
-#'
-#' @param chart_type Character. Chart type identifier
-#' @param y_axis_unit Character. Unit for y-axis ("count", "percent", "rate")
-#' @param chart_title Character. Plot title
-#' @param target_value Numeric. Optional target line value
-#' @param target_text Character. Label for target line
-#'
-#' @return A list with class "spc_plot_config"
-#' @export
-spc_plot_config <- function(
-  chart_type = "run",
-  y_axis_unit = "count",
-  chart_title = NULL,
-  target_value = NULL,
-  target_text = NULL
-) {
-  structure(
-    list(
-      chart_type = chart_type,
-      y_axis_unit = y_axis_unit,
-      chart_title = chart_title,
-      target_value = target_value,
-      target_text = target_text
-    ),
-    class = "spc_plot_config"
-  )
-}
-```
-
-### 3.5 Dependencies & NAMESPACE
-
-**ALDRIG ændre NAMESPACE manuelt:**
-```r
-# ✅ Korrekt: Lad roxygen2 håndtere NAMESPACE
-#' @export
-#' @importFrom ggplot2 ggplot aes geom_line
-my_function <- function() { ... }
-
-# Kør derefter:
-devtools::document()
-```
-
-**Dependency management:**
-* Brug `@importFrom pkg function` for specifikke funktioner
-* Brug `pkg::function()` i kode når det giver mening
-* Undgå `@import pkg` (importerer alt)
-* Tilføj nye dependencies i DESCRIPTION under `Imports:` eller `Suggests:`
-
----
-
-## 4) Testing Strategy
-
-### 4.1 Test Organization
-
-**Test files i `/tests/testthat/`:**
-* `test-plot_core.R` – Tests for core plotting functions
-* `test-plot_enhancements.R` – Tests for plot enhancements
-* `test-themes.R` – Tests for theme functions
-* `test-config_objects.R` – Tests for config constructors
-* `test-utils_*.R` – Tests for utility functions
-
-### 4.2 Test Patterns
-
-**Unit tests:**
-```r
-test_that("create_spc_chart validates input data", {
-  # Arrange
-  invalid_data <- list(not = "a dataframe")
-
-  # Act & Assert
-  expect_error(
-    create_spc_chart(data = invalid_data, x = date, y = count),
-    "data must be a data.frame"
-  )
+observeEvent(app_state$events$data_updated, ignoreInit = TRUE,
+  priority = OBSERVER_PRIORITIES$HIGH, {
+  handle_data_update()
 })
 
-test_that("create_spc_chart returns ggplot object", {
-  # Arrange
-  data <- data.frame(date = 1:10, count = rnorm(10))
-
-  # Act
-  result <- create_spc_chart(data = data, x = date, y = count)
-
-  # Assert
-  expect_s3_class(result, "ggplot")
-})
+# ❌ Forkert: Ad-hoc reactiveVal triggers
+legacy_trigger <- reactiveVal(NULL)
 ```
 
-**Visual regression tests (vdiffr):**
+**Event Infrastructure:**
+* Events defineres i `global.R` (`app_state$events`)
+* Emit-funktioner i `create_emit_api()`
+* Lyttere i `R/utils_event_system.R` via `setup_event_listeners()`
+
+**Unified State Management:**
 ```r
-test_that("bfh_theme produces consistent visual output", {
-  # Arrange
-  data <- data.frame(x = 1:10, y = rnorm(10))
-  plot <- ggplot(data, aes(x, y)) + geom_line() + bfh_theme()
+# ✅ App state som single source of truth
+app_state$data$current_data <- new_data
+app_state$columns$mappings$x_column <- detected_column
 
-  # Act & Assert
-  vdiffr::expect_doppelganger("bfh_theme_basic", plot)
-})
+# ❌ Forkert: Lokale reactiveVal
+values$some_data <- data
 ```
 
-### 4.3 Coverage Goals
+**Reactive Patterns:**
+* Event-baserede triggere med `priority = OBSERVER_PRIORITIES$HIGH/MEDIUM/LOW`
+* `req()` og `validate()` før logik
+* `isolate()` kun i reaktive kontekster
+* Wrap komplekse reactives i `safe_operation()`
 
-* **≥90% samlet coverage**
-* **100% på exported functions**
-* **Edge cases**: NULL inputs, empty data, invalid types
-* **Integration tests**: Full workflow fra data → plot
+**Performance:**
+* Package loading primary: `library(SPCify)` (~50-100ms)
+* Source loading sekundært: `options(spc.debug.source_loading = TRUE)` (~400ms+)
+* Lazy loading af tunge komponenter
 
----
+### 3.1.1 Race Condition Prevention
 
-## 5) Documentation Standards
+**Hybrid Anti-Race Strategy** (5 lag):
 
-### 5.1 Roxygen2 Documentation
+1. **Event Architecture** – Prioriterede centraliserede listeners
+2. **State Atomicity** – Atomiske opdateringer via `safe_operation()`
+3. **Functional Guards** – Guard conditions forhindrer overlap
+4. **UI Atomicity** – Sikre wrappere for UI-opdateringer
+5. **Input Debouncing** – Standard 800ms delay på hyppige events
 
-**Required fields for exported functions:**
 ```r
-#' Function Title (One Line)
-#'
-#' Longer description explaining what the function does, when to use it,
-#' and any important details.
-#'
-#' @param param_name Description of parameter
-#' @param another_param Description with details about expected values
-#'
-#' @return Description of what is returned
-#'
-#' @export
-#'
-#' @examples
-#' # Commented example
-#' result <- my_function(x = 1:10)
-#'
-#' \dontrun{
-#' # Example that requires external data
-#' my_function(data = my_data)
-#' }
-```
-
-### 5.2 Vignettes
-
-**Vignettes i `/vignettes/`:**
-* `getting-started.Rmd` – Basic usage patterns
-* `customization.Rmd` – Advanced customization options
-* `theming.Rmd` – Multi-hospital branding guide
-
-**Vignette struktur:**
-```rmd
----
-title: "Getting Started with BFHcharts"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Getting Started with BFHcharts}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
-
-# Introduction
-
-Brief introduction...
-
-# Basic Usage
-
-Example code...
-```
-
-### 5.3 README Updates
-
-**Når funktionalitet ændres:**
-1. Opdater eksempler i README.md
-2. Verificer at eksempler kører uden fejl
-3. Opdater screenshots hvis relevant (future: når vi har them)
-
----
-
-## 6) Workflow & Process
-
-### 6.1 Development Lifecycle
-
-1. **Problem definition** – Én-linje beskrivelse
-2. **Test design** – Skriv failing tests
-3. **Implementation** – Minimal implementation som får tests til at bestå
-4. **Documentation** – Roxygen + eksempler
-5. **Integration test** – Verificer i context
-6. **Check package** – `devtools::check()`
-7. **Commit** – Vent på godkendelse før merge
-
-### 6.2 Pre-Commit Checklist
-
-- [ ] Tests kørt og bestået (`devtools::test()`)
-- [ ] Package check uden errors/warnings (`devtools::check()`)
-- [ ] Roxygen documentation opdateret
-- [ ] NAMESPACE regenereret (`devtools::document()`)
-- [ ] Eksempler verificeret
-- [ ] Code formateret (`styler::style_pkg()`)
-- [ ] Linted (`lintr::lint_package()`)
-- [ ] Manual test af ny funktionalitet
-
-### 6.3 Commit Message Format
-
-```
-type(scope): kort handle-orienteret beskrivelse
-
-Fritekst med kontekst og rationale.
-
-- Bullet points for flere ændringer
-- Breaking changes markeres eksplicit
-```
-
-**Typer:** `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`
-
-**Branch naming:** `fix/`, `feat/`, `refactor/`, `docs/`, `test/`
-
----
-
-## 7) Common Patterns & Anti-Patterns
-
-### 7.1 ggplot2 Patterns
-
-**✅ Korrekt:**
-```r
-# Return ggplot objects for composition
-create_base_plot <- function(data) {
-  ggplot(data, aes(x = x, y = y)) +
-    geom_line()
-}
-
-# Users can add their own layers
-plot <- create_base_plot(data) +
-  geom_point() +
-  labs(title = "Custom Title")
-```
-
-**❌ Forkert:**
-```r
-# Don't print inside functions
-create_plot <- function(data) {
-  plot <- ggplot(data, aes(x = x, y = y)) + geom_line()
-  print(plot)  # DON'T DO THIS
-}
-
-# Don't modify global state
-create_plot <- function(data) {
-  theme_set(theme_minimal())  # DON'T DO THIS
-  # ...
+# Guard pattern
+update_column_choices_unified() {
+  if (app_state$data$updating_table ||
+      app_state$columns$auto_detect$in_progress) {
+    return()  # Skip hvis anden operation kører
+  }
+  # ... sikker opdatering
 }
 ```
 
-### 7.2 Configuration Patterns
+**Feature Implementation Checklist:**
+1. Emit via event-bus
+2. Observer i `setup_event_listeners()` med korrekt prioritet
+3. Guard conditions først
+4. Atomisk state update
+5. UI opdatering gennem sikker wrapper
+6. Debounce hyppige inputs
 
-**✅ Korrekt:**
+### 3.2 R Code Quality
+
+* Danske kommentarer, engelske funktionsnavne
+* snake_case for logik, camelCase for UI
+* Type safety: `is.numeric()`, `is.character()` før beregninger
+* `lintr` via `devtools::lint()` før commits
+
+---
+
+## 4) Workflow & Integration
+
+### 4.1 Development Lifecycle
+
+1. Problem definition (én linje)
+2. Test design
+3. Minimal implementation
+4. Test verification
+5. Integration testing
+6. Commit preparation
+7. Code review
+
+### 4.2 Testing Strategy
+
+* **Unit tests** – Pure functions og service-lag
+* **Integration tests** – Reactive chains, event-bus, state transitions
+* **Snapshot tests** – `shinytest2::AppDriver` til UI-regression
+* **Performance tests** – `profvis`, `bench::mark`
+
+**Coverage-mål:**
+* 100% på kritiske stier (data load, plot generation, state sync)
+* ≥90% samlet coverage
+* Edge cases (null, tomme datasæt, fejl, store filer)
+
+### 4.3 Version Control
+
+* Atomic commits (én logisk ændring)
+* Conventional commits (dansk) – se sektion 9.2
+* Tests før commit
+* Feature flags: `TEST_MODE_*`, `FEATURE_FLAG_*`
+* CI/CD med `devtools::check()`, tests, `lintr`
+
+---
+
+## 5) Configuration & Environment
+
+### 5.1 Miljøkonfiguration
+
+**Golem-baseret:**
 ```r
-# Use structured config objects
-plot_cfg <- spc_plot_config(
-  chart_type = "p",
-  y_axis_unit = "percent"
+# Læsning
+config_value <- golem::get_golem_options("test_mode_auto_load", default = FALSE)
+
+# Initialisering
+Sys.setenv(GOLEM_CONFIG_ACTIVE = "dev")  # dev/test/prod
+```
+
+**Standardindstillinger:**
+* **DEV:** `test_mode_auto_load = TRUE`, `logging.level = "debug"`
+* **TEST:** `test_mode_auto_load = TRUE`, `logging.level = "info"`
+* **PROD:** `test_mode_auto_load = FALSE`, `logging.level = "warn"`
+
+### 5.2 Dependencies & Data
+
+* **`renv`** – Version locking
+* **`pak::pkg_install()`** – Deterministisk installation
+* **Namespace calls** – `pkg::fun()` fremfor `library()`
+* **Data integrity** – Bevar CSV encoding, delimiter, BOM uændret
+
+### 5.3 External Package Ownership
+
+✅ **VIGTIGT:** Project maintainer har fuld kontrol over følgende pakker:
+
+* **BFHcharts** – SPC chart rendering og visualisering
+* **BFHthemes** – Hospital branding, themes og fonts
+
+**Konsekvens for SPCify udvikling:**
+
+❌ **ALDRIG implementer funktionalitet i SPCify som hører hjemme i BFHcharts eller BFHthemes**
+
+✅ **I STEDET:**
+1. Identificer manglende funktionalitet i ekstern pakke
+2. Dokumentér behovet (issue, ADR, eller docs/)
+3. Informér maintainer om feature request
+4. Implementér midlertidig workaround i SPCify HVIS kritisk (marker tydeligt som temporary)
+5. Fjern workaround når funktionalitet er tilgængelig i ekstern pakke
+
+**Eksempler:**
+* Target line rendering → BFHcharts ansvar (ikke SPCify)
+* Font fallback logic → BFHthemes ansvar (ikke SPCify)
+* Hospital branding colors → BFHthemes ansvar (ikke SPCify)
+* Chart styling defaults → BFHcharts ansvar (ikke SPCify)
+
+**Integration Pattern:**
+* SPCify er **integration layer** og **business logic**
+* BFHcharts er **visualization engine**
+* BFHthemes er **styling framework**
+* Bevar klar separation of concerns
+
+### 5.4 BFHcharts + qicharts2 Hybrid Architecture
+
+✅ **VIGTIGT:** SPCify bruger hybrid arkitektur for SPC beregninger og visualisering.
+
+**Architecture Decision (2025-10-18):**
+
+SPCify anvender **både BFHcharts OG qicharts2** i en permanent hybrid løsning:
+
+| Komponent | Ansvar | Package | Rationale |
+|-----------|--------|---------|-----------|
+| **SPC Plotting** | Chart rendering, visual theming, plot layers | BFHcharts | Modern ggplot2-based rendering med BFH branding |
+| **Anhøj Rules** | Serielængde, antal kryds, special cause detection | qicharts2 | Valideret implementation, klinisk accepteret |
+
+**Implementation Details:**
+
+```r
+# BFHcharts: Primary plotting engine
+plot <- BFHcharts::create_spc_chart(
+  data = data,
+  x = x_var,
+  y = y_var,
+  chart_type = chart_type,
+  notes_column = notes_column,
+  ...
 )
 
-plot <- bfh_spc_plot(qic_data, plot_cfg)
+# qicharts2: Anhøj rules metadata extraction (UI value boxes)
+qic_result <- qicharts2::qic(
+  x = x_data,
+  y = y_data,
+  chart = chart_type,
+  return.data = TRUE
+)
+anhoej_metadata <- extract_anhoej_metadata(qic_result)
 ```
 
-**❌ Forkert:**
+**Files Involved:**
+
+* `R/fct_spc_bfh_service.R` - BFHcharts service layer + qicharts2 Anhøj rules call
+* `R/utils_qic_preparation.R` - qicharts2 input preparation
+* `R/utils_qic_caching.R` - Anhøj rules caching
+* `R/utils_qic_debug_logging.R` - qicharts2 debug logging
+* `R/utils_qic_cache_invalidation.R` - Cache invalidation logik
+
+**Important Constraints:**
+
+❌ **qicharts2 må KUN bruges til:**
+- Anhøj rules beregning (serielængde, antal kryds)
+- Metadata ekstraktion til UI value boxes
+
+✅ **BFHcharts skal bruges til:**
+- Alle plot rendering opgaver
+- Chart type handling
+- Visual theming og styling
+- Notes/kommentarer rendering
+- Target lines og freezing
+
+**Dependency Management:**
+
 ```r
-# Don't use unstructured lists
-plot_cfg <- list(type = "p", unit = "percent")  # No validation!
+# DESCRIPTION
+Imports:
+  BFHcharts (>= 0.1.0)  # Primary plotting
+Suggests:
+  qicharts2 (>= 0.7.0)  # Anhøj rules only
 ```
 
-### 7.3 NULL Handling
+**Rationale for Hybrid:**
 
-**✅ Korrekt:**
-```r
-# Use %||% operator for defaults
-colors <- user_colors %||% default_colors()
+1. **BFHcharts** - Hospital-specific branding, moderne ggplot2 implementation
+2. **qicharts2** - Klinisk valideret Anhøj rules, ikke planlagt til re-implementation
+3. **Separation of concerns** - Plotting vs statistical rules beregning
+4. **Maintenance burden** - Undgå duplikering af kompleks statistisk logik
 
-# Explicit NULL checks
-if (is.null(target_value)) {
-  # Skip target line
-} else {
-  # Add target line
-}
-```
+**Future Consideration:**
 
-**❌ Forkert:**
-```r
-# Implicit NULL behavior kan føre til uventede errors
-plot + geom_hline(yintercept = target_value)  # Fails hvis NULL
-```
+Hvis BFHcharts implementerer Anhøj rules i fremtiden, kan qicharts2 dependency fjernes. Indtil da er hybrid arkitekturen permanent.
+
+### Cross-Repository Coordination
+
+Se omfattende koordinationsdokumentation:
+
+**Primær guide:**
+* `docs/CROSS_REPO_COORDINATION.md` - Fuld koordinationsguide med workflows, versioning, tests, og eksempler
+
+**Quick references:**
+* `.claude/ISSUE_ESCALATION_DECISION_TREE.md` - Beslutningsdiagram for issue eskalering
+* `.github/ISSUE_TEMPLATE/bfhchart-feature-request.md` - Issue template til BFHcharts eskalering
+
+**Hvornår eskalere til BFHcharts:**
+* Core chart rendering bugs
+* Statistiske beregningsfejl
+* Manglende chart types eller features
+* BFHcharts API design limitations
+* Performance issues i BFHcharts algoritmer
+
+**Hvornår fixe i SPCify:**
+* Parameter mapping (qicharts2 → BFHcharts)
+* UI integration og Shiny reaktivitet
+* Data preprocessing og validering
+* Fejlbeskeder og dansk lokalisering
+* SPCify-specifik caching
+
+Se decision tree for detaljeret guidance.
+
+---
+
+## 6) Architecture
+
+### 6.1 File Organization (Golem Conventions)
+
+**Flad struktur i `/R/`:**
+* `mod_*.R` – Shiny modules
+* `utils_server_*.R` – Server utilities
+* `utils_ui_*.R` – UI utilities
+* `fct_*.R` – Business logic
+* `app_*.R` – Core app komponenter
+* `config_*.R` – Configuration
+* `state_management.R` – Centralized app state
+
+### 6.2 Constraints
+
+* Ingen automatiske commits uden aftale
+* Ingen stor refaktorering uden godkendelse
+* Ingen ændringer af `brand.yml`
+* Ingen nye dependencies uden godkendelse
+* **ALDRIG ændre NAMESPACE** uden explicit godkendelse
+
+---
+
+## 7) Quality Assurance
+
+### 7.1 Pre-Commit Checklist
+
+- [ ] Tests kørt og bestået
+- [ ] Manual functionality test
+- [ ] Logging valideret (strukturerede logs)
+- [ ] Error handling verificeret
+- [ ] Performance vurderet
+- [ ] Dokumentation opdateret
+- [ ] Package loading verificeret
+- [ ] `lintr`/`styler` kørt
+- [ ] NAMESPACE opdateret (`devtools::document()`)
+
+### 7.2 Code Review Criteria
+
+* **Correctness** – Logik, edge cases, reaktive afhængigheder
+* **Readability** – Selvforklarende struktur, korte funktioner
+* **Maintainability** – Ingen sideeffekter, solid testdækning
+* **Performance** – Effektive operationer, caching
+* **Consistency** – Genbrug af utils og event-bus
+
+### 7.3 Production Readiness
+
+* Zero failing tests
+* Performance benchmarks under tærskler
+* Error monitoring aktiveret
+* Rollback plan dokumenteret
+* User acceptance godkendt
 
 ---
 
 ## 8) Troubleshooting
 
-### 8.1 Common Issues
+### 8.1 Debugging Methodology
 
-**ggplot2 layer errors:**
-```r
-# Problem: "cannot add ggproto objects together"
-# Solution: Ensure alle layers returnerer valid ggplot2 components
+1. Reproducer med minimal reproduktion
+2. Isolér komponent
+3. Analyser strukturerede logs
+4. Test antagelser
+5. Instrumentér med `log_debug()`
+6. Binary search (deaktiver dele)
+7. Dokumentér i tests eller `docs/KNOWN_ISSUES.md`
 
-# ✅ Korrekt
-add_layer <- function(p) {
-  if (condition) {
-    p + geom_point()
-  } else {
-    p  # Return unchanged
-  }
-}
+### 8.2 Common Issues
 
-# ❌ Forkert
-add_layer <- function(p) {
-  if (condition) {
-    p + geom_point()
-  }
-  # Returns NULL hvis condition FALSE!
-}
-```
+**Reactive chains:**
+* Infinite loops → Cirkulære event-afhængigheder
+* Race conditions → Hybrid Anti-Race Strategy (3.1.1)
+* State inconsistency → Atomiske `app_state` opdateringer
 
-**Namespace conflicts:**
-```r
-# Problem: Function not found efter @export
-# Solution: Kør devtools::document() og check NAMESPACE
+**Performance:**
+* Memory leaks → `profvis`, ryd ved `session$onSessionEnded`
+* Slow reactives → Debounce/throttle, cache
+* UI blocking → Baggrundsjobs
 
-# Problem: Konflikt med anden package
-# Solution: Brug explicit namespace
-stats::filter(data)  # Instead of filter(data)
-```
-
-**Test failures:**
-```r
-# Problem: vdiffr snapshots fail på CI
-# Solution: Brug svg device for consistent rendering
-vdiffr::expect_doppelganger("name", plot, writer = "svg")
-
-# Problem: Tests fail lokalt men ikke på CI
-# Solution: Check system-specific assumptions (fonts, locales, etc.)
-```
+**Data:**
+* CSV parsing → `readr::problems()`
+* Missing values → Eksplicit NA-håndtering
+* Type conversion → `col_types` validering
 
 ---
 
-## 9) Kommunikation & Filosofi
+## 9) Kommunikation & Dokumentation
 
 ### 9.1 Udviklerkommunikation
 
-* **Præcise action items**: "Tilføj parameter X til funktion Y i fil Z"
-* **Faktuel rapportering** af resultater
-* **Kritisk evaluering** – stil spørgsmål ved trade-offs
-* **Intellektuel ærlighed** – vær direkte om begrænsninger
+* Præcise action items: "Gør X i fil Y, linje Z"
+* Marker manuelle skridt: **[MANUELT TRIN]**
+* Faktuel rapportering
+* ADR'er i `docs/adr/` (se Appendix C)
 
-### 9.2 Development Philosophy
+### 9.2 Commit Message Format
 
-**Kerneprincipper:**
-* **Quality over speed** – healthcare software kræver stabilitet
-* **Test-driven confidence** – tests før implementation
-* **User-focused design** – beautiful defaults, flexible customization
-* **Minimal surprise** – følg R/ggplot2 conventions
-* **Continuous improvement** – dokumentér beslutninger
+```
+type(scope): kort handle-orienteret beskrivelse
 
-**Goals:**
-* Publication-ready output med minimalt setup
-* Stabil API med backward compatibility
-* Comprehensive documentation og eksempler
-* Multi-organizational flexibility
-* Best practice compliance
+Fritekst med kontekst, testresultater og rationale.
 
-### 9.3 Samtale Guidelines
+- Bullet points for flere ændringer
+- Breaking changes markeres eksplicit
+```
 
-* **Kritisk engagement** – evaluér forslag objektivt
-* **Balanceret evaluering** – undgå tomme komplimenter
-* **Retningsklarhed** – fokusér på long-term maintainability
-* **Succeskriterium**: Fremmer dette produktiv tænkning eller standser det?
+**Typer:** `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `arch`
 
----
+### 9.3 Branch Protection
 
-## 📎 Appendix A: Package Constraints
-
-**Hard constraints:**
-* Ingen commits til main uden godkendelse
-* Ingen nye dependencies uden godkendelse
-* ALDRIG modificer NAMESPACE direkte
-* Ingen breaking changes til exported API uden diskussion
-* Tests skal altid bestå før commit
-
-**Soft guidelines:**
-* Prefer simple solutions over clever ones
-* Prefer composition over complexity
-* Document "why", not just "what"
-* Keep functions focused and testable
-
----
-
-## 📎 Appendix B: Key Files Reference
-
-| Fil | Ansvar | Vigtige funktioner |
-|-----|--------|-------------------|
-| **plot_core.R** | Core plotting logic | `create_spc_chart()`, `bfh_spc_plot()` |
-| **plot_enhancements.R** | Plot enhancements | Target lines, labels, annotations |
-| **themes.R** | ggplot2 themes | `bfh_theme()`, color palettes |
-| **chart_types.R** | Chart type definitions | Chart type mappings, validering |
-| **config_objects.R** | Config constructors | `spc_plot_config()`, `viewport_dims()`, `phase_config()` |
-| **utils_y_axis_formatting.R** | Y-axis formatting | Format functions for different units |
-| **utils_date_formatting.R** | Date/time formatting | Date axis helpers |
-| **utils_helpers.R** | General utilities | Generic helper functions |
-
----
-
-## 📎 Appendix C: Quick Reference Commands
+**Pre-commit hook blokerer direkte commits på master**
 
 ```bash
-# Development workflow
-devtools::load_all()           # Load package for testing
-devtools::test()               # Run tests
-devtools::check()              # Full package check
-devtools::document()           # Update documentation + NAMESPACE
+# 1. Feature branch
+git checkout -b fix/feature-name
+git commit -m "fix: beskrivelse"
 
-# Code quality
-styler::style_pkg()            # Format code
-lintr::lint_package()          # Lint code
-
-# Testing
-testthat::test_file("tests/testthat/test-*.R")
-covr::package_coverage()
-
-# Documentation
-devtools::build_vignettes()
-pkgdown::build_site()          # (future: når vi setup pkgdown)
-
-# Installation
-devtools::install()            # Install lokalt
-devtools::install_github("johanreventlow/BFHcharts")
+# 2. Merge (KUN efter code review)
+git checkout master
+git merge fix/feature-name
+git branch -d fix/feature-name
 ```
+
+**Branch naming:** `fix/`, `feat/`, `refactor/`, `docs/`, `test/`
+
+---
+
+## 10) Advanced Patterns
+
+### 10.1 State Management
+
+**App State Structure** (se Appendix D for fuldt schema):
+```r
+app_state$events         # Event triggers
+app_state$data           # Current/original data
+app_state$columns        # Hierarchical: auto_detect, mappings, ui_sync
+app_state$session        # Session state
+```
+
+**Event-Driven Pattern:**
+```r
+handle_data_upload <- function(new_data, emit) {
+  safe_operation("Data upload state update", {
+    app_state$data$current_data <- new_data
+    emit$data_loaded()
+  })
+}
+
+observeEvent(app_state$events$data_loaded, ignoreInit = TRUE,
+  priority = OBSERVER_PRIORITIES$HIGH, {
+  req(app_state$data$current_data)
+  emit$auto_detection_started()
+})
+```
+
+### 10.2 Hierarchical State Access
+
+```r
+# ✅ Korrekt
+app_state$columns$auto_detect$results
+app_state$columns$mappings$x_column
+app_state$columns$ui_sync$needed
+
+# ❌ Forkert (legacy)
+app_state$columns$auto_detected_columns  # Brug auto_detect$results
+app_state$columns$x_column               # Brug mappings$x_column
+```
+
+### 10.3 Extension Points
+
+1. Start med tests
+2. Implementér inkrementelt
+3. Følg eksisterende patterns (event-bus, `app_state`, logging)
+4. Dokumentér (ADR, inline-kommentarer)
+5. Monitorér performance
+
+---
+
+## 11) Development Philosophy & Goals
+
+**Philosophy:**
+* Quality over speed – klinisk software kræver robusthed
+* Test-driven confidence
+* Observability først
+* User-focused design for danske klinikere
+* Continuous improvement via ADR'er
+
+**Goals:**
+* Stabilitet og driftsikkerhed
+* Maintainability
+* Performance
+* Dansk language support
+* Best practice compliance
+
+---
+
+## 12) Samtale Guidelines
+
+**Kerneprincipper:**
+* Intellektuel ærlighed – vær direkte om begrænsninger og trade-offs
+* Kritisk engagement – stil spørgsmål ved vigtige overvejelser
+* Balanceret evaluering – undgå tomme komplimenter
+* Retningsklarhed – fokusér på projektets langsigtede kvalitet
+
+**Succeskriterium:** Fremmer dette produktiv tænkning eller standser det?
+
+---
+
+## 13) Large Codebase Analysis with Gemini CLI
+
+### 13.1 Hvornår Brug Gemini CLI
+
+Brug `gemini -p` når du skal:
+
+* **Analysere hele R- eller Shiny-kodebaser** på tværs af mange filer
+* **Forstå sammenhængen mellem moduler, reaktive kæder og helpers**
+* **Finde duplikerede mønstre eller anti-patterns** (fx ukontrollerede `observe()`-kald)
+* Arbejde med **mange filer (>100 KB samlet)** eller **komplekse Shiny-projekter**
+* **Sammenligne implementeringer** (fx ny vs. gammel logging, caching, theme-pakke)
+* **Verificere arkitektur, moduler og funktionalitet** på tværs af hele projektet
+* **Få et overblik over afhængigheder, imports og pakke-struktur**
+
+Gemini har et **meget stort kontekstvindue** og kan håndtere **hele R-pakker eller Shiny-apps** der ville overstige andre modellers grænser.
+
+### 13.2 Basis Kommando og Fil-inklusion
+
+**Basis kommando:**
+```bash
+gemini -p "din prompt her"
+```
+
+**`@`-syntaks til fil-inklusion:**
+Brug `@` til at inkludere filer eller mapper direkte i prompten. Stier skal være relative til arbejdsmappen.
+
+**Enkeltfil-analyse:**
+```bash
+gemini -p "@app.R Forklar hvordan denne Shiny-app er struktureret og hvilke reaktive elementer den indeholder"
+```
+
+**Flere filer:**
+```bash
+gemini -p "@R/server.R @R/ui.R Beskriv hvordan input, reaktive udtryk og outputs hænger sammen"
+```
+
+**Hele pakken eller appen:**
+```bash
+gemini -p "@R/ @inst/ Summarize the architecture and modular structure of this Shiny package"
+```
+
+**Inkluder tests og hjælpefiler:**
+```bash
+gemini -p "@R/ @tests/testthat/ Analyze unit test coverage and identify missing test areas"
+```
+
+**Analyse af hele projektet:**
+```bash
+gemini -p "@./ Give me an overview of this R Shiny project – main modules, dependencies, and architecture"
+
+# Alternativt:
+gemini --all_files -p "Analyze project structure, dependencies, and logging implementation"
+```
+
+### 13.3 Implementerings-tjek Eksempler
+
+**Tjek om specifikke features er implementeret:**
+```bash
+gemini -p "@R/ @modules/ Has the new SPC chart export feature been implemented? Show relevant functions and files"
+```
+
+**Verificér logging:**
+```bash
+gemini -p "@R/utils_logging.R @server.R Is structured logging (using lgr or similar) implemented consistently across modules?"
+```
+
+**Reaktivitet og performance:**
+```bash
+gemini -p "@R/ Is reactive chain management handled properly to avoid circular dependencies or redundant computations?"
+```
+
+**Fejlhåndtering:**
+```bash
+gemini -p "@R/ Are tryCatch or safe_call used consistently to handle runtime errors in Shiny observers and reactives?"
+```
+
+**Caching og datalagring:**
+```bash
+gemini -p "@R/ @data/ Is any caching mechanism (e.g. memoise or duckdb caching) implemented for heavy computations?"
+```
+
+**Testdækning:**
+```bash
+gemini -p "@tests/ @R/ Are critical modules like data transformation and SPC chart rendering covered by unit tests?"
+```
+
+**Sikkerhed:**
+```bash
+gemini -p "@app.R @R/ Check for potential security issues – are user inputs validated and sanitized before database operations?"
+```
+
+### 13.4 Avancerede Analyse Prompts
+
+**Dependency graph:**
+```bash
+gemini -p "@R/ @modules/ @tests/ Create a dependency graph of all modules and explain their interrelations"
+```
+
+**Helper functions oversigt:**
+```bash
+gemini -p "@R/utils/ Summarize all helper functions and classify them by purpose (logging, data, plotting, etc.)"
+```
+
+**Code quality evaluering:**
+```bash
+gemini -p "@R/ @inst/theme/ Evaluate code quality and naming consistency for this custom ggplot theme package"
+```
+
+**Data flow mapping:**
+```bash
+gemini -p "@R/ @data/ Identify where SPC data is loaded, transformed, and visualized; map out the data flow"
+```
+
+**Detect unused code:**
+```bash
+gemini -p "@R/ Detect unused or redundant functions in the codebase"
+```
+
+### 13.5 Vigtige Noter
+
+* `@`-stier er **relative til din aktuelle arbejdsmappe** når du kører `gemini`
+* CLI'en **indsætter filindhold direkte i konteksten**
+* Du behøver **ikke** `--yolo`-flag for læse-analyse
+* Gemini's kontekstvindue kan håndtere **hele R-pakker eller Shiny-apps**
+* **Vær præcis** i prompten for at få brugbare resultater
+
+### 13.6 Integration med SPCify Workflow
+
+Brug Gemini CLI til:
+
+1. **Arkitektur verification** før større refaktorering
+2. **Code review** på tværs af moduler
+3. **Pattern detection** for at identificere inconsistencies
+4. **Dependency analysis** før nye features
+5. **Test coverage gaps** identifikation
+6. **Security audit** af hele codebase
+
+**Eksempel workflow:**
+```bash
+# 1. Analysér før refaktorering
+gemini -p "@R/ Analyze current state management patterns and identify areas for centralization"
+
+# 2. Verificér efter implementation
+gemini -p "@R/state_management.R @R/utils_event_system.R Has centralized app_state been implemented consistently?"
+
+# 3. Test coverage check
+gemini -p "@tests/ @R/ Are all critical paths (data load, plot generation, state sync) covered by tests?"
+```
+
+---
+
+## 📎 Appendix A: safe_operation()
+
+```r
+safe_operation <- function(operation_name, code, fallback = NULL, session = NULL, show_user = FALSE) {
+  tryCatch({
+    code
+  }, error = function(e) {
+    log_error(
+      component = "[ERROR_HANDLER]",
+      message = paste(operation_name, "fejlede"),
+      details = list(error_message = e$message),
+      session = session,
+      show_user = show_user
+    )
+    return(fallback)
+  })
+}
+```
+
+---
+
+## 📎 Appendix B: Performance Architecture
+
+**Boot Strategy:**
+* Production: `library(SPCify)` (~50-100ms)
+* Development debug: `options(spc.debug.source_loading = TRUE)` (~400ms+)
+
+**Lazy Loading:**
+```r
+LAZY_LOADING_CONFIG <- list(
+  heavy_modules = list(
+    file_operations = "R/fct_file_operations.R",
+    advanced_debug = "R/utils_advanced_debug.R",
+    performance_monitoring = "R/utils_performance.R",
+    plot_generation = "R/fct_spc_plot_generation.R"
+  )
+)
+
+ensure_module_loaded("file_operations")
+```
+
+**Cache System:**
+* Hospital branding (TTL: 2h)
+* Observer priorities (TTL: 1h)
+* Chart types config (TTL: 1h)
+
+**Performance Target:** Startup < 100ms (achieved: 55-57ms)
+
+---
+
+## 📎 Appendix C: ADR Template
+
+```markdown
+# ADR-001: [Navn på beslutning]
+
+## Status
+Accepted / Proposed / Deprecated / Superseded
+
+## Kontekst
+Beskriv baggrunden. Hvilket problem løses?
+
+## Beslutning
+Forklar arkitektonisk beslutning og hvorfor.
+
+## Konsekvenser
+Beskriv fordele, ulemper og nødvendige ændringer.
+
+## Dato
+[ÅÅÅÅ-MM-DD]
+```
+
+---
+
+## 📎 Appendix D: App State Schema
+
+```r
+app_state <- new.env(parent = emptyenv())
+
+app_state$events <- reactiveValues(
+  data_loaded = 0L,
+  auto_detection_started = 0L,
+  auto_detection_completed = 0L,
+  columns_detected = 0L,
+  ui_sync_needed = 0L,
+  ui_sync_completed = 0L,
+  navigation_changed = 0L,
+  session_reset = 0L,
+  test_mode_ready = 0L
+)
+
+app_state$data <- reactiveValues(
+  current_data = NULL,
+  original_data = NULL,
+  file_info = NULL,
+  updating_table = FALSE,
+  table_operation_in_progress = FALSE,
+  table_version = 0
+)
+
+app_state$columns <- reactiveValues(
+  # Hierarchical auto-detection sub-system
+  auto_detect = reactiveValues(
+    in_progress = FALSE,
+    completed = FALSE,
+    results = NULL,
+    trigger = NULL,
+    last_run = NULL,
+    frozen_until_next_trigger = FALSE
+  ),
+
+  # Column mappings sub-system
+  mappings = reactiveValues(
+    x_column = NULL, y_column = NULL, n_column = NULL,
+    cl_column = NULL, skift_column = NULL, frys_column = NULL,
+    kommentar_column = NULL
+  ),
+
+  # UI synchronization sub-system
+  ui_sync = reactiveValues(
+    needed = FALSE,
+    last_sync_time = NULL,
+    pending_updates = list()
+  )
+)
+
+app_state$session <- reactiveValues(
+  auto_save_enabled = TRUE,
+  restoring_session = FALSE,
+  file_uploaded = FALSE,
+  user_started_session = FALSE,
+  last_save_time = NULL,
+  file_name = NULL
+)
+```
+
+---
+
+## 📎 Appendix E: Configuration Quick Reference
+
+**Se `docs/CONFIGURATION.md` for detaljeret guide.**
+
+### Configuration Files Overview
+
+| Fil | Ansvar | Typiske Use Cases |
+|-----|--------|-------------------|
+| **config_branding_getters.R** | Hospital branding (navn, logo, theme, farver) | Tilføj nyt hospital, ændre farver |
+| **config_chart_types.R** | SPC chart type definitions (DA→EN mappings) | Tilføj ny chart type |
+| **config_observer_priorities.R** | Observer priorities (race condition prevention) | Juster execution order |
+| **config_spc_config.R** | SPC-specifikke konstanter (validation, colors) | Ændre SPC defaults, tilføj enheder |
+| **config_log_contexts.R** | Centraliserede log context strings | Tilføj logging kategori |
+| **config_label_placement.R** | Intelligent label placement (collision avoidance) | Tune label spacing |
+| **config_system_config.R** | System constants (performance, timeouts, cache) | Juster debounce delays |
+| **config_ui.R** | UI layout (widths, heights, font scaling) | Ændre UI spacing, fonts |
+| **inst/golem-config.yml** | Environment-based config (dev/prod/test) | Miljø settings |
+
+### Hvor skal nye configs?
+
+**Beslutningsdiagram:**
+```
+Environment-specifikt (dev/prod/test)? → inst/golem-config.yml
+UI layout/styling? → config_ui.R
+SPC-specifikt (charts, colors, validation)? → config_spc_config.R / config_chart_types.R
+Performance/timing (debounce, cache, timeouts)? → config_system_config.R
+Logging context? → config_log_contexts.R
+Branding (hospital navn, logo, farver)? → config_branding_getters.R / inst/config/brand.yml
+Observer priorities? → config_observer_priorities.R
+Plot label placement? → config_label_placement.R
+```
+
+### Naming Conventions
+
+**Konstanter:**
+```r
+✅ SPC_COLORS <- list(...)        # ALL_CAPS
+❌ spc_colors <- list(...)
+```
+
+**Funktioner:**
+```r
+✅ get_qic_chart_type()           # snake_case
+❌ getQicChartType()
+```
+
+### Configuration Change Checklist
+
+- [ ] Identificeret korrekt config-fil
+- [ ] Fulgt naming conventions
+- [ ] Tilføjet Roxygen docs med `@export`
+- [ ] Opdateret relaterede tests
+- [ ] Kørt `devtools::document()` hvis nødvendigt
+- [ ] Manuel test i app
+- [ ] Performance vurderet
+- [ ] Opdateret `docs/CONFIGURATION.md` hvis major changes

@@ -35,6 +35,7 @@ NULL
 #' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)
 #' @param width Plot width in inches (optional, enables responsive font scaling and precise label placement)
 #' @param height Plot height in inches (optional, enables responsive font scaling and precise label placement)
+#' @param plot_margin Plot margins as either: (1) numeric vector c(top, right, bottom, left) in mm, or (2) ggplot2::margin() object. Default NULL uses BFHtheme defaults.
 #'
 #' @return ggplot2 object with styled SPC chart
 #'
@@ -229,6 +230,39 @@ NULL
 #'   chart_title = "Infections with Custom Centerline",
 #'   cl = 10  # Set centerline to fixed benchmark of 10
 #' )
+#'
+#' # Example 10: Custom plot margins (numeric vector in mm)
+#' plot_tight <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Chart with Tight Margins",
+#'   plot_margin = c(2, 2, 2, 2)  # 2mm on all sides
+#' )
+#'
+#' # Example 11: Custom margins with margin() object
+#' plot_custom_margin <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Chart with Custom Margins",
+#'   plot_margin = ggplot2::margin(t = 5, r = 15, b = 5, l = 10, unit = "mm")
+#' )
+#'
+#' # Example 12: Responsive margins using lines (scales with base_size)
+#' plot_responsive <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   base_size = 18,
+#'   plot_margin = ggplot2::margin(t = 0.5, r = 1, b = 0.5, l = 1, unit = "lines")
+#' )
 #' }
 create_spc_chart <- function(data,
                               x,
@@ -248,7 +282,8 @@ create_spc_chart <- function(data,
                               agg.fun = c("mean", "median", "sum", "sd"),
                               base_size = 14,
                               width = NULL,
-                              height = NULL) {
+                              height = NULL,
+                              plot_margin = NULL) {
   # Validate inputs
   if (!is.data.frame(data)) {
     stop("data must be a data frame")
@@ -370,6 +405,42 @@ create_spc_chart <- function(data,
   # Validate agg.fun parameter
   agg.fun <- match.arg(agg.fun)
 
+  # Validate plot_margin parameter
+  if (!is.null(plot_margin)) {
+    # Check if it's a margin object (from ggplot2::margin())
+    if (inherits(plot_margin, "margin")) {
+      # margin() object - trust that user used it correctly
+    } else if (is.numeric(plot_margin)) {
+      # Numeric vector - validate length and values
+      if (length(plot_margin) != 4) {
+        stop(
+          "plot_margin must be either:\n",
+          "  - A numeric vector of length 4: c(top, right, bottom, left) in mm\n",
+          "  - A margin object: margin(t, r, b, l, unit = '...')",
+          call. = FALSE
+        )
+      }
+      if (any(plot_margin < 0)) {
+        stop("plot_margin values must be non-negative", call. = FALSE)
+      }
+      if (any(plot_margin > 100)) {
+        warning(
+          "plot_margin values > 100mm detected. This may result in very large margins.\n",
+          "Consider using smaller values or checking your input.",
+          call. = FALSE
+        )
+      }
+    } else {
+      stop(
+        "plot_margin must be either:\n",
+        "  - A numeric vector of length 4: c(top, right, bottom, left) in mm\n",
+        "  - A margin object: margin(t, r, b, l, unit = '...')\n",
+        "Got: ", class(plot_margin)[1],
+        call. = FALSE
+      )
+    }
+  }
+
   # Build qicharts2::qic() arguments using NSE
   qic_args <- list(
     data = data,
@@ -489,7 +560,8 @@ create_spc_chart <- function(data,
   plot <- bfh_spc_plot(
     qic_data = qic_data,
     plot_config = plot_config,
-    viewport = viewport
+    viewport = viewport,
+    plot_margin = plot_margin
   )
 
   # Convert width/height to viewport dimensions (inches)

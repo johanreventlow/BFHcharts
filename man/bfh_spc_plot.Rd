@@ -8,7 +8,8 @@ bfh_spc_plot(
   qic_data,
   plot_config = spc_plot_config(),
   viewport = viewport_dims(),
-  phase = NULL
+  phase = NULL,
+  plot_margin = NULL
 )
 }
 \arguments{
@@ -19,6 +20,9 @@ bfh_spc_plot(
 \item{viewport}{Viewport dimensions from \code{\link[=viewport_dims]{viewport_dims()}}}
 
 \item{phase}{Optional phase configuration from \code{\link[=phase_config]{phase_config()}}}
+
+\item{plot_margin}{Numeric vector of length 4 (top, right, bottom, left) in mm,
+or a margin object from ggplot2::margin(), or NULL for default}
 }
 \value{
 ggplot2 object

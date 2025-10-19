@@ -20,6 +20,8 @@ NULL
 #' @param plot_config Plot configuration from [spc_plot_config()]
 #' @param viewport Viewport dimensions from [viewport_dims()]
 #' @param phase Optional phase configuration from [phase_config()]
+#' @param plot_margin Numeric vector of length 4 (top, right, bottom, left) in mm,
+#'   or a margin object from ggplot2::margin(), or NULL for default
 #'
 #' @return ggplot2 object
 #'
@@ -79,7 +81,8 @@ NULL
 bfh_spc_plot <- function(qic_data,
                          plot_config = spc_plot_config(),
                          viewport = viewport_dims(),
-                         phase = NULL) {
+                         phase = NULL,
+                         plot_margin = NULL) {
   # Validate inputs
   if (!is.data.frame(qic_data)) {
     stop("qic_data must be a data frame from qicharts2::qic(return.data = TRUE)")
@@ -227,7 +230,7 @@ bfh_spc_plot <- function(qic_data,
   )
 
   # Apply theme ----
-  plot <- apply_spc_theme(plot, viewport$base_size)
+  plot <- apply_spc_theme(plot, viewport$base_size, plot_margin)
 
   return(plot)
 }
