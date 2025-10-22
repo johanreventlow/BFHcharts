@@ -24,7 +24,11 @@ create_spc_chart(
   base_size = 14,
   width = NULL,
   height = NULL,
-  plot_margin = NULL
+  plot_margin = NULL,
+  ylab = "",
+  xlab = "",
+  subtitle = NULL,
+  caption = NULL
 )
 }
 \arguments{
@@ -67,6 +71,14 @@ create_spc_chart(
 \item{height}{Plot height in inches (optional, enables responsive font scaling and precise label placement)}
 
 \item{plot_margin}{Plot margins as either: (1) numeric vector c(top, right, bottom, left) in mm, or (2) ggplot2::margin() object. Default NULL uses BFHtheme defaults.}
+
+\item{ylab}{Y-axis label (default: "" for blank)}
+
+\item{xlab}{X-axis label (default: "" for blank)}
+
+\item{subtitle}{Plot subtitle text (default: NULL for no subtitle)}
+
+\item{caption}{Plot caption text (default: NULL for no caption)}
 }
 \value{
 ggplot2 object with styled SPC chart
@@ -307,6 +319,20 @@ plot_responsive <- create_spc_chart(
   y_axis_unit = "count",
   base_size = 18,
   plot_margin = ggplot2::margin(t = 0.5, r = 1, b = 0.5, l = 1, unit = "lines")
+)
+
+# Example 13: Custom axis labels, subtitle, and caption
+plot_labels <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Hospital-Acquired Infections",
+  ylab = "Antal infektioner",
+  xlab = "Måned",
+  subtitle = "Kirurgisk afdeling - 2024",
+  caption = "Data: EPJ system | Analyse: Kvalitetsafdelingen"
 )
 }
 }

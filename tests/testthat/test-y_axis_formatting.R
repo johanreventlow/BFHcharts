@@ -225,22 +225,27 @@ test_that("format_y_axis_time selects days for large values", {
   scale <- format_y_axis_time(qic_data)
 
   labels <- scale$labels(c(2880, 4320))  # 2 days, 3 days
+  # Both should contain dag/dage in the plural form (since 2 and 3 are plural)
   expect_true(all(grepl("dage", labels)))
 })
 
 test_that("format_time_with_unit formats minutes correctly", {
-  expect_equal(format_time_with_unit(30, "minutes"), "30 min")
-  expect_equal(format_time_with_unit(45.5, "minutes"), "45,5 min")
+  # Test singular (1 minut) and plural (30 minutter)
+  expect_equal(format_time_with_unit(1, "minutes"), "1 minut")
+  expect_equal(format_time_with_unit(30, "minutes"), "30 minutter")
+  expect_equal(format_time_with_unit(45.5, "minutes"), "45,5 minutter")
 })
 
 test_that("format_time_with_unit formats hours correctly", {
-  expect_equal(format_time_with_unit(60, "hours"), "1 timer")
+  # Test singular (1 time) and plural (3 timer)
+  expect_equal(format_time_with_unit(60, "hours"), "1 time")
   expect_equal(format_time_with_unit(90, "hours"), "1,5 timer")
   expect_equal(format_time_with_unit(180, "hours"), "3 timer")
 })
 
 test_that("format_time_with_unit formats days correctly", {
-  expect_equal(format_time_with_unit(1440, "days"), "1 dage")
+  # Test singular (1 dag) and plural (2 dage)
+  expect_equal(format_time_with_unit(1440, "days"), "1 dag")
   expect_equal(format_time_with_unit(2880, "days"), "2 dage")
   expect_equal(format_time_with_unit(2160, "days"), "1,5 dage")
 })
@@ -252,14 +257,16 @@ test_that("format_time_with_unit handles NA values", {
 })
 
 test_that("format_time_with_unit uses Danish labels", {
-  # Minutes
-  expect_true(grepl("min", format_time_with_unit(30, "minutes")))
+  # Minutes - can be singular (minut) or plural (minutter)
+  expect_true(grepl("minut", format_time_with_unit(30, "minutes")))
 
-  # Hours - should be "timer" not "hours"
-  expect_true(grepl("timer", format_time_with_unit(60, "hours")))
+  # Hours - can be singular (time) or plural (timer)
+  result_hours <- format_time_with_unit(60, "hours")
+  expect_true(grepl("time|timer", result_hours))
 
-  # Days - should be "dage" not "days"
-  expect_true(grepl("dage", format_time_with_unit(1440, "days")))
+  # Days - can be singular (dag) or plural (dage)
+  result_days <- format_time_with_unit(1440, "days")
+  expect_true(grepl("dag|dage", result_days))
 })
 
 test_that("format_time_with_unit uses Danish decimal notation", {

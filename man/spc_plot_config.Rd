@@ -10,7 +10,11 @@ spc_plot_config(
   target_value = NULL,
   target_text = NULL,
   centerline_value = NULL,
-  chart_title = NULL
+  chart_title = NULL,
+  ylab = "",
+  xlab = "",
+  subtitle = NULL,
+  caption = NULL
 )
 }
 \arguments{
@@ -25,6 +29,14 @@ spc_plot_config(
 \item{centerline_value}{Custom centerline value (optional)}
 
 \item{chart_title}{Chart title (optional)}
+
+\item{ylab}{Y-axis label (default: "" for blank)}
+
+\item{xlab}{X-axis label (default: "" for blank)}
+
+\item{subtitle}{Plot subtitle text (optional)}
+
+\item{caption}{Plot caption text (optional)}
 }
 \value{
 List with class "spc_plot_config"

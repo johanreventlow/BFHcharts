@@ -20,6 +20,33 @@ demo_data <- data.frame(
   surgeries = rpois(24, lambda = 100)
 )
 
+
+# Test 3: P-Chart with denominator and target
+# print("Test 3: Creating P-chart with arrow symbol...")
+create_spc_chart(
+  data = demo_data,
+  x = month,
+  y = infections,
+  n = surgeries,
+  chart_type = "p",
+  y_axis_unit = "percent",
+  chart_title = "Infection Rate per 100 Surgeries",
+  subtitle = "**Undertitel**",
+  caption = "Lavet af Johan Reventlow",
+  target_text = "<",  # Arrow symbol - suppresses target line
+  target_value = 25,
+  xlab = "Indlæggelsesmåned",
+  ylab = "Infektioner"
+  # width = 10,
+  # height = 6
+)
+
+# plot3
+# 
+# print("✓ P-chart with arrow symbol and labels created successfully")
+# print("")
+
+
 # print("=== BFHcharts Demo Test ===")
 # print("")
 # print("Demo data (first 6 rows):")
@@ -64,26 +91,7 @@ create_spc_chart(
 # print("✓ I-chart with phase split and labels created successfully")
 # print("")
 
-# Test 3: P-Chart with denominator and target
-# print("Test 3: Creating P-chart with arrow symbol...")
-create_spc_chart(
-  data = demo_data,
-  x = month,
-  y = infections,
-  n = surgeries,
-  chart_type = "p",
-  y_axis_unit = "percent",
-  chart_title = "Infection Rate per 100 Surgeries",
-  target_text = "<",  # Arrow symbol - suppresses target line
-  target_value = 25
-  # width = 10,
-  # height = 6
-)
 
-# plot3
-# 
-# print("✓ P-chart with arrow symbol and labels created successfully")
-# print("")
 
 # Test 4: Custom colors
 # print("Test 4: Creating chart with custom colors...")

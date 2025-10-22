@@ -36,6 +36,10 @@ NULL
 #' @param width Plot width in inches (optional, enables responsive font scaling and precise label placement)
 #' @param height Plot height in inches (optional, enables responsive font scaling and precise label placement)
 #' @param plot_margin Plot margins as either: (1) numeric vector c(top, right, bottom, left) in mm, or (2) ggplot2::margin() object. Default NULL uses BFHtheme defaults.
+#' @param ylab Y-axis label (default: "" for blank)
+#' @param xlab X-axis label (default: "" for blank)
+#' @param subtitle Plot subtitle text (default: NULL for no subtitle)
+#' @param caption Plot caption text (default: NULL for no caption)
 #'
 #' @return ggplot2 object with styled SPC chart
 #'
@@ -263,6 +267,20 @@ NULL
 #'   base_size = 18,
 #'   plot_margin = ggplot2::margin(t = 0.5, r = 1, b = 0.5, l = 1, unit = "lines")
 #' )
+#'
+#' # Example 13: Custom axis labels, subtitle, and caption
+#' plot_labels <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Hospital-Acquired Infections",
+#'   ylab = "Antal infektioner",
+#'   xlab = "Måned",
+#'   subtitle = "Kirurgisk afdeling - 2024",
+#'   caption = "Data: EPJ system | Analyse: Kvalitetsafdelingen"
+#' )
 #' }
 create_spc_chart <- function(data,
                               x,
@@ -283,7 +301,11 @@ create_spc_chart <- function(data,
                               base_size = 14,
                               width = NULL,
                               height = NULL,
-                              plot_margin = NULL) {
+                              plot_margin = NULL,
+                              ylab = "",
+                              xlab = "",
+                              subtitle = NULL,
+                              caption = NULL) {
   # Validate inputs
   if (!is.data.frame(data)) {
     stop("data must be a data frame")
@@ -551,7 +573,11 @@ create_spc_chart <- function(data,
     y_axis_unit = y_axis_unit,
     chart_title = chart_title,
     target_value = target_value,
-    target_text = target_text
+    target_text = target_text,
+    ylab = ylab,
+    xlab = xlab,
+    subtitle = subtitle,
+    caption = caption
   )
 
   # Create viewport configuration

@@ -90,7 +90,7 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
 #' @return ggplot2 scale layer
 #' @keywords internal
 format_y_axis_percent <- function() {
-  ggplot2::scale_y_continuous(
+  BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
     labels = scales::label_percent()
   )
@@ -107,7 +107,7 @@ format_y_axis_percent <- function() {
 #' @return ggplot2 scale layer
 #' @keywords internal
 format_y_axis_count <- function() {
-  ggplot2::scale_y_continuous(
+  BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
     labels = function(x, ...) {
       x |>
@@ -129,7 +129,7 @@ format_y_axis_count <- function() {
 #' @return ggplot2 scale layer
 #' @keywords internal
 format_y_axis_rate <- function() {
-  ggplot2::scale_y_continuous(
+  BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
     labels = function(x, ...) {
       ifelse(x == round(x),
@@ -152,7 +152,7 @@ format_y_axis_rate <- function() {
 format_y_axis_time <- function(qic_data) {
   if (is.null(qic_data) || !"y" %in% names(qic_data)) {
     warning("format_y_axis_time: missing qic_data or y column, using default")
-    return(ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(.25, .25))))
+    return(BFHtheme::scale_y_continuous_bfh(expand = ggplot2::expansion(mult = c(.25, .25))))
   }
 
   y_range <- range(qic_data$y, na.rm = TRUE)
@@ -167,7 +167,7 @@ format_y_axis_time <- function(qic_data) {
     "days"
   }
 
-  ggplot2::scale_y_continuous(
+  BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
     labels = function(x, ...) {
       purrr::map_chr(x, ~ format_time_with_unit(.x, time_unit))
@@ -193,7 +193,9 @@ format_scaled_number <- function(val, scale, suffix) {
   }
 
   scaled <- val / scale
-  if (scaled == round(scaled)) {
+  # Use all.equal() for floating point comparison to handle precision issues
+  # (e.g., 1000000 / 1e6 = 1.0 exactly, not "1000,0M")
+  if (isTRUE(all.equal(scaled, round(scaled), tolerance = 1e-10))) {
     paste0(round(scaled), suffix)
   } else {
     paste0(format(scaled, decimal.mark = ",", nsmall = 1), suffix)
@@ -221,11 +223,12 @@ format_unscaled_number <- function(val) {
 #' Format Time Value with Unit
 #'
 #' Converts time in minutes to appropriate unit with Danish labels.
+#' Applies correct Danish pluralization rules (1 dag vs. 2 dage).
 #'
 #' @param val_minutes Time value in minutes
 #' @param time_unit Unit: "minutes", "hours", or "days"
 #'
-#' @return Formatted string (e.g., "30 min", "1,5 timer", "2 dage")
+#' @return Formatted string (e.g., "30 min", "1 time", "2 timer", "1 dag", "2 dage")
 #' @keywords internal
 format_time_with_unit <- function(val_minutes, time_unit) {
   if (is.na(val_minutes)) {
@@ -240,18 +243,28 @@ format_time_with_unit <- function(val_minutes, time_unit) {
     val_minutes
   )
 
-  # Danish unit labels
-  unit_label <- switch(time_unit,
-    minutes = " min",
-    hours = " timer",
-    days = " dage",
-    " min"
-  )
-
   # Format with or without decimals
   if (scaled == round(scaled)) {
-    paste0(round(scaled), unit_label)
+    num <- round(scaled)
+
+    # Danish pluralization: 1 = ental, >1 = flertal
+    unit_label <- switch(time_unit,
+      minutes = if (num == 1) " minut" else " minutter",
+      hours = if (num == 1) " time" else " timer",
+      days = if (num == 1) " dag" else " dage",
+      " min"
+    )
+
+    paste0(num, unit_label)
   } else {
+    # For decimals, always use plural form (e.g., "1,5 timer")
+    unit_label <- switch(time_unit,
+      minutes = " minutter",
+      hours = " timer",
+      days = " dage",
+      " min"
+    )
+
     paste0(format(scaled, decimal.mark = ",", nsmall = 1), unit_label)
   }
 }

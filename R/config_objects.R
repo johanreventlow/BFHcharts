@@ -54,6 +54,10 @@ NULL
 #' @param target_text Text description of target (optional)
 #' @param centerline_value Custom centerline value (optional)
 #' @param chart_title Chart title (optional)
+#' @param ylab Y-axis label (default: "" for blank)
+#' @param xlab X-axis label (default: "" for blank)
+#' @param subtitle Plot subtitle text (optional)
+#' @param caption Plot caption text (optional)
 #'
 #' @return List with class "spc_plot_config"
 #'
@@ -86,7 +90,11 @@ spc_plot_config <- function(
     target_value = NULL,
     target_text = NULL,
     centerline_value = NULL,
-    chart_title = NULL) {
+    chart_title = NULL,
+    ylab = "",
+    xlab = "",
+    subtitle = NULL,
+    caption = NULL) {
   # Validation
   valid_chart_types <- c("run", "i", "mr", "xbar", "s", "t", "p", "pp", "c", "u", "up", "g")
   if (!chart_type %in% valid_chart_types) {
@@ -118,7 +126,11 @@ spc_plot_config <- function(
       target_value = target_value,
       target_text = target_text,
       centerline_value = centerline_value,
-      chart_title = chart_title
+      chart_title = chart_title,
+      ylab = ylab,
+      xlab = xlab,
+      subtitle = subtitle,
+      caption = caption
     ),
     class = "spc_plot_config"
   )

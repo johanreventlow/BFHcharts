@@ -197,11 +197,15 @@ bfh_spc_plot <- function(qic_data,
   ))
 
   # Labels and scale configuration ----
+  # Use BFHtheme::bfh_labs() for automatic uppercase formatting per BFH typography guidelines
+  # (title remains unchanged, x/y/subtitle/caption are uppercased)
   plot_layers <- c(plot_layers, list(
-    ggplot2::labs(
+    BFHtheme::bfh_labs(
       title = plot_config$chart_title,
-      x = NULL,
-      y = NULL
+      x = plot_config$xlab,
+      y = plot_config$ylab,
+      subtitle = plot_config$subtitle,
+      caption = plot_config$caption
     ),
     ggplot2::scale_linetype_manual(
       values = c("FALSE" = "solid", "TRUE" = "12"),
@@ -333,7 +337,7 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
         breaks_posix <- unique(c(data_x_min, breaks_posix))
       }
 
-      plot <- plot + ggplot2::scale_x_datetime(
+      plot <- plot + BFHtheme::scale_x_datetime_bfh(
         expand = ggplot2::expansion(mult = c(0.025, 0)),
         labels = format_config$labels,
         breaks = breaks_posix
@@ -351,7 +355,7 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
         breaks_posix <- unique(c(data_x_min, breaks_posix))
       }
 
-      plot <- plot + ggplot2::scale_x_datetime(
+      plot <- plot + BFHtheme::scale_x_datetime_bfh(
         expand = ggplot2::expansion(mult = c(0.025, 0)),
         labels = format_config$labels,
         breaks = breaks_posix
@@ -379,20 +383,20 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
         }
       }
 
-      plot <- plot + ggplot2::scale_x_datetime(
+      plot <- plot + BFHtheme::scale_x_datetime_bfh(
         labels = scales::date_format(format_config$labels),
         breaks = breaks_posix
       )
     } else {
       # Fallback to breaks_pretty with intelligent count
-      plot <- plot + ggplot2::scale_x_datetime(
+      plot <- plot + BFHtheme::scale_x_datetime_bfh(
         labels = scales::date_format(format_config$labels),
         breaks = scales::breaks_pretty(n = format_config$n_breaks)
       )
     }
   } else if (is.numeric(qic_data$x)) {
     # Numeric X-axis (observation sequence)
-    plot <- plot + ggplot2::scale_x_continuous(
+    plot <- plot + BFHtheme::scale_x_continuous_bfh(
       breaks = scales::pretty_breaks(n = 8)
     )
   }
