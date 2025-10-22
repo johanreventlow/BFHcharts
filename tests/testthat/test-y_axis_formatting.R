@@ -152,6 +152,35 @@ test_that("format_unscaled_number handles NA values", {
   expect_true(is.na(format_unscaled_number(NA)))
 })
 
+test_that("format_unscaled_number handles zero and negative values", {
+  # Zero should format as "0"
+  expect_equal(format_unscaled_number(0), "0")
+
+  # Negative integers
+  expect_equal(format_unscaled_number(-100), "-100")
+  expect_equal(format_unscaled_number(-1000), "-1.000")  # Danish thousand separator
+
+  # Negative decimals with Danish notation
+  expect_equal(format_unscaled_number(-123.5), "-123,5")
+  expect_equal(format_unscaled_number(-1234.5), "-1.234,5")
+})
+
+test_that("format_scaled_number handles zero and negative values", {
+  # Zero should format as "0K"
+  expect_equal(format_scaled_number(0, 1e3, "K"), "0K")
+
+  # Negative thousands
+  expect_equal(format_scaled_number(-1000, 1e3, "K"), "-1K")
+  expect_equal(format_scaled_number(-1500, 1e3, "K"), "-1,5K")
+
+  # Negative millions
+  expect_equal(format_scaled_number(-1e6, 1e6, "M"), "-1M")
+  expect_equal(format_scaled_number(-2.5e6, 1e6, "M"), "-2,5M")
+
+  # Negative billions
+  expect_equal(format_scaled_number(-1e9, 1e9, " mia."), "-1 mia.")
+})
+
 # ============================================================================
 # FORMAT_Y_AXIS_RATE TESTS
 # ============================================================================
@@ -258,6 +287,21 @@ test_that("format_time_with_unit handles NA values", {
   expect_true(is.na(format_time_with_unit(NA, "minutes")))
   expect_true(is.na(format_time_with_unit(NA, "hours")))
   expect_true(is.na(format_time_with_unit(NA, "days")))
+})
+
+test_that("format_time_with_unit handles zero and edge cases", {
+  # Zero values use plural in Danish
+  expect_equal(format_time_with_unit(0, "minutes"), "0 minutter")
+
+  # Zero hours (should show as 0 hours with plural)
+  expect_equal(format_time_with_unit(0, "hours"), "0 timer")
+
+  # Zero days use plural
+  expect_equal(format_time_with_unit(0, "days"), "0 dage")
+
+  # Very small positive values (still plural when decimal)
+  expect_true(grepl("minutter", format_time_with_unit(0.5, "minutes")))
+  expect_true(grepl("timer", format_time_with_unit(0.5, "hours")))
 })
 
 test_that("format_time_with_unit uses Danish labels", {

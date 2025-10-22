@@ -79,6 +79,132 @@ format_target_prefix <- function(target_text) {
 # DATA VALIDATION
 # ============================================================================
 
+#' Validate Numeric Parameter
+#'
+#' Centralized validation for numeric parameters in create_spc_chart.
+#' Checks for type, range, length, and NA values.
+#'
+#' @param value Parameter value to validate
+#' @param param_name Parameter name for error messages
+#' @param min Minimum allowed value (default: -Inf)
+#' @param max Maximum allowed value (default: Inf)
+#' @param len Expected length, or NULL for any length (default: NULL)
+#' @param allow_null Allow NULL values (default: TRUE)
+#' @param context Optional context for error messages (e.g., "within data bounds")
+#'
+#' @return Invisibly returns TRUE if validation passes, or stops with error
+#' @keywords internal
+validate_numeric_parameter <- function(value,
+                                       param_name,
+                                       min = -Inf,
+                                       max = Inf,
+                                       len = NULL,
+                                       allow_null = TRUE,
+                                       context = NULL) {
+  # Check NULL
+  if (is.null(value)) {
+    if (allow_null) {
+      return(invisible(TRUE))
+    }
+    stop(sprintf("%s cannot be NULL", param_name), call. = FALSE)
+  }
+
+  # Check type and NA
+  if (!is.numeric(value) || any(is.na(value))) {
+    # Generate parameter-specific error messages
+    if (param_name == "multiply") {
+      stop(sprintf(
+        "multiply must be a single positive number"
+      ), call. = FALSE)
+    } else if (param_name == "cl") {
+      stop(sprintf(
+        "cl must be a single numeric value"
+      ), call. = FALSE)
+    } else {
+      stop(sprintf(
+        "%s must be numeric without NAs, got: %s",
+        param_name,
+        paste(value, collapse = ", ")
+      ), call. = FALSE)
+    }
+  }
+
+  # Check length
+  if (!is.null(len) && length(value) != len) {
+    # Generate parameter-specific error messages
+    if (param_name == "multiply") {
+      stop(sprintf(
+        "multiply must be a single positive number"
+      ), call. = FALSE)
+    } else if (param_name == "cl") {
+      stop(sprintf(
+        "cl must be a single numeric value"
+      ), call. = FALSE)
+    } else {
+      stop(sprintf(
+        "%s must have length %d, got: %d",
+        param_name, len, length(value)
+      ), call. = FALSE)
+    }
+  }
+
+  # Check bounds
+  if (any(value < min) || any(value > max)) {
+    # Build error message based on parameter type
+    if (!is.null(context)) {
+      # For parameters with context (part, freeze, exclude)
+      # Use appropriate singular/plural form
+      if (param_name == "freeze") {
+        stop(sprintf(
+          "freeze position must be a positive integer within data bounds (%s), got: %s",
+          context, paste(value, collapse = ", ")
+        ), call. = FALSE)
+      } else if (param_name == "part") {
+        stop(sprintf(
+          "part positions must be positive integers within data bounds (%s), got: %s",
+          context, paste(value, collapse = ", ")
+        ), call. = FALSE)
+      } else if (param_name == "exclude") {
+        stop(sprintf(
+          "exclude positions must be positive integers within data bounds (%s), got: %s",
+          context, paste(value, collapse = ", ")
+        ), call. = FALSE)
+      } else {
+        stop(sprintf(
+          "%s must be within data bounds (%s), got: %s",
+          param_name, context, paste(value, collapse = ", ")
+        ), call. = FALSE)
+      }
+    } else {
+      # For parameters without context (base_size, width, height, multiply, cl, etc.)
+      # Use parameter-specific error messages where applicable
+      if (param_name == "multiply") {
+        stop(sprintf(
+          "multiply must be a single positive number"
+        ), call. = FALSE)
+      } else if (param_name == "cl") {
+        stop(sprintf(
+          "cl must be a single numeric value"
+        ), call. = FALSE)
+      } else if (param_name %in% c("width", "height")) {
+        range_str <- sprintf("between 0 and 1000 inches")
+        stop(sprintf(
+          "%s must be %s",
+          param_name, range_str
+        ), call. = FALSE)
+      } else {
+        range_str <- sprintf("between %s and %s", min, max)
+        stop(sprintf(
+          "%s must be %s",
+          param_name, range_str
+        ), call. = FALSE)
+      }
+    }
+  }
+
+  invisible(TRUE)
+}
+
 #' Validate QIC Data Structure
 #'
 #' Checks if qic_data has required columns for plotting.

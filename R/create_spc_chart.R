@@ -350,79 +350,62 @@ create_spc_chart <- function(data,
 
   # SECURITY: Validate numeric parameters for bounds and sanity
   # Prevents DoS attacks via memory exhaustion or crashes
-  if (!is.null(part)) {
-    if (!is.numeric(part) || any(part <= 0) || any(part > nrow(data))) {
-      stop(sprintf(
-        "part positions must be positive integers within data bounds (1-%d), got: %s",
-        nrow(data),
-        paste(part, collapse = ", ")
-      ), call. = FALSE)
-    }
-  }
+  # Using centralized validate_numeric_parameter() function to reduce code duplication
+  validate_numeric_parameter(
+    part, "part",
+    min = 1, max = nrow(data),
+    allow_null = TRUE,
+    context = sprintf("1-%d", nrow(data))
+  )
 
-  if (!is.null(freeze)) {
-    if (!is.numeric(freeze) || freeze <= 0 || freeze > nrow(data)) {
-      stop(sprintf(
-        "freeze position must be a positive integer within data bounds (1-%d), got: %s",
-        nrow(data),
-        freeze
-      ), call. = FALSE)
-    }
-  }
+  validate_numeric_parameter(
+    freeze, "freeze",
+    min = 1, max = nrow(data),
+    allow_null = TRUE,
+    context = sprintf("1-%d", nrow(data))
+  )
 
-  if (!is.numeric(base_size) || base_size <= 0 || base_size > 100) {
-    stop(sprintf(
-      "base_size must be between 1 and 100, got: %s",
-      base_size
-    ), call. = FALSE)
-  }
+  validate_numeric_parameter(
+    base_size, "base_size",
+    min = 1, max = 100,
+    allow_null = FALSE,
+    len = 1
+  )
 
-  if (!is.null(width)) {
-    if (!is.numeric(width) || width <= 0 || width > 1000) {
-      stop(sprintf(
-        "width must be between 0 and 1000 inches, got: %s",
-        width
-      ), call. = FALSE)
-    }
-  }
+  validate_numeric_parameter(
+    width, "width",
+    min = 0.1, max = 1000,
+    allow_null = TRUE,
+    len = 1
+  )
 
-  if (!is.null(height)) {
-    if (!is.numeric(height) || height <= 0 || height > 1000) {
-      stop(sprintf(
-        "height must be between 0 and 1000 inches, got: %s",
-        height
-      ), call. = FALSE)
-    }
-  }
+  validate_numeric_parameter(
+    height, "height",
+    min = 0.1, max = 1000,
+    allow_null = TRUE,
+    len = 1
+  )
 
-  # Validate exclude parameter
-  if (!is.null(exclude)) {
-    if (!is.numeric(exclude) || any(exclude <= 0) || any(exclude > nrow(data))) {
-      stop(sprintf(
-        "exclude positions must be positive integers within data bounds (1-%d), got: %s",
-        nrow(data),
-        paste(exclude, collapse = ", ")
-      ), call. = FALSE)
-    }
-  }
+  validate_numeric_parameter(
+    exclude, "exclude",
+    min = 1, max = nrow(data),
+    allow_null = TRUE,
+    context = sprintf("1-%d", nrow(data))
+  )
 
-  # Validate cl parameter
-  if (!is.null(cl)) {
-    if (!is.numeric(cl) || length(cl) != 1 || is.na(cl)) {
-      stop(sprintf(
-        "cl must be a single numeric value, got: %s",
-        paste(cl, collapse = ", ")
-      ), call. = FALSE)
-    }
-  }
+  validate_numeric_parameter(
+    cl, "cl",
+    min = -Inf, max = Inf,
+    allow_null = TRUE,
+    len = 1
+  )
 
-  # Validate multiply parameter
-  if (!is.numeric(multiply) || length(multiply) != 1 || multiply <= 0) {
-    stop(sprintf(
-      "multiply must be a single positive number, got: %s",
-      paste(multiply, collapse = ", ")
-    ), call. = FALSE)
-  }
+  validate_numeric_parameter(
+    multiply, "multiply",
+    min = 0.1, max = 1000,
+    allow_null = FALSE,
+    len = 1
+  )
 
   # Validate agg.fun parameter
   agg.fun <- match.arg(agg.fun)
@@ -597,11 +580,14 @@ create_spc_chart <- function(data,
   viewport_height_inches <- height
 
   # Add SPC labels automatically
+  # Responsive label sizing: scales based on viewport base_size
+  label_size <- viewport$base_size / REFERENCE_BASE_SIZE * DEFAULT_LABEL_SIZE_MULTIPLIER
+
   plot <- add_spc_labels(
     plot = plot,
     qic_data = qic_data,
     y_axis_unit = y_axis_unit,
-    label_size = viewport$base_size / 14 * 6,  # Responsive label sizing
+    label_size = label_size,
     viewport_width = viewport_width_inches,
     viewport_height = viewport_height_inches,
     target_text = target_text,
