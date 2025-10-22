@@ -77,7 +77,17 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
     count = plot + format_y_axis_count(),
     rate = plot + format_y_axis_rate(),
     time = plot + format_y_axis_time(qic_data),
-    plot # Default: no special formatting
+    {
+      # Unknown unit - warn user
+      warning(
+        sprintf(
+          "Unknown y_axis_unit: '%s'. Valid values are: 'count', 'percent', 'rate', 'time'. No formatting applied.",
+          y_axis_unit
+        ),
+        call. = FALSE
+      )
+      plot
+    }
   )
 }
 

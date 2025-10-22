@@ -16,7 +16,9 @@
       "Bash(git push:*)",
       "Bash(git merge:*)",
       "Bash(git branch:*)",
-      "Bash(gemini -p \"@R/create_spc_chart.R @tests/testthat/test-y_axis_formatting.R\n\nLav en grundig kode review fokuseret på:\n\n1. **DOKUMENTATION** \n   - Er roxygen2 dokumentation komplet, præcis og klar?\n   - Er eksemplerne dækkende og funktionelle?\n   - Mangler der dokumentation af edge cases eller begrænsninger?\n\n2. **TESTS** \n   - Er test coverage god? Hvad mangler?\n   - Er der redundante eller overlappende tests?\n   - Mangler der vigtige edge cases i tests?\n\n3. **OVERFLØDIGT KODE**\n   - Findes der DRY violations eller gentagen logik?\n   - Findes der dead code eller ubrugt funktionalitet?\n   - Kan komplekse funktioner simplificeres?\n   - Findes der redundant validering?\n\nFormat output med:\n- Konkrete fund med filnavn og linjenummer\n- Prioritering: critical, high, medium, low\n- Specifikke forbedringer\n\")"
+      "Bash(gemini -p \"@R/create_spc_chart.R @tests/testthat/test-y_axis_formatting.R\n\nLav en grundig kode review fokuseret på:\n\n1. **DOKUMENTATION** \n   - Er roxygen2 dokumentation komplet, præcis og klar?\n   - Er eksemplerne dækkende og funktionelle?\n   - Mangler der dokumentation af edge cases eller begrænsninger?\n\n2. **TESTS** \n   - Er test coverage god? Hvad mangler?\n   - Er der redundante eller overlappende tests?\n   - Mangler der vigtige edge cases i tests?\n\n3. **OVERFLØDIGT KODE**\n   - Findes der DRY violations eller gentagen logik?\n   - Findes der dead code eller ubrugt funktionalitet?\n   - Kan komplekse funktioner simplificeres?\n   - Findes der redundant validering?\n\nFormat output med:\n- Konkrete fund med filnavn og linjenummer\n- Prioritering: critical, high, medium, low\n- Specifikke forbedringer\n\")",
+      "Bash(find:*)",
+      "Bash(for file in /Users/johanreventlow/Documents/R/BFHcharts/R/*.R)"
     ],
     "deny": [],
     "ask": []

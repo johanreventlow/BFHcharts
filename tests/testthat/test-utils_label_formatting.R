@@ -243,15 +243,26 @@ test_that("format_y_value handles very large values", {
 # INTEGRATION TESTS
 # ============================================================================
 
-test_that("format_y_value matches y-axis formatting for counts", {
-  # Test that format_y_value produces same output as format_y_axis_count
-  test_values <- c(500, 1000, 1500, 1e6, 2.5e6, 1e9)
+test_that("format_y_value produces valid count format", {
+  # Test that format_y_value produces valid formatted strings for counts
+  # Verify specific formatting rules (K/M/mia notation, Danish decimal notation)
 
-  for (val in test_values) {
-    formatted <- format_y_value(val, "count")
-    expect_true(is.character(formatted))
-    expect_true(nchar(formatted) > 0)
-  }
+  # Small numbers: should be formatted with K notation
+  result_1234 <- format_y_value(1234, "count")
+  expect_match(result_1234, "K")  # Should become 1.2K
+
+  # K notation (thousands)
+  expect_match(format_y_value(1500, "count"), "K")
+
+  # M notation (millions)
+  expect_match(format_y_value(1e6, "count"), "M")
+
+  # mia notation (billions)
+  expect_match(format_y_value(1e9, "count"), "mia")
+
+  # All results should be non-empty strings
+  expect_true(is.character(format_y_value(500, "count")))
+  expect_true(nchar(format_y_value(500, "count")) > 0)
 })
 
 test_that("format_y_value works in create_spc_chart workflow", {

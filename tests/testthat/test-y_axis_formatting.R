@@ -71,14 +71,18 @@ test_that("apply_y_axis_formatting applies time formatting", {
   expect_true(length(result$scales$scales) > 0)
 })
 
-test_that("apply_y_axis_formatting handles unknown unit gracefully", {
+test_that("apply_y_axis_formatting warns on unknown unit", {
   data <- data.frame(x = 1:10, y = rnorm(10))
   plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_point()
 
-  # Unknown unit should return plot unchanged (default case in switch)
-  result <- apply_y_axis_formatting(plot, "unknown_unit")
-
-  expect_s3_class(result, "ggplot")
+  # Unknown unit should warn and return plot unchanged
+  expect_warning(
+    {
+      result <- apply_y_axis_formatting(plot, "unknown_unit")
+      expect_s3_class(result, "ggplot")
+    },
+    "Unknown y_axis_unit"
+  )
 })
 
 # ============================================================================
@@ -321,28 +325,37 @@ test_that("Y-axis formatting works in create_spc_chart", {
   )
 
   # Test with count unit
-  plot_count <- suppressWarnings(
-    create_spc_chart(
-      data = data,
-      x = month,
-      y = value,
-      chart_type = "run",
-      y_axis_unit = "count"
-    )
+  # Note: Font warnings from grid graphics rendering are tolerable
+  expect_warning(
+    {
+      plot_count <- create_spc_chart(
+        data = data,
+        x = month,
+        y = value,
+        chart_type = "run",
+        y_axis_unit = "count"
+      )
+      expect_s3_class(plot_count, "ggplot")
+    },
+    "font family.*not found",
+    all = FALSE
   )
-  expect_s3_class(plot_count, "ggplot")
 
   # Test with percent unit
-  plot_pct <- suppressWarnings(
-    create_spc_chart(
-      data = data,
-      x = month,
-      y = value,
-      chart_type = "run",
-      y_axis_unit = "percent"
-    )
+  expect_warning(
+    {
+      plot_pct <- create_spc_chart(
+        data = data,
+        x = month,
+        y = value,
+        chart_type = "run",
+        y_axis_unit = "percent"
+      )
+      expect_s3_class(plot_pct, "ggplot")
+    },
+    "font family.*not found",
+    all = FALSE
   )
-  expect_s3_class(plot_pct, "ggplot")
 })
 
 test_that("Count formatting handles edge cases", {
@@ -403,6 +416,7 @@ test_that("create_spc_chart maps y_axis_unit='percent' to qicharts2's y.percent 
   )
 
   # Call with y_axis_unit = "percent"
+  # Font warnings from grid rendering are expected (using regex to suppress them in expect_warning)
   plot <- suppressWarnings(
     create_spc_chart(
       data = data,
@@ -413,7 +427,6 @@ test_that("create_spc_chart maps y_axis_unit='percent' to qicharts2's y.percent 
       y_axis_unit = "percent"
     )
   )
-
   expect_s3_class(plot, "ggplot")
 
   # Verify y-axis labels contain percentage symbols
@@ -437,6 +450,7 @@ test_that("create_spc_chart with y_axis_unit='count' does NOT apply percentage f
     value = rnorm(12, 15, 2)
   )
 
+  # Font warnings from grid rendering are expected and acceptable
   plot <- suppressWarnings(
     create_spc_chart(
       data = data,
@@ -472,6 +486,7 @@ test_that("y.percent parameter is passed correctly to qicharts2::qic", {
   )
 
   # Create P-chart with percent unit
+  # Font warnings from grid rendering are expected and acceptable
   plot_pct <- suppressWarnings(
     create_spc_chart(
       data = data,

@@ -12,9 +12,10 @@ format_time_with_unit(val_minutes, time_unit)
 \item{time_unit}{Unit: "minutes", "hours", or "days"}
 }
 \value{
-Formatted string (e.g., "30 min", "1,5 timer", "2 dage")
+Formatted string (e.g., "30 min", "1 time", "2 timer", "1 dag", "2 dage")
 }
 \description{
 Converts time in minutes to appropriate unit with Danish labels.
+Applies correct Danish pluralization rules (1 dag vs. 2 dage).
 }
 \keyword{internal}
