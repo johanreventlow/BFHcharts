@@ -5,6 +5,18 @@
 devtools::load_all()
 library(ggplot2)
 
+# IMPORTANT: When running scripts non-interactively, R opens a PDF device by default
+# PDF devices have font rendering issues. Use PNG device instead.
+if (!interactive()) {
+  # Close any auto-opened PDF device
+  if (names(dev.cur()) == "pdf") {
+    dev.off()
+  }
+  # Open PNG device for plot rendering
+  png("demo_plots.png", width = 1200, height = 1600, res = 96)
+  cat("Non-interactive mode: Plots will be saved to demo_plots.png\n")
+}
+
 # Create example data: Monthly hospital-acquired infections
 set.seed(123) # For reproducible results
 
@@ -20,6 +32,7 @@ demo_data <- data.frame(
 )
 
 # Test 1: Simple Run Chart
+cat("\n=== Test 1: Run Chart ===\n")
 plot1 <- create_spc_chart(
   data = demo_data,
   x = month,
@@ -27,10 +40,12 @@ plot1 <- create_spc_chart(
   chart_type = "run",
   y_axis_unit = "count",
   chart_title = "Monthly Hospital-Acquired Infections - Run Chart",
-  notes = c("","","","","","","","","","","Intervention","","","","","","","","","","","","","")
+  notes = c(rep(NA, 10), "Intervention", rep(NA, 13))  # Note at position 11
 )
+print(plot1)
 
 # Test 2: I-Chart with Phase Split (intervention at month 12)
+cat("\n=== Test 2: I-Chart with Phase Split ===\n")
 plot2 <- create_spc_chart(
   data = demo_data,
   x = month,
@@ -41,9 +56,18 @@ plot2 <- create_spc_chart(
   part = c(12),  # Phase split after 12 months
   target_value = 18,
   target_text = ">=18"
-) |> BFHtheme::add_logo()
+)
+
+# Try to add logo (may fail if fonts not available)
+tryCatch({
+  plot2 <- plot2 |> BFHtheme::add_logo()
+}, error = function(e) {
+  cat("Note: Could not add logo (font issue). Chart still works fine.\n")
+})
+print(plot2)
 
 # Test 3: P-Chart with denominator and target
+cat("\n=== Test 3: P-Chart with Target ===\n")
 plot3 <- create_spc_chart(
   data = demo_data,
   x = month,
@@ -59,8 +83,32 @@ plot3 <- create_spc_chart(
   xlab = "Month",
   ylab = "Infections"
 )
+print(plot3)
 
-# Return the plots for viewing
-# Note: Plots are created and stored in plot1, plot2, plot3
-# To view them in RStudio: plot1, plot2, plot3
-# To save them: ggsave("filename.png", plot1)
+# Test 4: Get summary statistics (new feature)
+cat("\n=== Test 4: Summary Statistics (New Feature) ===\n")
+result <- create_spc_chart(
+  data = demo_data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Infections with Summary",
+  part = c(12),
+  print.summary = TRUE
+)
+print(result$plot)
+cat("\nSummary Statistics:\n")
+print(result$summary)
+
+cat("\n=== All tests completed ===\n")
+
+# Close graphics device if non-interactive
+if (!interactive()) {
+  dev.off()
+  cat("\nPlots saved to demo_plots.png\n")
+  cat("Open the file to view all 4 test plots\n")
+} else {
+  cat("Plots are stored in: plot1, plot2, plot3, result$plot\n")
+  cat("To save: ggsave('filename.png', plot1, width = 25, height = 15, units = 'cm')\n")
+}
