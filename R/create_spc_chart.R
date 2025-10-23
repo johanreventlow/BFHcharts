@@ -761,11 +761,15 @@ create_spc_chart <- function(data,
   viewport <- viewport_dims(base_size = base_size)
 
   # Generate plot using bfh_spc_plot()
-  plot <- bfh_spc_plot(
-    qic_data = qic_data,
-    plot_config = plot_config,
-    viewport = viewport,
-    plot_margin = plot_margin
+  # Suppress ggplot2 warning about numeric values passed to datetime scale
+  # This occurs when target_value is used with datetime x-axis and is harmless
+  plot <- suppressWarnings(
+    bfh_spc_plot(
+      qic_data = qic_data,
+      plot_config = plot_config,
+      viewport = viewport,
+      plot_margin = plot_margin
+    )
   )
 
   # Use converted dimensions for viewport

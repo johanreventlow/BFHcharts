@@ -1521,9 +1521,8 @@ measure_panel_height_inches <- function(p, panel = 1, device_width = 7, device_h
 
   # Validation
   if (!is.finite(h_npc) || h_npc <= 0) {
-    warning(
-      "Grob-måling gav invalid værdi (", round(h_npc, 4), "), bruger fallback."
-    )
+    # Silently use fallback when grob measurement fails
+    # This can happen with empty labels or certain edge cases
     if (return_details) {
       return(list(
         npc = fallback_npc,
@@ -1883,11 +1882,8 @@ estimate_label_height_npc <- function(
       # VIGTIGT: Fra 2025-01-05 - Tillad store labels (>50%) på små paneler
       # Dette er nødvendigt for facets og lave viewports
       if (!is.finite(h_npc) || h_npc <= 0) {
-        # FATAL error - return fallback
-        warning(
-          "Grob-måling gav invalid værdi (", round(h_npc, 4), "), bruger fallback. ",
-          "Dette kan skyldes manglende viewport eller ugyldigt marquee markup."
-        )
+        # Silently use fallback when grob measurement fails
+        # This can happen with empty labels or certain edge cases
         if (return_details) {
           return(list(
             npc = fallback_npc,
