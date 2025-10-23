@@ -1470,36 +1470,40 @@ measure_panel_height_inches <- function(p, panel = 1, device_width = 7, device_h
     }
   )
 
-  # PHASE 1 DIAGNOSTIC: Print comprehensive debug info
-  h_native_value <- as.numeric(h_native)
-  h_native_unit <- attr(h_native, "unit")
-  text_preview <- substring(gsub("\n", " ", text), 1, 30)
-
-  message(sprintf(
-    "[GROB_DEBUG] Text: '%s...' | Native: %s (%.6f %s)",
-    text_preview, as.character(h_native), h_native_value, h_native_unit
-  ))
-  message(sprintf(
-    "[DEVICE_DEBUG] Device: #%d | Size: %.3f × %.3f inches | Viewport: %s (%.3f × %.3f in)",
-    dev_info$dev_cur, dev_info$dev_size[1], dev_info$dev_size[2],
-    as.character(vp_info$current_vp), vp_info$vp_width, vp_info$vp_height
-  ))
+  # DEBUG: Uncomment to troubleshoot label height calculations
+  # h_native_value <- as.numeric(h_native)
+  # h_native_unit <- attr(h_native, "unit")
+  # text_preview <- substring(gsub("\n", " ", text), 1, 30)
+  #
+  # message(sprintf(
+  #   "[GROB_DEBUG] Text: '%s...' | Native: %s (%.6f %s)",
+  #   text_preview, as.character(h_native), h_native_value, h_native_unit
+  # ))
+  # message(sprintf(
+  #   "[DEVICE_DEBUG] Device: #%d | Size: %.3f × %.3f inches | Viewport: %s (%.3f × %.3f in)",
+  #   dev_info$dev_cur, dev_info$dev_size[1], dev_info$dev_size[2],
+  #   as.character(vp_info$current_vp), vp_info$vp_width, vp_info$vp_height
+  # ))
 
   # Convert to NPC
   if (!is.null(panel_height_inches)) {
     h_inches <- grid::convertHeight(h_native, "inches", valueOnly = TRUE)
     h_npc <- h_inches / panel_height_inches
-    message(sprintf(
-      "[GROB_DEBUG] Panel-based: h_inches=%.4f (from native %.6f), panel_height=%.4f, h_npc=%.4f",
-      h_inches, h_native_value, panel_height_inches, h_npc
-    ))
+    # DEBUG: Uncomment for detailed conversion info
+    # h_native_value <- as.numeric(h_native)
+    # message(sprintf(
+    #   "[GROB_DEBUG] Panel-based: h_inches=%.4f (from native %.6f), panel_height=%.4f, h_npc=%.4f",
+    #   h_inches, h_native_value, panel_height_inches, h_npc
+    # ))
   } else {
     h_npc <- grid::convertHeight(h_native, "npc", valueOnly = TRUE)
     h_inches <- grid::convertHeight(h_native, "inches", valueOnly = TRUE)
-    message(sprintf(
-      "[GROB_DEBUG] Viewport-based: h_npc=%.4f, h_inches=%.4f (from native %.6f)",
-      h_npc, h_inches, h_native_value
-    ))
+    # DEBUG: Uncomment for detailed conversion info
+    # h_native_value <- as.numeric(h_native)
+    # message(sprintf(
+    #   "[GROB_DEBUG] Viewport-based: h_npc=%.4f, h_inches=%.4f (from native %.6f)",
+    #   h_npc, h_inches, h_native_value
+    # ))
   }
 
   # Safety margin from config
