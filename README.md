@@ -101,30 +101,49 @@ plot <- bfh_spc_plot(qic_data, plot_cfg, viewport)
 plot
 ```
 
-### Custom Hospital Branding
+### Hospital Branding with BFHtheme
+
+BFHcharts integrates with the **BFHtheme** package for consistent hospital branding:
 
 ```r
-# Create custom color palette for your organization
-my_hospital_colors <- create_color_palette(
-  primary = "#003366",    # Your primary brand color
-  secondary = "#808080",  # Secondary/text color
-  accent = "#FF9900"      # Accent/highlight color
-)
+library(BFHtheme)
 
-# Use custom colors in charts
-create_spc_chart(
+# Example 1: Use default BFHtheme
+plot <- create_spc_chart(
   data = data,
   x = month,
   y = infections,
   chart_type = "run",
   y_axis_unit = "count",
-  chart_title = "Custom Branded Chart",
-  colors = my_hospital_colors
+  chart_title = "Hospital Quality Improvement Chart"
 )
 
-# Or apply custom theme to existing plot
-plot + bfh_theme(colors = my_hospital_colors)
+# Example 2: Add hospital logo
+plot <- plot |> BFHtheme::add_logo()
+
+# Example 3: Apply alternative BFHtheme variants
+plot <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "run",
+  y_axis_unit = "count",
+  chart_title = "Dark Theme Chart"
+) + BFHtheme::theme_bfh_dark()
+
+# Example 4: Use BFHtheme color palettes
+plot <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "run",
+  y_axis_unit = "count",
+  chart_title = "Custom Colors"
+) +
+  BFHtheme::scale_color_bfh_continuous()
 ```
+
+**Note:** Customization of hospital colors is handled by the [BFHtheme](https://github.com/your-org/BFHtheme) package. Refer to BFHtheme documentation for advanced theming options.
 
 ## Limitations
 

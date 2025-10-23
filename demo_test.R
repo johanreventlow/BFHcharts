@@ -1,8 +1,7 @@
 # BFHcharts Demo Test
-# Demonstrerer at pakken fungerer korrekt
+# Demonstrerer at pakken fungerer korrekt med forskellige chart typer
 
 # Load required packages
-# library(BFHcharts)
 devtools::load_all()
 library(ggplot2)
 
@@ -20,58 +19,19 @@ demo_data <- data.frame(
   surgeries = rpois(24, lambda = 100)
 )
 
-
-# Test 3: P-Chart with denominator and target
-# print("Test 3: Creating P-chart with arrow symbol...")
-create_spc_chart(
-  data = demo_data,
-  x = month,
-  y = infections,
-  n = surgeries,
-  chart_type = "p",
-  y_axis_unit = "percent",
-  chart_title = "Infection Rate per 100 Surgeries",
-  subtitle = "**Undertitel**",
-  caption = "Lavet af Johan Reventlow",
-  target_text = "<",  # Arrow symbol - suppresses target line
-  target_value = 25,
-  xlab = "Indlæggelsesmåned",
-  ylab = "Infektioner"
-  # width = 10,
-  # height = 6
-)
-
-# plot3
-# 
-# print("✓ P-chart with arrow symbol and labels created successfully")
-# print("")
-
-
-# print("=== BFHcharts Demo Test ===")
-# print("")
-# print("Demo data (first 6 rows):")
-# print(head(demo_data))
-# print("")
-
 # Test 1: Simple Run Chart
-# print("Test 1: Creating simple run chart...")
-create_spc_chart(
+plot1 <- create_spc_chart(
   data = demo_data,
-  notes = c("","","","","","","","","","","hej","","","","","","","","","","","","","test"),
   x = month,
   y = infections,
   chart_type = "run",
   y_axis_unit = "count",
-  chart_title = "Monthly **Hospital-Acquired** Infections - Run Chart"
+  chart_title = "Monthly Hospital-Acquired Infections - Run Chart",
+  notes = c("","","","","","","","","","","Intervention","","","","","","","","","","","","","")
 )
 
-# print("✓ Run chart created successfully")
-# print("")
-
 # Test 2: I-Chart with Phase Split (intervention at month 12)
-# print("Test 2: Creating I-chart with intervention and labels...")
-# plot2 <- 
-create_spc_chart(
+plot2 <- create_spc_chart(
   data = demo_data,
   x = month,
   y = infections,
@@ -79,102 +39,28 @@ create_spc_chart(
   y_axis_unit = "count",
   chart_title = "Infections Before/After Intervention - I-Chart",
   part = c(12),  # Phase split after 12 months
-  # freeze = 12,   # Freeze baseline at month 12
   target_value = 18,
-  target_text = ">=18",
-  # width = 10,    # Specify dimensions for optimal label placement
-  # height = 6
+  target_text = ">=18"
 ) |> BFHtheme::add_logo()
 
-# plot2
-
-# print("✓ I-chart with phase split and labels created successfully")
-# print("")
-
-
-
-# Test 4: Custom colors
-# print("Test 4: Creating chart with custom colors...")
-custom_colors <- create_color_palette(
-  primary = "#003366",
-  secondary = "#808080",
-  accent = "#FF9900"
-)
-
-# plot4 <- 
-  create_spc_chart(
+# Test 3: P-Chart with denominator and target
+plot3 <- create_spc_chart(
   data = demo_data,
   x = month,
   y = infections,
-  chart_type = "run",
-  y_axis_unit = "count",
-  chart_title = "Custom Branded Chart",
-  # colors = custom_colors
+  n = surgeries,
+  chart_type = "p",
+  y_axis_unit = "percent",
+  chart_title = "Infection Rate per 100 Surgeries",
+  subtitle = "Control chart with target line",
+  caption = "Created with BFHcharts",
+  target_text = "<",  # Arrow symbol - suppresses target line
+  target_value = 25,
+  xlab = "Month",
+  ylab = "Infections"
 )
 
-# plot4
-# 
-# print("✓ Custom colored chart created successfully")
-# print("")
-
-# Save plots to output directory
-output_dir <- "demo_output"
-if (!dir.exists(output_dir)) {
-  dir.create(output_dir)
-}
-
-print(paste0("Saving plots to ", output_dir, "/..."))
-
-ggsave(
-  filename = file.path(output_dir, "01_run_chart.png"),
-  plot = plot1,
-  width = 10,
-  height = 6,
-  dpi = 300
-)
-print("  ✓ Saved: 01_run_chart.png")
-
-ggsave(
-  filename = file.path(output_dir, "02_i_chart_intervention.png"),
-  plot = plot2,
-  width = 10,
-  height = 6,
-  dpi = 300
-)
-print("  ✓ Saved: 02_i_chart_intervention.png")
-
-ggsave(
-  filename = file.path(output_dir, "03_p_chart_target.png"),
-  plot = plot3,
-  width = 10,
-  height = 6,
-  dpi = 300
-)
-print("  ✓ Saved: 03_p_chart_target.png")
-
-ggsave(
-  filename = file.path(output_dir, "04_custom_colors.png"),
-  plot = plot4,
-  width = 10,
-  height = 6,
-  dpi = 300
-)
-print("  ✓ Saved: 04_custom_colors.png")
-
-print("")
-print("=== ALL TESTS PASSED ===")
-print("")
-print(paste0("📊 4 plots saved to: ", normalizePath(output_dir)))
-print("")
-print("To view the plots:")
-print(paste0("  open ", file.path(output_dir, "01_run_chart.png")))
-print("")
-print("Or display in R:")
-print("  print(plot1)  # Run chart")
-print("  print(plot2)  # I-chart with intervention")
-print("  print(plot3)  # P-chart with target")
-print("  print(plot4)  # Custom colors")
-print("")
-
-# Return the last plot for interactive viewing
-print(plot2)
+# Return the plots for viewing
+# Note: Plots are created and stored in plot1, plot2, plot3
+# To view them in RStudio: plot1, plot2, plot3
+# To save them: ggsave("filename.png", plot1)

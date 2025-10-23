@@ -334,10 +334,33 @@ plot_labels <- create_spc_chart(
   subtitle = "Kirurgisk afdeling - 2024",
   caption = "Data: EPJ system | Analyse: Kvalitetsafdelingen"
 )
+
+# Example 14: Add BFHtheme branding (hospital logo, custom styling)
+plot_branded <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Hospital-Acquired Infections - Official Report",
+  base_size = 14
+) |>
+  BFHtheme::add_logo()  # Add hospital branding
+
+# Alternate BFHtheme styles available:
+# - BFHtheme::theme_bfh_dark() for dark theme
+# - BFHtheme::theme_bfh_print() for print-optimized theme
+# - BFHtheme::theme_bfh_presentation() for presentations
 }
 }
 \seealso{
-\code{\link[=bfh_spc_plot]{bfh_spc_plot()}}, \code{\link[=spc_plot_config]{spc_plot_config()}}, \code{\link[=apply_y_axis_formatting]{apply_y_axis_formatting()}}
+\itemize{
+\item \code{\link[=bfh_spc_plot]{bfh_spc_plot()}} for low-level plot generation
+\item \code{\link[=spc_plot_config]{spc_plot_config()}} for plot configuration
+\item \code{\link[=apply_y_axis_formatting]{apply_y_axis_formatting()}} for Y-axis formatting
+\item \code{\link[BFHtheme:theme_bfh]{BFHtheme::theme_bfh()}} for BFHtheme styling
+\item \code{\link[BFHtheme:add_logo]{BFHtheme::add_logo()}} to add hospital branding
+}
 
 Other spc-plotting: 
 \code{\link{bfh_spc_plot}()}
