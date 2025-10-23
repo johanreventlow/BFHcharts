@@ -33,8 +33,10 @@ NULL
 #' @param multiply Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)
 #' @param agg.fun Aggregation function for run/I charts with multiple observations per subgroup: "mean" (default), "median", "sum", "sd"
 #' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)
-#' @param width Plot width in inches (optional, enables responsive font scaling and precise label placement)
-#' @param height Plot height in inches (optional, enables responsive font scaling and precise label placement)
+#' @param width Plot width (optional). Supports smart unit detection or explicit units parameter. See Details.
+#' @param height Plot height (optional). Supports smart unit detection or explicit units parameter. See Details.
+#' @param units Unit type for width/height: "cm" (centimeters), "mm" (millimeters), "in" (inches), "px" (pixels), or NULL for smart auto-detection (default)
+#' @param dpi Dots per inch for pixel conversion (default: 96). Only used when units = "px"
 #' @param plot_margin Plot margins as either: (1) numeric vector c(top, right, bottom, left) in mm, or (2) ggplot2::margin() object. Default NULL uses BFHtheme defaults.
 #' @param ylab Y-axis label (default: "" for blank)
 #' @param xlab X-axis label (default: "" for blank)
@@ -64,6 +66,18 @@ NULL
 #' **Phase Configuration:**
 #' - `part`: Vector of positions where phase splits occur (e.g., `c(12, 24)`)
 #' - `freeze`: Position to freeze baseline calculation
+#'
+#' **Unit Support (Danish-friendly):**
+#' Width and height support multiple units for convenience:
+#' - **Smart auto-detection** (default, `units = NULL`):
+#'   - Values > 100 → pixels (e.g., `width = 800` → 800px)
+#'   - Values 10-100 → centimeters (e.g., `width = 25` → 25cm)
+#'   - Values < 10 → inches (e.g., `width = 10` → 10in, legacy)
+#' - **Explicit units** (`units = "cm"`, `"mm"`, `"in"`, `"px"`):
+#'   - Centimeters: `width = 25, height = 15, units = "cm"` (Danish standard)
+#'   - Millimeters: `width = 250, height = 150, units = "mm"`
+#'   - Inches: `width = 10, height = 6, units = "in"` (legacy)
+#'   - Pixels: `width = 800, height = 600, units = "px", dpi = 96` (web/Shiny)
 #'
 #' **Responsive Typography:**
 #' When `width` and `height` are provided, `base_size` is automatically
@@ -304,6 +318,54 @@ NULL
 #' # - BFHtheme::theme_bfh_dark() for dark theme
 #' # - BFHtheme::theme_bfh_print() for print-optimized theme
 #' # - BFHtheme::theme_bfh_presentation() for presentations
+#'
+#' # Example 15: Danish-friendly unit support (centimeters)
+#' plot_cm <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Plot in Centimeters (Danish Standard)",
+#'   width = 25,   # 25 cm (auto-detected as cm)
+#'   height = 15   # 15 cm
+#' )
+#'
+#' # Example 16: Explicit unit specification
+#' plot_explicit <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Explicit Centimeters",
+#'   width = 25, height = 15, units = "cm"
+#' )
+#'
+#' # Example 17: Pixel dimensions for web/Shiny
+#' plot_px <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Plot for Web Display",
+#'   width = 800,   # 800 px (auto-detected as px)
+#'   height = 600,  # 600 px
+#'   dpi = 96
+#' )
+#'
+#' # Example 18: Backward compatibility (inches still work)
+#' plot_inches <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Legacy Inches Format",
+#'   width = 10,    # 10 inches (auto-detected as in)
+#'   height = 6     # 6 inches
+#' )
 #' }
 create_spc_chart <- function(data,
                               x,
@@ -324,6 +386,8 @@ create_spc_chart <- function(data,
                               base_size = 14,
                               width = NULL,
                               height = NULL,
+                              units = NULL,
+                              dpi = 96,
                               plot_margin = NULL,
                               ylab = "",
                               xlab = "",
@@ -397,14 +461,14 @@ create_spc_chart <- function(data,
 
   validate_numeric_parameter(
     width, "width",
-    min = 0.1, max = 1000,
+    min = 0.1, max = 3000,  # Allow up to 3000 for pixels (typical: 600-2000px)
     allow_null = TRUE,
     len = 1
   )
 
   validate_numeric_parameter(
     height, "height",
-    min = 0.1, max = 1000,
+    min = 0.1, max = 3000,  # Allow up to 3000 for pixels (typical: 600-2000px)
     allow_null = TRUE,
     len = 1
   )
@@ -563,10 +627,22 @@ create_spc_chart <- function(data,
     }
   }
 
+  # Convert width/height to inches using unit conversion
+  # Supports cm, mm, in, px with smart auto-detection
+  if (!is.null(width) && !is.null(height)) {
+    conversion_result <- convert_to_inches(width, height, units, dpi)
+    width_inches <- conversion_result$width_inches
+    height_inches <- conversion_result$height_inches
+    # detected_unit <- conversion_result$detected_unit  # For potential logging
+  } else {
+    width_inches <- NULL
+    height_inches <- NULL
+  }
+
   # Calculate responsive base_size if viewport dimensions provided
   # Uses geometric mean approach: sqrt(width × height) / divisor
-  if (!is.null(width) && !is.null(height)) {
-    calculated_base_size <- calculate_base_size(width, height)
+  if (!is.null(width_inches) && !is.null(height_inches)) {
+    calculated_base_size <- calculate_base_size(width_inches, height_inches)
     # Use calculated size unless user explicitly provided base_size
     if (missing(base_size)) {
       base_size <- calculated_base_size
@@ -597,10 +673,10 @@ create_spc_chart <- function(data,
     plot_margin = plot_margin
   )
 
-  # Convert width/height to viewport dimensions (inches)
+  # Use converted dimensions for viewport
   # This enables precise label placement even without open graphics device
-  viewport_width_inches <- width
-  viewport_height_inches <- height
+  viewport_width_inches <- width_inches
+  viewport_height_inches <- height_inches
 
   # Add SPC labels automatically
   # Responsive label sizing: scales based on viewport base_size

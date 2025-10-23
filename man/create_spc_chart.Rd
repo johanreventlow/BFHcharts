@@ -24,6 +24,8 @@ create_spc_chart(
   base_size = 14,
   width = NULL,
   height = NULL,
+  units = NULL,
+  dpi = 96,
   plot_margin = NULL,
   ylab = "",
   xlab = "",
@@ -66,9 +68,13 @@ create_spc_chart(
 
 \item{base_size}{Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)}
 
-\item{width}{Plot width in inches (optional, enables responsive font scaling and precise label placement)}
+\item{width}{Plot width (optional). Supports smart unit detection or explicit units parameter. See Details.}
 
-\item{height}{Plot height in inches (optional, enables responsive font scaling and precise label placement)}
+\item{height}{Plot height (optional). Supports smart unit detection or explicit units parameter. See Details.}
+
+\item{units}{Unit type for width/height: "cm" (centimeters), "mm" (millimeters), "in" (inches), "px" (pixels), or NULL for smart auto-detection (default)}
+
+\item{dpi}{Dots per inch for pixel conversion (default: 96). Only used when units = "px"}
 
 \item{plot_margin}{Plot margins as either: (1) numeric vector c(top, right, bottom, left) in mm, or (2) ggplot2::margin() object. Default NULL uses BFHtheme defaults.}
 
@@ -117,6 +123,24 @@ entire workflow from raw data to finished plot with intelligent labels.
 \itemize{
 \item \code{part}: Vector of positions where phase splits occur (e.g., \code{c(12, 24)})
 \item \code{freeze}: Position to freeze baseline calculation
+}
+
+\strong{Unit Support (Danish-friendly):}
+Width and height support multiple units for convenience:
+\itemize{
+\item \strong{Smart auto-detection} (default, \code{units = NULL}):
+\itemize{
+\item Values > 100 → pixels (e.g., \code{width = 800} → 800px)
+\item Values 10-100 → centimeters (e.g., \code{width = 25} → 25cm)
+\item Values < 10 → inches (e.g., \code{width = 10} → 10in, legacy)
+}
+\item \strong{Explicit units} (\code{units = "cm"}, \code{"mm"}, \code{"in"}, \code{"px"}):
+\itemize{
+\item Centimeters: \verb{width = 25, height = 15, units = "cm"} (Danish standard)
+\item Millimeters: \verb{width = 250, height = 150, units = "mm"}
+\item Inches: \verb{width = 10, height = 6, units = "in"} (legacy)
+\item Pixels: \verb{width = 800, height = 600, units = "px", dpi = 96} (web/Shiny)
+}
 }
 
 \strong{Responsive Typography:}
@@ -351,6 +375,54 @@ plot_branded <- create_spc_chart(
 # - BFHtheme::theme_bfh_dark() for dark theme
 # - BFHtheme::theme_bfh_print() for print-optimized theme
 # - BFHtheme::theme_bfh_presentation() for presentations
+
+# Example 15: Danish-friendly unit support (centimeters)
+plot_cm <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Plot in Centimeters (Danish Standard)",
+  width = 25,   # 25 cm (auto-detected as cm)
+  height = 15   # 15 cm
+)
+
+# Example 16: Explicit unit specification
+plot_explicit <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Explicit Centimeters",
+  width = 25, height = 15, units = "cm"
+)
+
+# Example 17: Pixel dimensions for web/Shiny
+plot_px <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Plot for Web Display",
+  width = 800,   # 800 px (auto-detected as px)
+  height = 600,  # 600 px
+  dpi = 96
+)
+
+# Example 18: Backward compatibility (inches still work)
+plot_inches <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Legacy Inches Format",
+  width = 10,    # 10 inches (auto-detected as in)
+  height = 6     # 6 inches
+)
 }
 }
 \seealso{
