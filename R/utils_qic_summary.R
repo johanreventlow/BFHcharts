@@ -55,7 +55,16 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   available_cols <- intersect(summary_cols, names(qic_data))
 
   # Extract unique summary rows per part
-  raw_summary <- unique(qic_data[, available_cols, drop = FALSE])
+  # Use split + first row approach to handle variable control limits in p/u charts
+  if ("part" %in% names(qic_data)) {
+    # Split by part and take first row of each group
+    parts <- split(qic_data[, available_cols, drop = FALSE], qic_data$part)
+    raw_summary <- do.call(rbind, lapply(parts, function(x) x[1, , drop = FALSE]))
+    row.names(raw_summary) <- NULL
+  } else {
+    # No parts - take first row only
+    raw_summary <- qic_data[1, available_cols, drop = FALSE]
+  }
 
   # Determine decimal places for control limits based on unit
   decimal_places <- switch(y_axis_unit,

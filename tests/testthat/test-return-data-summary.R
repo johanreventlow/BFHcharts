@@ -395,3 +395,52 @@ test_that("Anhøj statistics are included in summary", {
   expect_type(result$summary$løbelængde_signal, "logical")
   expect_type(result$summary$sigma_signal, "logical")
 })
+
+test_that("summary returns single row for charts without phases", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+    infections = rpois(24, lambda = 5),
+    surgeries = rpois(24, lambda = 100)
+  )
+
+  # Test p-chart (has variable control limits per observation)
+  result <- suppressWarnings(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = infections,
+      n = surgeries,
+      chart_type = "p",
+      y_axis_unit = "percent",
+      print.summary = TRUE
+    )
+  )
+
+  # Should have exactly 1 row (not one per observation)
+  expect_equal(nrow(result$summary), 1)
+  expect_equal(result$summary$fase[1], 1)
+})
+
+test_that("summary returns correct rows for multi-phase charts", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 36),
+    infections = rpois(36, lambda = 15)
+  )
+
+  # Chart with 3 phases
+  result <- suppressWarnings(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = infections,
+      chart_type = "i",
+      y_axis_unit = "count",
+      part = c(12, 24),
+      print.summary = TRUE
+    )
+  )
+
+  # Should have exactly 3 rows (one per phase)
+  expect_equal(nrow(result$summary), 3)
+  expect_equal(result$summary$fase, c(1, 2, 3))
+})
