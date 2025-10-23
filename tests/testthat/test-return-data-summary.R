@@ -164,8 +164,9 @@ test_that("summary works with p-charts", {
 
   expect_s3_class(result$summary, "data.frame")
   expect_true("centerlinje" %in% names(result$summary))
-  expect_true("nedre_kontrolgrænse" %in% names(result$summary))
-  expect_true("øvre_kontrolgrænse" %in% names(result$summary))
+  # P-charts have variable control limits, so they should NOT be in summary
+  expect_false("nedre_kontrolgrænse" %in% names(result$summary))
+  expect_false("øvre_kontrolgrænse" %in% names(result$summary))
 })
 
 test_that("summary works with c-charts", {
@@ -210,6 +211,9 @@ test_that("summary works with u-charts", {
 
   expect_s3_class(result$summary, "data.frame")
   expect_true("centerlinje" %in% names(result$summary))
+  # U-charts have variable control limits, so they should NOT be in summary
+  expect_false("nedre_kontrolgrænse" %in% names(result$summary))
+  expect_false("øvre_kontrolgrænse" %in% names(result$summary))
 })
 
 test_that("summary handles multiple phases correctly", {
@@ -443,4 +447,43 @@ test_that("summary returns correct rows for multi-phase charts", {
   # Should have exactly 3 rows (one per phase)
   expect_equal(nrow(result$summary), 3)
   expect_equal(result$summary$fase, c(1, 2, 3))
+})
+
+test_that("i-charts and c-charts have constant control limits in summary", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    infections = rpois(12, lambda = 15)
+  )
+
+  # I-chart should have control limits
+  result_i <- suppressWarnings(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = infections,
+      chart_type = "i",
+      y_axis_unit = "count",
+      print.summary = TRUE
+    )
+  )
+
+  expect_true("nedre_kontrolgrænse" %in% names(result_i$summary))
+  expect_true("øvre_kontrolgrænse" %in% names(result_i$summary))
+  expect_type(result_i$summary$nedre_kontrolgrænse, "double")
+  expect_type(result_i$summary$øvre_kontrolgrænse, "double")
+
+  # C-chart should also have control limits
+  result_c <- suppressWarnings(
+    create_spc_chart(
+      data = data,
+      x = month,
+      y = infections,
+      chart_type = "c",
+      y_axis_unit = "count",
+      print.summary = TRUE
+    )
+  )
+
+  expect_true("nedre_kontrolgrænse" %in% names(result_c$summary))
+  expect_true("øvre_kontrolgrænse" %in% names(result_c$summary))
 })

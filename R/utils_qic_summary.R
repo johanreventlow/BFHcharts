@@ -98,12 +98,24 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     formatted$centerlinje <- round(raw_summary$cl, decimal_places)
   }
 
-  if ("lcl" %in% names(raw_summary)) {
-    formatted$nedre_kontrolgrænse <- round(raw_summary$lcl, decimal_places)
-  }
+  # Only include lcl/ucl if they are constant across observations
+  # For p/u charts, control limits vary per observation based on denominator
+  # so showing a single value is misleading
+  if ("lcl" %in% names(raw_summary) && "ucl" %in% names(raw_summary)) {
+    # Check if control limits are constant by comparing unique values
+    # within each part (phase)
+    lcl_constant <- all(sapply(split(qic_data$lcl, qic_data$part), function(x) {
+      length(unique(round(x, decimal_places + 2))) <= 1
+    }))
+    ucl_constant <- all(sapply(split(qic_data$ucl, qic_data$part), function(x) {
+      length(unique(round(x, decimal_places + 2))) <= 1
+    }))
 
-  if ("ucl" %in% names(raw_summary)) {
-    formatted$øvre_kontrolgrænse <- round(raw_summary$ucl, decimal_places)
+    if (lcl_constant && ucl_constant) {
+      formatted$nedre_kontrolgrænse <- round(raw_summary$lcl, decimal_places)
+      formatted$øvre_kontrolgrænse <- round(raw_summary$ucl, decimal_places)
+    }
+    # If not constant, don't include them in summary
   }
 
   # Optionally add 95% limits if present
