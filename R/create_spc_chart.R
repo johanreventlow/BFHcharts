@@ -42,8 +42,14 @@ NULL
 #' @param xlab X-axis label (default: "" for blank)
 #' @param subtitle Plot subtitle text (default: NULL for no subtitle)
 #' @param caption Plot caption text (default: NULL for no caption)
+#' @param return.data Logical. If TRUE, return the raw qic data frame instead of ggplot. If FALSE (default), return ggplot object. Can be combined with print.summary.
+#' @param print.summary Logical. If TRUE, return formatted summary statistics. When combined with return.data, returns list(data, summary). When alone, returns list(plot, summary). Default FALSE returns only plot.
 #'
-#' @return ggplot2 object with styled SPC chart
+#' @return
+#' - Default (return.data = FALSE, print.summary = FALSE): ggplot2 object
+#' - return.data = TRUE: data.frame with qic calculations
+#' - print.summary = TRUE: list(plot = ggplot, summary = data.frame)
+#' - Both TRUE: list(data = data.frame, summary = data.frame)
 #'
 #' @details
 #' **Chart Types:**
@@ -366,6 +372,83 @@ NULL
 #'   width = 10,    # 10 inches (auto-detected as in)
 #'   height = 6     # 6 inches
 #' )
+#'
+#' # Example 19: Get raw qic data for further analysis
+#' qic_data <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   return.data = TRUE  # Return data.frame instead of plot
+#' )
+#'
+#' # Now you can access all qic calculations
+#' head(qic_data)
+#' # Available columns: cl, ucl, lcl, runs.signal, sigma.signal, etc.
+#'
+#' # Example 20: Get summary statistics with Danish column names
+#' result <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   chart_title = "Infections - With Summary",
+#'   print.summary = TRUE  # Return list(plot, summary)
+#' )
+#'
+#' # Access the plot
+#' result$plot
+#'
+#' # Access the summary statistics (Danish column names)
+#' print(result$summary)
+#' # Columns: fase, antal_observationer, anvendelige_observationer,
+#' #          centerlinje, nedre_kontrolgrænse, øvre_kontrolgrænse,
+#' #          længste_løb, antal_kryds, løbelængde_signal, sigma_signal
+#'
+#' # Example 21: Get both raw data and summary
+#' result <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   chart_type = "i",
+#'   y_axis_unit = "count",
+#'   part = c(12),  # Split into phases
+#'   return.data = TRUE,
+#'   print.summary = TRUE  # Return list(data, summary)
+#' )
+#'
+#' # Access raw qic data
+#' result$data
+#'
+#' # Access summary statistics (one row per phase)
+#' result$summary
+#' # fase 1: baseline period
+#' # fase 2: intervention period
+#'
+#' # Example 22: Use summary for reporting
+#' result <- create_spc_chart(
+#'   data = data,
+#'   x = month,
+#'   y = infections,
+#'   n = surgeries,
+#'   chart_type = "p",
+#'   y_axis_unit = "percent",
+#'   chart_title = "Infection Rate - Multi-phase Analysis",
+#'   part = c(12),
+#'   print.summary = TRUE
+#' )
+#'
+#' # Extract key metrics for reporting
+#' summary_stats <- result$summary
+#' cat("Fase 1 centerlinje:", summary_stats$centerlinje[1], "%\n")
+#' cat("Fase 2 centerlinje:", summary_stats$centerlinje[2], "%\n")
+#' cat("Forbedring:", summary_stats$centerlinje[1] - summary_stats$centerlinje[2], "%-point\n")
+#'
+#' if (summary_stats$sigma_signal[2]) {
+#'   cat("VIGTIG: Special cause variation detekteret i fase 2!\n")
+#' }
 #' }
 create_spc_chart <- function(data,
                               x,
@@ -392,7 +475,9 @@ create_spc_chart <- function(data,
                               ylab = "",
                               xlab = "",
                               subtitle = NULL,
-                              caption = NULL) {
+                              caption = NULL,
+                              return.data = FALSE,
+                              print.summary = FALSE) {
   # Validate inputs
   if (!is.data.frame(data)) {
     stop("data must be a data frame")
@@ -496,6 +581,16 @@ create_spc_chart <- function(data,
 
   # Validate agg.fun parameter
   agg.fun <- match.arg(agg.fun)
+
+  # Validate return.data parameter
+  if (!is.logical(return.data) || length(return.data) != 1 || is.na(return.data)) {
+    stop("return.data must be TRUE or FALSE", call. = FALSE)
+  }
+
+  # Validate print.summary parameter
+  if (!is.logical(print.summary) || length(print.summary) != 1 || is.na(print.summary)) {
+    stop("print.summary must be TRUE or FALSE", call. = FALSE)
+  }
 
   # Validate plot_margin parameter
   if (!is.null(plot_margin)) {
@@ -693,5 +788,22 @@ create_spc_chart <- function(data,
     verbose = FALSE
   )
 
-  return(plot)
+  # Handle return based on parameters
+  # Get summary if requested
+  summary_result <- NULL
+  if (print.summary) {
+    # Extract and format summary from qic_data
+    summary_result <- format_qic_summary(qic_data, y_axis_unit = y_axis_unit)
+  }
+
+  # Return based on user parameters
+  if (return.data && print.summary) {
+    return(list(data = qic_data, summary = summary_result))
+  } else if (return.data) {
+    return(qic_data)
+  } else if (print.summary) {
+    return(list(plot = plot, summary = summary_result))
+  } else {
+    return(plot)
+  }
 }

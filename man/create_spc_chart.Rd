@@ -30,7 +30,9 @@ create_spc_chart(
   ylab = "",
   xlab = "",
   subtitle = NULL,
-  caption = NULL
+  caption = NULL,
+  return.data = FALSE,
+  print.summary = FALSE
 )
 }
 \arguments{
@@ -85,9 +87,18 @@ create_spc_chart(
 \item{subtitle}{Plot subtitle text (default: NULL for no subtitle)}
 
 \item{caption}{Plot caption text (default: NULL for no caption)}
+
+\item{return.data}{Logical. If TRUE, return the raw qic data frame instead of ggplot. If FALSE (default), return ggplot object. Can be combined with print.summary.}
+
+\item{print.summary}{Logical. If TRUE, return formatted summary statistics. When combined with return.data, returns list(data, summary). When alone, returns list(plot, summary). Default FALSE returns only plot.}
 }
 \value{
-ggplot2 object with styled SPC chart
+\itemize{
+\item Default (return.data = FALSE, print.summary = FALSE): ggplot2 object
+\item return.data = TRUE: data.frame with qic calculations
+\item print.summary = TRUE: list(plot = ggplot, summary = data.frame)
+\item Both TRUE: list(data = data.frame, summary = data.frame)
+}
 }
 \description{
 One-function approach to create publication-ready SPC charts.
@@ -423,6 +434,83 @@ plot_inches <- create_spc_chart(
   width = 10,    # 10 inches (auto-detected as in)
   height = 6     # 6 inches
 )
+
+# Example 19: Get raw qic data for further analysis
+qic_data <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  return.data = TRUE  # Return data.frame instead of plot
+)
+
+# Now you can access all qic calculations
+head(qic_data)
+# Available columns: cl, ucl, lcl, runs.signal, sigma.signal, etc.
+
+# Example 20: Get summary statistics with Danish column names
+result <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Infections - With Summary",
+  print.summary = TRUE  # Return list(plot, summary)
+)
+
+# Access the plot
+result$plot
+
+# Access the summary statistics (Danish column names)
+print(result$summary)
+# Columns: fase, antal_observationer, anvendelige_observationer,
+#          centerlinje, nedre_kontrolgrænse, øvre_kontrolgrænse,
+#          længste_løb, antal_kryds, løbelængde_signal, sigma_signal
+
+# Example 21: Get both raw data and summary
+result <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  part = c(12),  # Split into phases
+  return.data = TRUE,
+  print.summary = TRUE  # Return list(data, summary)
+)
+
+# Access raw qic data
+result$data
+
+# Access summary statistics (one row per phase)
+result$summary
+# fase 1: baseline period
+# fase 2: intervention period
+
+# Example 22: Use summary for reporting
+result <- create_spc_chart(
+  data = data,
+  x = month,
+  y = infections,
+  n = surgeries,
+  chart_type = "p",
+  y_axis_unit = "percent",
+  chart_title = "Infection Rate - Multi-phase Analysis",
+  part = c(12),
+  print.summary = TRUE
+)
+
+# Extract key metrics for reporting
+summary_stats <- result$summary
+cat("Fase 1 centerlinje:", summary_stats$centerlinje[1], "\%\n")
+cat("Fase 2 centerlinje:", summary_stats$centerlinje[2], "\%\n")
+cat("Forbedring:", summary_stats$centerlinje[1] - summary_stats$centerlinje[2], "\%-point\n")
+
+if (summary_stats$sigma_signal[2]) {
+  cat("VIGTIG: Special cause variation detekteret i fase 2!\n")
+}
 }
 }
 \seealso{
