@@ -318,9 +318,11 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
           }
         }
 
-        base_interval_secs * mult
+        # Convert to difftime for proper POSIXct seq() behavior
+        as.difftime(base_interval_secs * mult, units = "secs")
       } else {
-        base_interval_secs
+        # Convert to difftime for proper POSIXct seq() behavior
+        as.difftime(base_interval_secs, units = "secs")
       }
     } else {
       NULL
@@ -336,6 +338,9 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
       if (length(breaks_posix) == 0 || breaks_posix[1] != data_x_min) {
         breaks_posix <- unique(c(data_x_min, breaks_posix))
       }
+
+      # Ensure breaks are POSIXct (seq with difftime should return POSIXct, but be explicit)
+      breaks_posix <- as.POSIXct(breaks_posix)
 
       plot <- plot + BFHtheme::scale_x_datetime_bfh(
         expand = ggplot2::expansion(mult = c(0.025, 0)),
@@ -354,6 +359,9 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
       if (length(breaks_posix) == 0 || breaks_posix[1] != data_x_min) {
         breaks_posix <- unique(c(data_x_min, breaks_posix))
       }
+
+      # Ensure breaks are POSIXct
+      breaks_posix <- as.POSIXct(breaks_posix)
 
       plot <- plot + BFHtheme::scale_x_datetime_bfh(
         expand = ggplot2::expansion(mult = c(0.025, 0)),
@@ -382,6 +390,9 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
           breaks_posix <- unique(c(data_x_min, breaks_posix))
         }
       }
+
+      # Ensure breaks are POSIXct
+      breaks_posix <- as.POSIXct(breaks_posix)
 
       plot <- plot + BFHtheme::scale_x_datetime_bfh(
         labels = scales::date_format(format_config$labels),

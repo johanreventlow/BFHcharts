@@ -367,30 +367,50 @@ add_right_labels_marquee <- function(
   x_range <- built_plot$layout$panel_params[[1]]$x.range
   x_max_value <- x_range[2]
 
-  # FIX: Detektér om x-aksen er Date/POSIXct eller numerisk
-  # PROBLEM: Tvungen POSIXct konvertering bryder numeriske x-akser
-  # hvor værdier bliver fortolket som sekunder siden 1970
+  # FIX: Detektér om x-aksen er Date/POSIXct eller numerisk ved at inspicere scale type
+  # CRITICAL: Efter ggplot_build() er datetime værdier transformeret til plain numeric
+  # Vi skal bruge scale's inverse transformation + timezone for korrekt konvertering
   x_is_temporal <- FALSE
+  x_scale <- NULL
+
   tryCatch(
     {
-      # Check x.range class direkte
-      if (inherits(x_max_value, c("POSIXct", "POSIXt", "Date"))) {
-        x_is_temporal <- TRUE
-      }
-      # Alternativ: check scale transformation
-      if (!x_is_temporal && !is.null(built_plot$layout$panel_params[[1]]$x.sec.range)) {
-        # Secondary axis antyder temporal data
-        x_is_temporal <- TRUE
+      # Hent x-scale fra built plot for at detektere type
+      x_scale <- built_plot$layout$panel_scales_x[[1]]
+
+      # Check hvis scale er datetime/date baseret på scale class eller trans name
+      if (!is.null(x_scale)) {
+        scale_class <- class(x_scale)[1]
+        trans_name <- if (!is.null(x_scale$trans)) x_scale$trans$name else ""
+
+        # Datetime scales har typisk "time" eller "date" i trans name eller scale class
+        if (grepl("time|date", tolower(trans_name)) ||
+            grepl("Date|Time", scale_class)) {
+          x_is_temporal <- TRUE
+        }
       }
     },
     error = function(e) {
-      # Fallback: hvis type detection fejler, brug værdien direkte (numerisk)
+      # Fallback: hvis scale detection fejler, antag numerisk
       x_is_temporal <- FALSE
     }
   )
 
-  if (x_is_temporal) {
-    x_max <- as.POSIXct(x_max_value, origin = "1970-01-01", tz = "UTC")
+  if (x_is_temporal && !is.null(x_scale)) {
+    # CODEX FIX: Brug scale's inverse transformation + timezone for korrekt konvertering
+    # Dette undgår warning om numeric values i datetime scale
+    tz <- if (!is.null(x_scale$timezone)) x_scale$timezone else "UTC"
+
+    # Brug inverse transformation hvis tilgængelig, ellers fallback
+    if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
+      x_max <- x_scale$trans$inverse(x_max_value)
+      # Ensure POSIXct class and set timezone
+      x_max <- as.POSIXct(x_max, origin = "1970-01-01")
+      attr(x_max, "tzone") <- tz
+    } else {
+      # Fallback: direkte konvertering
+      x_max <- as.POSIXct(x_max_value, origin = "1970-01-01", tz = tz)
+    }
   } else {
     # Numerisk x-akse - brug værdi direkte
     x_max <- x_max_value
