@@ -49,3 +49,4 @@ Other spc-config:
 \code{\link{spc_plot_config}()}
 }
 \concept{spc-config}
+\keyword{internal}

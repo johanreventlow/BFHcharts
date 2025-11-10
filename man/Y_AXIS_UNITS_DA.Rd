@@ -20,4 +20,4 @@ Other spc-helpers:
 \code{\link{get_y_axis_unit_label}()}
 }
 \concept{spc-helpers}
-\keyword{datasets}
+\keyword{internal}

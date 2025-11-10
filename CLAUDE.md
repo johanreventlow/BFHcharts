@@ -67,22 +67,29 @@ BFHcharts/
 
 ### Core Components
 
-**Public API (Exported Functions):**
-- `create_spc_chart()` - ⭐ Primary user-facing function
-- `CHART_TYPES_DA`, `CHART_TYPES_EN` - Chart type constants
-- `Y_AXIS_UNITS_DA` - Y-axis unit labels
-- `spc_plot_config()`, `viewport_dims()`, `phase_config()` - Configuration objects
+**Public API (1 funktion):**
+- `create_spc_chart()` ⭐ - **DEN ENESTE funktion brugere skal kende**
 
 **Internal API (Advanced/Power Users):**
 Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `:::`:
+
+*Low-level plotting:*
 - `bfh_spc_plot()` - Low-level plot generation fra QIC data
 - `add_spc_labels()` - Advanced label placement system
 - `apply_y_axis_formatting()` - Y-axis formatting utilities
 - `calculate_base_size()` - Responsive font size calculation
 - `create_plot_footer()` - Footer generation
-- `%||%` - Null-coalescing operator (internal utility)
 
-**Rationale:** 95% af brugere behøver kun `create_spc_chart()`. Advanced users kan tilgå internal functions med `BFHcharts:::function_name()`.
+*Configuration objects:*
+- `spc_plot_config()`, `viewport_dims()`, `phase_config()` - Config abstractions
+- Kun brugt internt af `create_spc_chart()`
+
+*Constants:*
+- `CHART_TYPES_DA`, `CHART_TYPES_EN` - Chart type mappings
+- `Y_AXIS_UNITS_DA` - Y-axis unit labels
+- Brugere passer strings direkte: `chart_type = "p"`, ikke konstant-opslag
+
+**Rationale:** **Ultra-simpelt API** - brugere lærer kun 1 funktion. Alt kompleksitet er skjult under motorhjelmen. Advanced users kan tilgå internals med `BFHcharts:::function_name()`.
 
 **Anhøj Rules:**
 - Serielængde detection

@@ -245,7 +245,7 @@ validate_qic_data <- function(qic_data) {
 #' @format Named character vector
 #' @family spc-helpers
 #' @seealso [get_y_axis_unit_label()], [create_spc_chart()]
-#' @export
+#' @keywords internal
 Y_AXIS_UNITS_DA <- c(
   count = "Antal",
   percent = "Procent (%)",

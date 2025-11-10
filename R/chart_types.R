@@ -17,7 +17,7 @@ NULL
 #' @format Named character vector med dansk label → engelsk kode
 #' @family spc-chart-types
 #' @seealso [CHART_TYPES_EN], [get_qic_chart_type()]
-#' @export
+#' @keywords internal
 #' @examples
 #' CHART_TYPES_DA["Seriediagram med SPC (Run Chart)"]  # Returns "run"
 CHART_TYPES_DA <- c(
@@ -39,7 +39,7 @@ CHART_TYPES_DA <- c(
 #' @format Character vector of valid chart codes
 #' @family spc-chart-types
 #' @seealso [CHART_TYPES_DA], [get_qic_chart_type()]
-#' @export
+#' @keywords internal
 CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t")
 
 # ============================================================================

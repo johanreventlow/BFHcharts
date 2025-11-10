@@ -70,7 +70,7 @@ NULL
 #' - `y_axis_unit` must be one of: count, percent, rate, time
 #' - `target_value` must be numeric if provided
 #'
-#' @export
+#' @keywords internal
 #' @family spc-config
 #' @seealso [create_spc_chart()], [bfh_spc_plot()], [phase_config()], [viewport_dims()]
 #' @examples
@@ -177,7 +177,7 @@ print.spc_plot_config <- function(x, ...) {
 #' - base_size controls responsive scaling of geoms and text
 #' - Reference: base_size 14 provides original sizing
 #'
-#' @export
+#' @keywords internal
 #' @family spc-config
 #' @seealso [create_spc_chart()], [spc_plot_config()]
 #' @examples
@@ -254,7 +254,7 @@ print.viewport_dims <- function(x, ...) {
 #' - `freeze_position` locks the baseline calculation up to a specific row
 #' - These are passed directly to qicharts2::qic()
 #'
-#' @export
+#' @keywords internal
 #' @family spc-config
 #' @seealso [spc_plot_config()], [create_spc_chart()]
 #' @examples
