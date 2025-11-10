@@ -67,10 +67,22 @@ BFHcharts/
 
 ### Core Components
 
-**Main API:**
-- `create_spc_chart()` - Primary chart generation function
-- Chart types: p, u, c, xbar, i, mr charts
-- Auto-detection af chart type fra data
+**Public API (Exported Functions):**
+- `create_spc_chart()` - ⭐ Primary user-facing function
+- `CHART_TYPES_DA`, `CHART_TYPES_EN` - Chart type constants
+- `Y_AXIS_UNITS_DA` - Y-axis unit labels
+- `spc_plot_config()`, `viewport_dims()`, `phase_config()` - Configuration objects
+
+**Internal API (Advanced/Power Users):**
+Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `:::`:
+- `bfh_spc_plot()` - Low-level plot generation fra QIC data
+- `add_spc_labels()` - Advanced label placement system
+- `apply_y_axis_formatting()` - Y-axis formatting utilities
+- `calculate_base_size()` - Responsive font size calculation
+- `create_plot_footer()` - Footer generation
+- `%||%` - Null-coalescing operator (internal utility)
+
+**Rationale:** 95% af brugere behøver kun `create_spc_chart()`. Advanced users kan tilgå internal functions med `BFHcharts:::function_name()`.
 
 **Anhøj Rules:**
 - Serielængde detection
@@ -241,6 +253,23 @@ devtools::check()          # Check package
 covr::package_coverage()   # Coverage
 devtools::build_vignettes() # Build vignettes
 ```
+
+### Git Workflow: Files to NEVER Commit
+
+**Auto-generated outputs:**
+- ❌ `Rplots.pdf` - R default plot output device
+- ❌ `tests/testthat/Rplots.pdf` - Test plot outputs
+- ❌ `*.png` / `*.jpg` in root or test directories (unless documented examples in `inst/`)
+- ❌ `.Rhistory` - R command history
+- ❌ `.RData` / `.rda` files (unless example data in `data/`)
+
+**Development artifacts:**
+- ❌ `.xcf`, `.psd` - Image editing work files
+- ❌ Cache directories (`.cache/`, `*_cache/`)
+- ❌ Personal IDE configs (unless already in `.gitignore`)
+- ❌ `demo_*.R` with debug changes (commented-out code)
+
+**When in doubt:** Check `.gitignore` or ask user before committing outputs/artifacts.
 
 ---
 

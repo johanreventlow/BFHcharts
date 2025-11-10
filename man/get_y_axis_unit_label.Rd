@@ -24,8 +24,7 @@ get_y_axis_unit_label("percent")  # Returns "Procent (\%)"
 \link{Y_AXIS_UNITS_DA}, \code{\link[=apply_y_axis_formatting]{apply_y_axis_formatting()}}
 
 Other spc-helpers: 
-\code{\link{Y_AXIS_UNITS_DA}},
-\code{\link{\%||\%}()}
+\code{\link{Y_AXIS_UNITS_DA}}
 }
 \concept{spc-helpers}
 \keyword{internal}

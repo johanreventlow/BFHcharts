@@ -44,7 +44,7 @@ NULL
 #' - Extended lines (20% beyond last data point)
 #' - Anhoej signal linetype switching
 #'
-#' @export
+#' @keywords internal
 #' @family spc-plotting
 #' @seealso [create_spc_chart()], [spc_plot_config()], [viewport_dims()], [phase_config()]
 #' @examples

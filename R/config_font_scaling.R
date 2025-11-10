@@ -80,10 +80,11 @@ FONT_SCALING_CONFIG <- list(
 #' This provides balanced scaling that considers both dimensions,
 #' ensuring typography scales proportionally with plot area.
 #'
-#' @export
+#' @keywords internal
 #' @family spc-config
 #' @seealso [FONT_SCALING_CONFIG], [viewport_dims()]
 #' @examples
+#' \dontrun{
 #' # Standard web plot
 #' calculate_base_size(width = 8, height = 5)
 #' # Returns: ~17.2pt
@@ -95,6 +96,7 @@ FONT_SCALING_CONFIG <- list(
 #' # Large presentation plot
 #' calculate_base_size(width = 16, height = 9)
 #' # Returns: ~34.4pt (clamped to max_size = 48)
+#' }
 calculate_base_size <- function(width, height, config = FONT_SCALING_CONFIG) {
   if (is.null(width) || is.null(height) || is.na(width) || is.na(height)) {
     return(14)  # Default fallback

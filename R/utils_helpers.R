@@ -17,12 +17,11 @@ NULL
 #' @param y Second value (returned if x is NULL)
 #'
 #' @return x if not NULL, otherwise y
+#' @name null-coalesce
 #' @family spc-helpers
 #' @seealso [get_y_axis_unit_label()]
-#' @export
-#' @examples
-#' NULL %||% "default"  # Returns "default"
-#' "value" %||% "default"  # Returns "value"
+#' @keywords internal
+#' @noRd
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x
 }

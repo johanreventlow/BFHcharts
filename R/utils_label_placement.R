@@ -1702,7 +1702,7 @@ estimate_label_heights_npc <- function(
 #' Opretter et marquee grob med de faktiske styles og måler højden præcist.
 #' Dette giver korrekt højde på alle panelstørrelser uden magic numbers.
 #'
-#' @param text Marquee string med font size markup (fx "{.8 **Header**}  \n{.24 **Value**}")
+#' @param text Marquee string med font size markup (fx "{.8 **Header**}  \\n{.24 **Value**}")
 #' @param style marquee style object (default: classic_style med right align)
 #' @param panel_height_inches Panel højde i inches (hvis kendt, ellers NULL for auto-detect)
 #' @param fallback_npc Fallback værdi hvis grob-måling fejler (default 0.13)

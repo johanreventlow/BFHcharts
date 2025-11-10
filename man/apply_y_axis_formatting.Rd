@@ -68,3 +68,4 @@ Other spc-formatting:
 \code{\link{format_y_value}()}
 }
 \concept{spc-formatting}
+\keyword{internal}

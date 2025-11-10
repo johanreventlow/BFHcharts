@@ -76,14 +76,16 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
 #'
 #' @family spc-themes
 #' @seealso [bfh_spc_plot()], [BFHtheme::theme_bfh()]
-#' @export
+#' @keywords internal
 #' @examples
+#' \dontrun{
 #' create_plot_footer(
 #'   hospital_name = "Bispebjerg og Frederiksberg Hospital",
 #'   department = "Akutafdelingen",
 #'   data_source = "EPJ data",
 #'   date = Sys.Date()
 #' )
+#' }
 create_plot_footer <- function(hospital_name = "BFH",
                                department = NULL,
                                data_source = NULL,

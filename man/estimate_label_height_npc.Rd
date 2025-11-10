@@ -14,7 +14,7 @@ estimate_label_height_npc(
 )
 }
 \arguments{
-\item{text}{Marquee string med font size markup (fx "{.8 \strong{Header}}  \n{.24 \strong{Value}}")}
+\item{text}{Marquee string med font size markup (fx "{.8 \strong{Header}}  \\n{.24 \strong{Value}}")}
 
 \item{style}{marquee style object (default: classic_style med right align)}
 

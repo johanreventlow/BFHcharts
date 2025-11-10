@@ -26,6 +26,7 @@ This provides balanced scaling that considers both dimensions,
 ensuring typography scales proportionally with plot area.
 }
 \examples{
+\dontrun{
 # Standard web plot
 calculate_base_size(width = 8, height = 5)
 # Returns: ~17.2pt
@@ -37,6 +38,7 @@ calculate_base_size(width = 10, height = 6)
 # Large presentation plot
 calculate_base_size(width = 16, height = 9)
 # Returns: ~34.4pt (clamped to max_size = 48)
+}
 }
 \seealso{
 \link{FONT_SCALING_CONFIG}, \code{\link[=viewport_dims]{viewport_dims()}}
@@ -51,3 +53,4 @@ Other spc-config:
 \code{\link{viewport_dims}()}
 }
 \concept{spc-config}
+\keyword{internal}

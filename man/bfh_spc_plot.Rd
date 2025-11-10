@@ -96,3 +96,4 @@ Other spc-plotting:
 \code{\link{create_spc_chart}()}
 }
 \concept{spc-plotting}
+\keyword{internal}

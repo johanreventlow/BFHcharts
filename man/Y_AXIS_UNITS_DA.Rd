@@ -17,7 +17,6 @@ Mapping of unit codes to Danish labels.
 \code{\link[=get_y_axis_unit_label]{get_y_axis_unit_label()}}, \code{\link[=create_spc_chart]{create_spc_chart()}}
 
 Other spc-helpers: 
-\code{\link{\%||\%}()},
 \code{\link{get_y_axis_unit_label}()}
 }
 \concept{spc-helpers}

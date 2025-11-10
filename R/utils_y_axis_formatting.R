@@ -31,7 +31,7 @@ NULL
 #' - Decimal mark: `,` (e.g., "12,5")
 #' - Thousand separator: `.` (e.g., "1.250")
 #'
-#' @export
+#' @keywords internal
 #' @family spc-formatting
 #' @seealso [format_y_value()], [get_optimal_formatting()]
 #' @examples

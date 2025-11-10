@@ -90,3 +90,4 @@ Other label-placement:
 \code{\link{sanitize_marquee_text}()}
 }
 \concept{label-placement}
+\keyword{internal}

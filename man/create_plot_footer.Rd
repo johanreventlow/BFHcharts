@@ -28,6 +28,7 @@ Generate a formatted footer for SPC charts with hospital name,
 data source, and generation date.
 }
 \examples{
+\dontrun{
 create_plot_footer(
   hospital_name = "Bispebjerg og Frederiksberg Hospital",
   department = "Akutafdelingen",
@@ -35,7 +36,9 @@ create_plot_footer(
   date = Sys.Date()
 )
 }
+}
 \seealso{
 \code{\link[=bfh_spc_plot]{bfh_spc_plot()}}, \code{\link[BFHtheme:theme_bfh]{BFHtheme::theme_bfh()}}
 }
 \concept{spc-themes}
+\keyword{internal}
