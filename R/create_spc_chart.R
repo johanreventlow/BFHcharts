@@ -109,8 +109,8 @@ NULL
 #'   - [spc_plot_config()] for plot configuration
 #'   - [apply_y_axis_formatting()] for Y-axis formatting
 #'   - [BFHtheme::theme_bfh()] for BFHtheme styling
-#'   - [BFHtheme::add_logo()] to add hospital branding
-#' @importFrom BFHtheme theme_bfh add_logo
+#'   - [BFHtheme::add_bfh_logo()] to add hospital branding
+#' @importFrom BFHtheme theme_bfh add_bfh_logo
 #' @examples
 #' \dontrun{
 #' library(BFHcharts)
@@ -318,7 +318,7 @@ NULL
 #'   chart_title = "Hospital-Acquired Infections - Official Report",
 #'   base_size = 14
 #' ) |>
-#'   BFHtheme::add_logo()  # Add hospital branding
+#'   BFHtheme::add_bfh_logo()  # Add hospital branding
 #'
 #' # Alternate BFHtheme styles available:
 #' # - BFHtheme::theme_bfh_dark() for dark theme

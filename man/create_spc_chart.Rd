@@ -380,7 +380,7 @@ plot_branded <- create_spc_chart(
   chart_title = "Hospital-Acquired Infections - Official Report",
   base_size = 14
 ) |>
-  BFHtheme::add_logo()  # Add hospital branding
+  BFHtheme::add_bfh_logo()  # Add hospital branding
 
 # Alternate BFHtheme styles available:
 # - BFHtheme::theme_bfh_dark() for dark theme
@@ -519,7 +519,7 @@ if (summary_stats$sigma_signal[2]) {
 \item \code{\link[=spc_plot_config]{spc_plot_config()}} for plot configuration
 \item \code{\link[=apply_y_axis_formatting]{apply_y_axis_formatting()}} for Y-axis formatting
 \item \code{\link[BFHtheme:theme_bfh]{BFHtheme::theme_bfh()}} for BFHtheme styling
-\item \code{\link[BFHtheme:add_logo]{BFHtheme::add_logo()}} to add hospital branding
+\item \code{\link[BFHtheme:add_bfh_logo]{BFHtheme::add_bfh_logo()}} to add hospital branding
 }
 
 Other spc-plotting: 

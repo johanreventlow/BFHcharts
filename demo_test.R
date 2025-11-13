@@ -60,7 +60,7 @@ plot2 <- create_spc_chart(
 
 # Try to add logo (may fail if fonts not available)
 tryCatch({
-  plot2 <- plot2 |> BFHtheme::add_logo()
+  plot2 <- plot2 |> BFHtheme::add_bfh_logo()
 }, error = function(e) {
   cat("Note: Could not add logo (font issue). Chart still works fine.\n")
 })

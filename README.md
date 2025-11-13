@@ -119,7 +119,7 @@ plot <- create_spc_chart(
 )
 
 # Example 2: Add hospital logo
-plot <- plot |> BFHtheme::add_logo()
+plot <- plot |> BFHtheme::add_bfh_logo()
 
 # Example 3: Apply alternative BFHtheme variants
 plot <- create_spc_chart(

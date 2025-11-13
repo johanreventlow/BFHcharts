@@ -242,7 +242,7 @@ create_spc_chart <- function(..., theme = BFHtheme::theme_bfh()) {
   p <- base_plot + theme
 
   # Tilføj hospital branding hvis ønsket
-  if (add_logo) {
+  if (add_bfh_logo) {
     p <- BFHtheme::add_bfh_logo(p)
   }
 
