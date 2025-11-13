@@ -278,6 +278,22 @@ devtools::build_vignettes() # Build vignettes
 
 **When in doubt:** Check `.gitignore` or ask user before committing outputs/artifacts.
 
+### OpenSpec Integration
+
+**Available commands for structured change management:**
+
+- `/openspec:proposal` - Scaffold a new OpenSpec change proposal
+- `/openspec:apply` - Implement an approved OpenSpec change
+- `/openspec:archive` - Archive a deployed OpenSpec change
+
+**When to use:**
+- Major feature additions that need design review
+- Breaking changes to public API
+- Architectural decisions that need documentation
+- Changes requiring cross-repository coordination (e.g., with SPCify)
+
+**See:** `openspec/AGENTS.md` for detailed workflow instructions
+
 ---
 
 ## 6) Domain-Specific Guidance
