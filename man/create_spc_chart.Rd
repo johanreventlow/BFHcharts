@@ -521,8 +521,5 @@ if (summary_stats$sigma_signal[2]) {
 \item \code{\link[BFHtheme:theme_bfh]{BFHtheme::theme_bfh()}} for BFHtheme styling
 \item \code{\link[BFHtheme:add_bfh_logo]{BFHtheme::add_bfh_logo()}} to add hospital branding
 }
-
-Other spc-plotting: 
-\code{\link{bfh_spc_plot}()}
 }
 \concept{spc-plotting}

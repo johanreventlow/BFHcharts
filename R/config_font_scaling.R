@@ -42,6 +42,7 @@
 #' }
 #'
 #' @keywords internal
+#' @noRd
 #' @family spc-config
 #' @seealso [calculate_base_size()], [viewport_dims()]
 #' @examples
@@ -81,6 +82,7 @@ FONT_SCALING_CONFIG <- list(
 #' ensuring typography scales proportionally with plot area.
 #'
 #' @keywords internal
+#' @noRd
 #' @family spc-config
 #' @seealso [FONT_SCALING_CONFIG], [viewport_dims()]
 #' @examples

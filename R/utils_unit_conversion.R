@@ -4,6 +4,8 @@
 #' Provides smart auto-detection for user-friendly Danish units.
 #'
 #' @name utils_unit_conversion
+#' @keywords internal
+#' @noRd
 NULL
 
 # ============================================================================
@@ -22,6 +24,7 @@ NULL
 #'
 #' @return List with width_inches, height_inches, and detected_unit
 #' @keywords internal
+#' @noRd
 #'
 #' @examples
 #' \dontrun{
@@ -108,6 +111,7 @@ convert_to_inches <- function(width, height, units = NULL, dpi = 96) {
 #'
 #' @return List with width_inches, height_inches, and detected_unit
 #' @keywords internal
+#' @noRd
 #'
 #' @examples
 #' \dontrun{
@@ -144,6 +148,7 @@ smart_convert_to_inches <- function(width, height, dpi = 96) {
 #'
 #' @return List with width, height in target unit
 #' @keywords internal
+#' @noRd
 #'
 #' @examples
 #' \dontrun{

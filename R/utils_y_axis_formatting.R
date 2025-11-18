@@ -3,6 +3,8 @@
 #' Unit-specific Y-axis formatting for SPC plots with Danish number notation.
 #'
 #' @name y_axis_formatting
+#' @keywords internal
+#' @noRd
 NULL
 
 # ============================================================================
@@ -32,6 +34,7 @@ NULL
 #' - Thousand separator: `.` (e.g., "1.250")
 #'
 #' @keywords internal
+#' @noRd
 #' @family spc-formatting
 #' @seealso [format_y_value()], [get_optimal_formatting()]
 #' @examples
@@ -99,6 +102,7 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
 #'
 #' @return ggplot2 scale layer
 #' @keywords internal
+#' @noRd
 format_y_axis_percent <- function() {
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
@@ -116,6 +120,7 @@ format_y_axis_percent <- function() {
 #'
 #' @return ggplot2 scale layer
 #' @keywords internal
+#' @noRd
 format_y_axis_count <- function() {
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
@@ -138,6 +143,7 @@ format_y_axis_count <- function() {
 #'
 #' @return ggplot2 scale layer
 #' @keywords internal
+#' @noRd
 format_y_axis_rate <- function() {
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
@@ -159,6 +165,7 @@ format_y_axis_rate <- function() {
 #'
 #' @return ggplot2 scale layer
 #' @keywords internal
+#' @noRd
 format_y_axis_time <- function(qic_data) {
   if (is.null(qic_data) || !"y" %in% names(qic_data)) {
     warning("format_y_axis_time: missing qic_data or y column, using default")
@@ -197,6 +204,7 @@ format_y_axis_time <- function(qic_data) {
 #'
 #' @return Formatted string
 #' @keywords internal
+#' @noRd
 format_scaled_number <- function(val, scale, suffix) {
   if (is.na(val)) {
     return(NA_character_)
@@ -218,6 +226,7 @@ format_scaled_number <- function(val, scale, suffix) {
 #'
 #' @return Formatted string
 #' @keywords internal
+#' @noRd
 format_unscaled_number <- function(val) {
   if (is.na(val)) {
     return(NA_character_)
@@ -240,6 +249,7 @@ format_unscaled_number <- function(val) {
 #'
 #' @return Formatted string (e.g., "30 min", "1 time", "2 timer", "1 dag", "2 dage")
 #' @keywords internal
+#' @noRd
 format_time_with_unit <- function(val_minutes, time_unit) {
   if (is.na(val_minutes)) {
     return(NA_character_)

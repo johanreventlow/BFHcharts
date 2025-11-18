@@ -100,6 +100,8 @@
 #'
 #' @param x Numerisk værdi eller vektor
 #' @return Værdi begrænset til `[0, 1]`
+#' @keywords internal
+#' @noRd
 clamp01 <- function(x) {
   # Input validation
   if (is.null(x) || length(x) == 0) {
@@ -127,6 +129,8 @@ clamp01 <- function(x) {
 #' @param low_bound Nedre grænse
 #' @param high_bound Øvre grænse
 #' @return Værdi begrænset til `[low_bound, high_bound]`
+#' @keywords internal
+#' @noRd
 clamp_to_bounds <- function(x, low_bound, high_bound) {
   # Input validation
   if (is.null(x) || length(x) == 0) {
@@ -176,6 +180,7 @@ clamp_to_bounds <- function(x, low_bound, high_bound) {
 #' @return List med y_to_npc og npc_to_y funktioner
 #'
 #' @keywords internal
+#' @noRd
 npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
   # Validate built plot object
   if (is.null(built_plot) || !inherits(built_plot, "ggplot_built")) {
@@ -349,6 +354,7 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
 #'
 #' @return Liste med mapping-funktioner (`y_to_npc`, `npc_to_y`) samt metadata
 #' @keywords internal
+#' @noRd
 #' @seealso [npc_mapper_from_built()]
 #' @examples
 #' \dontrun{
@@ -436,6 +442,7 @@ npc_mapper_from_plot <- function(p, panel = 1) {
 #' @family placement-cache
 #' @seealso [configure_grob_cache()], [clear_all_placement_caches()]
 #' @keywords internal
+#' @noRd
 clear_grob_height_cache <- function() {
   # Clear all data entries (preserve metadata)
   all_keys <- ls(.grob_height_cache)
@@ -465,6 +472,7 @@ clear_grob_height_cache <- function() {
 #' @param cache_type "grob" or "panel"
 #' @param increment If TRUE, add value to current; if FALSE, set to value
 #' @keywords internal
+#' @noRd
 safe_update_cache_stat <- function(stat_name, value, cache_type = "grob", increment = TRUE) {
   tryCatch(
     {
@@ -500,6 +508,7 @@ safe_update_cache_stat <- function(stat_name, value, cache_type = "grob", increm
 #'
 #' @return List with cache_size, hits, misses, hit_rate, memory_estimate
 #' @keywords internal
+#' @noRd
 get_grob_cache_stats <- function() {
   all_keys <- ls(.grob_height_cache)
   data_keys <- all_keys[!grepl("^\\.", all_keys)]
@@ -529,6 +538,7 @@ get_grob_cache_stats <- function() {
 #' @param force Logical: If TRUE, purge all entries regardless of TTL
 #' @return Integer: Number of entries purged
 #' @keywords internal
+#' @noRd
 purge_grob_cache_expired <- function(force = FALSE) {
   all_keys <- ls(.grob_height_cache)
   data_keys <- all_keys[!grepl("^\\.", all_keys)]
@@ -580,6 +590,7 @@ purge_grob_cache_expired <- function(force = FALSE) {
 #' 2. Cache size (if exceeds max_cache_size)
 #'
 #' @keywords internal
+#' @noRd
 auto_purge_grob_cache <- function() {
   # Increment operation counter
   .grob_cache_stats$operations <<- .grob_cache_stats$operations + 1L
@@ -636,6 +647,7 @@ auto_purge_grob_cache <- function() {
 #' @family placement-cache
 #' @seealso [configure_panel_cache()], [configure_placement_cache()]
 #' @keywords internal
+#' @noRd
 configure_grob_cache <- function(
     enabled = NULL,
     ttl_seconds = NULL,
@@ -707,6 +719,7 @@ configure_grob_cache <- function(
 #' Clear panel height cache (for testing or memory management)
 #'
 #' @keywords internal
+#' @noRd
 clear_panel_height_cache <- function() {
   # Clear all data entries (preserve metadata)
   all_keys <- ls(.panel_height_cache)
@@ -731,6 +744,7 @@ clear_panel_height_cache <- function() {
 #'
 #' @return List with cache_size, hits, misses, hit_rate, memory_estimate
 #' @keywords internal
+#' @noRd
 get_panel_height_cache_stats <- function() {
   all_keys <- ls(.panel_height_cache)
   data_keys <- all_keys[!grepl("^\\.", all_keys)]
@@ -760,6 +774,7 @@ get_panel_height_cache_stats <- function() {
 #' @param force Logical: If TRUE, purge all entries regardless of TTL
 #' @return Integer: Number of entries purged
 #' @keywords internal
+#' @noRd
 purge_panel_cache_expired <- function(force = FALSE) {
   all_keys <- ls(.panel_height_cache)
   data_keys <- all_keys[!grepl("^\\.", all_keys)]
@@ -811,6 +826,7 @@ purge_panel_cache_expired <- function(force = FALSE) {
 #' 2. Cache size (if exceeds max_cache_size)
 #'
 #' @keywords internal
+#' @noRd
 auto_purge_panel_cache <- function() {
   # Increment operation counter
   .panel_cache_stats$operations <<- .panel_cache_stats$operations + 1L
@@ -867,6 +883,7 @@ auto_purge_panel_cache <- function() {
 #' @family placement-cache
 #' @seealso [configure_grob_cache()], [configure_placement_cache()]
 #' @keywords internal
+#' @noRd
 configure_panel_cache <- function(
     enabled = NULL,
     ttl_seconds = NULL,
@@ -925,6 +942,7 @@ configure_panel_cache <- function(
 #' @family placement-cache
 #' @seealso [configure_placement_cache()], [clear_all_placement_caches()]
 #' @keywords internal
+#' @noRd
 #'
 #' @examples
 #' \dontrun{
@@ -971,6 +989,7 @@ unlock_placement_cache_bindings <- function() {
 #' @family placement-cache
 #' @seealso [configure_placement_cache()], [purge_expired_cache_entries()]
 #' @keywords internal
+#' @noRd
 #'
 #' @examples
 #' \dontrun{
@@ -1002,6 +1021,7 @@ get_placement_cache_stats <- function() {
 #' @family placement-cache
 #' @seealso [clear_all_placement_caches()], [configure_placement_cache()]
 #' @keywords internal
+#' @noRd
 #'
 #' @examples
 #' \dontrun{
@@ -1030,6 +1050,7 @@ purge_expired_cache_entries <- function(force = FALSE) {
 #' @family placement-cache
 #' @seealso [purge_expired_cache_entries()], [configure_placement_cache()]
 #' @keywords internal
+#' @noRd
 #'
 #' @examples
 #' \dontrun{
@@ -1053,6 +1074,7 @@ clear_all_placement_caches <- function() {
 #' @family placement-cache
 #' @seealso [configure_grob_cache()], [configure_panel_cache()], [purge_expired_cache_entries()]
 #' @keywords internal
+#' @noRd
 #'
 #' @examples
 #' \dontrun{
@@ -1124,6 +1146,7 @@ configure_placement_cache <- function(
 #' @return Panel højde i inches, eller NULL hvis måling fejler
 #'
 #' @keywords internal
+#' @noRd
 measure_panel_height_from_built <- function(built_plot, gtable = NULL, panel = 1, device_width = 7, device_height = 7, use_cache = TRUE) {
   tryCatch(
     {
@@ -1150,6 +1173,7 @@ measure_panel_height_from_built <- function(built_plot, gtable = NULL, panel = 1
 #' Mål panel højde fra gtable (SHARED IMPLEMENTATION)
 #'
 #' @keywords internal
+#' @noRd
 measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, device_height = 7, use_cache = TRUE) {
   # PERFORMANCE: Cache panel height measurements to avoid expensive grid.draw() operations
   # Konstruer cache key fra gtable layout structure
@@ -1292,6 +1316,7 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
 #'
 #' @return Numerisk værdi (panelhøjde i inches) eller NULL ved fejl
 #' @keywords internal
+#' @noRd
 #' @seealso [measure_panel_height_from_gtable()]
 #' @examples
 #' \dontrun{
@@ -1337,6 +1362,7 @@ measure_panel_height_inches <- function(p, panel = 1, device_width = 7, device_h
 #' Håndterer caching men IKKE device lifecycle.
 #'
 #' @keywords internal
+#' @noRd
 .estimate_label_height_npc_internal <- function(
     text,
     style,
@@ -1586,6 +1612,7 @@ measure_panel_height_inches <- function(p, panel = 1, device_width = 7, device_h
 #' - Saving: ~50% reduction i device overhead
 #'
 #' @keywords internal
+#' @noRd
 estimate_label_heights_npc <- function(
     texts,
     style = NULL,
@@ -1725,6 +1752,7 @@ estimate_label_heights_npc <- function(
 #' - Forskellige font families
 #'
 #' @keywords internal
+#' @noRd
 #' @examples
 #' \dontrun{
 #' label <- "{.8 **CL**}  \n{.24 **45%**}"
@@ -1964,6 +1992,8 @@ estimate_label_height_npc <- function(
 #' @return List med:
 #'   - `center`: NPC position for label center
 #'   - `side`: Faktisk side ("under" eller "over")
+#' @keywords internal
+#' @noRd
 propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, pad_bot) {
   half <- label_h / 2
   low_bound <- pad_bot + half
@@ -2026,6 +2056,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #'   - `debug_info`: (kun hvis debug=TRUE)
 #'
 #' @keywords internal
+#' @noRd
 #' @examples
 #' \dontrun{
 #' # Basic usage (backward compatible - NPC-baseret gap)

@@ -41,6 +41,7 @@
 #' }
 #'
 #' @keywords internal
+#' @noRd
 "_PACKAGE"
 
 ## usethis namespace: start

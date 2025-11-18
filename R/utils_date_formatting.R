@@ -4,6 +4,8 @@
 #' Supports Danish date formats with automatic interval detection.
 #'
 #' @name date_formatting
+#' @keywords internal
+#' @noRd
 NULL
 
 # ============================================================================
@@ -28,6 +30,7 @@ NULL
 #' }
 #'
 #' @keywords internal
+#' @noRd
 #' @family spc-date-formatting
 #' @seealso [get_optimal_formatting()], [parse_danish_dates()]
 #' @examples
@@ -115,6 +118,7 @@ detect_date_interval <- function(dates, debug = FALSE) {
 #' }
 #'
 #' @keywords internal
+#' @noRd
 #' @family spc-date-formatting
 #' @seealso [detect_date_interval()], [create_spc_chart()]
 #' @examples
@@ -223,6 +227,7 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
 #' @return POSIXct vector of parsed dates (NA for failed parses)
 #'
 #' @keywords internal
+#' @noRd
 #' @family spc-date-formatting
 #' @seealso [detect_date_interval()]
 #' @examples

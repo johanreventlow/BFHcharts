@@ -3,6 +3,8 @@
 #' Add extended lines and comment annotations to SPC plots.
 #'
 #' @name plot_enhancements
+#' @keywords internal
+#' @noRd
 NULL
 
 # ============================================================================
@@ -24,6 +26,7 @@ NULL
 #'
 #' @return Modified ggplot object
 #' @keywords internal
+#' @noRd
 add_plot_enhancements <- function(plot,
                                   qic_data,
                                   comment_data = NULL,

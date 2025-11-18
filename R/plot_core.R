@@ -4,6 +4,8 @@
 #' Takes pre-calculated QIC data and builds a publication-ready ggplot.
 #'
 #' @name plot_core
+#' @keywords internal
+#' @noRd
 NULL
 
 # ============================================================================
@@ -45,6 +47,7 @@ NULL
 #' - Anhoej signal linetype switching
 #'
 #' @keywords internal
+#' @noRd
 #' @family spc-plotting
 #' @seealso [create_spc_chart()], [spc_plot_config()], [viewport_dims()], [phase_config()]
 #' @examples
@@ -254,6 +257,7 @@ bfh_spc_plot <- function(qic_data,
 #'
 #' @return Modified ggplot object
 #' @keywords internal
+#' @noRd
 apply_x_axis_formatting <- function(plot, qic_data, viewport) {
   data_x_min <- min(qic_data$x, na.rm = TRUE)
   data_x_max <- max(qic_data$x, na.rm = TRUE)

@@ -5,6 +5,8 @@
 #'
 #' @name spc_themes
 #' @seealso [BFHtheme::theme_bfh()] for general BFH theming
+#' @keywords internal
+#' @noRd
 NULL
 
 # ============================================================================
@@ -77,6 +79,7 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
 #' @family spc-themes
 #' @seealso [bfh_spc_plot()], [BFHtheme::theme_bfh()]
 #' @keywords internal
+#' @noRd
 #' @examples
 #' \dontrun{
 #' create_plot_footer(

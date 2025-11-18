@@ -38,6 +38,8 @@
 #' ```
 #'
 #' @name config_objects
+#' @keywords internal
+#' @noRd
 NULL
 
 # ============================================================================
@@ -71,6 +73,7 @@ NULL
 #' - `target_value` must be numeric if provided
 #'
 #' @keywords internal
+#' @noRd
 #' @family spc-config
 #' @seealso [create_spc_chart()], [bfh_spc_plot()], [phase_config()], [viewport_dims()]
 #' @examples
@@ -143,6 +146,8 @@ spc_plot_config <- function(
 #'
 #' @return Invisibly returns x
 #' @export
+#' @keywords internal
+#' @noRd
 #' @family spc-config
 #' @seealso [spc_plot_config()]
 print.spc_plot_config <- function(x, ...) {
@@ -178,6 +183,7 @@ print.spc_plot_config <- function(x, ...) {
 #' - Reference: base_size 14 provides original sizing
 #'
 #' @keywords internal
+#' @noRd
 #' @family spc-config
 #' @seealso [create_spc_chart()], [spc_plot_config()]
 #' @examples
@@ -223,6 +229,8 @@ viewport_dims <- function(
 #'
 #' @return Invisibly returns x
 #' @export
+#' @keywords internal
+#' @noRd
 #' @family spc-config
 #' @seealso [viewport_dims()]
 print.viewport_dims <- function(x, ...) {
@@ -255,6 +263,7 @@ print.viewport_dims <- function(x, ...) {
 #' - These are passed directly to qicharts2::qic()
 #'
 #' @keywords internal
+#' @noRd
 #' @family spc-config
 #' @seealso [spc_plot_config()], [create_spc_chart()]
 #' @examples
@@ -299,6 +308,8 @@ phase_config <- function(
 #'
 #' @return Invisibly returns x
 #' @export
+#' @keywords internal
+#' @noRd
 #' @family spc-config
 #' @seealso [phase_config()]
 print.phase_config <- function(x, ...) {

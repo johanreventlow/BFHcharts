@@ -3,6 +3,8 @@
 #' Format summary statistics from qicharts2 for user-friendly Danish output.
 #'
 #' @name utils_qic_summary
+#' @keywords internal
+#' @noRd
 NULL
 
 # ============================================================================
@@ -19,6 +21,7 @@ NULL
 #'
 #' @return Data frame with Danish column names and formatted values
 #' @keywords internal
+#' @noRd
 #'
 #' @details
 #' **Column Translations:**

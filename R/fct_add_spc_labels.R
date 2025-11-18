@@ -46,6 +46,7 @@
 #' }
 #'
 #' @keywords internal
+#' @noRd
 #' @family label-placement
 #' @seealso [add_right_labels_marquee()], [create_responsive_label()], [format_y_value()]
 add_spc_labels <- function(

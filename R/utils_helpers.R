@@ -3,6 +3,8 @@
 #' General helper functions for SPC plot generation.
 #'
 #' @name utils_helpers
+#' @keywords internal
+#' @noRd
 NULL
 
 # ============================================================================
@@ -39,6 +41,7 @@ NULL
 #'
 #' @return Logical, TRUE if arrows detected
 #' @keywords internal
+#' @noRd
 has_arrow_symbol <- function(text) {
   if (is.null(text) || nchar(trimws(text)) == 0) {
     return(FALSE)
@@ -66,6 +69,7 @@ has_arrow_symbol <- function(text) {
 #'
 #' @return Formatted target text
 #' @keywords internal
+#' @noRd
 format_target_prefix <- function(target_text) {
   if (is.null(target_text)) {
     return("")
@@ -93,6 +97,7 @@ format_target_prefix <- function(target_text) {
 #'
 #' @return Invisibly returns TRUE if validation passes, or stops with error
 #' @keywords internal
+#' @noRd
 validate_numeric_parameter <- function(value,
                                        param_name,
                                        min = -Inf,
@@ -212,6 +217,7 @@ validate_numeric_parameter <- function(value,
 #'
 #' @return Logical, TRUE if valid
 #' @keywords internal
+#' @noRd
 validate_qic_data <- function(qic_data) {
   if (is.null(qic_data) || !is.data.frame(qic_data)) {
     stop("qic_data must be a data frame")
@@ -246,6 +252,7 @@ validate_qic_data <- function(qic_data) {
 #' @family spc-helpers
 #' @seealso [get_y_axis_unit_label()], [create_spc_chart()]
 #' @keywords internal
+#' @noRd
 Y_AXIS_UNITS_DA <- c(
   count = "Antal",
   percent = "Procent (%)",
@@ -264,6 +271,7 @@ Y_AXIS_UNITS_DA <- c(
 #' @family spc-helpers
 #' @seealso [Y_AXIS_UNITS_DA], [apply_y_axis_formatting()]
 #' @keywords internal
+#' @noRd
 #' @examples
 #' \dontrun{
 #' get_y_axis_unit_label("percent")  # Returns "Procent (%)"
@@ -295,6 +303,7 @@ get_y_axis_unit_label <- function(unit_code) {
 #'
 #' @return Formatted time string
 #' @keywords internal
+#' @noRd
 format_time_value <- function(value, unit = "minutes") {
   if (is.na(value)) {
     return(NA_character_)
@@ -338,6 +347,7 @@ format_time_value <- function(value, unit = "minutes") {
 #'
 #' @return Data frame with x, y, comment columns for plotting, or NULL
 #' @keywords internal
+#' @noRd
 extract_comment_data <- function(qic_data, max_length = 100) {
   # Check if notes column exists in qic_data
   if (!"notes" %in% names(qic_data)) {
