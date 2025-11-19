@@ -399,13 +399,13 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
       breaks_posix <- as.POSIXct(breaks_posix)
 
       plot <- plot + BFHtheme::scale_x_datetime_bfh(
-        labels = scales::date_format(format_config$labels),
+        labels = format_config$labels,
         breaks = breaks_posix
       )
     } else {
       # Fallback to breaks_pretty with intelligent count
       plot <- plot + BFHtheme::scale_x_datetime_bfh(
-        labels = scales::date_format(format_config$labels),
+        labels = format_config$labels,
         breaks = scales::breaks_pretty(n = format_config$n_breaks)
       )
     }

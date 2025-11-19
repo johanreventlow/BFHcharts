@@ -1,41 +1,31 @@
 # History files
 .Rhistory
 .Rapp.history
-
 # Session Data files
 .RData
 .RDataTmp
-
 # User-specific files
 .Ruserdata
-
 # RStudio files
 .Rproj.user/
 *.Rproj
-
 # OAuth2 token
 .httr-oauth
-
 # pkgdown site
 docs/
-
 # Translation temp files
 po/*~
-
 # R Environment Variables
 .Renviron
-
 # macOS
 .DS_Store
-
 # R plot outputs
 Rplots.pdf
 *.png
 *.jpg
-
 # Image editing work files
 *.xcf
 *.psd
-
 # Demo/test files
 demo_test.R
+09_medicinsikker_uge_47_paracetamol_grafer.R

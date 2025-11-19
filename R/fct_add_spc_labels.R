@@ -173,7 +173,7 @@ add_spc_labels <- function(
       "NUV. NIVEAU"
     }
 
-    formatted_cl <- format_y_value(cl_value, y_axis_unit, y_range)
+    formatted_cl <- format_y_value(round(cl_value), y_axis_unit, y_range)
     label_cl <- create_responsive_label(
       header = cl_header,
       value = formatted_cl,

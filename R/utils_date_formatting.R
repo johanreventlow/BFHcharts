@@ -136,11 +136,29 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
   config <- switch(interval_type,
     daily = {
       if (n_obs < 30) {
-        list(labels = "%d %b", breaks = "1 week", n_breaks = 8)
+        # Short daily: Show days with month context
+        list(
+          use_smart_labels = TRUE,
+          labels = scales::label_date_short(format = c("%Y", "%b", "%d", "")),
+          breaks = "1 week",
+          n_breaks = 8
+        )
       } else if (n_obs < 90) {
-        list(labels = "%b %Y", breaks = "2 weeks", n_breaks = 10)
+        # Medium daily: Emphasize months
+        list(
+          use_smart_labels = TRUE,
+          labels = scales::label_date_short(format = c("%Y", "%b", "", "")),
+          breaks = "2 weeks",
+          n_breaks = 10
+        )
       } else {
-        list(labels = "%b %Y", breaks = "1 month", n_breaks = 12)
+        # Long daily: Monthly breaks
+        list(
+          use_smart_labels = TRUE,
+          labels = scales::label_date_short(format = c("%Y", "%b", "", "")),
+          breaks = "1 month",
+          n_breaks = 12
+        )
       }
     },
     weekly = {
@@ -154,8 +172,8 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
       } else {
         # For mange uger - skift til månedlig visning
         list(
-          use_smart_labels = FALSE,
-          labels = "%b %Y",
+          use_smart_labels = TRUE,
+          labels = scales::label_date_short(format = c("%Y", "%b", "", "")),
           breaks = "1 month",
           n_breaks = 12
         )
@@ -167,7 +185,7 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
         list(
           use_smart_labels = TRUE,
           labels = scales::label_date_short(
-            format = c("%Y", "%b"), # År først, så måneder
+            format = c("%Y", "%b", "", ""), # År først, så måneder
             sep = "\n"
           ),
           breaks = "1 month",
@@ -181,12 +199,11 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
           n_breaks = 8
         )
       } else {
-        # For mange måneder - skift til årlig visning
+        # For mange måneder - vis år og måned
         list(
           use_smart_labels = TRUE,
           labels = scales::label_date_short(
-            format = c("%Y", "", ""),
-            sep = ""
+            format = c("%Y", "%b", "", "")
           ),
           breaks = "6 months",
           n_breaks = 10
@@ -194,19 +211,48 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
       }
     },
     quarterly = {
-      list(labels = "Q%q %Y", breaks = "3 months", n_breaks = 8)
+      # Month-based formatting for quarterly data (jan, apr, jul, okt)
+      list(
+        use_smart_labels = TRUE,
+        labels = scales::label_date_short(format = c("%Y", "%b", "", "")),
+        breaks = "3 months",
+        n_breaks = 8
+      )
     },
     yearly = {
-      list(labels = "%Y", breaks = "1 year", n_breaks = min(n_obs, 10))
+      list(
+        use_smart_labels = TRUE,
+        labels = scales::label_date_short(format = c("%Y", "", "", "")),
+        breaks = "1 year",
+        n_breaks = min(n_obs, 10)
+      )
     },
     # Default/irregular
     {
       if (timespan_days < 100) {
-        list(labels = "%d %b %Y", breaks = "2 weeks", n_breaks = 8)
+        # Short irregular: Full dates with intelligent year display
+        list(
+          use_smart_labels = TRUE,
+          labels = scales::label_date_short(format = c("%Y", "%b", "%d", "")),
+          breaks = "2 weeks",
+          n_breaks = 8
+        )
       } else if (timespan_days < 730) {
-        list(labels = "%b %Y", breaks = "2 months", n_breaks = 10)
+        # Medium irregular: Month/year
+        list(
+          use_smart_labels = TRUE,
+          labels = scales::label_date_short(format = c("%Y", "%b", "", "")),
+          breaks = "2 months",
+          n_breaks = 10
+        )
       } else {
-        list(labels = "%Y", breaks = "1 year", n_breaks = 12)
+        # Long irregular: Years only
+        list(
+          use_smart_labels = TRUE,
+          labels = scales::label_date_short(format = c("%Y", "", "", "")),
+          breaks = "1 year",
+          n_breaks = 12
+        )
       }
     }
   )
