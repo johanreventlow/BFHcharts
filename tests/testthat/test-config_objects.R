@@ -388,7 +388,7 @@ test_that("Configuration objects can be used together", {
   expect_equal(phases$part_positions, 20)
 })
 
-test_that("Configuration objects work in create_spc_chart", {
+test_that("Configuration objects work in bfh_qic", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rnorm(12, 15, 2),
@@ -397,7 +397,7 @@ test_that("Configuration objects work in create_spc_chart", {
 
   # Create plot with configured objects
   plot <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,

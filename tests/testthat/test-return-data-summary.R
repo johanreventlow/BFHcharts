@@ -9,7 +9,7 @@ test_that("default behavior returns ggplot object", {
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -28,7 +28,7 @@ test_that("return.data = TRUE returns data.frame with qic calculations", {
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -51,7 +51,7 @@ test_that("print.summary = TRUE returns list with plot and summary", {
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -74,7 +74,7 @@ test_that("return.data = TRUE and print.summary = TRUE returns list with data an
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -98,7 +98,7 @@ test_that("summary has correct Danish column names", {
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -123,7 +123,7 @@ test_that("summary works with run charts (no control limits)", {
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -151,7 +151,7 @@ test_that("summary works with p-charts", {
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -176,7 +176,7 @@ test_that("summary works with c-charts", {
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = defects,
@@ -198,7 +198,7 @@ test_that("summary works with u-charts", {
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = defects,
@@ -223,7 +223,7 @@ test_that("summary handles multiple phases correctly", {
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -247,7 +247,7 @@ test_that("summary decimal places are appropriate for y_axis_unit", {
 
   # Test percent (should have 2 decimal places)
   result_percent <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -264,7 +264,7 @@ test_that("summary decimal places are appropriate for y_axis_unit", {
 
   # Test count (should have 1 decimal place)
   result_count <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -286,7 +286,7 @@ test_that("return.data parameter validation works", {
 
   expect_error(
     suppressWarnings(
-      create_spc_chart(
+      bfh_qic(
         data = data,
         x = month,
         y = infections,
@@ -299,7 +299,7 @@ test_that("return.data parameter validation works", {
 
   expect_error(
     suppressWarnings(
-      create_spc_chart(
+      bfh_qic(
         data = data,
         x = month,
         y = infections,
@@ -312,7 +312,7 @@ test_that("return.data parameter validation works", {
 
   expect_error(
     suppressWarnings(
-      create_spc_chart(
+      bfh_qic(
         data = data,
         x = month,
         y = infections,
@@ -332,7 +332,7 @@ test_that("print.summary parameter validation works", {
 
   expect_error(
     suppressWarnings(
-      create_spc_chart(
+      bfh_qic(
         data = data,
         x = month,
         y = infections,
@@ -345,7 +345,7 @@ test_that("print.summary parameter validation works", {
 
   expect_error(
     suppressWarnings(
-      create_spc_chart(
+      bfh_qic(
         data = data,
         x = month,
         y = infections,
@@ -358,7 +358,7 @@ test_that("print.summary parameter validation works", {
 
   expect_error(
     suppressWarnings(
-      create_spc_chart(
+      bfh_qic(
         data = data,
         x = month,
         y = infections,
@@ -377,7 +377,7 @@ test_that("Anhøj statistics are included in summary", {
   )
 
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -409,7 +409,7 @@ test_that("summary returns single row for charts without phases", {
 
   # Test p-chart (has variable control limits per observation)
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -433,7 +433,7 @@ test_that("summary returns correct rows for multi-phase charts", {
 
   # Chart with 3 phases
   result <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -457,7 +457,7 @@ test_that("i-charts and c-charts have constant control limits in summary", {
 
   # I-chart should have control limits
   result_i <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -474,7 +474,7 @@ test_that("i-charts and c-charts have constant control limits in summary", {
 
   # C-chart should also have control limits
   result_c <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,

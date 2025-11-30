@@ -1,16 +1,16 @@
-#' Create SPC Chart - High-Level Convenience Function
+#' Create BFH-Styled SPC Chart
 #'
 #' One-function approach to create publication-ready SPC charts.
 #' Wraps qicharts2 calculation and BFH visualization in a single call.
 #'
-#' @name create_spc_chart
+#' @name bfh_qic
 NULL
 
 # ============================================================================
 # HIGH-LEVEL WRAPPER
 # ============================================================================
 
-#' Create Complete SPC Chart from Raw Data
+#' Create BFH-Styled SPC Chart from Raw Data
 #'
 #' Convenience function that combines qicharts2::qic() calculation with
 #' BFH-styled visualization and automatic label placement. Handles the
@@ -122,7 +122,7 @@ NULL
 #'   surgeries = rpois(24, lambda = 100)
 #' )
 #'
-#' plot <- create_spc_chart(
+#' plot <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -133,7 +133,7 @@ NULL
 #' plot
 #'
 #' # Example 2: P-chart with target line
-#' plot <- create_spc_chart(
+#' plot <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -147,7 +147,7 @@ NULL
 #' plot
 #'
 #' # Example 3: I-chart with phase splits
-#' plot <- create_spc_chart(
+#' plot <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -165,7 +165,7 @@ NULL
 #' notes_vec[12] <- "New protocol implemented"
 #' notes_vec[18] <- "Staff training completed"
 #'
-#' plot <- create_spc_chart(
+#' plot <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -178,7 +178,7 @@ NULL
 #'
 #' # Example 5: Responsive typography with viewport dimensions
 #' # Small plot (6×4 inches) → base_size ≈ 14pt
-#' plot_small <- create_spc_chart(
+#' plot_small <- bfh_qic(
 #'   data = data, x = month, y = infections,
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Small Plot - Auto Scaled Typography",
@@ -186,7 +186,7 @@ NULL
 #' )
 #'
 #' # Medium plot (10×6 inches) → base_size ≈ 22pt
-#' plot_medium <- create_spc_chart(
+#' plot_medium <- bfh_qic(
 #'   data = data, x = month, y = infections,
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Medium Plot - Auto Scaled Typography",
@@ -194,7 +194,7 @@ NULL
 #' )
 #'
 #' # Large plot (16×9 inches) → base_size ≈ 34pt
-#' plot_large <- create_spc_chart(
+#' plot_large <- bfh_qic(
 #'   data = data, x = month, y = infections,
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Large Plot - Auto Scaled Typography",
@@ -202,7 +202,7 @@ NULL
 #' )
 #'
 #' # Override auto-scaling with explicit base_size
-#' plot_custom <- create_spc_chart(
+#' plot_custom <- bfh_qic(
 #'   data = data, x = month, y = infections,
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Custom Typography Override",
@@ -211,7 +211,7 @@ NULL
 #' )
 #'
 #' # Example 6: Exclude outliers from calculations
-#' plot_exclude <- create_spc_chart(
+#' plot_exclude <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -222,7 +222,7 @@ NULL
 #' )
 #'
 #' # Example 7: Use median instead of mean for aggregation
-#' plot_median <- create_spc_chart(
+#' plot_median <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -239,7 +239,7 @@ NULL
 #'   proportion = runif(24, 0.01, 0.05)  # Proportions 0.01-0.05
 #' )
 #'
-#' plot_multiply <- create_spc_chart(
+#' plot_multiply <- bfh_qic(
 #'   data = data_prop,
 #'   x = month,
 #'   y = proportion,
@@ -251,7 +251,7 @@ NULL
 #'
 #' # Example 9: Custom centerline (cl parameter)
 #' # Use a fixed benchmark or standard instead of calculating from data
-#' plot_cl <- create_spc_chart(
+#' plot_cl <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -262,7 +262,7 @@ NULL
 #' )
 #'
 #' # Example 10: Custom plot margins (numeric vector in mm)
-#' plot_tight <- create_spc_chart(
+#' plot_tight <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -273,7 +273,7 @@ NULL
 #' )
 #'
 #' # Example 11: Custom margins with margin() object
-#' plot_custom_margin <- create_spc_chart(
+#' plot_custom_margin <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -284,7 +284,7 @@ NULL
 #' )
 #'
 #' # Example 12: Responsive margins using lines (scales with base_size)
-#' plot_responsive <- create_spc_chart(
+#' plot_responsive <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -295,7 +295,7 @@ NULL
 #' )
 #'
 #' # Example 13: Custom axis labels, subtitle, and caption
-#' plot_labels <- create_spc_chart(
+#' plot_labels <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -309,7 +309,7 @@ NULL
 #' )
 #'
 #' # Example 14: Add BFHtheme branding (hospital logo, custom styling)
-#' plot_branded <- create_spc_chart(
+#' plot_branded <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -326,7 +326,7 @@ NULL
 #' # - BFHtheme::theme_bfh_presentation() for presentations
 #'
 #' # Example 15: Danish-friendly unit support (centimeters)
-#' plot_cm <- create_spc_chart(
+#' plot_cm <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -338,7 +338,7 @@ NULL
 #' )
 #'
 #' # Example 16: Explicit unit specification
-#' plot_explicit <- create_spc_chart(
+#' plot_explicit <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -349,7 +349,7 @@ NULL
 #' )
 #'
 #' # Example 17: Pixel dimensions for web/Shiny
-#' plot_px <- create_spc_chart(
+#' plot_px <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -362,7 +362,7 @@ NULL
 #' )
 #'
 #' # Example 18: Backward compatibility (inches still work)
-#' plot_inches <- create_spc_chart(
+#' plot_inches <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -374,7 +374,7 @@ NULL
 #' )
 #'
 #' # Example 19: Get raw qic data for further analysis
-#' qic_data <- create_spc_chart(
+#' qic_data <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -388,7 +388,7 @@ NULL
 #' # Available columns: cl, ucl, lcl, runs.signal, sigma.signal, etc.
 #'
 #' # Example 20: Get summary statistics with Danish column names
-#' result <- create_spc_chart(
+#' result <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -408,7 +408,7 @@ NULL
 #' #          længste_løb, antal_kryds, løbelængde_signal, sigma_signal
 #'
 #' # Example 21: Get both raw data and summary
-#' result <- create_spc_chart(
+#' result <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -428,7 +428,7 @@ NULL
 #' # fase 2: intervention period
 #'
 #' # Example 22: Use summary for reporting
-#' result <- create_spc_chart(
+#' result <- bfh_qic(
 #'   data = data,
 #'   x = month,
 #'   y = infections,
@@ -450,7 +450,7 @@ NULL
 #'   cat("VIGTIG: Special cause variation detekteret i fase 2!\n")
 #' }
 #' }
-create_spc_chart <- function(data,
+bfh_qic <- function(data,
                               x,
                               y,
                               n = NULL,

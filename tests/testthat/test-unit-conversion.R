@@ -143,10 +143,10 @@ test_that("convert_from_inches() converts to pixels correctly", {
 })
 
 # ============================================================================
-# INTEGRATION WITH create_spc_chart() TESTS
+# INTEGRATION WITH bfh_qic() TESTS
 # ============================================================================
 
-test_that("create_spc_chart() accepts centimeters with auto-detection", {
+test_that("bfh_qic() accepts centimeters with auto-detection", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -154,7 +154,7 @@ test_that("create_spc_chart() accepts centimeters with auto-detection", {
 
   expect_no_error({
     suppressWarnings(
-      plot <- create_spc_chart(
+      plot <- bfh_qic(
         data = data,
         x = month,
         y = infections,
@@ -167,7 +167,7 @@ test_that("create_spc_chart() accepts centimeters with auto-detection", {
   })
 })
 
-test_that("create_spc_chart() accepts explicit centimeters", {
+test_that("bfh_qic() accepts explicit centimeters", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -175,7 +175,7 @@ test_that("create_spc_chart() accepts explicit centimeters", {
 
   expect_no_error({
     suppressWarnings(
-      plot <- create_spc_chart(
+      plot <- bfh_qic(
         data = data,
         x = month,
         y = infections,
@@ -189,7 +189,7 @@ test_that("create_spc_chart() accepts explicit centimeters", {
   })
 })
 
-test_that("create_spc_chart() accepts pixels with auto-detection", {
+test_that("bfh_qic() accepts pixels with auto-detection", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -197,7 +197,7 @@ test_that("create_spc_chart() accepts pixels with auto-detection", {
 
   expect_no_error({
     suppressWarnings(
-      plot <- create_spc_chart(
+      plot <- bfh_qic(
         data = data,
         x = month,
         y = infections,
@@ -211,7 +211,7 @@ test_that("create_spc_chart() accepts pixels with auto-detection", {
   })
 })
 
-test_that("create_spc_chart() backward compatibility - inches still work", {
+test_that("bfh_qic() backward compatibility - inches still work", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -220,7 +220,7 @@ test_that("create_spc_chart() backward compatibility - inches still work", {
   # Old code with inches (< 10 → auto-detected as inches)
   expect_no_error({
     suppressWarnings(
-      plot <- create_spc_chart(
+      plot <- bfh_qic(
         data = data,
         x = month,
         y = infections,
@@ -233,7 +233,7 @@ test_that("create_spc_chart() backward compatibility - inches still work", {
   })
 })
 
-test_that("create_spc_chart() accepts all supported units explicitly", {
+test_that("bfh_qic() accepts all supported units explicitly", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -243,7 +243,7 @@ test_that("create_spc_chart() accepts all supported units explicitly", {
   for (unit in c("cm", "mm", "in", "px")) {
     expect_no_error(
       suppressWarnings(
-        plot <- create_spc_chart(
+        plot <- bfh_qic(
           data = data,
           x = month,
           y = infections,
@@ -259,7 +259,7 @@ test_that("create_spc_chart() accepts all supported units explicitly", {
   }
 })
 
-test_that("create_spc_chart() works without width/height (NULL)", {
+test_that("bfh_qic() works without width/height (NULL)", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -268,7 +268,7 @@ test_that("create_spc_chart() works without width/height (NULL)", {
   # No dimensions → should work (NPC-based label placement)
   expect_no_error({
     suppressWarnings(
-      plot <- create_spc_chart(
+      plot <- bfh_qic(
         data = data,
         x = month,
         y = infections,

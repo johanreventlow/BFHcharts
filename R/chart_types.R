@@ -131,7 +131,7 @@ get_qic_chart_type <- function(danish_selection) {
 #' - **u**, **up**: Rate charts (events/exposure)
 #'
 #' @family spc-chart-types
-#' @seealso [get_qic_chart_type()], [create_spc_chart()]
+#' @seealso [get_qic_chart_type()], [bfh_qic()]
 #' @keywords internal
 #' @noRd
 #' @examples

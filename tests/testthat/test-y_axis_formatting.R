@@ -362,7 +362,7 @@ test_that("Y-axis formatting works in complete plots", {
   expect_s3_class(plot_time, "ggplot")
 })
 
-test_that("Y-axis formatting works in create_spc_chart", {
+test_that("Y-axis formatting works in bfh_qic", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rnorm(12, 15, 2)
@@ -372,7 +372,7 @@ test_that("Y-axis formatting works in create_spc_chart", {
   # Note: Font warnings from grid graphics rendering are tolerable
   expect_warning(
     {
-      plot_count <- create_spc_chart(
+      plot_count <- bfh_qic(
         data = data,
         x = month,
         y = value,
@@ -388,7 +388,7 @@ test_that("Y-axis formatting works in create_spc_chart", {
   # Test with percent unit
   expect_warning(
     {
-      plot_pct <- create_spc_chart(
+      plot_pct <- bfh_qic(
         data = data,
         x = month,
         y = value,
@@ -451,7 +451,7 @@ test_that("Danish number notation is consistent across formatters", {
 # Y.PERCENT PARAMETER MAPPING TESTS
 # ============================================================================
 
-test_that("create_spc_chart maps y_axis_unit='percent' to qicharts2's y.percent parameter", {
+test_that("bfh_qic maps y_axis_unit='percent' to qicharts2's y.percent parameter", {
   # Create P-chart data (requires proportions as input)
   data <- data.frame(
     month = 1:12,
@@ -462,7 +462,7 @@ test_that("create_spc_chart maps y_axis_unit='percent' to qicharts2's y.percent 
   # Call with y_axis_unit = "percent"
   # Font warnings from grid rendering are expected (using regex to suppress them in expect_warning)
   plot <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = infections,
@@ -488,7 +488,7 @@ test_that("create_spc_chart maps y_axis_unit='percent' to qicharts2's y.percent 
   )
 })
 
-test_that("create_spc_chart with y_axis_unit='count' does NOT apply percentage formatting", {
+test_that("bfh_qic with y_axis_unit='count' does NOT apply percentage formatting", {
   data <- data.frame(
     month = 1:12,
     value = rnorm(12, 15, 2)
@@ -496,7 +496,7 @@ test_that("create_spc_chart with y_axis_unit='count' does NOT apply percentage f
 
   # Font warnings from grid rendering are expected and acceptable
   plot <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -532,7 +532,7 @@ test_that("y.percent parameter is passed correctly to qicharts2::qic", {
   # Create P-chart with percent unit
   # Font warnings from grid rendering are expected and acceptable
   plot_pct <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = x,
       y = y,
@@ -544,7 +544,7 @@ test_that("y.percent parameter is passed correctly to qicharts2::qic", {
 
   # Create P-chart with count unit (should NOT format as percentage)
   plot_count <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = x,
       y = y,

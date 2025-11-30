@@ -49,7 +49,7 @@ NULL
 #' @keywords internal
 #' @noRd
 #' @family spc-plotting
-#' @seealso [create_spc_chart()], [spc_plot_config()], [viewport_dims()], [phase_config()]
+#' @seealso [bfh_qic()], [spc_plot_config()], [viewport_dims()], [phase_config()]
 #' @examples
 #' \dontrun{
 #' library(qicharts2)

@@ -13,7 +13,7 @@ cat("\n=== Performance Test: 10 P-charts with labels ===\n\n")
 
 start_time <- Sys.time()
 for (i in 1:10) {
-  plot <- suppressWarnings(create_spc_chart(
+  plot <- suppressWarnings(bfh_qic(
     data = data,
     x = month,
     y = value,

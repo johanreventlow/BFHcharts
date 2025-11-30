@@ -325,7 +325,7 @@ test_that("Chart type utilities handle edge cases consistently", {
   expect_warning(get_chart_description("invalid"))
 })
 
-test_that("Chart type utilities work in create_spc_chart", {
+test_that("Chart type utilities work in bfh_qic", {
   # Integration test: verify chart type utilities work in real workflow
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -335,7 +335,7 @@ test_that("Chart type utilities work in create_spc_chart", {
 
   # Test with English code
   plot1 <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -347,7 +347,7 @@ test_that("Chart type utilities work in create_spc_chart", {
 
   # Test with ratio chart requiring denominator
   plot2 <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,

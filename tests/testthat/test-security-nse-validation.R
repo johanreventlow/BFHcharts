@@ -1,4 +1,4 @@
-test_that("create_spc_chart accepts valid column names", {
+test_that("bfh_qic accepts valid column names", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15),
@@ -8,7 +8,7 @@ test_that("create_spc_chart accepts valid column names", {
   # Valid simple names should work (no error)
   expect_no_error({
     suppressWarnings(
-      create_spc_chart(data, x = month, y = infections, chart_type = "run")
+      bfh_qic(data, x = month, y = infections, chart_type = "run")
     )
   })
 
@@ -18,18 +18,18 @@ test_that("create_spc_chart accepts valid column names", {
 
   expect_no_error({
     suppressWarnings(
-      create_spc_chart(data, x = month, y = patient_count, chart_type = "run")
+      bfh_qic(data, x = month, y = patient_count, chart_type = "run")
     )
   })
 
   expect_no_error({
     suppressWarnings(
-      create_spc_chart(data, x = month, y = rate.value, chart_type = "run")
+      bfh_qic(data, x = month, y = rate.value, chart_type = "run")
     )
   })
 })
 
-test_that("create_spc_chart rejects malicious column names with expressions", {
+test_that("bfh_qic rejects malicious column names with expressions", {
   data <- data.frame(
     month = 1:12,
     value = rnorm(12)
@@ -37,17 +37,17 @@ test_that("create_spc_chart rejects malicious column names with expressions", {
 
   # Function calls should be rejected
   expect_error(
-    create_spc_chart(data, x = system("echo pwned"), y = value, chart_type = "run"),
+    bfh_qic(data, x = system("echo pwned"), y = value, chart_type = "run"),
     "x must be a simple column name"
   )
 
   expect_error(
-    create_spc_chart(data, x = month, y = system("echo pwned"), chart_type = "run"),
+    bfh_qic(data, x = month, y = system("echo pwned"), chart_type = "run"),
     "y must be a simple column name"
   )
 })
 
-test_that("create_spc_chart rejects column names with operators", {
+test_that("bfh_qic rejects column names with operators", {
   data <- data.frame(
     month = 1:12,
     value = rnorm(12),
@@ -56,18 +56,18 @@ test_that("create_spc_chart rejects column names with operators", {
 
   # Arithmetic expressions should be rejected
   expect_error(
-    create_spc_chart(data, x = month, y = value + 1, chart_type = "run"),
+    bfh_qic(data, x = month, y = value + 1, chart_type = "run"),
     "y must be a simple column name"
   )
 
   # Subset operators should be rejected
   expect_error(
-    create_spc_chart(data, x = month[1], y = value, chart_type = "run"),
+    bfh_qic(data, x = month[1], y = value, chart_type = "run"),
     "x must be a simple column name"
   )
 })
 
-test_that("create_spc_chart rejects column names with special characters", {
+test_that("bfh_qic rejects column names with special characters", {
   data <- data.frame(
     month = 1:12,
     value = rnorm(12)
@@ -75,7 +75,7 @@ test_that("create_spc_chart rejects column names with special characters", {
 
   # Names with parentheses should be rejected
   expect_error(
-    create_spc_chart(data, x = month, y = c(value), chart_type = "run"),
+    bfh_qic(data, x = month, y = c(value), chart_type = "run"),
     "y must be a simple column name"
   )
 
@@ -83,7 +83,7 @@ test_that("create_spc_chart rejects column names with special characters", {
   # and deparse to "value" (no backticks), so they pass validation correctly
 })
 
-test_that("create_spc_chart validates n parameter for ratio charts", {
+test_that("bfh_qic validates n parameter for ratio charts", {
   data <- data.frame(
     month = 1:12,
     events = rpois(12, 5),
@@ -93,13 +93,13 @@ test_that("create_spc_chart validates n parameter for ratio charts", {
   # Valid n parameter (no error)
   expect_no_error({
     suppressWarnings(
-      create_spc_chart(data, x = month, y = events, n = total, chart_type = "p")
+      bfh_qic(data, x = month, y = events, n = total, chart_type = "p")
     )
   })
 
   # Invalid n parameter with expression
   expect_error(
-    create_spc_chart(data, x = month, y = events, n = sum(total), chart_type = "p"),
+    bfh_qic(data, x = month, y = events, n = sum(total), chart_type = "p"),
     "n must be a simple column name"
   )
 })
@@ -139,7 +139,7 @@ test_that("Column name validation provides helpful error messages", {
   data <- data.frame(month = 1:12, value = rnorm(12))
 
   error_msg <- tryCatch(
-    create_spc_chart(data, x = month + 1, y = value, chart_type = "run"),
+    bfh_qic(data, x = month + 1, y = value, chart_type = "run"),
     error = function(e) e$message
   )
 

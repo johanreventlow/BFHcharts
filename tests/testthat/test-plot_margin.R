@@ -15,7 +15,7 @@ setup_test_data <- function() {
 test_that("plot_margin NULL uses default behavior", {
   df <- setup_test_data()
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -29,7 +29,7 @@ test_that("plot_margin NULL uses default behavior", {
 test_that("plot_margin with numeric vector works", {
   df <- setup_test_data()
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -48,7 +48,7 @@ test_that("plot_margin with numeric vector works", {
 test_that("plot_margin with margin() object works (mm)", {
   df <- setup_test_data()
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -67,7 +67,7 @@ test_that("plot_margin with margin() object works (mm)", {
 test_that("plot_margin with margin() object works (pt)", {
   df <- setup_test_data()
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -86,7 +86,7 @@ test_that("plot_margin with margin() object works (pt)", {
 test_that("plot_margin with margin() object works (lines)", {
   df <- setup_test_data()
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -105,7 +105,7 @@ test_that("plot_margin with margin() object works (lines)", {
 test_that("asymmetric margins work correctly", {
   df <- setup_test_data()
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -133,7 +133,7 @@ test_that("plot_margin works with all chart types", {
 
   for (chart_type in chart_types) {
     if (chart_type %in% c("p", "u")) {
-      plot <- create_spc_chart(
+      plot <- bfh_qic(
         data = df,
         x = x,
         y = y,
@@ -143,7 +143,7 @@ test_that("plot_margin works with all chart types", {
         plot_margin = c(5, 5, 5, 5)
       )
     } else {
-      plot <- create_spc_chart(
+      plot <- bfh_qic(
         data = df,
         x = x,
         y = y,
@@ -169,7 +169,7 @@ test_that("plot_margin validation rejects wrong length", {
   df <- setup_test_data()
 
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = df,
       x = x,
       y = y,
@@ -184,7 +184,7 @@ test_that("plot_margin validation rejects negative values", {
   df <- setup_test_data()
 
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = df,
       x = x,
       y = y,
@@ -205,7 +205,7 @@ test_that("plot_margin warns about excessive values", {
     {
       suppressMessages(
         withCallingHandlers(
-          create_spc_chart(
+          bfh_qic(
             data = df,
             x = x,
             y = y,
@@ -232,7 +232,7 @@ test_that("plot_margin validation rejects wrong type", {
   df <- setup_test_data()
 
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = df,
       x = x,
       y = y,
@@ -247,7 +247,7 @@ test_that("plot_margin validation rejects list", {
   df <- setup_test_data()
 
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = df,
       x = x,
       y = y,
@@ -265,7 +265,7 @@ test_that("plot_margin validation rejects list", {
 test_that("plot_margin works with zero margins", {
   df <- setup_test_data()
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -281,7 +281,7 @@ test_that("plot_margin works with zero margins", {
 test_that("plot_margin works with very small values", {
   df <- setup_test_data()
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -300,7 +300,7 @@ test_that("plot_margin works at boundary (100mm)", {
   # Should not warn at exactly 100mm (but may have warnings from label placement due to small panel)
   # We suppress warnings since large margins can cause label placement issues, which is expected
   suppressWarnings({
-    plot <- create_spc_chart(
+    plot <- bfh_qic(
       data = df,
       x = x,
       y = y,
@@ -319,7 +319,7 @@ test_that("plot_margin works at boundary (100mm)", {
 test_that("plot_margin works with width and height", {
   df <- setup_test_data()
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -337,7 +337,7 @@ test_that("plot_margin works with width and height", {
 test_that("plot_margin works with base_size", {
   df <- setup_test_data()
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -355,7 +355,7 @@ test_that("plot_margin with lines scales with base_size", {
   df <- setup_test_data()
 
   # Small base_size
-  plot_small <- create_spc_chart(
+  plot_small <- bfh_qic(
     data = df,
     x = x,
     y = y,
@@ -365,7 +365,7 @@ test_that("plot_margin with lines scales with base_size", {
   )
 
   # Large base_size
-  plot_large <- create_spc_chart(
+  plot_large <- bfh_qic(
     data = df,
     x = x,
     y = y,

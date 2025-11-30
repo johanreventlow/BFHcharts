@@ -3,6 +3,6 @@
 S3method(print,phase_config)
 S3method(print,spc_plot_config)
 S3method(print,viewport_dims)
-export(create_spc_chart)
+export(bfh_qic)
 importFrom(BFHtheme,add_bfh_logo)
 importFrom(BFHtheme,theme_bfh)
