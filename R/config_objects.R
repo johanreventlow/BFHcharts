@@ -17,7 +17,7 @@
 #'
 #' ```r
 #' # Before (15 parameters - hard to read):
-#' plot <- create_spc_chart(
+#' plot <- bfh_qic(
 #'   data, x = "Date", y = "Value", chart_type = "p",
 #'   target_value = 50, centerline_value = NULL,
 #'   show_phases = FALSE, y_axis_unit = "percent",
@@ -75,7 +75,7 @@ NULL
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [create_spc_chart()], [bfh_spc_plot()], [phase_config()], [viewport_dims()]
+#' @seealso [bfh_qic()], [bfh_spc_plot()], [phase_config()], [viewport_dims()]
 #' @examples
 #' # Basic configuration
 #' cfg <- spc_plot_config(chart_type = "run", y_axis_unit = "count")
@@ -185,7 +185,7 @@ print.spc_plot_config <- function(x, ...) {
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [create_spc_chart()], [spc_plot_config()]
+#' @seealso [bfh_qic()], [spc_plot_config()]
 #' @examples
 #' # Auto-sized viewport with default font
 #' vp <- viewport_dims()
@@ -265,7 +265,7 @@ print.viewport_dims <- function(x, ...) {
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [spc_plot_config()], [create_spc_chart()]
+#' @seealso [spc_plot_config()], [bfh_qic()]
 #' @examples
 #' # No phases
 #' phases <- phase_config()

@@ -1,7 +1,7 @@
 # Integration Tests for BFHcharts
 # End-to-end tests of full workflow from data to plot
 
-test_that("create_spc_chart() generates valid run chart", {
+test_that("bfh_qic() generates valid run chart", {
   library(ggplot2)
 
   # Create test data
@@ -11,7 +11,7 @@ test_that("create_spc_chart() generates valid run chart", {
   )
 
   # Generate plot
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = data,
     x = month,
     y = value,
@@ -25,7 +25,7 @@ test_that("create_spc_chart() generates valid run chart", {
   expect_equal(plot$labels$title, "Test Run Chart")
 })
 
-test_that("create_spc_chart() generates valid p-chart with denominator", {
+test_that("bfh_qic() generates valid p-chart with denominator", {
   library(ggplot2)
 
   # Create test data
@@ -36,7 +36,7 @@ test_that("create_spc_chart() generates valid p-chart with denominator", {
   )
 
   # Generate plot
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = data,
     x = month,
     y = infections,
@@ -51,7 +51,7 @@ test_that("create_spc_chart() generates valid p-chart with denominator", {
   expect_equal(plot$labels$title, "Infection Rate")
 })
 
-test_that("create_spc_chart() handles phase splits correctly", {
+test_that("bfh_qic() handles phase splits correctly", {
   library(ggplot2)
 
   # Create test data with intervention
@@ -64,7 +64,7 @@ test_that("create_spc_chart() handles phase splits correctly", {
   )
 
   # Generate plot with phase split
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = data,
     x = month,
     y = value,
@@ -124,7 +124,7 @@ test_that("bfh_spc_plot() works with pre-calculated qic data", {
   expect_s3_class(plot, "ggplot")
 })
 
-test_that("create_spc_chart() handles target values correctly", {
+test_that("bfh_qic() handles target values correctly", {
   library(ggplot2)
 
   data <- data.frame(
@@ -132,7 +132,7 @@ test_that("create_spc_chart() handles target values correctly", {
     value = rnorm(12, 100, 10)
   )
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = data,
     x = month,
     y = value,
@@ -146,10 +146,10 @@ test_that("create_spc_chart() handles target values correctly", {
   expect_s3_class(plot, "ggplot")
 })
 
-test_that("create_spc_chart() validates input correctly", {
+test_that("bfh_qic() validates input correctly", {
   # Test invalid chart type
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data.frame(x = 1:10, y = 1:10),
       x = x,
       y = y,
@@ -160,7 +160,7 @@ test_that("create_spc_chart() validates input correctly", {
 
   # Test invalid y_axis_unit
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data.frame(x = 1:10, y = 1:10),
       x = x,
       y = y,
@@ -174,7 +174,7 @@ test_that("create_spc_chart() validates input correctly", {
 # NEW QIC PARAMETERS TESTS
 # ============================================================================
 
-test_that("create_spc_chart() handles exclude parameter correctly", {
+test_that("bfh_qic() handles exclude parameter correctly", {
   library(ggplot2)
 
   data <- data.frame(
@@ -183,7 +183,7 @@ test_that("create_spc_chart() handles exclude parameter correctly", {
   )
 
   # Exclude outlier from calculations
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = data,
     x = month,
     y = value,
@@ -197,7 +197,7 @@ test_that("create_spc_chart() handles exclude parameter correctly", {
   expect_equal(plot$labels$title, "I-Chart with Excluded Outlier")
 })
 
-test_that("create_spc_chart() handles multiply parameter correctly", {
+test_that("bfh_qic() handles multiply parameter correctly", {
   library(ggplot2)
 
   # Data in proportions (0-1)
@@ -207,7 +207,7 @@ test_that("create_spc_chart() handles multiply parameter correctly", {
   )
 
   # Convert to percentages (0-100)
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = data,
     x = month,
     y = proportion,
@@ -221,7 +221,7 @@ test_that("create_spc_chart() handles multiply parameter correctly", {
   expect_equal(plot$labels$title, "Proportions as Percentages")
 })
 
-test_that("create_spc_chart() handles agg.fun parameter correctly", {
+test_that("bfh_qic() handles agg.fun parameter correctly", {
   library(ggplot2)
 
   data <- data.frame(
@@ -230,7 +230,7 @@ test_that("create_spc_chart() handles agg.fun parameter correctly", {
   )
 
   # Use median aggregation
-  plot_median <- create_spc_chart(
+  plot_median <- bfh_qic(
     data = data,
     x = month,
     y = value,
@@ -243,7 +243,7 @@ test_that("create_spc_chart() handles agg.fun parameter correctly", {
   expect_s3_class(plot_median, "ggplot")
 
   # Use sum aggregation
-  plot_sum <- create_spc_chart(
+  plot_sum <- bfh_qic(
     data = data,
     x = month,
     y = value,
@@ -256,7 +256,7 @@ test_that("create_spc_chart() handles agg.fun parameter correctly", {
   expect_s3_class(plot_sum, "ggplot")
 })
 
-test_that("create_spc_chart() validates exclude parameter", {
+test_that("bfh_qic() validates exclude parameter", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rnorm(12, 20, 5)
@@ -264,7 +264,7 @@ test_that("create_spc_chart() validates exclude parameter", {
 
   # Invalid exclude position (out of bounds)
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -275,7 +275,7 @@ test_that("create_spc_chart() validates exclude parameter", {
 
   # Negative exclude position
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -285,7 +285,7 @@ test_that("create_spc_chart() validates exclude parameter", {
   )
 })
 
-test_that("create_spc_chart() validates multiply parameter", {
+test_that("bfh_qic() validates multiply parameter", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rnorm(12, 20, 5)
@@ -293,7 +293,7 @@ test_that("create_spc_chart() validates multiply parameter", {
 
   # Non-numeric multiply
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -304,7 +304,7 @@ test_that("create_spc_chart() validates multiply parameter", {
 
   # Negative multiply
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -315,7 +315,7 @@ test_that("create_spc_chart() validates multiply parameter", {
 
   # Multiple values
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -325,7 +325,7 @@ test_that("create_spc_chart() validates multiply parameter", {
   )
 })
 
-test_that("create_spc_chart() validates agg.fun parameter", {
+test_that("bfh_qic() validates agg.fun parameter", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rnorm(12, 20, 5)
@@ -333,7 +333,7 @@ test_that("create_spc_chart() validates agg.fun parameter", {
 
   # Invalid aggregation function
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -343,7 +343,7 @@ test_that("create_spc_chart() validates agg.fun parameter", {
   )
 })
 
-test_that("create_spc_chart() combines new parameters correctly", {
+test_that("bfh_qic() combines new parameters correctly", {
   library(ggplot2)
 
   data <- data.frame(
@@ -357,7 +357,7 @@ test_that("create_spc_chart() combines new parameters correctly", {
   data$proportion[5] <- 0.15
 
   # Combine exclude, multiply, and agg.fun
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = data,
     x = month,
     y = proportion,
@@ -374,7 +374,7 @@ test_that("create_spc_chart() combines new parameters correctly", {
   expect_equal(plot$labels$title, "Combined Parameters Test")
 })
 
-test_that("create_spc_chart() handles cl parameter correctly", {
+test_that("bfh_qic() handles cl parameter correctly", {
   library(ggplot2)
 
   data <- data.frame(
@@ -383,7 +383,7 @@ test_that("create_spc_chart() handles cl parameter correctly", {
   )
 
   # Use custom centerline value
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = data,
     x = month,
     y = value,
@@ -397,7 +397,7 @@ test_that("create_spc_chart() handles cl parameter correctly", {
   expect_equal(plot$labels$title, "I-Chart with Custom Centerline")
 })
 
-test_that("create_spc_chart() validates cl parameter", {
+test_that("bfh_qic() validates cl parameter", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rnorm(12, 20, 5)
@@ -405,7 +405,7 @@ test_that("create_spc_chart() validates cl parameter", {
 
   # Non-numeric cl
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -416,7 +416,7 @@ test_that("create_spc_chart() validates cl parameter", {
 
   # Multiple values for cl
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -427,7 +427,7 @@ test_that("create_spc_chart() validates cl parameter", {
 
   # NA value for cl
   expect_error(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -437,7 +437,7 @@ test_that("create_spc_chart() validates cl parameter", {
   )
 })
 
-test_that("create_spc_chart() uses cl with phase splits", {
+test_that("bfh_qic() uses cl with phase splits", {
   library(ggplot2)
 
   data <- data.frame(
@@ -449,7 +449,7 @@ test_that("create_spc_chart() uses cl with phase splits", {
   )
 
   # Generate plot with custom centerline and phase split
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = data,
     x = month,
     y = value,

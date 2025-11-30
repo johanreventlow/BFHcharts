@@ -265,7 +265,7 @@ test_that("format_y_value produces valid count format", {
   expect_true(nchar(format_y_value(500, "count")) > 0)
 })
 
-test_that("format_y_value works in create_spc_chart workflow", {
+test_that("format_y_value works in bfh_qic workflow", {
   # This is tested indirectly through label creation
   # Verify that function is exported and callable
   expect_true(exists("format_y_value"))

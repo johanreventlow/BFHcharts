@@ -120,7 +120,7 @@ detect_date_interval <- function(dates, debug = FALSE) {
 #' @keywords internal
 #' @noRd
 #' @family spc-date-formatting
-#' @seealso [detect_date_interval()], [create_spc_chart()]
+#' @seealso [detect_date_interval()], [bfh_qic()]
 #' @examples
 #' \dontrun{
 #' dates <- seq(as.Date("2024-01-01"), by = "month", length.out = 24)

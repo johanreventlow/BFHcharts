@@ -17,7 +17,11 @@
       "Bash(gh issue list:*)",
       "Bash(gh issue close:*)",
       "Bash(gh issue view:*)",
-      "Bash(Rscript:*)"
+      "Bash(Rscript:*)",
+      "Bash(openspec list:*)",
+      "Bash(openspec validate:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(gh issue comment:*)"
     ],
     "deny": [],
     "ask": []

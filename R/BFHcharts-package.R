@@ -11,7 +11,7 @@
 #' * Comprehensive SPC chart types (run, I, P, U, C, etc.)
 #'
 #' @section Main Functions:
-#' * [create_spc_chart()] - High-level wrapper for complete SPC workflow
+#' * [bfh_qic()] - High-level wrapper for complete SPC workflow
 #' * [bfh_spc_plot()] - Low-level plotting from qic data
 #' * [BFHtheme::theme_bfh()] - Apply BFH hospital theme styling (from BFHtheme package)
 #' * [spc_plot_config()], [viewport_dims()], [phase_config()] - Configuration objects
@@ -29,7 +29,7 @@
 #' library(BFHcharts)
 #'
 #' # Create SPC chart with one function
-#' chart <- create_spc_chart(
+#' chart <- bfh_qic(
 #'   data = my_data,
 #'   x = "Date",
 #'   y = "Admissions",

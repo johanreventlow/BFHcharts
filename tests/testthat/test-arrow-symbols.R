@@ -50,7 +50,7 @@ test_that("Arrow symbol detection suppresses target line in plots", {
   # Test with bare < symbol (should suppress target line)
   # Must provide target_value for qicharts2 to create target column
   plot_less <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -63,7 +63,7 @@ test_that("Arrow symbol detection suppresses target line in plots", {
 
   # Test with bare > symbol (should suppress target line)
   plot_greater <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -76,7 +76,7 @@ test_that("Arrow symbol detection suppresses target line in plots", {
 
   # Test with Unicode arrow (should suppress target line)
   plot_arrow <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,
@@ -120,7 +120,7 @@ test_that("Comparison operators with numbers do NOT suppress target line", {
 
   # Test with <18 (should NOT suppress target line)
   plot_with_number <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,

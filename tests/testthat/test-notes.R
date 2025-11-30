@@ -8,7 +8,7 @@ test_that("notes parameter creates plot without errors", {
   notes_vec[3] <- "Test intervention"
   notes_vec[8] <- "New protocol"
 
-  plot <- create_spc_chart(
+  plot <- bfh_qic(
     data = data,
     x = month,
     y = infections,

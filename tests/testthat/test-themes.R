@@ -208,7 +208,7 @@ test_that("create_plot_footer output is suitable for plot caption", {
   expect_true(nchar(footer) < 250)
 })
 
-test_that("apply_spc_theme can be used in create_spc_chart workflow", {
+test_that("apply_spc_theme can be used in bfh_qic workflow", {
   # Integration test: verify theme application works in real workflow
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -216,7 +216,7 @@ test_that("apply_spc_theme can be used in create_spc_chart workflow", {
   )
 
   plot <- suppressWarnings(
-    create_spc_chart(
+    bfh_qic(
       data = data,
       x = month,
       y = value,

@@ -33,7 +33,7 @@ demo_data <- data.frame(
 
 # Test 1: Simple Run Chart
 cat("\n=== Test 1: Run Chart ===\n")
-plot1 <- create_spc_chart(
+plot1 <- bfh_qic(
   data = demo_data,
   x = month,
   y = infections,
@@ -46,7 +46,7 @@ print(plot1)
 
 # Test 2: I-Chart with Phase Split (intervention at month 12)
 cat("\n=== Test 2: I-Chart with Phase Split ===\n")
-plot2 <- create_spc_chart(
+plot2 <- bfh_qic(
   data = demo_data,
   x = month,
   y = infections,
@@ -68,7 +68,7 @@ print(plot2)
 
 # Test 3: P-Chart with denominator and target
 cat("\n=== Test 3: P-Chart with Target ===\n")
-plot3 <- create_spc_chart(
+plot3 <- bfh_qic(
   data = demo_data,
   x = month,
   y = infections,
@@ -87,7 +87,7 @@ print(plot3)
 
 # Test 4: Get summary statistics (new feature)
 cat("\n=== Test 4: Summary Statistics (New Feature) ===\n")
-result <- create_spc_chart(
+result <- bfh_qic(
   data = demo_data,
   x = month,
   y = infections,

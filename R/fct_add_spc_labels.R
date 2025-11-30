@@ -63,7 +63,7 @@ add_spc_labels <- function(
     verbose = FALSE,
     debug_mode = FALSE) {
 
-  # Viewport dimensions are now in inches (direct input from create_spc_chart)
+  # Viewport dimensions are now in inches (direct input from bfh_qic)
   viewport_width_inches <- viewport_width
   viewport_height_inches <- viewport_height
 

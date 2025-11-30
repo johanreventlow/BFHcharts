@@ -84,7 +84,7 @@ format_target_prefix <- function(target_text) {
 
 #' Validate Numeric Parameter
 #'
-#' Centralized validation for numeric parameters in create_spc_chart.
+#' Centralized validation for numeric parameters in bfh_qic.
 #' Checks for type, range, length, and NA values.
 #'
 #' @param value Parameter value to validate
@@ -250,7 +250,7 @@ validate_qic_data <- function(qic_data) {
 #'
 #' @format Named character vector
 #' @family spc-helpers
-#' @seealso [get_y_axis_unit_label()], [create_spc_chart()]
+#' @seealso [get_y_axis_unit_label()], [bfh_qic()]
 #' @keywords internal
 #' @noRd
 Y_AXIS_UNITS_DA <- c(
