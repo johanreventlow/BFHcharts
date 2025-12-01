@@ -110,40 +110,146 @@ bfh_export_pdf <- function(x,
     )
   }
 
+  # Security: Prevent path traversal attacks (check BEFORE file operations)
+  if (grepl("..", output, fixed = TRUE)) {
+    stop(
+      "output path cannot contain '..' (path traversal attempt detected)\n",
+      "  Provided path: ", basename(output),
+      call. = FALSE
+    )
+  }
+
+  # Security: Prevent shell metacharacter injection
+  shell_metachars <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
+  if (any(sapply(shell_metachars, function(char) grepl(char, output, fixed = TRUE)))) {
+    stop(
+      "output path contains potentially unsafe characters\n",
+      "  Path: ", basename(output),
+      call. = FALSE
+    )
+  }
+
   if (!is.list(metadata)) {
     stop("metadata must be a list", call. = FALSE
     )
   }
 
-  # Validate custom template path if provided
+  # ============================================================================
+  # METADATA VALIDATION - Type checking and length limits
+  # ============================================================================
+  known_fields <- c("hospital", "department", "analysis", "details", "author",
+                    "date", "data_definition")
+
+  # Warn about unknown metadata fields (may indicate typos or misuse)
+  unknown_fields <- setdiff(names(metadata), known_fields)
+  if (length(unknown_fields) > 0) {
+    warning(
+      "Unknown metadata fields will be ignored: ",
+      paste(unknown_fields, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  # Validate each known field's type and length
+  for (field in names(metadata)) {
+    if (field %in% known_fields) {
+      value <- metadata[[field]]
+
+      # Type validation: Must be character or NULL
+      if (!is.null(value) && !is.character(value)) {
+        # Special case: date can be Date object
+        if (field == "date" && inherits(value, "Date")) {
+          next  # Allow Date objects for date field
+        }
+        stop(
+          "metadata$", field, " must be a character string (or Date for 'date' field)\n",
+          "  Got: ", class(value)[1],
+          call. = FALSE
+        )
+      }
+
+      # Length validation: Max 10,000 characters to prevent DoS
+      if (is.character(value) && nchar(value) > 10000) {
+        stop(
+          "metadata$", field, " exceeds maximum length of 10,000 characters\n",
+          "  Current length: ", nchar(value),
+          call. = FALSE
+        )
+      }
+    }
+  }
+
+  # ============================================================================
+  # SECURITY VALIDATION - Custom template path
+  # All security checks MUST happen BEFORE file system operations or Quarto calls
+  # ============================================================================
   if (!is.null(template_path)) {
     if (!is.character(template_path) || length(template_path) != 1) {
       stop("template_path must be a single character string", call. = FALSE)
     }
+
+    # Security: Prevent path traversal in template_path (check BEFORE file.exists)
+    if (grepl("..", template_path, fixed = TRUE)) {
+      stop(
+        "template_path cannot contain '..' (path traversal attempt detected)",
+        call. = FALSE
+      )
+    }
+
+    # Security: Prevent shell metacharacters in template path
+    if (any(sapply(shell_metachars, function(char) grepl(char, template_path, fixed = TRUE)))) {
+      stop(
+        "template_path contains potentially unsafe characters",
+        call. = FALSE
+      )
+    }
+  }
+
+  # ============================================================================
+  # FILE VALIDATION - After security checks pass
+  # ============================================================================
+  if (!is.null(template_path)) {
     if (!file.exists(template_path)) {
       stop(
-        "Custom template file not found: ", template_path, "\n",
+        "Custom template file not found: ", basename(template_path), "\n",
         "  Ensure the file exists and the path is correct.",
         call. = FALSE
       )
     }
+
+    # Resolve symlinks to prevent TOCTOU attacks and path confusion
+    # normalizePath() resolves symlinks and returns absolute path
+    template_path <- normalizePath(template_path, winslash = "/", mustWork = TRUE)
+
+    # Re-check for path traversal AFTER symlink resolution
+    # (Symlink could point to ../../../etc/passwd)
+    if (grepl("..", template_path, fixed = TRUE)) {
+      stop(
+        "template_path resolves to a path containing '..' (path traversal attempt detected)",
+        call. = FALSE
+      )
+    }
+
     # Reject directories (file.exists returns TRUE for directories)
     if (dir.exists(template_path)) {
       stop(
-        "template_path must be a file, not a directory: ", template_path,
+        "template_path must be a file, not a directory: ", basename(template_path),
         call. = FALSE
       )
     }
     # Validate .typ extension
     if (!grepl("\\.typ$", template_path, ignore.case = TRUE)) {
       stop(
-        "template_path must be a .typ file: ", template_path, "\n",
+        "template_path must be a .typ file: ", basename(template_path), "\n",
         "  Typst templates require the .typ extension.",
         call. = FALSE
       )
     }
   }
 
+  # ============================================================================
+  # SYSTEM CHECKS - After all security and file validation
+  # ============================================================================
   # Check Quarto availability and version
   if (!quarto_available()) {
     stop(
@@ -158,6 +264,26 @@ bfh_export_pdf <- function(x,
   # Create temporary directory for intermediate files
   temp_dir <- tempfile("bfh_pdf_")
   dir.create(temp_dir, recursive = TRUE)
+
+  # Security: Set restrictive permissions (owner-only: rwx------)
+  # Prevents other users from reading sensitive healthcare data in temp files
+  Sys.chmod(temp_dir, mode = "0700", use_umask = FALSE)
+
+  # Security: Verify directory ownership on Unix systems
+  # Prevents TOCTOU attacks where attacker replaces our temp dir
+  if (.Platform$OS.type == "unix") {
+    dir_info <- file.info(temp_dir)
+    current_uid <- as.integer(Sys.getenv("UID"))
+    if (length(current_uid) > 0 && current_uid > 0) {
+      if (dir_info$uid != current_uid) {
+        unlink(temp_dir, recursive = TRUE)
+        stop(
+          "Temp directory ownership mismatch (possible security issue)",
+          call. = FALSE
+        )
+      }
+    }
+  }
 
   # Ensure cleanup on exit
   on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
@@ -320,9 +446,18 @@ bfh_create_typst_document <- function(chart_image,
     copy_success <- file.copy(template_path, local_template, overwrite = TRUE)
     if (!copy_success) {
       stop(
-        "Failed to copy custom template to output directory.\n",
-        "  Source: ", template_path, "\n",
-        "  Destination: ", local_template,
+        "Failed to copy custom template to output directory.",
+        call. = FALSE
+      )
+    }
+
+    # Security: Verify file copy integrity (size check)
+    src_size <- file.info(template_path)$size
+    dest_size <- file.info(local_template)$size
+    if (is.na(dest_size) || dest_size != src_size) {
+      unlink(local_template)
+      stop(
+        "Template file copy integrity check failed (size mismatch)",
         call. = FALSE
       )
     }
@@ -378,9 +513,18 @@ bfh_create_typst_document <- function(chart_image,
   copy_success <- file.copy(chart_image, local_chart, overwrite = TRUE)
   if (!copy_success) {
     stop(
-      "Failed to copy chart image to output directory.\n",
-      "  Source: ", chart_image, "\n",
-      "  Destination: ", local_chart,
+      "Failed to copy chart image to output directory.",
+      call. = FALSE
+    )
+  }
+
+  # Security: Verify file copy integrity (size check)
+  src_size <- file.info(chart_image)$size
+  dest_size <- file.info(local_chart)$size
+  if (is.na(dest_size) || dest_size != src_size) {
+    unlink(local_chart)
+    stop(
+      "Chart image copy integrity check failed (size mismatch)",
       call. = FALSE
     )
   }
@@ -414,6 +558,25 @@ bfh_create_typst_document <- function(chart_image,
 bfh_compile_typst <- function(typst_file, output) {
   if (!file.exists(typst_file)) {
     stop("Typst file not found: ", typst_file, call. = FALSE)
+  }
+
+  # Security: Validate paths before passing to system2()
+  shell_metachars <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
+
+  if (any(sapply(shell_metachars, function(char) grepl(char, typst_file, fixed = TRUE)))) {
+    stop(
+      "typst_file path contains potentially unsafe characters\n",
+      "  Path: ", basename(typst_file),
+      call. = FALSE
+    )
+  }
+
+  if (any(sapply(shell_metachars, function(char) grepl(char, output, fixed = TRUE)))) {
+    stop(
+      "output path contains potentially unsafe characters\n",
+      "  Path: ", basename(output),
+      call. = FALSE
+    )
   }
 
   # Create output directory if needed

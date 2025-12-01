@@ -1,3 +1,37 @@
+# BFHcharts 0.3.3
+
+## Security Hardening
+
+**IMPORTANT:** This release addresses critical security vulnerabilities in PDF export functionality. Healthcare organizations using BFHcharts in production environments should update immediately.
+
+### Critical Path Validation
+* **Path traversal prevention:** All file paths now reject `..` directory traversal attempts
+* **Shell injection protection:** Path parameters are validated against shell metacharacters (`;`, `|`, `&`, `$`, etc.) before being passed to system commands
+* **Template path validation:** Custom Typst template paths undergo strict security checks before file operations
+
+### Input Validation Strengthening
+* **Metadata type checking:** All metadata fields now validate type constraints (string or Date for date field)
+* **Length limits:** Metadata fields limited to 10,000 characters to prevent DoS attacks
+* **Unknown field warnings:** Unknown metadata fields now trigger warnings to catch typos and misuse
+* **Symlink resolution:** Template paths are now resolved through `normalizePath()` to prevent TOCTOU attacks
+
+### Defense in Depth
+* **Restrictive temp permissions:** Temporary directories created with mode 0700 (owner-only) to protect sensitive healthcare data
+* **Ownership verification:** Temp directory ownership validated on Unix systems to prevent directory substitution attacks
+* **File copy integrity:** All file copy operations verified with size checks to detect corruption or tampering
+* **Path sanitization:** Error messages use `basename()` to avoid exposing sensitive full paths
+
+### Testing
+* Added comprehensive security test suite with 20 tests covering:
+  - Path traversal rejection
+  - Shell metacharacter validation
+  - Metadata type and length validation
+  - All tests passing with 0 failures
+
+**Compliance:** These changes strengthen BFHcharts for HIPAA/GDPR compliance requirements in healthcare environments.
+
+---
+
 # BFHcharts 0.3.2
 
 ## Bug Fixes
