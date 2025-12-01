@@ -337,7 +337,7 @@ bfh_create_typst_document <- function(chart_image,
 
 #' Compile Typst Document to PDF
 #'
-#' Compiles a .typ file to PDF using Quarto CLI.
+#' Compiles a .typ file to PDF using Quarto's bundled Typst compiler.
 #'
 #' @param typst_file Path to .typ file
 #' @param output Path for output PDF file
@@ -357,28 +357,22 @@ bfh_compile_typst <- function(typst_file, output) {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  # Compile with Quarto
+  # Use quarto typst compile (not quarto render which expects .qmd files)
   result <- system2(
     "quarto",
-    args = c("render", typst_file, "--to", "pdf", "--output", basename(output)),
+    args = c("typst", "compile", typst_file, output),
     stdout = TRUE,
     stderr = TRUE
   )
 
-  # Check if PDF was created
-  typst_dir <- dirname(typst_file)
-  compiled_pdf <- file.path(typst_dir, basename(output))
-
-  if (!file.exists(compiled_pdf)) {
+  # Check if PDF was created (quarto typst compile outputs directly to target)
+  if (!file.exists(output)) {
     stop(
       "PDF compilation failed.\n",
       "  Quarto output: ", paste(result, collapse = "\n"),
       call. = FALSE
     )
   }
-
-  # Move PDF to final destination
-  file.copy(compiled_pdf, output, overwrite = TRUE)
 
   invisible(output)
 }
