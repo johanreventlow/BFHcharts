@@ -27,7 +27,7 @@
 #' # Returns: "1K"
 #'
 #' format_y_value(0.456, "percent")
-#' # Returns: "45.6%"
+#' # Returns: "46%"
 #'
 #' format_y_value(120, "time", y_range = c(0, 200))
 #' # Returns: "2 timer"
@@ -51,8 +51,7 @@ format_y_value <- function(val, y_unit, y_range = NULL) {
   # Percent formatting
   if (y_unit == "percent") {
     # Matcher scale_y_continuous(labels = scales::label_percent())
-    # accuracy = 0.1 viser én decimal (e.g., "98.7%" ikke "99%")
-    return(scales::label_percent(accuracy = 0.1)(val))
+    return(scales::label_percent()(val))
   }
 
   # Count formatting med K/M/mia notation

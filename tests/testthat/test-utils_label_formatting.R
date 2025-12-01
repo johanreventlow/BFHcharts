@@ -23,31 +23,15 @@ test_that("format_y_value validates input types", {
 # ============================================================================
 
 test_that("format_y_value formats percentages correctly", {
-  expect_equal(format_y_value(0.5, "percent"), "50.0%")
-  expect_equal(format_y_value(0.456, "percent"), "45.6%")
-  expect_equal(format_y_value(0.987, "percent"), "98.7%")
-  expect_equal(format_y_value(0.999, "percent"), "99.9%")
-  expect_equal(format_y_value(0.001, "percent"), "0.1%")
+  expect_equal(format_y_value(0.5, "percent"), "50%")
+  expect_equal(format_y_value(0.456, "percent"), "46%")
+  expect_equal(format_y_value(0.999, "percent"), "100%")
+  expect_equal(format_y_value(0.001, "percent"), "0%")
 })
 
 test_that("format_y_value handles percent edge cases", {
-  expect_equal(format_y_value(0, "percent"), "0.0%")
-  expect_equal(format_y_value(1, "percent"), "100.0%")
-})
-
-test_that("format_y_value shows decimal precision for percent near boundaries", {
-  # Values near 100%
-  expect_equal(format_y_value(0.995, "percent"), "99.5%")
-  expect_equal(format_y_value(0.9999, "percent"), "100.0%")
-
-  # Values near 0%
-  expect_equal(format_y_value(0.0001, "percent"), "0.0%")
-  expect_equal(format_y_value(0.005, "percent"), "0.5%")
-
-  # Centerline-specific scenarios (values in 0.95-1.0 range)
-  expect_equal(format_y_value(0.95, "percent"), "95.0%")
-  expect_equal(format_y_value(0.973, "percent"), "97.3%")
-  expect_equal(format_y_value(0.984, "percent"), "98.4%")
+  expect_equal(format_y_value(0, "percent"), "0%")
+  expect_equal(format_y_value(1, "percent"), "100%")
 })
 
 # ============================================================================
@@ -237,7 +221,7 @@ test_that("format_y_value default handles integers", {
 
 test_that("format_y_value handles zero correctly", {
   expect_equal(format_y_value(0, "count"), "0")
-  expect_equal(format_y_value(0, "percent"), "0.0%")
+  expect_equal(format_y_value(0, "percent"), "0%")
   expect_equal(format_y_value(0, "rate"), "0")
   # Zero with range > 60 becomes hours
   expect_equal(format_y_value(0, "time", c(0, 100)), "0 timer")
@@ -246,7 +230,7 @@ test_that("format_y_value handles zero correctly", {
 test_that("format_y_value handles very small values", {
   # Very small values show decimals (nsmall=1)
   expect_equal(format_y_value(0.001, "count"), "0,001")
-  expect_equal(format_y_value(0.001, "percent"), "0.1%")
+  expect_equal(format_y_value(0.001, "percent"), "0%")
   expect_equal(format_y_value(0.001, "rate"), "0,001")
 })
 

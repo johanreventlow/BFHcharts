@@ -13,16 +13,6 @@
 
 ---
 
-# BFHcharts 0.3.6
-
-## Bug Fixes
-
-* **Fixed percent label precision:** Percent labels on SPC charts now display one decimal place (e.g., "98.7%") instead of rounding to whole percentages (e.g., "99%"). This provides better precision for centerline values and other percent-based metrics in healthcare quality charts.
-  - Updated `format_y_value()` in `R/utils_label_formatting.R` to use `accuracy = 0.1`
-  - Updated `format_y_axis_percent()` in `R/utils_y_axis_formatting.R` for consistency
-  - Fixes GitHub issue #63
-
----
 
 # BFHcharts 0.3.5
 
