@@ -350,6 +350,228 @@ test_that("escape_typst_string handles special characters", {
 })
 
 # ============================================================================
+# PUBLIC API TESTS - bfh_extract_spc_stats() and bfh_merge_metadata()
+# ============================================================================
+
+test_that("bfh_extract_spc_stats extracts statistics from valid summary", {
+  # Create valid summary data frame
+  summary <- data.frame(
+    længste_løb_max = 8,
+    længste_løb = 6,
+    antal_kryds_min = 10,
+    antal_kryds = 12
+  )
+
+  stats <- bfh_extract_spc_stats(summary)
+
+  # Verify structure
+  expect_type(stats, "list")
+  expect_named(stats, c("runs_expected", "runs_actual", "crossings_expected",
+                        "crossings_actual", "outliers_expected", "outliers_actual"))
+
+  # Verify values
+  expect_equal(stats$runs_expected, 8)
+  expect_equal(stats$runs_actual, 6)
+  expect_equal(stats$crossings_expected, 10)
+  expect_equal(stats$crossings_actual, 12)
+  expect_null(stats$outliers_expected)
+  expect_null(stats$outliers_actual)
+})
+
+test_that("bfh_extract_spc_stats handles NULL summary gracefully", {
+  stats <- bfh_extract_spc_stats(NULL)
+
+  # Should return list with all NULLs
+  expect_type(stats, "list")
+  expect_null(stats$runs_expected)
+  expect_null(stats$runs_actual)
+  expect_null(stats$crossings_expected)
+  expect_null(stats$crossings_actual)
+  expect_null(stats$outliers_expected)
+  expect_null(stats$outliers_actual)
+})
+
+test_that("bfh_extract_spc_stats handles empty data frame gracefully", {
+  stats <- bfh_extract_spc_stats(data.frame())
+
+  # Should return list with all NULLs
+  expect_type(stats, "list")
+  expect_null(stats$runs_expected)
+  expect_null(stats$runs_actual)
+  expect_null(stats$crossings_expected)
+  expect_null(stats$crossings_actual)
+})
+
+test_that("bfh_extract_spc_stats handles missing columns gracefully", {
+  # Summary with only some columns
+  summary <- data.frame(
+    længste_løb = 6,
+    antal_kryds = 12
+  )
+
+  stats <- bfh_extract_spc_stats(summary)
+
+  # Should extract available columns
+  expect_null(stats$runs_expected)  # Missing column
+  expect_equal(stats$runs_actual, 6)  # Present
+  expect_null(stats$crossings_expected)  # Missing column
+  expect_equal(stats$crossings_actual, 12)  # Present
+})
+
+test_that("bfh_extract_spc_stats validates input type", {
+  # Should error for non-data frame input
+  expect_error(
+    bfh_extract_spc_stats("not a data frame"),
+    "summary must be a data frame or NULL"
+  )
+
+  expect_error(
+    bfh_extract_spc_stats(123),
+    "summary must be a data frame or NULL"
+  )
+
+  expect_error(
+    bfh_extract_spc_stats(list(a = 1)),
+    "summary must be a data frame or NULL"
+  )
+})
+
+test_that("bfh_merge_metadata merges user metadata with defaults", {
+  metadata <- list(
+    department = "Kvalitetsafdeling",
+    analysis = "Signifikant fald"
+  )
+
+  merged <- bfh_merge_metadata(metadata, chart_title = "Infektioner")
+
+  # User values should override defaults
+  expect_equal(merged$department, "Kvalitetsafdeling")
+  expect_equal(merged$analysis, "Signifikant fald")
+
+  # Defaults should be present
+  expect_equal(merged$hospital, "Bispebjerg og Frederiksberg Hospital")
+  expect_equal(merged$title, "Infektioner")
+  expect_null(merged$details)
+  expect_null(merged$author)
+  expect_equal(merged$date, Sys.Date())
+  expect_null(merged$data_definition)
+})
+
+test_that("bfh_merge_metadata handles empty metadata", {
+  merged <- bfh_merge_metadata(list(), chart_title = "Test Chart")
+
+  # Should return defaults only
+  expect_equal(merged$hospital, "Bispebjerg og Frederiksberg Hospital")
+  expect_equal(merged$title, "Test Chart")
+  expect_null(merged$department)
+  expect_null(merged$analysis)
+  expect_null(merged$details)
+  expect_null(merged$author)
+  expect_equal(merged$date, Sys.Date())
+  expect_null(merged$data_definition)
+})
+
+test_that("bfh_merge_metadata handles NULL metadata", {
+  merged <- bfh_merge_metadata(NULL, chart_title = "Test Chart")
+
+  # Should return defaults
+  expect_equal(merged$hospital, "Bispebjerg og Frederiksberg Hospital")
+  expect_equal(merged$title, "Test Chart")
+})
+
+test_that("bfh_merge_metadata handles NULL chart title", {
+  # With metadata title
+  metadata <- list(title = "Custom Title")
+  merged <- bfh_merge_metadata(metadata, chart_title = NULL)
+  expect_equal(merged$title, "Custom Title")
+
+  # Without metadata title
+  metadata <- list()
+  merged <- bfh_merge_metadata(metadata, chart_title = NULL)
+  expect_null(merged$title)
+})
+
+test_that("bfh_merge_metadata ignores unknown fields", {
+  metadata <- list(
+    department = "Valid Field",
+    unknown_field = "Should be ignored",
+    another_unknown = 123
+  )
+
+  merged <- bfh_merge_metadata(metadata, chart_title = "Test")
+
+  # Valid field should be present
+  expect_equal(merged$department, "Valid Field")
+
+  # Unknown fields should be ignored
+  expect_null(merged$unknown_field)
+  expect_null(merged$another_unknown)
+})
+
+test_that("bfh_merge_metadata validates input type", {
+  # Should error for non-list metadata
+  expect_error(
+    bfh_merge_metadata("not a list", "Title"),
+    "metadata must be a list or NULL"
+  )
+
+  expect_error(
+    bfh_merge_metadata(123, "Title"),
+    "metadata must be a list or NULL"
+  )
+
+  expect_error(
+    bfh_merge_metadata(data.frame(a = 1), "Title"),
+    "metadata must be a list or NULL"
+  )
+})
+
+test_that("bfh_merge_metadata all fields can be overridden", {
+  metadata <- list(
+    hospital = "Custom Hospital",
+    department = "Custom Department",
+    title = "Custom Title",
+    analysis = "Custom Analysis",
+    details = "Custom Details",
+    author = "Custom Author",
+    date = as.Date("2025-01-01"),
+    data_definition = "Custom Definition"
+  )
+
+  merged <- bfh_merge_metadata(metadata, chart_title = "Ignored Title")
+
+  # All fields should be overridden (including title from metadata)
+  expect_equal(merged$hospital, "Custom Hospital")
+  expect_equal(merged$department, "Custom Department")
+  expect_equal(merged$title, "Custom Title")  # metadata title, not chart_title
+  expect_equal(merged$analysis, "Custom Analysis")
+  expect_equal(merged$details, "Custom Details")
+  expect_equal(merged$author, "Custom Author")
+  expect_equal(merged$date, as.Date("2025-01-01"))
+  expect_equal(merged$data_definition, "Custom Definition")
+})
+
+test_that("internal functions delegate to public API", {
+  # Verify that internal versions call public versions
+  summary <- data.frame(
+    længste_løb_max = 8,
+    længste_løb = 6
+  )
+
+  # Internal function should give same result as public
+  internal_result <- BFHcharts:::extract_spc_stats(summary)
+  public_result <- bfh_extract_spc_stats(summary)
+
+  expect_identical(internal_result, public_result)
+
+  # Same for merge_metadata
+  internal_merged <- BFHcharts:::merge_metadata(list(department = "Test"), "Title")
+  public_merged <- bfh_merge_metadata(list(department = "Test"), "Title")
+
+  expect_identical(internal_merged, public_merged)
+})
+
+# ============================================================================
 # NEW TESTS FOR PDF EXPORT BUG FIXES (Issue #60)
 # ============================================================================
 

@@ -1,3 +1,18 @@
+# BFHcharts 0.4.0
+
+## New Features
+
+* **Public API for SPC utility functions:** Exported `bfh_extract_spc_stats()` and `bfh_merge_metadata()` as public API functions to support downstream packages (like SPCify) without requiring `:::` accessor.
+  - `bfh_extract_spc_stats()` extracts SPC statistics (runs, crossings) from qic summary data frames
+  - `bfh_merge_metadata()` merges user-provided metadata with default values for PDF generation
+  - Both functions include comprehensive parameter validation and documentation
+  - Internal versions maintained as deprecated aliases for backward compatibility
+  - Enables SPCify to migrate from `BFHcharts:::function()` to `BFHcharts::bfh_function()`
+  - Provides API stability guarantees via semantic versioning
+  - Fixes GitHub issue #64
+
+---
+
 # BFHcharts 0.3.6
 
 ## Bug Fixes

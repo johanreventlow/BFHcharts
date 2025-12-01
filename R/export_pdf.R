@@ -653,12 +653,48 @@ bfh_compile_typst <- function(typst_file, output) {
 # INTERNAL HELPER FUNCTIONS
 # ============================================================================
 
-#' Extract SPC Statistics from Summary
+#' Extract SPC Statistics from QIC Summary
 #'
-#' @param summary Summary data frame from bfh_qic_result
-#' @return List with runs, crossings, outliers (expected and actual)
-#' @keywords internal
-extract_spc_stats <- function(summary) {
+#' Extracts statistical process control metrics from a qic summary data frame.
+#' This function is useful for downstream packages that need to access SPC
+#' statistics without depending on BFHcharts internal functions.
+#'
+#' @param summary Data frame with SPC statistics (from `bfh_qic_result$summary`),
+#'   or NULL
+#'
+#' @return Named list with SPC statistics:
+#' \describe{
+#'   \item{runs_expected}{Expected maximum run length (længste_løb_max)}
+#'   \item{runs_actual}{Actual longest run length (længste_løb)}
+#'   \item{crossings_expected}{Expected minimum crossings (antal_kryds_min)}
+#'   \item{crossings_actual}{Actual number of crossings (antal_kryds)}
+#'   \item{outliers_expected}{Expected outliers (future)}
+#'   \item{outliers_actual}{Actual outliers (future)}
+#' }
+#'
+#' If summary is NULL or empty, all values will be NULL.
+#' If specific columns are missing, corresponding values will be NULL.
+#'
+#' @export
+#' @examples
+#' \dontrun{
+#' # Extract stats from a qic result
+#' result <- bfh_qic(data, x = date, y = value, chart_type = "i")
+#' stats <- bfh_extract_spc_stats(result$summary)
+#'
+#' # Stats contain runs and crossings
+#' stats$runs_actual
+#' stats$crossings_actual
+#' }
+#'
+#' @family utility-functions
+#' @seealso [bfh_qic()] for creating SPC charts
+bfh_extract_spc_stats <- function(summary) {
+  # Parameter validation
+  if (!is.null(summary) && !is.data.frame(summary)) {
+    stop("summary must be a data frame or NULL", call. = FALSE)
+  }
+
   # Initialize with NULLs (will be conditionally included in Typst)
   stats <- list(
     runs_expected = NULL,
@@ -698,13 +734,63 @@ extract_spc_stats <- function(summary) {
   return(stats)
 }
 
+#' @keywords internal
+#' @rdname bfh_extract_spc_stats
+extract_spc_stats <- function(summary) {
+  bfh_extract_spc_stats(summary)
+}
+
 #' Merge User Metadata with Defaults
 #'
-#' @param metadata User-provided metadata list
-#' @param chart_title Chart title from config
-#' @return Merged metadata list
-#' @keywords internal
-merge_metadata <- function(metadata, chart_title) {
+#' Merges user-provided metadata with package defaults for PDF generation.
+#' This function is useful for downstream packages that need consistent
+#' metadata handling without depending on BFHcharts internal functions.
+#'
+#' @param metadata Named list with user-provided metadata fields.
+#'   Valid fields: hospital, department, title, analysis, details, author,
+#'   date, data_definition. Other fields are ignored.
+#' @param chart_title Character string with chart title. Used as default
+#'   for metadata$title if not provided by user.
+#'
+#' @return Named list with merged metadata containing:
+#' \describe{
+#'   \item{hospital}{Hospital name (default: "Bispebjerg og Frederiksberg Hospital")}
+#'   \item{department}{Department name (default: NULL)}
+#'   \item{title}{Chart title (from chart_title or metadata)}
+#'   \item{analysis}{Analysis description (default: NULL)}
+#'   \item{details}{Additional details (default: NULL)}
+#'   \item{author}{Author name (default: NULL)}
+#'   \item{date}{Report date (default: Sys.Date())}
+#'   \item{data_definition}{Data definition (default: NULL)}
+#' }
+#'
+#' User-provided values override defaults. Fields not in the default list
+#' are silently ignored.
+#'
+#' @export
+#' @examples
+#' \dontrun{
+#' # Basic usage
+#' metadata <- list(
+#'   department = "Kvalitetsafdeling",
+#'   analysis = "Signifikant fald observeret"
+#' )
+#' merged <- bfh_merge_metadata(metadata, chart_title = "Infektioner")
+#'
+#' # merged$hospital = "Bispebjerg og Frederiksberg Hospital" (default)
+#' # merged$department = "Kvalitetsafdeling" (user override)
+#' # merged$title = "Infektioner" (from chart_title)
+#' }
+#'
+#' @family utility-functions
+#' @seealso [bfh_export_pdf()] for PDF export functionality
+bfh_merge_metadata <- function(metadata, chart_title) {
+  # Parameter validation
+  if (!is.null(metadata) && (!is.list(metadata) || is.data.frame(metadata))) {
+    stop("metadata must be a list or NULL", call. = FALSE)
+  }
+
+  # Define default metadata values
   defaults <- list(
     hospital = "Bispebjerg og Frederiksberg Hospital",
     department = NULL,
@@ -716,6 +802,11 @@ merge_metadata <- function(metadata, chart_title) {
     data_definition = NULL
   )
 
+  # Handle NULL metadata
+  if (is.null(metadata)) {
+    return(defaults)
+  }
+
   # Merge: user values override defaults
   merged <- defaults
   for (name in names(metadata)) {
@@ -725,6 +816,12 @@ merge_metadata <- function(metadata, chart_title) {
   }
 
   return(merged)
+}
+
+#' @keywords internal
+#' @rdname bfh_merge_metadata
+merge_metadata <- function(metadata, chart_title) {
+  bfh_merge_metadata(metadata, chart_title)
 }
 
 #' Build Typst Document Content
