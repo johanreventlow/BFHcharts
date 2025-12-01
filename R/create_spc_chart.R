@@ -42,14 +42,20 @@ NULL
 #' @param xlab X-axis label (default: "" for blank)
 #' @param subtitle Plot subtitle text (default: NULL for no subtitle)
 #' @param caption Plot caption text (default: NULL for no caption)
-#' @param return.data Logical. If TRUE, return the raw qic data frame instead of ggplot. If FALSE (default), return ggplot object. Can be combined with print.summary.
-#' @param print.summary Logical. If TRUE, return formatted summary statistics. When combined with return.data, returns list(data, summary). When alone, returns list(plot, summary). Default FALSE returns only plot.
+#' @param return.data Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result object. If FALSE (default), return bfh_qic_result S3 object. Legacy parameter maintained for backwards compatibility.
+#' @param print.summary \strong{DEPRECATED.} Logical. The summary is now always included in the bfh_qic_result object. Access it via \code{result$summary}. This parameter will be removed in a future version. When TRUE, triggers deprecation warning and returns legacy list(plot, summary) format.
 #'
 #' @return
-#' - Default (return.data = FALSE, print.summary = FALSE): ggplot2 object
-#' - return.data = TRUE: data.frame with qic calculations
-#' - print.summary = TRUE: list(plot = ggplot, summary = data.frame)
-#' - Both TRUE: list(data = data.frame, summary = data.frame)
+#' - Default (return.data = FALSE, print.summary = FALSE): \code{bfh_qic_result} S3 object with components:
+#'   \itemize{
+#'     \item \code{$plot}: ggplot2 object with the SPC chart
+#'     \item \code{$summary}: data.frame with SPC statistics
+#'     \item \code{$qic_data}: data.frame with raw qicharts2 calculations
+#'     \item \code{$config}: list with original function parameters
+#'   }
+#' - return.data = TRUE: data.frame with qic calculations (legacy behavior)
+#' - print.summary = TRUE: list(plot = ggplot, summary = data.frame) (deprecated, will warn)
+#' - Both TRUE: list(data = data.frame, summary = data.frame) (deprecated, will warn)
 #'
 #' @details
 #' **Chart Types:**
@@ -792,22 +798,65 @@ bfh_qic <- function(data,
     verbose = FALSE
   )
 
-  # Handle return based on parameters
-  # Get summary if requested
-  summary_result <- NULL
+  # Always generate summary for inclusion in result object
+  summary_result <- format_qic_summary(qic_data, y_axis_unit = y_axis_unit)
+
+  # Deprecation warning for print.summary parameter
   if (print.summary) {
-    # Extract and format summary from qic_data
-    summary_result <- format_qic_summary(qic_data, y_axis_unit = y_axis_unit)
+    warning(
+      "The 'print.summary' parameter is deprecated as of BFHcharts 0.3.0.\n",
+      "  The summary is now always included in the result object.\n",
+      "  Access it via result$summary instead of using print.summary = TRUE.\n",
+      "  This parameter will be removed in a future version.",
+      call. = FALSE
+    )
   }
 
+  # Build config object with original parameters
+  config <- list(
+    chart_type = chart_type,
+    chart_title = chart_title,
+    y_axis_unit = y_axis_unit,
+    target_value = target_value,
+    target_text = target_text,
+    part = part,
+    freeze = freeze,
+    exclude = exclude,
+    cl = cl,
+    multiply = multiply,
+    agg.fun = agg.fun
+  )
+
   # Return based on user parameters
+  # Handle backwards compatibility for return.data parameter
   if (return.data && print.summary) {
+    # Legacy behavior: return list(data, summary)
     return(list(data = qic_data, summary = summary_result))
   } else if (return.data) {
+    # Legacy behavior: return raw qic_data
     return(qic_data)
   } else if (print.summary) {
+    # Legacy behavior: return list(plot, summary)
+    # But also include the full result object for migration path
+    warning(
+      "Returning legacy list(plot, summary) format.\n",
+      "  Consider using the new bfh_qic_result object instead:\n",
+      "  result <- bfh_qic(...)\n",
+      "  result$plot     # Access plot\n",
+      "  result$summary  # Access summary\n",
+      "  This legacy format will be removed in a future version.",
+      call. = FALSE
+    )
     return(list(plot = plot, summary = summary_result))
   } else {
-    return(plot)
+    # NEW DEFAULT BEHAVIOR: Return bfh_qic_result S3 object
+    return(
+      new_bfh_qic_result(
+        plot = plot,
+        summary = summary_result,
+        qic_data = qic_data,
+        config = config
+      )
+    )
   }
 }

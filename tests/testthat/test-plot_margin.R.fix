@@ -23,8 +23,7 @@ test_that("plot_margin NULL uses default behavior", {
     y_axis_unit = "count"
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_s3_class(plot, "ggplot")
 })
 
 test_that("plot_margin with numeric vector works", {
@@ -39,11 +38,10 @@ test_that("plot_margin with numeric vector works", {
     plot_margin = c(10, 10, 10, 10)
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_s3_class(plot, "ggplot")
 
   # Verify margin was applied
-  margin_obj <- plot$plot$theme$plot.margin
+  margin_obj <- plot$theme$plot.margin
   expect_s3_class(margin_obj, "ggplot2::margin")
 })
 
@@ -59,11 +57,10 @@ test_that("plot_margin with margin() object works (mm)", {
     plot_margin = ggplot2::margin(t = 5, r = 10, b = 5, l = 10, unit = "mm")
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_s3_class(plot, "ggplot")
 
   # Verify margin was applied
-  margin_obj <- plot$plot$theme$plot.margin
+  margin_obj <- plot$theme$plot.margin
   expect_s3_class(margin_obj, "ggplot2::margin")
 })
 
@@ -79,11 +76,10 @@ test_that("plot_margin with margin() object works (pt)", {
     plot_margin = ggplot2::margin(t = 14, r = 28, b = 14, l = 28, unit = "pt")
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_s3_class(plot, "ggplot")
 
   # Verify margin was applied
-  margin_obj <- plot$plot$theme$plot.margin
+  margin_obj <- plot$theme$plot.margin
   expect_s3_class(margin_obj, "ggplot2::margin")
 })
 
@@ -99,11 +95,10 @@ test_that("plot_margin with margin() object works (lines)", {
     plot_margin = ggplot2::margin(t = 0.5, r = 1, b = 0.5, l = 1, unit = "lines")
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_s3_class(plot, "ggplot")
 
   # Verify margin was applied
-  margin_obj <- plot$plot$theme$plot.margin
+  margin_obj <- plot$theme$plot.margin
   expect_s3_class(margin_obj, "ggplot2::margin")
 })
 
@@ -119,11 +114,10 @@ test_that("asymmetric margins work correctly", {
     plot_margin = c(2, 20, 5, 10)
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_s3_class(plot, "ggplot")
 
   # Verify margin was applied
-  margin_obj <- plot$plot$theme$plot.margin
+  margin_obj <- plot$theme$plot.margin
   expect_s3_class(margin_obj, "ggplot2::margin")
 })
 
@@ -159,11 +153,10 @@ test_that("plot_margin works with all chart types", {
       )
     }
 
-    expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+    expect_s3_class(plot, "ggplot")
 
     # Verify margin was applied
-    margin_obj <- plot$plot$theme$plot.margin
+    margin_obj <- plot$theme$plot.margin
     expect_s3_class(margin_obj, "ggplot2::margin")
   }
 })
@@ -280,9 +273,8 @@ test_that("plot_margin works with zero margins", {
     plot_margin = c(0, 0, 0, 0)
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
-  margin_obj <- plot$plot$theme$plot.margin
+  expect_s3_class(plot, "ggplot")
+  margin_obj <- plot$theme$plot.margin
   expect_s3_class(margin_obj, "ggplot2::margin")
 })
 
@@ -297,9 +289,8 @@ test_that("plot_margin works with very small values", {
     plot_margin = c(0.1, 0.1, 0.1, 0.1)
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
-  margin_obj <- plot$plot$theme$plot.margin
+  expect_s3_class(plot, "ggplot")
+  margin_obj <- plot$theme$plot.margin
   expect_s3_class(margin_obj, "ggplot2::margin")
 })
 
@@ -318,8 +309,7 @@ test_that("plot_margin works at boundary (100mm)", {
     )
   })
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_s3_class(plot, "ggplot")
 })
 
 # ============================================================================
@@ -339,9 +329,8 @@ test_that("plot_margin works with width and height", {
     plot_margin = c(5, 5, 5, 5)
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
-  margin_obj <- plot$plot$theme$plot.margin
+  expect_s3_class(plot, "ggplot")
+  margin_obj <- plot$theme$plot.margin
   expect_s3_class(margin_obj, "ggplot2::margin")
 })
 
@@ -357,9 +346,8 @@ test_that("plot_margin works with base_size", {
     plot_margin = c(5, 5, 5, 5)
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
-  margin_obj <- plot$plot$theme$plot.margin
+  expect_s3_class(plot, "ggplot")
+  margin_obj <- plot$theme$plot.margin
   expect_s3_class(margin_obj, "ggplot2::margin")
 })
 

@@ -21,8 +21,9 @@ test_that("bfh_qic() generates valid run chart", {
   )
 
   # Validate plot structure
-  expect_s3_class(plot, "ggplot")
-  expect_equal(plot$labels$title, "Test Run Chart")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
+  expect_equal(plot$plot$labels$title, "Test Run Chart")
 })
 
 test_that("bfh_qic() generates valid p-chart with denominator", {
@@ -47,8 +48,9 @@ test_that("bfh_qic() generates valid p-chart with denominator", {
   )
 
   # Validate plot structure
-  expect_s3_class(plot, "ggplot")
-  expect_equal(plot$labels$title, "Infection Rate")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
+  expect_equal(plot$plot$labels$title, "Infection Rate")
 })
 
 test_that("bfh_qic() handles phase splits correctly", {
@@ -75,7 +77,8 @@ test_that("bfh_qic() handles phase splits correctly", {
   )
 
   # Validate plot structure
-  expect_s3_class(plot, "ggplot")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
 })
 
 test_that("bfh_spc_plot() works with pre-calculated qic data", {
@@ -143,7 +146,8 @@ test_that("bfh_qic() handles target values correctly", {
     target_text = "Target: 95"
   )
 
-  expect_s3_class(plot, "ggplot")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
 })
 
 test_that("bfh_qic() validates input correctly", {
@@ -193,8 +197,9 @@ test_that("bfh_qic() handles exclude parameter correctly", {
     exclude = c(3)
   )
 
-  expect_s3_class(plot, "ggplot")
-  expect_equal(plot$labels$title, "I-Chart with Excluded Outlier")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
+  expect_equal(plot$plot$labels$title, "I-Chart with Excluded Outlier")
 })
 
 test_that("bfh_qic() handles multiply parameter correctly", {
@@ -217,8 +222,9 @@ test_that("bfh_qic() handles multiply parameter correctly", {
     multiply = 100
   )
 
-  expect_s3_class(plot, "ggplot")
-  expect_equal(plot$labels$title, "Proportions as Percentages")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
+  expect_equal(plot$plot$labels$title, "Proportions as Percentages")
 })
 
 test_that("bfh_qic() handles agg.fun parameter correctly", {
@@ -240,7 +246,8 @@ test_that("bfh_qic() handles agg.fun parameter correctly", {
     agg.fun = "median"
   )
 
-  expect_s3_class(plot_median, "ggplot")
+  expect_s3_class(plot_median, "bfh_qic_result")
+  expect_s3_class(plot_median$plot, "ggplot")
 
   # Use sum aggregation
   plot_sum <- bfh_qic(
@@ -253,7 +260,8 @@ test_that("bfh_qic() handles agg.fun parameter correctly", {
     agg.fun = "sum"
   )
 
-  expect_s3_class(plot_sum, "ggplot")
+  expect_s3_class(plot_sum, "bfh_qic_result")
+  expect_s3_class(plot_sum$plot, "ggplot")
 })
 
 test_that("bfh_qic() validates exclude parameter", {
@@ -370,8 +378,9 @@ test_that("bfh_qic() combines new parameters correctly", {
     part = c(12) # Phase split
   )
 
-  expect_s3_class(plot, "ggplot")
-  expect_equal(plot$labels$title, "Combined Parameters Test")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
+  expect_equal(plot$plot$labels$title, "Combined Parameters Test")
 })
 
 test_that("bfh_qic() handles cl parameter correctly", {
@@ -393,8 +402,9 @@ test_that("bfh_qic() handles cl parameter correctly", {
     cl = 25  # Set custom centerline to 25
   )
 
-  expect_s3_class(plot, "ggplot")
-  expect_equal(plot$labels$title, "I-Chart with Custom Centerline")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
+  expect_equal(plot$plot$labels$title, "I-Chart with Custom Centerline")
 })
 
 test_that("bfh_qic() validates cl parameter", {
@@ -460,7 +470,8 @@ test_that("bfh_qic() uses cl with phase splits", {
     part = c(12)
   )
 
-  # Validate plot structure
-  expect_s3_class(plot, "ggplot")
-  expect_equal(plot$labels$title, "Custom CL with Phase Split")
+  # Validate result structure (now returns bfh_qic_result)
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
+  expect_equal(plot$plot$labels$title, "Custom CL with Phase Split")
 })

@@ -17,7 +17,8 @@ test_that("notes parameter creates plot without errors", {
     notes = notes_vec
   )
 
-  expect_s3_class(plot, "ggplot")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
 })
 
 test_that("extract_comment_data extracts notes from qic output", {

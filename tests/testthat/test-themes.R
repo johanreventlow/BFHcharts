@@ -228,7 +228,8 @@ test_that("apply_spc_theme can be used in bfh_qic workflow", {
   )
 
   # Plot should have theme applied
-  expect_s3_class(plot, "ggplot")
-  expect_true(!is.null(plot$theme))
-  expect_s3_class(plot$coordinates, "CoordFlexCartesian")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
+  expect_true(!is.null(plot$plot$theme))
+  expect_s3_class(plot$plot$coordinates, "CoordFlexCartesian")
 })

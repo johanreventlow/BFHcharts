@@ -343,7 +343,8 @@ test_that("Chart type utilities work in bfh_qic", {
       y_axis_unit = "count"
     )
   )
-  expect_s3_class(plot1, "ggplot")
+  expect_s3_class(plot1, "bfh_qic_result")
+  expect_s3_class(plot1$plot, "ggplot")
 
   # Test with ratio chart requiring denominator
   plot2 <- suppressWarnings(
@@ -356,5 +357,6 @@ test_that("Chart type utilities work in bfh_qic", {
       y_axis_unit = "percent"
     )
   )
-  expect_s3_class(plot2, "ggplot")
+  expect_s3_class(plot2, "bfh_qic_result")
+  expect_s3_class(plot2$plot, "ggplot")
 })

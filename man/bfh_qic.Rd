@@ -88,16 +88,22 @@ bfh_qic(
 
 \item{caption}{Plot caption text (default: NULL for no caption)}
 
-\item{return.data}{Logical. If TRUE, return the raw qic data frame instead of ggplot. If FALSE (default), return ggplot object. Can be combined with print.summary.}
+\item{return.data}{Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result object. If FALSE (default), return bfh_qic_result S3 object. Legacy parameter maintained for backwards compatibility.}
 
-\item{print.summary}{Logical. If TRUE, return formatted summary statistics. When combined with return.data, returns list(data, summary). When alone, returns list(plot, summary). Default FALSE returns only plot.}
+\item{print.summary}{\strong{DEPRECATED.} Logical. The summary is now always included in the bfh_qic_result object. Access it via \code{result$summary}. This parameter will be removed in a future version. When TRUE, triggers deprecation warning and returns legacy list(plot, summary) format.}
 }
 \value{
 \itemize{
-\item Default (return.data = FALSE, print.summary = FALSE): ggplot2 object
-\item return.data = TRUE: data.frame with qic calculations
-\item print.summary = TRUE: list(plot = ggplot, summary = data.frame)
-\item Both TRUE: list(data = data.frame, summary = data.frame)
+\item Default (return.data = FALSE, print.summary = FALSE): \code{bfh_qic_result} S3 object with components:
+\itemize{
+\item \code{$plot}: ggplot2 object with the SPC chart
+\item \code{$summary}: data.frame with SPC statistics
+\item \code{$qic_data}: data.frame with raw qicharts2 calculations
+\item \code{$config}: list with original function parameters
+}
+\item return.data = TRUE: data.frame with qic calculations (legacy behavior)
+\item print.summary = TRUE: list(plot = ggplot, summary = data.frame) (deprecated, will warn)
+\item Both TRUE: list(data = data.frame, summary = data.frame) (deprecated, will warn)
 }
 }
 \description{

@@ -379,7 +379,8 @@ test_that("Y-axis formatting works in bfh_qic", {
         chart_type = "run",
         y_axis_unit = "count"
       )
-      expect_s3_class(plot_count, "ggplot")
+      expect_s3_class(plot_count, "bfh_qic_result")
+      expect_s3_class(plot_count$plot, "ggplot")
     },
     "font family.*not found",
     all = FALSE
@@ -395,7 +396,8 @@ test_that("Y-axis formatting works in bfh_qic", {
         chart_type = "run",
         y_axis_unit = "percent"
       )
-      expect_s3_class(plot_pct, "ggplot")
+      expect_s3_class(plot_pct, "bfh_qic_result")
+      expect_s3_class(plot_pct$plot, "ggplot")
     },
     "font family.*not found",
     all = FALSE
@@ -471,7 +473,8 @@ test_that("bfh_qic maps y_axis_unit='percent' to qicharts2's y.percent parameter
       y_axis_unit = "percent"
     )
   )
-  expect_s3_class(plot, "ggplot")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
 
   # Verify y-axis labels contain percentage symbols
   # Extract y-axis breaks and labels from ggplot build
@@ -505,7 +508,8 @@ test_that("bfh_qic with y_axis_unit='count' does NOT apply percentage formatting
     )
   )
 
-  expect_s3_class(plot, "ggplot")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
 
   # Verify y-axis labels do NOT contain percentage symbols
   built <- ggplot2::ggplot_build(plot)

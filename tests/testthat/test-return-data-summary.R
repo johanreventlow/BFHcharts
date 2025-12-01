@@ -2,7 +2,7 @@
 # TESTS FOR return.data AND print.summary PARAMETERS
 # ============================================================================
 
-test_that("default behavior returns ggplot object", {
+test_that("default behavior returns bfh_qic_result object", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -18,7 +18,21 @@ test_that("default behavior returns ggplot object", {
     )
   )
 
-  expect_s3_class(result, "ggplot")
+  # NEW BEHAVIOR: Returns bfh_qic_result S3 object
+  expect_s3_class(result, "bfh_qic_result")
+  expect_s3_class(result, "list")
+
+  # Verify structure
+  expect_true("plot" %in% names(result))
+  expect_true("summary" %in% names(result))
+  expect_true("qic_data" %in% names(result))
+  expect_true("config" %in% names(result))
+
+  # Verify components
+  expect_s3_class(result$plot, "ggplot")
+  expect_s3_class(result$summary, "data.frame")
+  expect_s3_class(result$qic_data, "data.frame")
+  expect_type(result$config, "list")
 })
 
 test_that("return.data = TRUE returns data.frame with qic calculations", {

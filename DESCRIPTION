@@ -1,6 +1,6 @@
 Package: BFHcharts
 Title: SPC Visualization for Healthcare Quality Improvement
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: c(
     person(
       "Johan", "Reventlow",
@@ -18,6 +18,7 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 LazyData: true
+SystemRequirements: Quarto CLI (>= 1.4.0) for PDF export via Typst templates
 URL: https://github.com/johanreventlow/BFHcharts
 BugReports: https://github.com/johanreventlow/BFHcharts/issues
 Depends:
@@ -43,6 +44,8 @@ Suggests:
     knitr,
     rmarkdown,
     vdiffr,
-    covr
+    covr,
+    pdftools (>= 3.3.0),
+    withr
 Config/testthat/edition: 3
 VignetteBuilder: knitr

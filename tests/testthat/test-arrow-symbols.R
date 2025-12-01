@@ -87,15 +87,25 @@ test_that("Arrow symbol detection suppresses target line in plots", {
     )
   )
 
-  # All should be valid ggplot objects
-  expect_s3_class(plot_less, "ggplot")
-  expect_s3_class(plot_greater, "ggplot")
-  expect_s3_class(plot_arrow, "ggplot")
+  # All should be valid bfh_qic_result objects
+  expect_s3_class(plot_less, "bfh_qic_result")
+  expect_s3_class(plot_greater, "bfh_qic_result")
+  expect_s3_class(plot_arrow, "bfh_qic_result")
+
+  # Extract ggplot objects from results
+  plot_less_gg <- plot_less$plot
+  plot_greater_gg <- plot_greater$plot
+  plot_arrow_gg <- plot_arrow$plot
+
+  # Verify plots are ggplot objects
+  expect_s3_class(plot_less_gg, "ggplot")
+  expect_s3_class(plot_greater_gg, "ggplot")
+  expect_s3_class(plot_arrow_gg, "ggplot")
 
   # Build plots to access layers
-  built_less <- ggplot2::ggplot_build(plot_less)
-  built_greater <- ggplot2::ggplot_build(plot_greater)
-  built_arrow <- ggplot2::ggplot_build(plot_arrow)
+  built_less <- ggplot2::ggplot_build(plot_less_gg)
+  built_greater <- ggplot2::ggplot_build(plot_greater_gg)
+  built_arrow <- ggplot2::ggplot_build(plot_arrow_gg)
 
   # Count geom_line layers
   # Run chart with target line: data line (1) + centerline (1) + target line (1) + cl extension (1) + target extension (1) = 5
@@ -131,10 +141,14 @@ test_that("Comparison operators with numbers do NOT suppress target line", {
     )
   )
 
-  expect_s3_class(plot_with_number, "ggplot")
+  expect_s3_class(plot_with_number, "bfh_qic_result")
+
+  # Extract ggplot object
+  plot_with_number_gg <- plot_with_number$plot
+  expect_s3_class(plot_with_number_gg, "ggplot")
 
   # Build plot
-  built <- ggplot2::ggplot_build(plot_with_number)
+  built <- ggplot2::ggplot_build(plot_with_number_gg)
 
   # Count line layers - should have 5 (data + centerline + target + cl extension + target extension)
   count_line_layers <- function(built_plot) {

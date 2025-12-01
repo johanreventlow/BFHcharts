@@ -409,5 +409,6 @@ test_that("Configuration objects work in bfh_qic", {
   )
 
   # Plot should be created successfully
-  expect_s3_class(plot, "ggplot")
+  expect_s3_class(plot, "bfh_qic_result")
+  expect_s3_class(plot$plot, "ggplot")
 })
