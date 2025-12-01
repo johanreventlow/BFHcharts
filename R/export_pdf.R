@@ -263,6 +263,10 @@ bfh_export_pdf <- function(x,
 
   # Create temporary directory for intermediate files
   temp_dir <- tempfile("bfh_pdf_")
+
+  # Register cleanup BEFORE dir.create() to ensure cleanup on any error
+  on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
+
   dir.create(temp_dir, recursive = TRUE)
 
   # Security: Set restrictive permissions (owner-only: rwx------)
@@ -285,9 +289,6 @@ bfh_export_pdf <- function(x,
     }
   }
 
-  # Ensure cleanup on exit
-  on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
-
   # Extract chart title from plot (will be used in Typst template)
   chart_title <- x$config$chart_title
   if (is.null(chart_title)) chart_title <- ""
@@ -297,14 +298,23 @@ bfh_export_pdf <- function(x,
 
   # Export chart to temporary PNG
   chart_png <- file.path(temp_dir, "chart.png")
-  ggplot2::ggsave(
-    filename = chart_png,
-    plot = plot_no_title,
-    width = 250 / 25.4,  # 250mm in inches
-    height = 140 / 25.4, # 140mm in inches
-    dpi = 300,
-    units = "in",
-    device = "png"
+  tryCatch(
+    ggplot2::ggsave(
+      filename = chart_png,
+      plot = plot_no_title,
+      width = 250 / 25.4,  # 250mm in inches
+      height = 140 / 25.4, # 140mm in inches
+      dpi = 300,
+      units = "in",
+      device = "png"
+    ),
+    error = function(e) {
+      stop(
+        "Failed to save chart image\n",
+        "  Error: ", conditionMessage(e),
+        call. = FALSE
+      )
+    }
   )
 
   # Extract SPC statistics from summary
@@ -340,7 +350,6 @@ bfh_export_pdf <- function(x,
 #' @return Logical indicating whether Quarto is available and meets version requirement
 #'
 #' @keywords internal
-#' @export
 quarto_available <- function(min_version = "1.4.0") {
   # Try to run quarto --version
   version_output <- tryCatch(
@@ -398,8 +407,8 @@ check_quarto_version <- function(version_string, min_version) {
   )
 
   if (is.null(installed) || is.null(minimum)) {
-    # Graceful fallback if parsing fails
-    return(TRUE)
+    # Fail-safe: if we can't parse version, return FALSE
+    return(FALSE)
   }
 
   return(installed >= minimum)
@@ -421,7 +430,6 @@ check_quarto_version <- function(version_string, min_version) {
 #' @return Path to created .typ file (invisibly)
 #'
 #' @keywords internal
-#' @export
 bfh_create_typst_document <- function(chart_image,
                                       output,
                                       metadata,
@@ -539,7 +547,17 @@ bfh_create_typst_document <- function(chart_image,
   )
 
   # Write Typst file
-  writeLines(typst_content, output)
+  tryCatch(
+    writeLines(typst_content, output),
+    error = function(e) {
+      stop(
+        "Failed to write Typst document\n",
+        "  Output: ", basename(output), "\n",
+        "  Error: ", conditionMessage(e),
+        call. = FALSE
+      )
+    }
+  )
 
   invisible(output)
 }
@@ -554,7 +572,6 @@ bfh_create_typst_document <- function(chart_image,
 #' @return Path to created PDF file (invisibly)
 #'
 #' @keywords internal
-#' @export
 bfh_compile_typst <- function(typst_file, output) {
   if (!file.exists(typst_file)) {
     stop("Typst file not found: ", typst_file, call. = FALSE)
@@ -586,12 +603,31 @@ bfh_compile_typst <- function(typst_file, output) {
   }
 
   # Use quarto typst compile (not quarto render which expects .qmd files)
-  result <- system2(
-    "quarto",
-    args = c("typst", "compile", typst_file, output),
-    stdout = TRUE,
-    stderr = TRUE
+  result <- tryCatch(
+    system2(
+      "quarto",
+      args = c("typst", "compile", typst_file, output),
+      stdout = TRUE,
+      stderr = TRUE
+    ),
+    error = function(e) {
+      stop(
+        "Failed to execute Quarto command\n",
+        "  Error: ", conditionMessage(e),
+        call. = FALSE
+      )
+    }
   )
+
+  # Check exit status
+  exit_status <- attr(result, "status")
+  if (!is.null(exit_status) && exit_status != 0) {
+    stop(
+      "Quarto compilation failed with exit code ", exit_status, "\n",
+      "  Output: ", paste(result, collapse = "\n"),
+      call. = FALSE
+    )
+  }
 
   # Check if PDF was created (quarto typst compile outputs directly to target)
   if (!file.exists(output)) {
@@ -796,28 +832,3 @@ escape_typst_string <- function(s) {
   return(s)
 }
 
-#' Escape File Path for Typst
-#'
-#' Normalizes and escapes a file path for safe use in Typst documents.
-#' Converts Windows backslashes to forward slashes and escapes special characters.
-#'
-#' @param path Character string with file path
-#' @return Escaped path safe for Typst
-#' @keywords internal
-escape_typst_path <- function(path) {
-  if (is.null(path) || length(path) == 0 || nchar(path) == 0) return("")
-
-
-  # Normalize path: convert to forward slashes, resolve relative paths
-
-  # mustWork = FALSE allows paths that don't exist yet (e.g., output files)
-  normalized <- tryCatch(
-    normalizePath(path, winslash = "/", mustWork = FALSE),
-    error = function(e) path
-  )
-
-  # Escape special characters for Typst string literal
-  escaped <- escape_typst_string(normalized)
-
-  return(escaped)
-}

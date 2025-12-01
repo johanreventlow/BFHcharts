@@ -353,29 +353,6 @@ test_that("escape_typst_string handles special characters", {
 # NEW TESTS FOR PDF EXPORT BUG FIXES (Issue #60)
 # ============================================================================
 
-test_that("escape_typst_path normalizes and escapes paths", {
-  # Forward slashes should work on all platforms
-  path <- "/tmp/my folder/chart.png"
-  escaped <- BFHcharts:::escape_typst_path(path)
-  expect_true(grepl("/", escaped))
-  expect_false(grepl("\\\\", escaped))  # No backslashes in result
-
-  # Backslashes should be converted to forward slashes
-  windows_path <- "C:\\Users\\Name\\Documents\\chart.png"
-  escaped <- BFHcharts:::escape_typst_path(windows_path)
-  # Result should use forward slashes (normalizePath with winslash="/")
-  expect_type(escaped, "character")
-
-  # Special characters should be escaped
-  path_with_quotes <- '/tmp/say "hello"/chart.png'
-  escaped <- BFHcharts:::escape_typst_path(path_with_quotes)
-  expect_true(grepl('\\\\"', escaped))
-
-  # Empty and NULL
-  expect_equal(BFHcharts:::escape_typst_path(NULL), "")
-  expect_equal(BFHcharts:::escape_typst_path(""), "")
-})
-
 test_that("check_quarto_version parses versions correctly", {
   # Valid version strings
   expect_true(BFHcharts:::check_quarto_version("1.4.557", "1.4.0"))
@@ -662,4 +639,87 @@ test_that("generated Typst contains metadata and chart reference", {
   # Cleanup
   unlink(chart_dir, recursive = TRUE)
   unlink(output_dir, recursive = TRUE)
+})
+
+# ============================================================================
+# ERROR HANDLING TESTS
+# ============================================================================
+
+test_that("bfh_export_pdf handles ggsave failure gracefully", {
+  skip_if_not(quarto_available(), "Quarto not available")
+  skip_on_cran()
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    infections = rpois(12, lambda = 15)
+  )
+
+  chart <- suppressWarnings(
+    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
+  )
+
+  # Try to save to invalid path (directory doesn't exist and can't be created)
+  # On Unix: /dev/null/file.pdf will fail
+  # On Windows: we'll use a path with invalid characters
+  if (.Platform$OS.type == "unix") {
+    expect_error(
+      bfh_export_pdf(chart, "/dev/null/impossible.pdf"),
+      "Failed to save chart image"
+    )
+  }
+})
+
+test_that("quarto_available handles unparseable version correctly", {
+  # Mock function to test version parsing with invalid input
+  check_result <- BFHcharts:::check_quarto_version("invalid-version-string", "1.4.0")
+
+  # Should return FALSE (fail-safe) for unparseable version
+  expect_false(check_result)
+})
+
+test_that("bfh_export_pdf validates input structure", {
+  skip_if_not(quarto_available(), "Quarto not available")
+  skip_on_cran()
+
+  # Create malformed bfh_qic_result (missing required components)
+  bad_result <- list(
+    plot = NULL,  # Missing plot
+    summary = NULL,
+    config = list(chart_title = "Test")
+  )
+  class(bad_result) <- "bfh_qic_result"
+
+  temp_file <- tempfile(fileext = ".pdf")
+
+  # Should fail validation or during ggsave
+  expect_error(
+    bfh_export_pdf(bad_result, temp_file)
+  )
+
+  # Cleanup
+  if (file.exists(temp_file)) unlink(temp_file)
+})
+
+test_that("bfh_compile_typst reports Quarto compilation failures", {
+  skip_if_not(quarto_available(), "Quarto not available")
+  skip_on_cran()
+
+  # Create invalid Typst file that will fail compilation
+  temp_typst <- tempfile(fileext = ".typ")
+  writeLines(c(
+    "#let invalid_syntax = ",  # Incomplete statement
+    "This will cause a Typst error"
+  ), temp_typst)
+
+  temp_pdf <- tempfile(fileext = ".pdf")
+
+  # Should report compilation failure with exit code or missing PDF
+  expect_error(
+    BFHcharts:::bfh_compile_typst(temp_typst, temp_pdf),
+    "compilation failed|PDF compilation failed"
+  )
+
+  # Cleanup
+  unlink(temp_typst)
+  if (file.exists(temp_pdf)) unlink(temp_pdf)
 })

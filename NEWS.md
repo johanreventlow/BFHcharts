@@ -1,3 +1,36 @@
+# BFHcharts 0.3.4
+
+## Code Quality and Error Handling
+
+This release improves internal code organization, error handling, and API clarity.
+
+### API Improvements
+
+* **Reduced exported API surface:** Three internal helper functions (`quarto_available()`, `bfh_create_typst_document()`, `bfh_compile_typst()`) are no longer exported to users. They remain accessible via `BFHcharts:::` for advanced use cases. This change simplifies the public API without affecting functionality.
+
+### Error Handling Enhancements
+
+* **Improved error reporting:** File operations (`ggplot2::ggsave()`, `writeLines()`) now wrapped in `tryCatch()` with informative error messages
+* **Better compilation failures:** Quarto/Typst compilation errors now report exit codes and output for easier debugging
+* **Fail-safe version checking:** Unparseable Quarto version strings now correctly return `FALSE` (fail-safe) instead of `TRUE`
+* **Fixed cleanup timing:** Temporary directory cleanup handler now registered before `dir.create()` to ensure cleanup even if directory creation fails
+
+### Dead Code Removal
+
+* Removed unused internal function `escape_typst_path()` and its tests
+
+### Testing
+
+* Added 4 new error handling tests:
+  - ggsave failure handling
+  - Unparseable Quarto version handling
+  - Malformed input structure validation
+  - Quarto compilation failure reporting
+
+**Impact:** No breaking changes. Internal API changes only affect advanced users who directly call helper functions with `:::`.
+
+---
+
 # BFHcharts 0.3.3
 
 ## Security Hardening
