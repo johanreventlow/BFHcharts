@@ -20,10 +20,10 @@ Centerline labels for percent data MUST show one decimal place when the centerli
 - **When** the centerline value is 0.887
 - **Then** the centerline label displays "89%"
 
-#### Scenario: Exact boundary at 5 percentage points
+#### Scenario: At boundary of 5 percentage points
 - **Given** a percent chart with target = 0.90 (90%)
 - **When** the centerline value is 0.85 (exactly 5 points away)
-- **Then** the centerline label displays "85,0%"
+- **Then** the centerline label displays "85%" (threshold is exclusive)
 
 ---
 
