@@ -7,7 +7,7 @@
 build_typst_content(chart_image, metadata, spc_stats, template, template_file)
 }
 \arguments{
-\item{chart_image}{Path to chart PNG}
+\item{chart_image}{Path to chart PNG (can be absolute or relative)}
 
 \item{metadata}{Metadata list}
 
@@ -15,7 +15,7 @@ build_typst_content(chart_image, metadata, spc_stats, template, template_file)
 
 \item{template}{Template name}
 
-\item{template_file}{Path to template .typ file}
+\item{template_file}{Relative path to template .typ file (relative to document location)}
 }
 \value{
 Character vector with Typst content

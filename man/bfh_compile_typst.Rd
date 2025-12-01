@@ -15,6 +15,6 @@ bfh_compile_typst(typst_file, output)
 Path to created PDF file (invisibly)
 }
 \description{
-Compiles a .typ file to PDF using Quarto CLI.
+Compiles a .typ file to PDF using Quarto's bundled Typst compiler.
 }
 \keyword{internal}
