@@ -398,11 +398,30 @@ npc_mapper_from_plot <- function(p, panel = 1) {
 # GROB HEIGHT CACHE - TTL-BASERET MEMORY MANAGEMENT
 # ==============================================================================
 
+# ==============================================================================
+# WARNING: GLOBAL STATE - PACKAGE-LEVEL CACHES
+# ==============================================================================
+# The following environments and lists are GLOBAL STATE that persists for the
+# entire R session. Important considerations:
+#
+# - NOT THREAD-SAFE: Do not use in parallel/concurrent contexts
+# - SESSION-LEVEL PERSISTENCE: Changes affect all subsequent calls
+# - MANUAL CLEANUP REQUIRED: Call clear_*_cache() functions to free memory
+# - DISABLED BY DEFAULT: Caching is opt-in via configure_*_cache(enabled = TRUE)
+#
+# For Shiny apps: Each session should manage its own cache state or disable
+# caching to avoid cross-session contamination.
+#
+# See docs/CACHING_SYSTEM.MD for full documentation.
+# ==============================================================================
+
 # Global memoization cache for grob height measurements
 # Created once at package/script load time
+# WARNING: Package-level global state - see comments above
 .grob_height_cache <- new.env(parent = emptyenv())
 
 # Cache configuration med TTL og size limits
+# WARNING: Package-level global state - see comments above
 .grob_cache_config <- list(
   enabled = FALSE, # Master switch: Disabled by default (opt-in for interactive workflows)
   ttl_seconds = 300, # 5 minutes (layout genbruges typisk inden for få minutter)
@@ -644,6 +663,25 @@ auto_purge_grob_cache <- function() {
 #' @param max_cache_size Maximum number of cache entries (default 100)
 #' @param purge_check_interval Operations between purge checks (default 50)
 #' @return Invisible: Previous configuration
+#'
+#' @details
+#' **WARNING: Global State & Thread Safety**
+#'
+#' This function modifies package-level global state (`.grob_cache_config`).
+#' Important considerations:
+#'
+#' - **NOT thread-safe**: Do not use in parallel/concurrent contexts (e.g.,
+#'   Shiny apps with multiple sessions sharing state, future/parallel processing).
+#' - **Session-level persistence**: Cache persists for the entire R session.
+#'   Changes affect all subsequent calls until R is restarted or cache is cleared.
+#' - **Manual cleanup required**: Call `clear_grob_height_cache()` when done
+#'   to free memory. The cache does NOT automatically clean up on session end.
+#' - **Disabled by default**: Caching is opt-in. Enable only when performance
+#'   profiling shows clear benefits for your use case.
+#'
+#' For Shiny applications, consider disabling caching or ensuring each session
+#' manages its own cache state to avoid cross-session contamination.
+#'
 #' @family placement-cache
 #' @seealso [configure_panel_cache()], [configure_placement_cache()]
 #' @keywords internal
@@ -698,9 +736,11 @@ configure_grob_cache <- function(
 
 # Global cache for panel height measurements
 # Avoids expensive grid.draw() operations for repeated measurements
+# WARNING: Package-level global state - see GLOBAL STATE comments above
 .panel_height_cache <- new.env(parent = emptyenv())
 
 # Cache configuration med TTL og size limits
+# WARNING: Package-level global state - see GLOBAL STATE comments above
 .panel_cache_config <- list(
   enabled = FALSE, # Master switch: Disabled by default (opt-in for interactive workflows)
   ttl_seconds = 300, # 5 minutes (samme som grob cache)
@@ -880,6 +920,25 @@ auto_purge_panel_cache <- function() {
 #' @param max_cache_size Maximum number of cache entries (default 100)
 #' @param purge_check_interval Operations between purge checks (default 50)
 #' @return Invisible: Previous configuration
+#'
+#' @details
+#' **WARNING: Global State & Thread Safety**
+#'
+#' This function modifies package-level global state (`.panel_cache_config`).
+#' Important considerations:
+#'
+#' - **NOT thread-safe**: Do not use in parallel/concurrent contexts (e.g.,
+#'   Shiny apps with multiple sessions sharing state, future/parallel processing).
+#' - **Session-level persistence**: Cache persists for the entire R session.
+#'   Changes affect all subsequent calls until R is restarted or cache is cleared.
+#' - **Manual cleanup required**: Call `clear_panel_height_cache()` when done
+#'   to free memory. The cache does NOT automatically clean up on session end.
+#' - **Disabled by default**: Caching is opt-in. Enable only when performance
+#'   profiling shows clear benefits for your use case.
+#'
+#' For Shiny applications, consider disabling caching or ensuring each session
+#' manages its own cache state to avoid cross-session contamination.
+#'
 #' @family placement-cache
 #' @seealso [configure_grob_cache()], [configure_placement_cache()]
 #' @keywords internal

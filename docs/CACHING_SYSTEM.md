@@ -14,6 +14,113 @@ Pakken bruger **3 cache layers**:
 
 ---
 
+## ⚠️ Global State & Limitations
+
+**The caching system uses package-level global state.** This has important implications:
+
+### Package-Level State
+
+The following objects persist for the **entire R session**:
+
+| Object | Type | Purpose |
+|--------|------|---------|
+| `.grob_height_cache` | environment | Stores grob height measurements |
+| `.panel_height_cache` | environment | Stores panel dimensions |
+| `.grob_cache_config` | list | Grob cache configuration |
+| `.panel_cache_config` | list | Panel cache configuration |
+| `.grob_cache_stats` | list | Hit/miss statistics |
+| `.panel_cache_stats` | list | Hit/miss statistics |
+
+### Known Limitations
+
+1. **Session-level persistence**: Changes to cache configuration affect all subsequent calls until R is restarted or configuration is explicitly reset.
+
+2. **No automatic cleanup**: Caches do NOT automatically clean up on session end. Memory is freed when R exits.
+
+3. **Global state mutations**: `configure_*_cache()` functions modify global state, which can be surprising in functional programming contexts.
+
+4. **Stats accumulation**: Hit/miss statistics accumulate across the session. Call `clear_*_cache()` to reset.
+
+### When NOT to Use Caching
+
+❌ **Avoid caching in these scenarios:**
+
+- **Parallel processing**: Using `parallel`, `future`, or `foreach` packages
+- **Multi-session Shiny apps**: Where sessions share package state
+- **Reproducibility requirements**: Where global state mutations are problematic
+- **Memory-constrained systems**: Where cache cleanup timing matters
+
+---
+
+## ⚠️ Thread Safety
+
+**IMPORTANT: The caching system is NOT thread-safe.**
+
+### What This Means
+
+The cache environments and configuration lists are shared across all R code running in the same process. Concurrent access from multiple threads can cause:
+
+1. **Race conditions**: Multiple threads reading/writing simultaneously
+2. **Inconsistent state**: Half-updated cache entries
+3. **Lost updates**: Overwrites from concurrent modifications
+
+### Shiny Applications
+
+In Shiny apps, be aware:
+
+```r
+# PROBLEMATIC: Multiple sessions share cache state
+server <- function(input, output, session) {
+  output$plot <- renderPlot({
+    configure_grob_cache(enabled = TRUE)  # Affects ALL sessions!
+    create_spc_chart(...)
+  })
+}
+```
+
+**Recommended approach for Shiny:**
+
+```r
+# OPTION 1: Disable caching entirely (safest)
+server <- function(input, output, session) {
+  output$plot <- renderPlot({
+    configure_grob_cache(enabled = FALSE)
+    configure_panel_cache(enabled = FALSE)
+    create_spc_chart(...)
+  })
+}
+
+# OPTION 2: Session-specific cache management
+server <- function(input, output, session) {
+  # Clear caches on session start
+  session$onSessionEnded(function() {
+    clear_grob_height_cache()
+    clear_panel_height_cache()
+  })
+
+  output$plot <- renderPlot({
+    create_spc_chart(...)
+  })
+}
+```
+
+### Parallel Processing
+
+**Do NOT enable caching when using parallel packages:**
+
+```r
+# WRONG: Will cause issues
+library(parallel)
+configure_grob_cache(enabled = TRUE)
+results <- mclapply(data_list, function(d) create_spc_chart(d, ...))
+
+# RIGHT: Keep caching disabled (default)
+library(parallel)
+results <- mclapply(data_list, function(d) create_spc_chart(d, ...))
+```
+
+---
+
 ## 1. Marquee Style Cache
 
 **Formål:** Eliminerer redundant creation af marquee style objects.
@@ -389,6 +496,33 @@ clear_marquee_style_cache()
 ---
 
 ## Troubleshooting
+
+### Stale Cache Data
+
+**Symptom:** Plots show outdated styling or dimensions after configuration changes
+
+**Causes:**
+1. Changed label placement configuration without clearing cache
+2. Changed font settings without clearing cache
+3. TTL longer than configuration change frequency
+
+**Solutions:**
+```r
+# After ANY configuration change, clear relevant caches:
+override_label_placement_config(height_safety_margin = 1.5)
+clear_grob_height_cache()
+clear_panel_height_cache()
+
+# Or clear all caches for safety:
+clear_all_placement_caches()
+
+# Reduce TTL if you frequently change settings:
+configure_grob_cache(ttl_seconds = 60)
+```
+
+**Prevention:** Always call `clear_*_cache()` functions after changing any configuration that affects chart rendering.
+
+---
 
 ### Low Hit Rate
 
