@@ -4,7 +4,7 @@
 
 This specification defines requirements for package configuration consistency. It ensures DESCRIPTION file accurately reflects package capabilities.
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: DESCRIPTION SHALL only declare features that exist
 

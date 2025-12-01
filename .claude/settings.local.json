@@ -21,7 +21,8 @@
       "Bash(openspec list:*)",
       "Bash(openspec validate:*)",
       "Bash(gh issue edit:*)",
-      "Bash(gh issue comment:*)"
+      "Bash(gh issue comment:*)",
+      "Bash(openspec archive:*)"
     ],
     "deny": [],
     "ask": []
