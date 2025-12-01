@@ -106,7 +106,7 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
 format_y_axis_percent <- function() {
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
-    labels = scales::label_percent()
+    labels = scales::label_percent(accuracy = 0.1)
   )
 }
 
