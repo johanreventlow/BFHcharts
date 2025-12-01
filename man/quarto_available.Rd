@@ -4,10 +4,12 @@
 \alias{quarto_available}
 \title{Check if Quarto CLI is Available}
 \usage{
-quarto_available(min_version = "1.4.0")
+quarto_available(min_version = "1.4.0", use_cache = TRUE)
 }
 \arguments{
 \item{min_version}{Minimum required version as character (default: "1.4.0")}
+
+\item{use_cache}{Logical; if TRUE (default), use cached result if available}
 }
 \value{
 Logical indicating whether Quarto is available and meets version requirement
@@ -15,5 +17,6 @@ Logical indicating whether Quarto is available and meets version requirement
 \description{
 Checks if Quarto CLI is installed and accessible on the system,
 and verifies that the version is >= 1.4.0 (required for Typst support).
+Results are cached for the session to avoid repeated system calls.
 }
 \keyword{internal}
