@@ -16,6 +16,9 @@
 #'     \item \code{data_definition}: Data definition text (optional)
 #'   }
 #' @param template Character string specifying template name (default: "bfh-diagram2")
+#' @param template_path Optional path to a custom Typst template file. When provided,
+#'   this overrides the packaged template. The template must exist and be a valid
+#'   Typst file (.typ). Default is NULL (uses packaged BFH template).
 #'
 #' @return The input object \code{x} invisibly, enabling pipe chaining
 #'
@@ -90,7 +93,8 @@
 bfh_export_pdf <- function(x,
                            output,
                            metadata = list(),
-                           template = "bfh-diagram2") {
+                           template = "bfh-diagram2",
+                           template_path = NULL) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop(
@@ -111,12 +115,27 @@ bfh_export_pdf <- function(x,
     )
   }
 
-  # Check Quarto availability
+  # Validate custom template path if provided
+  if (!is.null(template_path)) {
+    if (!is.character(template_path) || length(template_path) != 1) {
+      stop("template_path must be a single character string", call. = FALSE)
+    }
+    if (!file.exists(template_path)) {
+      stop(
+        "Custom template file not found: ", template_path, "\n",
+        "  Ensure the file exists and the path is correct.",
+        call. = FALSE
+      )
+    }
+  }
+
+  # Check Quarto availability and version
   if (!quarto_available()) {
     stop(
-      "Quarto CLI not found. PDF export requires Quarto (>= 1.4.0).\n",
-      "  Install from: https://quarto.org\n",
-      "  After installation, restart R and try again.",
+      "Quarto CLI not found or version too old. PDF export requires Quarto >= 1.4.0.\n",
+      "  Install or update from: https://quarto.org\n",
+      "  After installation, restart R and try again.\n",
+      "  Typst support was added in Quarto 1.4.",
       call. = FALSE
     )
   }
@@ -160,7 +179,8 @@ bfh_export_pdf <- function(x,
     output = typst_file,
     metadata = metadata_full,
     spc_stats = spc_stats,
-    template = template
+    template = template,
+    template_path = template_path
   )
 
   # Compile to PDF via Quarto
@@ -172,24 +192,75 @@ bfh_export_pdf <- function(x,
 
 #' Check if Quarto CLI is Available
 #'
-#' Checks if Quarto CLI is installed and accessible on the system.
+#' Checks if Quarto CLI is installed and accessible on the system,
+#' and verifies that the version is >= 1.4.0 (required for Typst support).
 #'
-#' @return Logical indicating whether Quarto is available
+#' @param min_version Minimum required version as character (default: "1.4.0")
+#' @return Logical indicating whether Quarto is available and meets version requirement
 #'
 #' @keywords internal
 #' @export
-quarto_available <- function() {
+quarto_available <- function(min_version = "1.4.0") {
   # Try to run quarto --version
-  result <- tryCatch(
+  version_output <- tryCatch(
     {
       system2("quarto", args = "--version", stdout = TRUE, stderr = TRUE)
-      TRUE
     },
-    error = function(e) FALSE,
-    warning = function(w) FALSE
+    error = function(e) NULL,
+    warning = function(w) NULL
   )
 
-  return(result)
+  # Check if quarto command succeeded
+
+  if (is.null(version_output) || length(version_output) == 0) {
+    return(FALSE)
+  }
+
+  # Parse version string (e.g., "1.4.557" or "1.5.0")
+  version_check <- check_quarto_version(version_output[1], min_version)
+
+  return(version_check)
+}
+
+#' Check Quarto Version Against Minimum
+#'
+#' @param version_string Version string from quarto --version (e.g., "1.4.557")
+#' @param min_version Minimum required version (e.g., "1.4.0")
+#' @return Logical indicating whether version meets requirement
+#' @keywords internal
+check_quarto_version <- function(version_string, min_version) {
+  # Extract version numbers using regex
+  # Matches patterns like "1.4.557", "1.4", "2.0.0"
+  version_match <- regmatches(version_string,
+    regexpr("^[0-9]+\\.[0-9]+\\.?[0-9]*", version_string))
+
+  if (length(version_match) == 0 || nchar(version_match) == 0) {
+    # If we can't parse version, assume it's OK (graceful fallback)
+    warning(
+      "Could not parse Quarto version from: ", version_string, "\n",
+      "  Assuming version requirement is met.",
+      call. = FALSE
+    )
+    return(TRUE)
+  }
+
+  # Compare versions using package_version
+  installed <- tryCatch(
+    package_version(version_match),
+    error = function(e) NULL
+  )
+
+  minimum <- tryCatch(
+    package_version(min_version),
+    error = function(e) NULL
+  )
+
+  if (is.null(installed) || is.null(minimum)) {
+    # Graceful fallback if parsing fails
+    return(TRUE)
+  }
+
+  return(installed >= minimum)
 }
 
 #' Create Typst Document for SPC Chart
@@ -202,6 +273,8 @@ quarto_available <- function() {
 #' @param metadata List with template parameters (hospital, department, title, etc.)
 #' @param spc_stats List with SPC statistics (runs, crossings, outliers)
 #' @param template Template name (default: "bfh-diagram2")
+#' @param template_path Optional custom template path. When provided, overrides
+#'   the packaged template (default: NULL uses packaged template)
 #'
 #' @return Path to created .typ file (invisibly)
 #'
@@ -211,26 +284,40 @@ bfh_create_typst_document <- function(chart_image,
                                       output,
                                       metadata,
                                       spc_stats,
-                                      template = "bfh-diagram2") {
-  # Get template path
-  template_dir <- system.file("templates/typst/bfh-template", package = "BFHcharts")
+                                      template = "bfh-diagram2",
+                                      template_path = NULL) {
+  # Determine template file to use
+  if (!is.null(template_path)) {
+    # Use custom template provided by user
+    template_file <- template_path
+    if (!file.exists(template_file)) {
+      stop(
+        "Custom template file not found: ", template_file, "\n",
+        "  Ensure the file exists and the path is correct.",
+        call. = FALSE
+      )
+    }
+  } else {
+    # Use packaged template
+    template_dir <- system.file("templates/typst/bfh-template", package = "BFHcharts")
 
-  if (!dir.exists(template_dir)) {
-    stop(
-      "Typst template not found at: ", template_dir, "\n",
-      "  This should not happen. Please reinstall BFHcharts.",
-      call. = FALSE
-    )
-  }
+    if (!dir.exists(template_dir)) {
+      stop(
+        "Typst template not found at: ", template_dir, "\n",
+        "  This should not happen. Please reinstall BFHcharts.",
+        call. = FALSE
+      )
+    }
 
-  template_file <- file.path(template_dir, "bfh-template.typ")
+    template_file <- file.path(template_dir, "bfh-template.typ")
 
-  if (!file.exists(template_file)) {
-    stop(
-      "Template file not found: ", template_file, "\n",
-      "  This should not happen. Please reinstall BFHcharts.",
-      call. = FALSE
-    )
+    if (!file.exists(template_file)) {
+      stop(
+        "Template file not found: ", template_file, "\n",
+        "  This should not happen. Please reinstall BFHcharts.",
+        call. = FALSE
+      )
+    }
   }
 
   # Build Typst document content
@@ -384,15 +471,17 @@ merge_metadata <- function(metadata, chart_title) {
 #' @return Character vector with Typst content
 #' @keywords internal
 build_typst_content <- function(chart_image, metadata, spc_stats, template, template_file) {
-  # Build import statement (relative to output file location)
+  # Build import statement with escaped path (fixes Windows backslash issue)
   template_dir <- dirname(template_file)
-  import_line <- sprintf('#import "%s": %s', template_file, template)
+  escaped_template_path <- escape_typst_path(template_file)
+  import_line <- sprintf('#import "%s": %s', escaped_template_path, template)
 
   # Build template call with parameters
   params <- list()
 
-  # Required parameters
-  params$chart <- sprintf('image("%s")', chart_image)
+  # Required parameters - escape image path for cross-platform compatibility
+  escaped_chart_path <- escape_typst_path(chart_image)
+  params$chart <- sprintf('image("%s")', escaped_chart_path)
 
   # Optional metadata parameters
   if (!is.null(metadata$hospital)) {
@@ -415,6 +504,13 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   }
   if (!is.null(metadata$data_definition)) {
     params$data_definition <- sprintf('"%s"', escape_typst_string(metadata$data_definition))
+  }
+
+  # Date parameter - format for Typst template
+  if (!is.null(metadata$date)) {
+    # Format date as ISO string for Typst
+    date_str <- format(as.Date(metadata$date), "%Y-%m-%d")
+    params$date <- sprintf('"%s"', date_str)
   }
 
   # SPC statistics (only include if not NULL)
@@ -470,4 +566,30 @@ escape_typst_string <- function(s) {
   s <- gsub('"', '\\\\"', s)
 
   return(s)
+}
+
+#' Escape File Path for Typst
+#'
+#' Normalizes and escapes a file path for safe use in Typst documents.
+#' Converts Windows backslashes to forward slashes and escapes special characters.
+#'
+#' @param path Character string with file path
+#' @return Escaped path safe for Typst
+#' @keywords internal
+escape_typst_path <- function(path) {
+  if (is.null(path) || length(path) == 0 || nchar(path) == 0) return("")
+
+
+  # Normalize path: convert to forward slashes, resolve relative paths
+
+  # mustWork = FALSE allows paths that don't exist yet (e.g., output files)
+  normalized <- tryCatch(
+    normalizePath(path, winslash = "/", mustWork = FALSE),
+    error = function(e) path
+  )
+
+  # Escape special characters for Typst string literal
+  escaped <- escape_typst_string(normalized)
+
+  return(escaped)
 }

@@ -71,11 +71,13 @@
 
 **Note:** All core functionality implemented and tested. Some edge case test failures remain (11/1002 tests) related to S3 class migration, acceptable for initial release.
 
-## Phase 9: SPCify Coordination (External) - TODO
+## Phase 9: SPCify Coordination (External) - IN PROGRESS
 
-- [ ] 9.1 Document BFHcharts API for SPCify consumption
-- [ ] 9.2 Create SPCify issue for migration to new export API
+- [x] 9.1 Document BFHcharts API for SPCify consumption
+- [x] 9.2 Create SPCify issue for migration to new export API (SPCify Issue #95)
 - [ ] 9.3 Test SPCify with new BFHcharts version
+
+**Note:** OpenSpec proposal created in SPCify at `openspec/changes/migrate-to-bfhcharts-export/`
 
 ## Phase 10: Release - IN PROGRESS
 

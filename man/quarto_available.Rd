@@ -4,12 +4,16 @@
 \alias{quarto_available}
 \title{Check if Quarto CLI is Available}
 \usage{
-quarto_available()
+quarto_available(min_version = "1.4.0")
+}
+\arguments{
+\item{min_version}{Minimum required version as character (default: "1.4.0")}
 }
 \value{
-Logical indicating whether Quarto is available
+Logical indicating whether Quarto is available and meets version requirement
 }
 \description{
-Checks if Quarto CLI is installed and accessible on the system.
+Checks if Quarto CLI is installed and accessible on the system,
+and verifies that the version is >= 1.4.0 (required for Typst support).
 }
 \keyword{internal}

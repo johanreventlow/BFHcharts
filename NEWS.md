@@ -1,3 +1,24 @@
+# BFHcharts 0.3.1
+
+## Bug Fixes
+
+* **Fixed Windows path handling:** Typst import and image paths are now properly escaped for Windows paths and paths containing spaces. Previously, Windows-style backslashes would cause invalid Typst escape sequences.
+
+* **Fixed date metadata propagation:** User-supplied `metadata$date` is now correctly forwarded to the Typst template. Previously, the PDF always showed today's date from the template, ignoring user-supplied dates.
+
+* **Enhanced Quarto version checking:** `quarto_available()` now verifies that Quarto version is >= 1.4.0 (required for Typst support). Previously, only binary existence was checked, leading to opaque errors with older Quarto versions.
+
+## New Features
+
+* **Custom template support:** Added `template_path` parameter to `bfh_export_pdf()` allowing users to specify custom Typst template files instead of using the packaged BFH template.
+
+## Improvements
+
+* Added comprehensive unit tests for path escaping, version checking, and metadata propagation
+* Improved error messages for Quarto version requirements
+
+---
+
 # BFHcharts 0.3.0
 
 ## Breaking Changes

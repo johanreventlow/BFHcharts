@@ -4,7 +4,13 @@
 \alias{bfh_export_pdf}
 \title{Export BFH QIC Chart to PDF via Typst}
 \usage{
-bfh_export_pdf(x, output, metadata = list(), template = "bfh-diagram2")
+bfh_export_pdf(
+  x,
+  output,
+  metadata = list(),
+  template = "bfh-diagram2",
+  template_path = NULL
+)
 }
 \arguments{
 \item{x}{A \code{bfh_qic_result} object from \code{bfh_qic()}}
@@ -23,6 +29,10 @@ bfh_export_pdf(x, output, metadata = list(), template = "bfh-diagram2")
 }}
 
 \item{template}{Character string specifying template name (default: "bfh-diagram2")}
+
+\item{template_path}{Optional path to a custom Typst template file. When provided,
+this overrides the packaged template. The template must exist and be a valid
+Typst file (.typ). Default is NULL (uses packaged BFH template).}
 }
 \value{
 The input object \code{x} invisibly, enabling pipe chaining
