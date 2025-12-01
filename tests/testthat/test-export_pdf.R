@@ -389,12 +389,12 @@ test_that("check_quarto_version parses versions correctly", {
   # Exact match
   expect_true(BFHcharts:::check_quarto_version("1.4.0", "1.4.0"))
 
-  # Graceful fallback for unparseable versions (returns TRUE with warning)
+  # Fail-safe for unparseable versions (returns FALSE with warning)
   expect_warning(
     result <- BFHcharts:::check_quarto_version("unknown-version", "1.4.0"),
     "Could not parse Quarto version"
   )
-  expect_true(result)
+  expect_false(result)
 })
 
 test_that("quarto_available returns logical", {
@@ -514,4 +514,152 @@ test_that("bfh_export_pdf passes date metadata to template", {
 
   # Cleanup
   unlink(temp_file)
+})
+
+# ============================================================================
+# NEW TESTS FOR ISSUE #62 - Content Verification and Regressions
+# ============================================================================
+
+test_that("bfh_create_typst_document works with chart from different directory", {
+  # Create chart in separate directory (simulating arbitrary path)
+  chart_dir <- tempfile("chart_source_")
+  dir.create(chart_dir)
+  output_dir <- tempfile("typst_output_")
+  dir.create(output_dir)
+
+  chart_path <- file.path(chart_dir, "my_chart.png")
+  png(chart_path, width = 400, height = 300)
+  plot(1:10, main = "Test")
+  dev.off()
+
+  output_path <- file.path(output_dir, "document.typ")
+
+  # This should work - chart is copied to output directory
+  bfh_create_typst_document(
+    chart_image = chart_path,
+    output = output_path,
+    metadata = list(title = "Test Chart", hospital = "Test Hospital"),
+    spc_stats = list(),
+    template = "bfh-diagram2"
+  )
+
+  # Verify document was created
+  expect_true(file.exists(output_path))
+
+  # Verify chart was copied to output directory
+  expect_true(file.exists(file.path(output_dir, "my_chart.png")))
+
+  # Verify Typst content uses relative path (not absolute)
+  content <- paste(readLines(output_path), collapse = "\n")
+  expect_match(content, 'image\\("my_chart.png"\\)')
+  expect_false(grepl(chart_dir, content))  # No absolute path
+
+  # Cleanup
+  unlink(chart_dir, recursive = TRUE)
+  unlink(output_dir, recursive = TRUE)
+})
+
+test_that("check_quarto_version handles prefixed version strings", {
+  # "Quarto X.Y.Z" format (some installations output this)
+  expect_true(BFHcharts:::check_quarto_version("Quarto 1.4.557", "1.4.0"))
+  expect_true(BFHcharts:::check_quarto_version("Quarto 1.5.0", "1.4.0"))
+  expect_false(BFHcharts:::check_quarto_version("Quarto 1.3.340", "1.4.0"))
+
+  # Two-part versions
+  expect_true(BFHcharts:::check_quarto_version("1.4", "1.4.0"))
+  expect_false(BFHcharts:::check_quarto_version("1.3", "1.4.0"))
+})
+
+test_that("bfh_export_pdf rejects directory as template_path", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 15)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
+  )
+
+  temp_file <- tempfile(fileext = ".pdf")
+
+  # Directory should be rejected
+  expect_error(
+    bfh_export_pdf(result, temp_file, template_path = tempdir()),
+    "must be a file, not a directory"
+  )
+})
+
+test_that("bfh_export_pdf rejects non-.typ template file", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 15)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
+  )
+
+  # Create a non-.typ file
+  txt_file <- tempfile(fileext = ".txt")
+  writeLines("not a template", txt_file)
+
+  temp_file <- tempfile(fileext = ".pdf")
+
+  # Should be rejected
+  expect_error(
+    bfh_export_pdf(result, temp_file, template_path = txt_file),
+    "\\.typ"
+  )
+
+  # Cleanup
+  unlink(txt_file)
+})
+
+test_that("generated Typst contains metadata and chart reference", {
+  # Test without Quarto - just verify the Typst generation
+  # Create chart in different directory to test copying
+  chart_dir <- tempfile("chart_source_")
+  dir.create(chart_dir)
+  output_dir <- tempfile("typst_output_")
+  dir.create(output_dir)
+
+  chart_path <- file.path(chart_dir, "chart.png")
+  png(chart_path, width = 400, height = 300)
+  plot(1:10)
+  dev.off()
+
+  output_path <- file.path(output_dir, "document.typ")
+
+  bfh_create_typst_document(
+    chart_image = chart_path,
+    output = output_path,
+    metadata = list(
+      title = "My Test Title",
+      hospital = "Copenhagen Hospital",
+      date = as.Date("2025-03-15")
+    ),
+    spc_stats = list(runs_expected = 7, runs_actual = 5),
+    template = "bfh-diagram2"
+  )
+
+  content <- paste(readLines(output_path), collapse = "\n")
+
+  # Verify metadata appears in content
+  expect_match(content, "My Test Title")
+  expect_match(content, "Copenhagen Hospital")
+  expect_match(content, "2025-03-15")
+
+  # Verify SPC stats appear
+  expect_match(content, "runs_expected: 7")
+  expect_match(content, "runs_actual: 5")
+
+  # Verify chart reference
+  expect_match(content, 'image\\("chart.png"\\)')
+
+  # Verify template import
+  expect_match(content, '#import "bfh-template/bfh-template.typ"')
+
+  # Cleanup
+  unlink(chart_dir, recursive = TRUE)
+  unlink(output_dir, recursive = TRUE)
 })

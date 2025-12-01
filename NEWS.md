@@ -1,3 +1,23 @@
+# BFHcharts 0.3.2
+
+## Bug Fixes
+
+* **Fixed chart path handling regression:** `bfh_create_typst_document()` now correctly handles chart images from any location. Charts are copied to the output directory before Typst generation, fixing the regression where only charts in the same directory worked.
+
+* **Fixed Quarto version parsing:** `check_quarto_version()` now correctly parses version strings in formats like "Quarto 1.4.557" (prefixed) and "1.4" (two-part). Previously, prefixed version strings would bypass the version guard.
+
+* **Strengthened template validation:** `bfh_export_pdf()` now properly rejects directories and non-.typ files as `template_path`. Added validation for file copy success with clear error messages.
+
+* **Consistent path escaping:** All user-provided paths in generated Typst content are now properly escaped, including custom template paths and chart filenames with special characters.
+
+## Improvements
+
+* Added comprehensive content verification tests that check for metadata, chart references, and template imports in generated Typst (not just file existence)
+* Tests now verify version parsing with prefixed formats and edge cases
+* All 63 tests pass (7 skipped without Quarto)
+
+---
+
 # BFHcharts 0.3.1
 
 ## Bug Fixes

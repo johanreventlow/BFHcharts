@@ -127,6 +127,21 @@ bfh_export_pdf <- function(x,
         call. = FALSE
       )
     }
+    # Reject directories (file.exists returns TRUE for directories)
+    if (dir.exists(template_path)) {
+      stop(
+        "template_path must be a file, not a directory: ", template_path,
+        call. = FALSE
+      )
+    }
+    # Validate .typ extension
+    if (!grepl("\\.typ$", template_path, ignore.case = TRUE)) {
+      stop(
+        "template_path must be a .typ file: ", template_path, "\n",
+        "  Typst templates require the .typ extension.",
+        call. = FALSE
+      )
+    }
   }
 
   # Check Quarto availability and version
@@ -230,18 +245,19 @@ quarto_available <- function(min_version = "1.4.0") {
 #' @keywords internal
 check_quarto_version <- function(version_string, min_version) {
   # Extract version numbers using regex
-  # Matches patterns like "1.4.557", "1.4", "2.0.0"
+  # Matches patterns like "1.4.557", "1.4", "2.0.0" anywhere in the string
+  # (handles "Quarto 1.4.557" format as well as plain "1.4.557")
   version_match <- regmatches(version_string,
-    regexpr("^[0-9]+\\.[0-9]+\\.?[0-9]*", version_string))
+    regexpr("[0-9]+\\.[0-9]+\\.?[0-9]*", version_string))
 
   if (length(version_match) == 0 || nchar(version_match) == 0) {
-    # If we can't parse version, assume it's OK (graceful fallback)
+    # If we can't parse version, warn and return FALSE (fail safe)
     warning(
       "Could not parse Quarto version from: ", version_string, "\n",
-      "  Assuming version requirement is met.",
+      "  Unable to verify version requirement.",
       call. = FALSE
     )
-    return(TRUE)
+    return(FALSE)
   }
 
   # Compare versions using package_version
@@ -301,7 +317,15 @@ bfh_create_typst_document <- function(chart_image,
     }
     template_basename <- basename(template_path)
     local_template <- file.path(output_dir, template_basename)
-    file.copy(template_path, local_template, overwrite = TRUE)
+    copy_success <- file.copy(template_path, local_template, overwrite = TRUE)
+    if (!copy_success) {
+      stop(
+        "Failed to copy custom template to output directory.\n",
+        "  Source: ", template_path, "\n",
+        "  Destination: ", local_template,
+        call. = FALSE
+      )
+    }
   } else {
     # Packaged template: copy entire template directory (includes fonts, images)
     template_dir <- system.file("templates/typst/bfh-template", package = "BFHcharts")
@@ -340,9 +364,30 @@ bfh_create_typst_document <- function(chart_image,
     template_basename <- "bfh-template/bfh-template.typ"
   }
 
-  # Build Typst document content with relative path
+
+  # Copy chart image to output directory (fixes path handling for arbitrary locations)
+  if (!file.exists(chart_image)) {
+    stop(
+      "Chart image not found: ", chart_image, "\n",
+      "  Ensure the image file exists.",
+      call. = FALSE
+    )
+  }
+  chart_basename <- basename(chart_image)
+  local_chart <- file.path(output_dir, chart_basename)
+  copy_success <- file.copy(chart_image, local_chart, overwrite = TRUE)
+  if (!copy_success) {
+    stop(
+      "Failed to copy chart image to output directory.\n",
+      "  Source: ", chart_image, "\n",
+      "  Destination: ", local_chart,
+      call. = FALSE
+    )
+  }
+
+  # Build Typst document content with relative paths
   typst_content <- build_typst_content(
-    chart_image = chart_image,
+    chart_image = chart_basename,  # Use basename since image is now in output_dir
     metadata = metadata,
     spc_stats = spc_stats,
     template = template,
@@ -477,7 +522,7 @@ merge_metadata <- function(metadata, chart_title) {
 
 #' Build Typst Document Content
 #'
-#' @param chart_image Path to chart PNG (can be absolute or relative)
+#' @param chart_image Filename of chart PNG (relative to document location, already copied)
 #' @param metadata Metadata list
 #' @param spc_stats SPC statistics list
 #' @param template Template name
@@ -487,14 +532,17 @@ merge_metadata <- function(metadata, chart_title) {
 build_typst_content <- function(chart_image, metadata, spc_stats, template, template_file) {
   # Build import statement with relative path
   # Template file is now relative (e.g., "bfh-template/bfh-template.typ")
-  import_line <- sprintf('#import "%s": %s', template_file, template)
+  # Apply escaping for special characters (quotes, spaces in filenames)
+  escaped_template <- escape_typst_string(template_file)
+  import_line <- sprintf('#import "%s": %s', escaped_template, template)
 
   # Build template call with parameters
   params <- list()
 
-  # Chart image basename for body content (positional parameter in Typst template)
+  # Chart image is already a relative filename (copied to output dir by caller)
   # Chart is passed as body content after #show, not as named parameter
-  chart_basename <- basename(chart_image)
+  # Escape filename in case it has special characters
+  escaped_chart <- escape_typst_string(chart_image)
 
   # Optional metadata parameters
   if (!is.null(metadata$hospital)) {
@@ -563,7 +611,7 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
     ")",
     "",
     "// Chart content (body parameter)",
-    sprintf('#image("%s")', chart_basename),
+    sprintf('#image("%s")', escaped_chart),
     ""
   )
 
