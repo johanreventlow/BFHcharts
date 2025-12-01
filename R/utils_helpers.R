@@ -291,49 +291,6 @@ get_y_axis_unit_label <- function(unit_code) {
 }
 
 # ============================================================================
-# TIME FORMATTING
-# ============================================================================
-
-#' Format Time Values for Display
-#'
-#' Converts numeric time values (in minutes or hours) to readable format.
-#'
-#' @param value Numeric time value
-#' @param unit Unit of time ("minutes", "hours", "days")
-#'
-#' @return Formatted time string
-#' @keywords internal
-#' @noRd
-format_time_value <- function(value, unit = "minutes") {
-  if (is.na(value)) {
-    return(NA_character_)
-  }
-
-  switch(unit,
-    minutes = {
-      if (value < 60) {
-        sprintf("%.0f min", value)
-      } else {
-        hours <- floor(value / 60)
-        mins <- value %% 60
-        if (mins == 0) {
-          sprintf("%d t", hours)
-        } else {
-          sprintf("%d t %d min", hours, mins)
-        }
-      }
-    },
-    hours = {
-      sprintf("%.1f t", value)
-    },
-    days = {
-      sprintf("%.1f dage", value)
-    },
-    as.character(value)
-  )
-}
-
-# ============================================================================
 # COMMENT DATA EXTRACTION
 # ============================================================================
 

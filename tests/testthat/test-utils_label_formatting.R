@@ -35,6 +35,67 @@ test_that("format_y_value handles percent edge cases", {
 })
 
 # ============================================================================
+# CONTEXTUAL PERCENT PRECISION TESTS
+# ============================================================================
+
+test_that("format_percent_contextual shows decimal when close to target", {
+  # Within 5 percentage points of target - show decimal
+  expect_equal(format_percent_contextual(0.887, target = 0.90), "88,7%")
+  expect_equal(format_percent_contextual(0.923, target = 0.90), "92,3%")
+  expect_equal(format_percent_contextual(0.875, target = 0.90), "87,5%")
+})
+
+test_that("format_percent_contextual shows whole percent when far from target", {
+  # More than 5 percentage points from target - show whole percent
+  expect_equal(format_percent_contextual(0.634, target = 0.90), "63%")
+  expect_equal(format_percent_contextual(0.50, target = 0.90), "50%")
+  expect_equal(format_percent_contextual(0.70, target = 0.90), "70%")
+})
+
+test_that("format_percent_contextual shows whole percent when no target", {
+  # No target set - show whole percent
+  expect_equal(format_percent_contextual(0.887, target = NULL), "89%")
+  expect_equal(format_percent_contextual(0.50, target = NULL), "50%")
+  expect_equal(format_percent_contextual(0.999, target = NULL), "100%")
+})
+
+test_that("format_percent_contextual handles exact boundary at 5 percentage points", {
+  # Exactly 5 percentage points away - should show decimal (threshold is inclusive)
+  expect_equal(format_percent_contextual(0.85, target = 0.90), "85,0%")
+  expect_equal(format_percent_contextual(0.95, target = 0.90), "95,0%")
+
+  # Just beyond 5 percentage points - whole percent
+  expect_equal(format_percent_contextual(0.849, target = 0.90), "85%")
+  expect_equal(format_percent_contextual(0.951, target = 0.90), "95%")
+})
+
+test_that("format_percent_contextual uses Danish comma notation", {
+  result <- format_percent_contextual(0.887, target = 0.90)
+  expect_true(grepl(",", result))  # Danish comma
+  expect_false(grepl("\\.", result))  # No English dot
+})
+
+test_that("format_percent_contextual handles NA values", {
+  expect_true(is.na(format_percent_contextual(NA, target = 0.90)))
+  expect_true(is.na(format_percent_contextual(NA, target = NULL)))
+})
+
+test_that("format_percent_contextual handles NA target", {
+  # NA target should behave like NULL target - whole percent
+  expect_equal(format_percent_contextual(0.887, target = NA), "89%")
+})
+
+test_that("format_y_value with target parameter shows contextual precision", {
+  # With target - shows decimal when close
+  expect_equal(format_y_value(0.887, "percent", target = 0.90), "88,7%")
+  expect_equal(format_y_value(0.634, "percent", target = 0.90), "63%")
+
+  # Without target - whole percent (backward compatible)
+  expect_equal(format_y_value(0.887, "percent"), "89%")
+  expect_equal(format_y_value(0.50, "percent"), "50%")
+})
+
+# ============================================================================
 # COUNT FORMATTING TESTS (K/M/mia notation)
 # ============================================================================
 
@@ -133,16 +194,19 @@ test_that("format_y_value handles negative rates", {
 test_that("format_y_value formats time in minutes for small ranges", {
   y_range <- c(0, 50) # < 60 minutes
 
-  expect_equal(format_y_value(30, "time", y_range), "30 min")
-  expect_equal(format_y_value(45.5, "time", y_range), "45,5 min")
-  expect_equal(format_y_value(10, "time", y_range), "10 min")
+  # Danish pluralization: 1 minut, 2+ minutter
+  expect_equal(format_y_value(1, "time", y_range), "1 minut")
+  expect_equal(format_y_value(30, "time", y_range), "30 minutter")
+  expect_equal(format_y_value(45.5, "time", y_range), "45,5 minutter")
+  expect_equal(format_y_value(10, "time", y_range), "10 minutter")
 })
 
 test_that("format_y_value formats time in hours for medium ranges", {
   y_range <- c(0, 500) # 60-1440 minutes
 
-  expect_equal(format_y_value(60, "time", y_range), "1 timer")
-  expect_equal(format_y_value(90, "time", y_range), "1,5 timer")
+  # Danish pluralization: 1 time, 2+ timer, decimals always plural
+  expect_equal(format_y_value(60, "time", y_range), "1 time")
+  expect_equal(format_y_value(90, "time", y_range), "1,5 timer") # Decimal = plural
   expect_equal(format_y_value(180, "time", y_range), "3 timer")
   expect_equal(format_y_value(300, "time", y_range), "5 timer")
 })
@@ -150,9 +214,10 @@ test_that("format_y_value formats time in hours for medium ranges", {
 test_that("format_y_value formats time in days for large ranges", {
   y_range <- c(0, 5000) # > 1440 minutes
 
-  expect_equal(format_y_value(1440, "time", y_range), "1 dage")
+  # Danish pluralization: 1 dag, 2+ dage, decimals always plural
+  expect_equal(format_y_value(1440, "time", y_range), "1 dag")
   expect_equal(format_y_value(2880, "time", y_range), "2 dage")
-  expect_equal(format_y_value(2160, "time", y_range), "1,5 dage")
+  expect_equal(format_y_value(2160, "time", y_range), "1,5 dage") # Decimal = plural
 })
 
 test_that("format_y_value warns when y_range missing for time", {
@@ -160,8 +225,8 @@ test_that("format_y_value warns when y_range missing for time", {
     result <- format_y_value(120, "time", y_range = NULL),
     "y_range mangler for 'time' unit"
   )
-  # Should use default formatting
-  expect_equal(result, "120")
+  # Without range, defaults to minutes formatting
+  expect_equal(result, "120 minutter")
 })
 
 test_that("format_y_value warns when y_range incomplete for time", {
@@ -172,9 +237,10 @@ test_that("format_y_value warns when y_range incomplete for time", {
 })
 
 test_that("format_y_value uses Danish labels for time", {
-  expect_true(grepl("min", format_y_value(30, "time", c(0, 50))))
-  expect_true(grepl("timer", format_y_value(90, "time", c(0, 500))))
-  expect_true(grepl("dage", format_y_value(1440, "time", c(0, 5000))))
+  # Danish time labels: minutter, timer, dage
+  expect_true(grepl("minut", format_y_value(30, "time", c(0, 50))))
+  expect_true(grepl("time", format_y_value(90, "time", c(0, 500))))
+  expect_true(grepl("dag", format_y_value(1440, "time", c(0, 5000))))
 })
 
 test_that("format_y_value uses Danish decimal notation for time", {
@@ -183,17 +249,17 @@ test_that("format_y_value uses Danish decimal notation for time", {
 })
 
 test_that("format_y_value handles time threshold boundaries", {
-  # Just below 60 minutes
-  expect_true(grepl("min", format_y_value(50, "time", c(0, 59))))
+  # Just below 60 minutes - still minutes unit
+  expect_true(grepl("minut", format_y_value(50, "time", c(0, 59))))
 
-  # At 60 minutes
-  expect_true(grepl("timer", format_y_value(60, "time", c(0, 60))))
+  # At 60 minutes threshold - becomes hours
+  expect_true(grepl("time", format_y_value(60, "time", c(0, 60))))
 
-  # Just below 1440 minutes (24 hours)
-  expect_true(grepl("timer", format_y_value(1400, "time", c(0, 1439))))
+  # Just below 1440 minutes (24 hours) - still hours
+  expect_true(grepl("time", format_y_value(1400, "time", c(0, 1439))))
 
-  # At 1440 minutes
-  expect_true(grepl("dage", format_y_value(1440, "time", c(0, 1440))))
+  # At 1440 minutes threshold - becomes days
+  expect_true(grepl("dag", format_y_value(1440, "time", c(0, 1440))))
 })
 
 # ============================================================================
@@ -223,7 +289,7 @@ test_that("format_y_value handles zero correctly", {
   expect_equal(format_y_value(0, "count"), "0")
   expect_equal(format_y_value(0, "percent"), "0%")
   expect_equal(format_y_value(0, "rate"), "0")
-  # Zero with range > 60 becomes hours
+  # Zero with range > 60 becomes hours (0 is plural in Danish)
   expect_equal(format_y_value(0, "time", c(0, 100)), "0 timer")
 })
 

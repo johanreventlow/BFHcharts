@@ -262,63 +262,66 @@ test_that("format_y_axis_time selects days for large values", {
   expect_true(all(grepl("dage", labels)))
 })
 
-test_that("format_time_with_unit formats minutes correctly", {
+# NOTE: Tests updated to use canonical format_time_danish() from utils_time_formatting.R
+# (Previously tested format_time_with_unit which was removed in DRY consolidation)
+
+test_that("format_time_danish formats minutes correctly", {
   # Test singular (1 minut) and plural (30 minutter)
-  expect_equal(format_time_with_unit(1, "minutes"), "1 minut")
-  expect_equal(format_time_with_unit(30, "minutes"), "30 minutter")
-  expect_equal(format_time_with_unit(45.5, "minutes"), "45,5 minutter")
+  expect_equal(format_time_danish(1, "minutes"), "1 minut")
+  expect_equal(format_time_danish(30, "minutes"), "30 minutter")
+  expect_equal(format_time_danish(45.5, "minutes"), "45,5 minutter")
 })
 
-test_that("format_time_with_unit formats hours correctly", {
+test_that("format_time_danish formats hours correctly", {
   # Test singular (1 time) and plural (3 timer)
-  expect_equal(format_time_with_unit(60, "hours"), "1 time")
-  expect_equal(format_time_with_unit(90, "hours"), "1,5 timer")
-  expect_equal(format_time_with_unit(180, "hours"), "3 timer")
+  expect_equal(format_time_danish(60, "hours"), "1 time")
+  expect_equal(format_time_danish(90, "hours"), "1,5 timer")
+  expect_equal(format_time_danish(180, "hours"), "3 timer")
 })
 
-test_that("format_time_with_unit formats days correctly", {
+test_that("format_time_danish formats days correctly", {
   # Test singular (1 dag) and plural (2 dage)
-  expect_equal(format_time_with_unit(1440, "days"), "1 dag")
-  expect_equal(format_time_with_unit(2880, "days"), "2 dage")
-  expect_equal(format_time_with_unit(2160, "days"), "1,5 dage")
+  expect_equal(format_time_danish(1440, "days"), "1 dag")
+  expect_equal(format_time_danish(2880, "days"), "2 dage")
+  expect_equal(format_time_danish(2160, "days"), "1,5 dage")
 })
 
-test_that("format_time_with_unit handles NA values", {
-  expect_true(is.na(format_time_with_unit(NA, "minutes")))
-  expect_true(is.na(format_time_with_unit(NA, "hours")))
-  expect_true(is.na(format_time_with_unit(NA, "days")))
+test_that("format_time_danish handles NA values", {
+  expect_true(is.na(format_time_danish(NA, "minutes")))
+  expect_true(is.na(format_time_danish(NA, "hours")))
+  expect_true(is.na(format_time_danish(NA, "days")))
 })
 
-test_that("format_time_with_unit handles zero and edge cases", {
+test_that("format_time_danish handles zero and edge cases", {
   # Zero values use plural in Danish
-  expect_equal(format_time_with_unit(0, "minutes"), "0 minutter")
+  expect_equal(format_time_danish(0, "minutes"), "0 minutter")
 
   # Zero hours (should show as 0 hours with plural)
-  expect_equal(format_time_with_unit(0, "hours"), "0 timer")
+  expect_equal(format_time_danish(0, "hours"), "0 timer")
 
   # Zero days use plural
-  expect_equal(format_time_with_unit(0, "days"), "0 dage")
+  expect_equal(format_time_danish(0, "days"), "0 dage")
 
   # Very small positive values (still plural when decimal)
-  expect_true(grepl("minutter", format_time_with_unit(0.5, "minutes")))
-  expect_true(grepl("timer", format_time_with_unit(0.5, "hours")))
+  expect_true(grepl("minutter", format_time_danish(0.5, "minutes")))
+  expect_true(grepl("timer", format_time_danish(0.5, "hours")))
 })
 
-test_that("format_time_with_unit uses Danish labels", {
+test_that("format_time_danish uses Danish labels", {
   # Minutes - can be singular (minut) or plural (minutter)
-  expect_true(grepl("minut", format_time_with_unit(30, "minutes")))
+  expect_true(grepl("minut", format_time_danish(30, "minutes")))
 
   # Hours - can be singular (time) or plural (timer)
-  result_hours <- format_time_with_unit(60, "hours")
+  result_hours <- format_time_danish(60, "hours")
   expect_true(grepl("time|timer", result_hours))
 
   # Days - can be singular (dag) or plural (dage)
-  result_days <- format_time_with_unit(1440, "days")
+  result_days <- format_time_danish(1440, "days")
   expect_true(grepl("dag|dage", result_days))
 })
 
-test_that("format_time_with_unit uses Danish decimal notation", {
-  result <- format_time_with_unit(90, "hours")  # 1.5 hours
+test_that("format_time_danish uses Danish decimal notation", {
+  result <- format_time_danish(90, "hours")  # 1.5 hours
   expect_true(grepl("1,5", result))  # Comma as decimal separator
 })
 
@@ -429,21 +432,21 @@ test_that("Count formatting handles edge cases", {
 })
 
 test_that("All formatters handle NA values consistently", {
-  # Scaled numbers
+  # Scaled numbers (canonical from utils_number_formatting.R)
   expect_true(is.na(format_scaled_number(NA, 1e3, "K")))
 
-  # Unscaled numbers
+  # Unscaled numbers (canonical from utils_number_formatting.R)
   expect_true(is.na(format_unscaled_number(NA)))
 
-  # Time values
-  expect_true(is.na(format_time_with_unit(NA, "minutes")))
+  # Time values (canonical from utils_time_formatting.R)
+  expect_true(is.na(format_time_danish(NA, "minutes")))
 })
 
 test_that("Danish number notation is consistent across formatters", {
   # All should use comma as decimal separator
   expect_true(grepl(",", format_scaled_number(1.5e6, 1e6, "M")))
   expect_true(grepl(",", format_unscaled_number(123.5)))
-  expect_true(grepl(",", format_time_with_unit(90, "hours")))
+  expect_true(grepl(",", format_time_danish(90, "hours")))
 
   # Unscaled numbers should use dot as thousand separator
   expect_true(grepl("\\.", format_unscaled_number(1234)))
@@ -478,7 +481,8 @@ test_that("bfh_qic maps y_axis_unit='percent' to qicharts2's y.percent parameter
 
   # Verify y-axis labels contain percentage symbols
   # Extract y-axis breaks and labels from ggplot build
-  built <- ggplot2::ggplot_build(plot)
+  # Note: bfh_qic returns a bfh_qic_result object, access plot via $plot
+  built <- ggplot2::ggplot_build(plot$plot)
 
   # Get y-axis labels - they should contain "%" if y.percent was applied
   y_labels <- built$layout$panel_params[[1]]$y$get_labels()
@@ -512,7 +516,8 @@ test_that("bfh_qic with y_axis_unit='count' does NOT apply percentage formatting
   expect_s3_class(plot$plot, "ggplot")
 
   # Verify y-axis labels do NOT contain percentage symbols
-  built <- ggplot2::ggplot_build(plot)
+  # Note: bfh_qic returns a bfh_qic_result object, access plot via $plot
+  built <- ggplot2::ggplot_build(plot$plot)
   y_labels <- built$layout$panel_params[[1]]$y$get_labels()
 
   has_percent <- any(grepl("%", y_labels))
@@ -559,8 +564,9 @@ test_that("y.percent parameter is passed correctly to qicharts2::qic", {
   )
 
   # Extract y-axis labels from both plots
-  built_pct <- ggplot2::ggplot_build(plot_pct)
-  built_count <- ggplot2::ggplot_build(plot_count)
+  # Note: bfh_qic returns a bfh_qic_result object, access plot via $plot
+  built_pct <- ggplot2::ggplot_build(plot_pct$plot)
+  built_count <- ggplot2::ggplot_build(plot_count$plot)
 
   labels_pct <- built_pct$layout$panel_params[[1]]$y$get_labels()
   labels_count <- built_count$layout$panel_params[[1]]$y$get_labels()

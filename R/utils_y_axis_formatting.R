@@ -125,16 +125,8 @@ format_y_axis_count <- function() {
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
     labels = function(x, ...) {
-      x |>
-        purrr::map_chr(~ {
-          dplyr::case_when(
-            is.na(.x) ~ NA_character_,
-            abs(.x) >= 1e9 ~ format_scaled_number(.x, 1e9, " mia."),
-            abs(.x) >= 1e6 ~ format_scaled_number(.x, 1e6, "M"),
-            abs(.x) >= 1e3 ~ format_scaled_number(.x, 1e3, "K"),
-            TRUE ~ format_unscaled_number(.x)
-          )
-        })
+      # Uses canonical format_count_danish() from utils_number_formatting.R
+      purrr::map_chr(x, format_count_danish)
     }
   )
 }
@@ -148,10 +140,8 @@ format_y_axis_rate <- function() {
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
     labels = function(x, ...) {
-      ifelse(x == round(x),
-        format(round(x), decimal.mark = ","),
-        format(x, decimal.mark = ",", nsmall = 1)
-      )
+      # Uses canonical format_rate_danish() from utils_number_formatting.R
+      purrr::map_chr(x, format_rate_danish)
     }
   )
 }
@@ -175,116 +165,25 @@ format_y_axis_time <- function(qic_data) {
   y_range <- range(qic_data$y, na.rm = TRUE)
   max_minutes <- max(y_range, na.rm = TRUE)
 
-  # Determine appropriate time unit
-  time_unit <- if (max_minutes < 60) {
-    "minutes"
-  } else if (max_minutes < 1440) {
-    "hours"
-  } else {
-    "days"
-  }
+  # Uses canonical determine_time_unit() from utils_time_formatting.R
+  time_unit <- determine_time_unit(max_minutes)
 
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
     labels = function(x, ...) {
-      purrr::map_chr(x, ~ format_time_with_unit(.x, time_unit))
+      # Uses canonical format_time_danish() from utils_time_formatting.R
+      purrr::map_chr(x, ~ format_time_danish(.x, time_unit))
     }
   )
 }
 
 # ============================================================================
-# HELPER FUNCTIONS
+# NOTE: Helper functions moved to canonical files
 # ============================================================================
-
-#' Format Scaled Number with Suffix
-#'
-#' @param val Numeric value
-#' @param scale Scale factor (1e3, 1e6, 1e9)
-#' @param suffix Suffix string ("K", "M", " mia.")
-#'
-#' @return Formatted string
-#' @keywords internal
-#' @noRd
-format_scaled_number <- function(val, scale, suffix) {
-  if (is.na(val)) {
-    return(NA_character_)
-  }
-
-  scaled <- val / scale
-  # Use all.equal() for floating point comparison to handle precision issues
-  # (e.g., 1000000 / 1e6 = 1.0 exactly, not "1000,0M")
-  if (isTRUE(all.equal(scaled, round(scaled), tolerance = 1e-10))) {
-    paste0(round(scaled), suffix)
-  } else {
-    paste0(format(scaled, decimal.mark = ",", nsmall = 1), suffix)
-  }
-}
-
-#' Format Unscaled Number with Danish Notation
-#'
-#' @param val Numeric value
-#'
-#' @return Formatted string
-#' @keywords internal
-#' @noRd
-format_unscaled_number <- function(val) {
-  if (is.na(val)) {
-    return(NA_character_)
-  }
-
-  if (val == round(val)) {
-    format(round(val), big.mark = ".", decimal.mark = ",")
-  } else {
-    format(val, big.mark = ".", decimal.mark = ",", nsmall = 1)
-  }
-}
-
-#' Format Time Value with Unit
-#'
-#' Converts time in minutes to appropriate unit with Danish labels.
-#' Applies correct Danish pluralization rules (1 dag vs. 2 dage).
-#'
-#' @param val_minutes Time value in minutes
-#' @param time_unit Unit: "minutes", "hours", or "days"
-#'
-#' @return Formatted string (e.g., "30 min", "1 time", "2 timer", "1 dag", "2 dage")
-#' @keywords internal
-#' @noRd
-format_time_with_unit <- function(val_minutes, time_unit) {
-  if (is.na(val_minutes)) {
-    return(NA_character_)
-  }
-
-  # Scale to appropriate unit
-  scaled <- switch(time_unit,
-    minutes = val_minutes,
-    hours = val_minutes / 60,
-    days = val_minutes / 1440,
-    val_minutes
-  )
-
-  # Format with or without decimals
-  if (scaled == round(scaled)) {
-    num <- round(scaled)
-
-    # Danish pluralization: 1 = ental, >1 = flertal
-    unit_label <- switch(time_unit,
-      minutes = if (num == 1) " minut" else " minutter",
-      hours = if (num == 1) " time" else " timer",
-      days = if (num == 1) " dag" else " dage",
-      " min"
-    )
-
-    paste0(num, unit_label)
-  } else {
-    # For decimals, always use plural form (e.g., "1,5 timer")
-    unit_label <- switch(time_unit,
-      minutes = " minutter",
-      hours = " timer",
-      days = " dage",
-      " min"
-    )
-
-    paste0(format(scaled, decimal.mark = ",", nsmall = 1), unit_label)
-  }
-}
+# The following functions have been consolidated into dedicated utility files:
+#
+# - format_scaled_number() -> R/utils_number_formatting.R
+# - format_unscaled_number() -> R/utils_number_formatting.R
+# - format_time_with_unit() -> R/utils_time_formatting.R (as format_time_danish())
+#
+# This ensures DRY compliance with a single source of truth for formatting.
