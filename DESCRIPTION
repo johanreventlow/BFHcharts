@@ -41,11 +41,8 @@ Imports:
     grid
 Suggests:
     testthat (>= 3.0.0),
-    knitr,
-    rmarkdown,
     vdiffr,
     covr,
     pdftools (>= 3.3.0),
     withr
 Config/testthat/edition: 3
-VignetteBuilder: knitr
