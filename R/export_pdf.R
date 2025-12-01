@@ -492,11 +492,9 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   # Build template call with parameters
   params <- list()
 
-  # Required parameters - use relative path for chart image
-
-  # Chart image is in same directory as document.typ, so just use filename
+  # Chart image basename for body content (positional parameter in Typst template)
+  # Chart is passed as body content after #show, not as named parameter
   chart_basename <- basename(chart_image)
-  params$chart <- sprintf('image("%s")', chart_basename)
 
   # Optional metadata parameters
   if (!is.null(metadata$hospital)) {
@@ -556,12 +554,16 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   param_block <- paste(param_strings, collapse = ",\n")
 
   # Assemble document
+  # In Typst, the chart (positional param) comes as body content after #show block
   content <- c(
     import_line,
     "",
     sprintf("#show: %s.with(", template),
     param_block,
     ")",
+    "",
+    "// Chart content (body parameter)",
+    sprintf('#image("%s")', chart_basename),
     ""
   )
 
