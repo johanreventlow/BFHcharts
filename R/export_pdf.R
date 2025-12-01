@@ -286,19 +286,24 @@ bfh_create_typst_document <- function(chart_image,
                                       spc_stats,
                                       template = "bfh-diagram2",
                                       template_path = NULL) {
-  # Determine template file to use
+  # Get output directory (where document.typ will be created)
+  output_dir <- dirname(output)
+
+  # Determine template source and copy to output directory
   if (!is.null(template_path)) {
-    # Use custom template provided by user
-    template_file <- template_path
-    if (!file.exists(template_file)) {
+    # Custom template: copy single file to output directory
+    if (!file.exists(template_path)) {
       stop(
-        "Custom template file not found: ", template_file, "\n",
+        "Custom template file not found: ", template_path, "\n",
         "  Ensure the file exists and the path is correct.",
         call. = FALSE
       )
     }
+    template_basename <- basename(template_path)
+    local_template <- file.path(output_dir, template_basename)
+    file.copy(template_path, local_template, overwrite = TRUE)
   } else {
-    # Use packaged template
+    # Packaged template: copy entire template directory (includes fonts, images)
     template_dir <- system.file("templates/typst/bfh-template", package = "BFHcharts")
 
     if (!dir.exists(template_dir)) {
@@ -309,24 +314,39 @@ bfh_create_typst_document <- function(chart_image,
       )
     }
 
-    template_file <- file.path(template_dir, "bfh-template.typ")
-
-    if (!file.exists(template_file)) {
-      stop(
-        "Template file not found: ", template_file, "\n",
-        "  This should not happen. Please reinstall BFHcharts.",
-        call. = FALSE
-      )
+    # Copy template directory to output directory
+    local_template_dir <- file.path(output_dir, "bfh-template")
+    if (dir.exists(local_template_dir)) {
+      unlink(local_template_dir, recursive = TRUE)
     }
+    dir.create(local_template_dir, recursive = TRUE, showWarnings = FALSE)
+
+    # Copy all files from template directory
+    template_files <- list.files(template_dir, full.names = TRUE, recursive = TRUE,
+                                  include.dirs = TRUE, all.files = FALSE)
+    for (src_file in template_files) {
+      rel_path <- sub(paste0("^", template_dir, "/?"), "", src_file)
+      dest_file <- file.path(local_template_dir, rel_path)
+
+      if (dir.exists(src_file)) {
+        dir.create(dest_file, recursive = TRUE, showWarnings = FALSE)
+      } else {
+        dir.create(dirname(dest_file), recursive = TRUE, showWarnings = FALSE)
+        file.copy(src_file, dest_file, overwrite = TRUE)
+      }
+    }
+
+    local_template <- file.path(local_template_dir, "bfh-template.typ")
+    template_basename <- "bfh-template/bfh-template.typ"
   }
 
-  # Build Typst document content
+  # Build Typst document content with relative path
   typst_content <- build_typst_content(
     chart_image = chart_image,
     metadata = metadata,
     spc_stats = spc_stats,
     template = template,
-    template_file = template_file
+    template_file = template_basename  # Use relative path
   )
 
   # Write Typst file
@@ -457,25 +477,26 @@ merge_metadata <- function(metadata, chart_title) {
 
 #' Build Typst Document Content
 #'
-#' @param chart_image Path to chart PNG
+#' @param chart_image Path to chart PNG (can be absolute or relative)
 #' @param metadata Metadata list
 #' @param spc_stats SPC statistics list
 #' @param template Template name
-#' @param template_file Path to template .typ file
+#' @param template_file Relative path to template .typ file (relative to document location)
 #' @return Character vector with Typst content
 #' @keywords internal
 build_typst_content <- function(chart_image, metadata, spc_stats, template, template_file) {
-  # Build import statement with escaped path (fixes Windows backslash issue)
-  template_dir <- dirname(template_file)
-  escaped_template_path <- escape_typst_path(template_file)
-  import_line <- sprintf('#import "%s": %s', escaped_template_path, template)
+  # Build import statement with relative path
+  # Template file is now relative (e.g., "bfh-template/bfh-template.typ")
+  import_line <- sprintf('#import "%s": %s', template_file, template)
 
   # Build template call with parameters
   params <- list()
 
-  # Required parameters - escape image path for cross-platform compatibility
-  escaped_chart_path <- escape_typst_path(chart_image)
-  params$chart <- sprintf('image("%s")', escaped_chart_path)
+  # Required parameters - use relative path for chart image
+
+  # Chart image is in same directory as document.typ, so just use filename
+  chart_basename <- basename(chart_image)
+  params$chart <- sprintf('image("%s")', chart_basename)
 
   # Optional metadata parameters
   if (!is.null(metadata$hospital)) {
