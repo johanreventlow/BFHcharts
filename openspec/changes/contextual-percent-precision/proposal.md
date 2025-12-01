@@ -55,4 +55,4 @@ Implement **contextual precision** that shows decimals only when meaningful:
 ## Related
 
 - Reverts behavior from commit 476cbc7
-- GitHub Issue: (to be created)
+- GitHub Issue: #68
