@@ -1,3 +1,18 @@
+# BFHcharts 0.4.1
+
+## Improvements
+
+* **Contextual percent precision for centerline labels:** Centerline labels on SPC charts now show one decimal place when the centerline is within 5 percentage points of the target value. This provides better precision where it matters (close to goal) while keeping labels clean when far from target.
+  - Example: 88.7% shown as "88,7%" when target is 90%, but shown as "63%" when target is 90% (far from target)
+  - Uses Danish comma notation for decimal separator
+  - Fixes GitHub issue #68
+
+* **Range-aware y-axis precision:** Y-axis ticks for percent charts now show decimals when the axis range spans less than 5 percentage points, preventing repeated or indistinguishable tick labels on narrow ranges.
+  - Example: Range 98%-100% shows "98.5%", "99.0%", "99.5%"
+  - Wide ranges continue to show whole percentages
+
+---
+
 # BFHcharts 0.4.0
 
 ## New Features

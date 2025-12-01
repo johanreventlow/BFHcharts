@@ -74,9 +74,16 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
     y_axis_unit <- "count"
   }
 
+  # Beregn y_range for percent precision context
+  y_range <- if (!is.null(qic_data) && "y" %in% names(qic_data)) {
+    range(qic_data$y, na.rm = TRUE)
+  } else {
+    NULL
+  }
+
   # Apply unit-specific formatting
   switch(y_axis_unit,
-    percent = plot + format_y_axis_percent(),
+    percent = plot + format_y_axis_percent(y_range),
     count = plot + format_y_axis_count(),
     rate = plot + format_y_axis_rate(),
     time = plot + format_y_axis_time(qic_data),
@@ -100,13 +107,26 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
 
 #' Format Y-Axis for Percentage Data
 #'
+#' Range-aware precision: viser decimaler når y-aksen spænder < 5 procentpoint.
+#'
+#' @param y_range numeric(2) y-akse range, eller NULL
 #' @return ggplot2 scale layer
 #' @keywords internal
 #' @noRd
-format_y_axis_percent <- function() {
+format_y_axis_percent <- function(y_range = NULL) {
+  # Bestem om vi skal vise decimaler baseret på range
+  # Threshold: 5 procentpoint (0.05 i 0-1 skala)
+  use_decimals <- FALSE
+  if (!is.null(y_range) && length(y_range) == 2) {
+    range_span <- abs(y_range[2] - y_range[1])
+    use_decimals <- range_span < 0.05
+  }
+
+  accuracy <- if (use_decimals) 0.1 else 1
+
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
-    labels = scales::label_percent()
+    labels = scales::label_percent(accuracy = accuracy)
   )
 }
 

@@ -96,6 +96,51 @@ test_that("format_y_axis_percent creates valid scale", {
   expect_true(!is.null(scale$labels))
 })
 
+test_that("format_y_axis_percent uses whole percents for wide range", {
+  # Wide range (> 5 percentage points) - should use whole percents
+  wide_range <- c(0.10, 0.90)  # 80 percentage points
+  scale <- format_y_axis_percent(wide_range)
+
+  # Test label generation - should NOT show decimals
+  labels <- scale$labels(c(0.25, 0.50, 0.75))
+  expect_equal(labels, c("25%", "50%", "75%"))
+})
+
+test_that("format_y_axis_percent uses decimals for narrow range", {
+  # Narrow range (< 5 percentage points) - should use decimals
+  narrow_range <- c(0.97, 0.99)  # 2 percentage points
+  scale <- format_y_axis_percent(narrow_range)
+
+  # Test label generation - should show decimals (scales::label_percent uses English notation)
+  labels <- scale$labels(c(0.975, 0.980, 0.985))
+  expect_true(all(grepl("\\.", labels)))  # Decimals present (English notation from scales package)
+  expect_equal(labels, c("97.5%", "98.0%", "98.5%"))
+})
+
+test_that("format_y_axis_percent handles boundary at 5 percentage points", {
+  # Just above 5 percentage points - should use whole percents
+  wide_boundary_range <- c(0.90, 0.96)  # 6 percentage points (> 0.05)
+  scale_wide <- format_y_axis_percent(wide_boundary_range)
+
+  labels_wide <- scale_wide$labels(c(0.91, 0.93))
+  expect_equal(labels_wide, c("91%", "93%"))  # Whole percents
+
+  # Just below 5 percentage points - should use decimals
+  narrow_boundary_range <- c(0.90, 0.94)  # 4 percentage points (< 0.05)
+  scale_narrow <- format_y_axis_percent(narrow_boundary_range)
+
+  labels_narrow <- scale_narrow$labels(c(0.91, 0.93))
+  expect_equal(labels_narrow, c("91.0%", "93.0%"))  # Decimals
+})
+
+test_that("format_y_axis_percent handles NULL range", {
+  # NULL range should default to whole percents
+  scale <- format_y_axis_percent(NULL)
+
+  labels <- scale$labels(c(0.25, 0.50))
+  expect_equal(labels, c("25%", "50%"))
+})
+
 # ============================================================================
 # FORMAT_Y_AXIS_COUNT TESTS (K/M/mia notation)
 # ============================================================================

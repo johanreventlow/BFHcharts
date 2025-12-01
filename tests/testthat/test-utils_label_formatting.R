@@ -59,12 +59,13 @@ test_that("format_percent_contextual shows whole percent when no target", {
   expect_equal(format_percent_contextual(0.999, target = NULL), "100%")
 })
 
-test_that("format_percent_contextual handles exact boundary at 5 percentage points", {
-  # Exactly 5 percentage points away - should show decimal (threshold is inclusive)
-  expect_equal(format_percent_contextual(0.85, target = 0.90), "85,0%")
-  expect_equal(format_percent_contextual(0.95, target = 0.90), "95,0%")
+test_that("format_percent_contextual handles boundary at 5 percentage points", {
+  # Just within 5 percentage points - shows decimal
+  expect_equal(format_percent_contextual(0.851, target = 0.90), "85,1%")
+  expect_equal(format_percent_contextual(0.949, target = 0.90), "94,9%")
 
-  # Just beyond 5 percentage points - whole percent
+  # At or beyond 5 percentage points - whole percent (threshold is exclusive due to >)
+  expect_equal(format_percent_contextual(0.85, target = 0.90), "85%")
   expect_equal(format_percent_contextual(0.849, target = 0.90), "85%")
   expect_equal(format_percent_contextual(0.951, target = 0.90), "95%")
 })

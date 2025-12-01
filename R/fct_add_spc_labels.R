@@ -173,7 +173,13 @@ add_spc_labels <- function(
       "NUV. NIVEAU"
     }
 
-    formatted_cl <- format_y_value(round(cl_value), y_axis_unit, y_range)
+    # Kontekstuel præcision for procent: send target hvis tilgængelig
+    target_for_precision <- if (y_axis_unit == "percent" && !is.na(target_value)) {
+      target_value
+    } else {
+      NULL
+    }
+    formatted_cl <- format_y_value(cl_value, y_axis_unit, y_range, target = target_for_precision)
     label_cl <- create_responsive_label(
       header = cl_header,
       value = formatted_cl,
