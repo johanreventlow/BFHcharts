@@ -14,23 +14,31 @@
 
 ## Installation
 
-### From R-universe (recommended)
+### Using pak (recommended)
 
 ```r
-# Enable this universe
-options(repos = c(
-  johanreventlow = 'https://johanreventlow.r-universe.dev',
-  CRAN = 'https://cloud.r-project.org'
-))
+# Install pak if you don't have it
+install.packages("pak")
 
-# Install package
-install.packages('BFHcharts')
+# Install from GitHub (always latest)
+pak::pkg_install("johanreventlow/BFHcharts")
+
+# Or from r-universe (pre-built binaries, faster)
+pak::pkg_install("BFHcharts", repos = "https://johanreventlow.r-universe.dev")
 ```
 
-### From GitHub
+**Fordele ved pak:**
+- ⚡ Hurtigere installation (parallelle downloads)
+- 🔒 Dependency resolution og konflikt-håndtering
+- 📦 Pre-built binaries fra r-universe (ingen compilation)
+
+### Using install.packages
 
 ```r
-# install.packages("devtools")
+# From r-universe
+install.packages("BFHcharts", repos = "https://johanreventlow.r-universe.dev")
+
+# From GitHub (requires devtools)
 devtools::install_github("johanreventlow/BFHcharts")
 ```
 
