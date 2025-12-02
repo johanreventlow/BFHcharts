@@ -443,7 +443,7 @@ check_quarto_version <- function(version_string, min_version) {
 #'
 #' @return Path to created .typ file (invisibly)
 #'
-#' @keywords internal
+#' @export
 bfh_create_typst_document <- function(chart_image,
                                       output,
                                       metadata,
