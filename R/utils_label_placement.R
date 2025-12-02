@@ -332,7 +332,6 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
 #' @return Liste med mapping-funktioner (`y_to_npc`, `npc_to_y`) samt metadata
 #' @keywords internal
 #' @noRd
-#' @seealso [npc_mapper_from_built()]
 #' @examples
 #' \dontrun{
 #' p <- ggplot(mtcars, aes(wt, mpg)) +
@@ -543,7 +542,6 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
 #' @return Numerisk værdi (panelhøjde i inches) eller NULL ved fejl
 #' @keywords internal
 #' @noRd
-#' @seealso [measure_panel_height_from_gtable()]
 #' @examples
 #' \dontrun{
 #' p <- ggplot(mtcars, aes(wt, mpg)) +

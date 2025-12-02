@@ -44,7 +44,6 @@
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [calculate_base_size()], [viewport_dims()]
 #' @examples
 #' \dontrun{
 #' # Default configuration
@@ -71,7 +70,7 @@ FONT_SCALING_CONFIG <- list(
 #'
 #' @param width Viewport width in inches
 #' @param height Viewport height in inches
-#' @param config Font scaling configuration (default: [FONT_SCALING_CONFIG])
+#' @param config Font scaling configuration
 #'
 #' @return Numeric base_size in points
 #'
@@ -84,7 +83,6 @@ FONT_SCALING_CONFIG <- list(
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [FONT_SCALING_CONFIG], [viewport_dims()]
 #' @examples
 #' \dontrun{
 #' # Standard web plot

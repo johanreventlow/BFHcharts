@@ -16,7 +16,7 @@ NULL
 #' Apply SPC-Specific Theme Styling
 #'
 #' Internal function that applies BFH theme with SPC-specific adjustments.
-#' This is used by [bfh_spc_plot()] to ensure consistent SPC chart styling.
+#' Used to ensure consistent SPC chart styling.
 #'
 #' Uses BFHtheme::theme_bfh() as base and adds SPC-specific modifications:
 #' - Capped coordinate system (via lemon::coord_capped_cart)
@@ -77,7 +77,7 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
 #' @return Character string with formatted footer
 #'
 #' @family spc-themes
-#' @seealso [bfh_spc_plot()], [BFHtheme::theme_bfh()]
+#' @seealso [BFHtheme::theme_bfh()]
 #' @keywords internal
 #' @noRd
 #' @examples

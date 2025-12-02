@@ -39,14 +39,14 @@ test_that("format_y_value handles percent edge cases", {
 # ============================================================================
 
 test_that("format_percent_contextual shows decimal when close to target", {
-  # Within 5 percentage points of target - show decimal
+  # Within 2 percentage points of target - show decimal
   expect_equal(format_percent_contextual(0.887, target = 0.90), "88,7%")
-  expect_equal(format_percent_contextual(0.923, target = 0.90), "92,3%")
-  expect_equal(format_percent_contextual(0.875, target = 0.90), "87,5%")
+  expect_equal(format_percent_contextual(0.915, target = 0.90), "91,5%")
+  expect_equal(format_percent_contextual(0.885, target = 0.90), "88,5%")
 })
 
 test_that("format_percent_contextual shows whole percent when far from target", {
-  # More than 5 percentage points from target - show whole percent
+  # More than 2 percentage points from target - show whole percent
   expect_equal(format_percent_contextual(0.634, target = 0.90), "63%")
   expect_equal(format_percent_contextual(0.50, target = 0.90), "50%")
   expect_equal(format_percent_contextual(0.70, target = 0.90), "70%")
@@ -59,15 +59,15 @@ test_that("format_percent_contextual shows whole percent when no target", {
   expect_equal(format_percent_contextual(0.999, target = NULL), "100%")
 })
 
-test_that("format_percent_contextual handles boundary at 5 percentage points", {
-  # Just within 5 percentage points - shows decimal
-  expect_equal(format_percent_contextual(0.851, target = 0.90), "85,1%")
-  expect_equal(format_percent_contextual(0.949, target = 0.90), "94,9%")
+test_that("format_percent_contextual handles boundary at 2 percentage points", {
+  # Just within 2 percentage points - shows decimal
+  expect_equal(format_percent_contextual(0.881, target = 0.90), "88,1%")
+  expect_equal(format_percent_contextual(0.919, target = 0.90), "91,9%")
 
-  # At or beyond 5 percentage points - whole percent (threshold is exclusive due to >)
-  expect_equal(format_percent_contextual(0.85, target = 0.90), "85%")
-  expect_equal(format_percent_contextual(0.849, target = 0.90), "85%")
-  expect_equal(format_percent_contextual(0.951, target = 0.90), "95%")
+  # At or beyond 2 percentage points - whole percent (threshold is exclusive due to >)
+  expect_equal(format_percent_contextual(0.88, target = 0.90), "88%")
+  expect_equal(format_percent_contextual(0.879, target = 0.90), "88%")
+  expect_equal(format_percent_contextual(0.921, target = 0.90), "92%")
 })
 
 test_that("format_percent_contextual uses Danish comma notation", {

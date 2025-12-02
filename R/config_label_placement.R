@@ -42,7 +42,6 @@
 #' }
 #'
 #' @family label-placement-config
-#' @seealso [get_label_placement_config()], [get_label_placement_param()], [add_spc_labels()]
 #' @keywords internal
 #' @noRd
 LABEL_PLACEMENT_CONFIG <- list(
@@ -149,7 +148,6 @@ LABEL_PLACEMENT_CONFIG <- list(
 #' @keywords internal
 #' @noRd
 #' @family label-placement-config
-#' @seealso [LABEL_PLACEMENT_CONFIG], [get_label_placement_config()]
 get_label_placement_param <- function(key, default = NULL) {
   # Hent konfiguration
   config <- LABEL_PLACEMENT_CONFIG
@@ -187,7 +185,6 @@ get_label_placement_param <- function(key, default = NULL) {
 #' @keywords internal
 #' @noRd
 #' @family label-placement-config
-#' @seealso [LABEL_PLACEMENT_CONFIG], [get_label_placement_param()]
 get_label_placement_config <- function() {
   # Returner en kopi for at undgå utilsigtet modification
   as.list(LABEL_PLACEMENT_CONFIG)

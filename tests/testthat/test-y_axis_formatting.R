@@ -107,8 +107,8 @@ test_that("format_y_axis_percent uses whole percents for wide range", {
 })
 
 test_that("format_y_axis_percent uses decimals for narrow range", {
-  # Narrow range (< 5 percentage points) - should use decimals
-  narrow_range <- c(0.97, 0.99)  # 2 percentage points
+  # Narrow range (< 2 percentage points) - should use decimals
+  narrow_range <- c(0.975, 0.990)  # 1.5 percentage points
   scale <- format_y_axis_percent(narrow_range)
 
   # Test label generation - should show decimals (scales::label_percent uses English notation)
@@ -117,20 +117,20 @@ test_that("format_y_axis_percent uses decimals for narrow range", {
   expect_equal(labels, c("97.5%", "98.0%", "98.5%"))
 })
 
-test_that("format_y_axis_percent handles boundary at 5 percentage points", {
-  # Just above 5 percentage points - should use whole percents
-  wide_boundary_range <- c(0.90, 0.96)  # 6 percentage points (> 0.05)
+test_that("format_y_axis_percent handles boundary at 2 percentage points", {
+  # Just above 2 percentage points - should use whole percents
+  wide_boundary_range <- c(0.90, 0.93)  # 3 percentage points (> 0.02)
   scale_wide <- format_y_axis_percent(wide_boundary_range)
 
-  labels_wide <- scale_wide$labels(c(0.91, 0.93))
-  expect_equal(labels_wide, c("91%", "93%"))  # Whole percents
+  labels_wide <- scale_wide$labels(c(0.91, 0.92))
+  expect_equal(labels_wide, c("91%", "92%"))  # Whole percents
 
-  # Just below 5 percentage points - should use decimals
-  narrow_boundary_range <- c(0.90, 0.94)  # 4 percentage points (< 0.05)
+  # Just below 2 percentage points - should use decimals
+  narrow_boundary_range <- c(0.90, 0.915)  # 1.5 percentage points (< 0.02)
   scale_narrow <- format_y_axis_percent(narrow_boundary_range)
 
-  labels_narrow <- scale_narrow$labels(c(0.91, 0.93))
-  expect_equal(labels_narrow, c("91.0%", "93.0%"))  # Decimals
+  labels_narrow <- scale_narrow$labels(c(0.905, 0.910))
+  expect_equal(labels_narrow, c("90.5%", "91.0%"))  # Decimals
 })
 
 test_that("format_y_axis_percent handles NULL range", {

@@ -103,15 +103,9 @@ format_unscaled_number <- function(val) {
 #' @return Formatted string (e.g., "123", "1,5K", "2M", "1,2 mia.")
 #'
 #' @details
-#' **Scaling thresholds:**
-#' - < 1,000: No scaling, uses thousand separator (e.g., "999")
-#' - >= 1,000: K notation (e.g., "1,5K")
-#' - >= 1,000,000: M notation (e.g., "2,3M")
-#' - >= 1,000,000,000: mia. notation (e.g., "1,2 mia.")
-#'
-#' **Danish formatting:**
-#' - Decimal mark: `,` (e.g., "1,5K")
-#' - Thousand separator: `.` (e.g., "1.234" for unscaled)
+#' Scaling thresholds: less than 1,000 no scaling, 1,000 or more K notation,
+#' 1,000,000 or more M notation, 1,000,000,000 or more mia. notation.
+#' Uses Danish formatting: decimal mark `,` and thousand separator `.`
 #'
 #' @keywords internal
 #' @noRd

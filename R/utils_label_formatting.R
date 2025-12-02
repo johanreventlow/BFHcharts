@@ -14,7 +14,7 @@
 #'
 #' @param val numeric værdi (0-1 skala, f.eks. 0.887 for 88.7%)
 #' @param target numeric target værdi (0-1 skala), eller NULL
-#' @param threshold numeric afstand i procentpoint hvor decimaler vises (default 0.05 = 5%)
+#' @param threshold numeric afstand i procentpoint hvor decimaler vises (default 0.02 = 2%)
 #' @return character formateret string med dansk notation
 #'
 #' @details
@@ -36,7 +36,7 @@
 #'
 #' @keywords internal
 #' @noRd
-format_percent_contextual <- function(val, target = NULL, threshold = 0.05) {
+format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
 
   if (is.na(val)) {
     return(NA_character_)
@@ -93,8 +93,6 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.05) {
 #' @keywords internal
 #' @noRd
 #' @family spc-formatting
-#' @seealso [apply_y_axis_formatting()], [format_count_danish()], [format_time_auto()],
-#'   [format_percent_contextual()]
 format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
   # Input validation
   if (is.na(val)) {

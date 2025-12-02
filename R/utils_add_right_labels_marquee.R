@@ -33,7 +33,6 @@
 #' @keywords internal
 #' @noRd
 #' @family label-placement
-#' @seealso [add_spc_labels()], [get_label_placement_config()]
 add_right_labels_marquee <- function(
     p,
     yA,

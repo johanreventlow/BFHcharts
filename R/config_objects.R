@@ -75,7 +75,7 @@ NULL
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [bfh_qic()], [bfh_spc_plot()], [phase_config()], [viewport_dims()]
+#' @seealso [bfh_qic()]
 #' @examples
 #' # Basic configuration
 #' cfg <- spc_plot_config(chart_type = "run", y_axis_unit = "count")
@@ -149,7 +149,6 @@ spc_plot_config <- function(
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [spc_plot_config()]
 print.spc_plot_config <- function(x, ...) {
   cat("SPC Plot Configuration:\n")
   cat("  Chart Type:", x$chart_type, "\n")
@@ -185,7 +184,7 @@ print.spc_plot_config <- function(x, ...) {
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [bfh_qic()], [spc_plot_config()]
+#' @seealso [bfh_qic()]
 #' @examples
 #' # Auto-sized viewport with default font
 #' vp <- viewport_dims()
@@ -232,7 +231,6 @@ viewport_dims <- function(
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [viewport_dims()]
 print.viewport_dims <- function(x, ...) {
   cat("Viewport Dimensions:\n")
   cat("  Width:", if (is.null(x$width)) "Auto" else paste(x$width, "px"), "\n")
@@ -265,7 +263,7 @@ print.viewport_dims <- function(x, ...) {
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [spc_plot_config()], [bfh_qic()]
+#' @seealso [bfh_qic()]
 #' @examples
 #' # No phases
 #' phases <- phase_config()
@@ -311,7 +309,6 @@ phase_config <- function(
 #' @keywords internal
 #' @noRd
 #' @family spc-config
-#' @seealso [phase_config()]
 print.phase_config <- function(x, ...) {
   cat("Phase Configuration:\n")
   cat("  Part Positions:", if (is.null(x$part_positions)) "NULL" else paste(x$part_positions, collapse = ", "), "\n")

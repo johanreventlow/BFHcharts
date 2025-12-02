@@ -32,7 +32,6 @@ NULL
 #' @keywords internal
 #' @noRd
 #' @family spc-date-formatting
-#' @seealso [get_optimal_formatting()], [parse_danish_dates()]
 #' @examples
 #' \dontrun{
 #' dates <- seq(as.Date("2024-01-01"), by = "week", length.out = 52)
@@ -106,7 +105,7 @@ detect_date_interval <- function(dates, debug = FALSE) {
 #' Returns optimal x-axis formatting based on detected date intervals
 #' and number of observations.
 #'
-#' @param interval_info List from [detect_date_interval()]
+#' @param interval_info List from detect_date_interval()
 #' @param debug Logical, enable debug output (default: FALSE)
 #'
 #' @return List with formatting configuration:
@@ -120,7 +119,7 @@ detect_date_interval <- function(dates, debug = FALSE) {
 #' @keywords internal
 #' @noRd
 #' @family spc-date-formatting
-#' @seealso [detect_date_interval()], [bfh_qic()]
+#' @seealso [bfh_qic()]
 #' @examples
 #' \dontrun{
 #' dates <- seq(as.Date("2024-01-01"), by = "month", length.out = 24)
@@ -275,7 +274,6 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
 #' @keywords internal
 #' @noRd
 #' @family spc-date-formatting
-#' @seealso [detect_date_interval()]
 #' @examples
 #' \dontrun{
 #' parse_danish_dates(c("01-01-2024", "15-03-2024", "31-12-2024"))

@@ -18,7 +18,6 @@ NULL
 #'
 #' @format Named character vector med dansk label → engelsk kode
 #' @family spc-chart-types
-#' @seealso [CHART_TYPES_EN], [get_qic_chart_type()]
 #' @keywords internal
 #' @noRd
 #' @examples
@@ -41,7 +40,6 @@ CHART_TYPES_DA <- c(
 #'
 #' @format Character vector of valid chart codes
 #' @family spc-chart-types
-#' @seealso [CHART_TYPES_DA], [get_qic_chart_type()]
 #' @keywords internal
 #' @noRd
 CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t")
@@ -56,7 +54,6 @@ CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s
 #'
 #' @format Named character vector med engelsk kode → dansk beskrivelse
 #' @family spc-chart-types
-#' @seealso [get_chart_description()], [CHART_TYPES_DA]
 #' @keywords internal
 #' @noRd
 CHART_TYPE_DESCRIPTIONS <- c(
@@ -83,7 +80,6 @@ CHART_TYPE_DESCRIPTIONS <- c(
 #' @return Engelsk qicharts2 kode (fx "i", "run", "p")
 #'
 #' @family spc-chart-types
-#' @seealso [CHART_TYPES_DA], [CHART_TYPES_EN]
 #' @keywords internal
 #' @noRd
 #' @examples
@@ -131,7 +127,7 @@ get_qic_chart_type <- function(danish_selection) {
 #' - **u**, **up**: Rate charts (events/exposure)
 #'
 #' @family spc-chart-types
-#' @seealso [get_qic_chart_type()], [bfh_qic()]
+#' @seealso [bfh_qic()]
 #' @keywords internal
 #' @noRd
 #' @examples
@@ -156,7 +152,6 @@ chart_type_requires_denominator <- function(chart_type) {
 #' @return Dansk beskrivelse af chart type
 #'
 #' @family spc-chart-types
-#' @seealso [CHART_TYPE_DESCRIPTIONS], [get_qic_chart_type()]
 #' @keywords internal
 #' @noRd
 #' @examples

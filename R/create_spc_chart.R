@@ -111,9 +111,6 @@ NULL
 #' @export
 #' @family spc-plotting
 #' @seealso
-#'   - [bfh_spc_plot()] for low-level plot generation
-#'   - [spc_plot_config()] for plot configuration
-#'   - [apply_y_axis_formatting()] for Y-axis formatting
 #'   - [BFHtheme::theme_bfh()] for BFHtheme styling
 #'   - [BFHtheme::add_bfh_logo()] to add hospital branding
 #' @importFrom BFHtheme theme_bfh add_bfh_logo

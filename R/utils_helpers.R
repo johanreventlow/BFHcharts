@@ -21,7 +21,6 @@ NULL
 #' @return x if not NULL, otherwise y
 #' @name null-coalesce
 #' @family spc-helpers
-#' @seealso [get_y_axis_unit_label()]
 #' @keywords internal
 #' @noRd
 `%||%` <- function(x, y) {
@@ -250,7 +249,6 @@ validate_qic_data <- function(qic_data) {
 #'
 #' @format Named character vector
 #' @family spc-helpers
-#' @seealso [get_y_axis_unit_label()], [bfh_qic()]
 #' @keywords internal
 #' @noRd
 Y_AXIS_UNITS_DA <- c(
@@ -269,7 +267,6 @@ Y_AXIS_UNITS_DA <- c(
 #'
 #' @return Danish unit label
 #' @family spc-helpers
-#' @seealso [Y_AXIS_UNITS_DA], [apply_y_axis_formatting()]
 #' @keywords internal
 #' @noRd
 #' @examples

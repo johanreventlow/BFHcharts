@@ -19,9 +19,9 @@ NULL
 #' Y-axis unit formatting, control limits, and enhancements.
 #'
 #' @param qic_data Data frame from qicharts2::qic() with return.data = TRUE
-#' @param plot_config Plot configuration from [spc_plot_config()]
-#' @param viewport Viewport dimensions from [viewport_dims()]
-#' @param phase Optional phase configuration from [phase_config()]
+#' @param plot_config Plot configuration
+#' @param viewport Viewport dimensions
+#' @param phase Optional phase configuration
 #' @param plot_margin Numeric vector of length 4 (top, right, bottom, left) in mm,
 #'   or a margin object from ggplot2::margin(), or NULL for default
 #'
@@ -49,7 +49,7 @@ NULL
 #' @keywords internal
 #' @noRd
 #' @family spc-plotting
-#' @seealso [bfh_qic()], [spc_plot_config()], [viewport_dims()], [phase_config()]
+#' @seealso [bfh_qic()]
 #' @examples
 #' \dontrun{
 #' library(qicharts2)

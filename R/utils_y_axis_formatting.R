@@ -36,7 +36,6 @@ NULL
 #' @keywords internal
 #' @noRd
 #' @family spc-formatting
-#' @seealso [format_y_value()], [get_optimal_formatting()]
 #' @examples
 #' \dontrun{
 #' library(ggplot2)
@@ -115,11 +114,11 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
 #' @noRd
 format_y_axis_percent <- function(y_range = NULL) {
   # Bestem om vi skal vise decimaler baseret på range
-  # Threshold: 5 procentpoint (0.05 i 0-1 skala)
+  # Threshold: 2 procentpoint (0.02 i 0-1 skala)
   use_decimals <- FALSE
   if (!is.null(y_range) && length(y_range) == 2) {
     range_span <- abs(y_range[2] - y_range[1])
-    use_decimals <- range_span < 0.05
+    use_decimals <- range_span < 0.02
   }
 
   accuracy <- if (use_decimals) 0.1 else 1
