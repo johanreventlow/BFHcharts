@@ -1,3 +1,16 @@
+# BFHcharts 0.5.1
+
+## New Features
+
+* **Rich text support in PDF export:** Title and analysis fields in PDF exports now support markdown-style formatting that is converted to Typst rich text:
+  - `**bold text**` → Typst `#strong[bold text]`
+  - `*italic text*` → Typst `#emph[italic text]`
+  - Newlines (`\n`) → Typst line breaks
+  - Restores functionality that was available in SPCify's previous internal export implementation
+  - Adds new internal function `markdown_to_typst()` for CommonMark-to-Typst conversion
+
+---
+
 # BFHcharts 0.5.0
 
 ## Breaking Changes

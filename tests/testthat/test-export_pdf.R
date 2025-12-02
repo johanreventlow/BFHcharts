@@ -945,3 +945,99 @@ test_that("bfh_compile_typst reports Quarto compilation failures", {
   unlink(temp_typst)
   if (file.exists(temp_pdf)) unlink(temp_pdf)
 })
+
+# ===========================================================================
+# markdown_to_typst TESTS
+# ===========================================================================
+
+test_that("markdown_to_typst converts bold text", {
+  # Single bold phrase
+ expect_equal(
+    BFHcharts:::markdown_to_typst("This is **bold** text"),
+    "This is #strong[bold] text"
+  )
+
+  # Multiple bold phrases
+  expect_equal(
+    BFHcharts:::markdown_to_typst("**First** and **second**"),
+    "#strong[First] and #strong[second]"
+  )
+})
+
+test_that("markdown_to_typst converts italic text", {
+  # Single italic phrase
+  expect_equal(
+    BFHcharts:::markdown_to_typst("This is *italic* text"),
+    "This is #emph[italic] text"
+  )
+})
+
+test_that("markdown_to_typst converts mixed bold and italic", {
+  expect_equal(
+    BFHcharts:::markdown_to_typst("Has **bold** and *italic* words"),
+    "Has #strong[bold] and #emph[italic] words"
+  )
+})
+
+test_that("markdown_to_typst converts newlines to Typst line breaks", {
+  result <- BFHcharts:::markdown_to_typst("Line one\nLine two")
+  expect_match(result, "Line one\\\\\nLine two")
+})
+
+test_that("markdown_to_typst handles SPCify default title format", {
+  input <- "Skriv en kort og sigende titel eller\n**konkluder hvad grafen viser**"
+  result <- BFHcharts:::markdown_to_typst(input)
+
+  # Should contain bold conversion
+  expect_match(result, "#strong\\[konkluder hvad grafen viser\\]")
+  # Should contain line break
+  expect_match(result, "\\\\")
+})
+
+test_that("markdown_to_typst handles empty and NULL input", {
+  expect_equal(BFHcharts:::markdown_to_typst(""), "")
+  expect_equal(BFHcharts:::markdown_to_typst(NULL), "")
+  expect_equal(BFHcharts:::markdown_to_typst(character(0)), "")
+})
+
+test_that("markdown_to_typst preserves plain text without formatting", {
+  plain_text <- "This is plain text without any formatting"
+  expect_equal(BFHcharts:::markdown_to_typst(plain_text), plain_text)
+})
+
+test_that("build_typst_content uses content blocks for title and analysis", {
+  # Create minimal test setup
+  test_metadata <- list(
+    hospital = "Test Hospital",
+    title = "**Bold** Title",
+    analysis = "*Italic* analysis"
+  )
+
+  test_spc_stats <- list()
+
+  # Create temp files
+  temp_template <- tempfile(fileext = ".typ")
+  file.create(temp_template)
+
+  content <- BFHcharts:::build_typst_content(
+    chart_image = "chart.png",
+    metadata = test_metadata,
+    spc_stats = test_spc_stats,
+    template_file = temp_template,
+    template = "test-template"
+  )
+
+  content_str <- paste(content, collapse = "\n")
+
+  # Title should be content block with #strong
+  expect_match(content_str, "title: \\[#strong\\[Bold\\] Title\\]")
+
+  # Analysis should be content block with #emph
+  expect_match(content_str, "analysis: \\[#emph\\[Italic\\] analysis\\]")
+
+  # Hospital should remain quoted string (not content block)
+  expect_match(content_str, 'hospital: "Test Hospital"')
+
+  # Cleanup
+  unlink(temp_template)
+})

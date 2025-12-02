@@ -1,6 +1,6 @@
 Package: BFHcharts
 Title: SPC Visualization for Healthcare Quality Improvement
-Version: 0.5.0
+Version: 0.5.1
 Authors@R: c(
     person(
       "Johan", "Reventlow",

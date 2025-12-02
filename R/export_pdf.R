@@ -859,6 +859,8 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   escaped_chart <- escape_typst_string(chart_image)
 
   # Optional metadata parameters
+  # Note: title and analysis support rich text formatting via markdown_to_typst()
+  # and use Typst content blocks [...] instead of strings "..."
   if (!is.null(metadata$hospital)) {
     params$hospital <- sprintf('"%s"', escape_typst_string(metadata$hospital))
   }
@@ -866,10 +868,12 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
     params$department <- sprintf('"%s"', escape_typst_string(metadata$department))
   }
   if (!is.null(metadata$title) && nchar(metadata$title) > 0) {
-    params$title <- sprintf('"%s"', escape_typst_string(metadata$title))
+    # Title supports rich text - use content block [...]
+    params$title <- sprintf('[%s]', markdown_to_typst(metadata$title))
   }
   if (!is.null(metadata$analysis)) {
-    params$analysis <- sprintf('"%s"', escape_typst_string(metadata$analysis))
+    # Analysis supports rich text - use content block [...]
+    params$analysis <- sprintf('[%s]', markdown_to_typst(metadata$analysis))
   }
   if (!is.null(metadata$details)) {
     params$details <- sprintf('"%s"', escape_typst_string(metadata$details))
@@ -938,6 +942,7 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
 #' @return Escaped string safe for Typst
 #' @keywords internal
 escape_typst_string <- function(s) {
+
   if (is.null(s) || length(s) == 0) return("")
 
   # Escape backslashes and quotes
@@ -945,5 +950,62 @@ escape_typst_string <- function(s) {
   s <- gsub('"', '\\\\"', s)
 
   return(s)
+}
+
+#' Convert Markdown Rich Text to Typst Content
+#'
+#' Converts CommonMark/Marquee-style markdown formatting to Typst content blocks.
+#' Supports bold (**text**), italic (*text*), and preserves newlines.
+#'
+#' @param text Character string with markdown formatting
+#' @return Character string with Typst content block syntax
+#' @keywords internal
+#'
+#' @details
+#' **Supported Markdown Syntax:**
+#' - `**bold text**` → `#strong[bold text]`
+#' - `*italic text*` → `#emph[italic text]`
+#' - Newlines (`\n`) → Typst line breaks (`\`)
+#'
+#' **Usage:**
+#' Text parameters that should support rich text (title, analysis) use this
+#' function and are passed as Typst content blocks `[...]` instead of strings.
+#'
+#' @examples
+#' \dontrun{
+#' # Bold text
+#' markdown_to_typst("This is **important**")
+#' # Returns: "This is #strong[important]"
+#'
+#' # Italic text
+#' markdown_to_typst("This is *emphasized*")
+#' # Returns: "This is #emph[emphasized]"
+#'
+#' # Mixed formatting
+#' markdown_to_typst("Write a title or\n**conclude what the chart shows**")
+#' # Returns: "Write a title or\\ #strong[conclude what the chart shows]"
+#' }
+markdown_to_typst <- function(text) {
+  if (is.null(text) || length(text) == 0 || nchar(text) == 0) return("")
+
+  result <- text
+
+
+  # Escape Typst special characters in content (but not our formatting markers)
+  # Escape hash (#) that's not part of our conversion
+  # Don't escape [ ] as we need them for content blocks
+  result <- gsub("(?<!\\*)#", "\\\\#", result, perl = TRUE)
+
+  # Convert **bold** to #strong[bold] (must do before single *)
+  result <- gsub("\\*\\*([^*]+)\\*\\*", "#strong[\\1]", result)
+
+  # Convert *italic* to #emph[italic] (single asterisks)
+  # Use negative lookbehind/lookahead to avoid matching ** patterns
+  result <- gsub("(?<!\\*)\\*([^*]+)\\*(?!\\*)", "#emph[\\1]", result, perl = TRUE)
+
+  # Convert \n to Typst line break (backslash + newline)
+  result <- gsub("\\n", "\\\\\n", result)
+
+  return(result)
 }
 
