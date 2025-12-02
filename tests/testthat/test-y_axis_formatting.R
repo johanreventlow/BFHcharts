@@ -502,6 +502,8 @@ test_that("Danish number notation is consistent across formatters", {
 # ============================================================================
 
 test_that("bfh_qic maps y_axis_unit='percent' to qicharts2's y.percent parameter", {
+  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+
   # Create P-chart data (requires proportions as input)
   data <- data.frame(
     month = 1:12,
@@ -541,6 +543,8 @@ test_that("bfh_qic maps y_axis_unit='percent' to qicharts2's y.percent parameter
 })
 
 test_that("bfh_qic with y_axis_unit='count' does NOT apply percentage formatting", {
+  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+
   data <- data.frame(
     month = 1:12,
     value = rnorm(12, 15, 2)
@@ -573,6 +577,8 @@ test_that("bfh_qic with y_axis_unit='count' does NOT apply percentage formatting
 })
 
 test_that("y.percent parameter is passed correctly to qicharts2::qic", {
+  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+
   # This is a unit test for the parameter mapping logic
   # We can't directly test qic_args without exposing internals,
   # but we can verify the end result via the plot
