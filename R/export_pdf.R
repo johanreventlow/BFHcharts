@@ -278,7 +278,8 @@ bfh_export_pdf <- function(x,
   if (.Platform$OS.type == "unix") {
     dir_info <- file.info(temp_dir)
     current_uid <- as.integer(Sys.getenv("UID"))
-    if (length(current_uid) > 0 && current_uid > 0) {
+    # Only verify if UID is available and valid (not NA or 0)
+    if (length(current_uid) > 0 && !is.na(current_uid) && current_uid > 0) {
       if (dir_info$uid != current_uid) {
         unlink(temp_dir, recursive = TRUE)
         stop(
