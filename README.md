@@ -14,8 +14,22 @@
 
 ## Installation
 
+### From R-universe (recommended)
+
 ```r
-# Install from GitHub
+# Enable this universe
+options(repos = c(
+  johanreventlow = 'https://johanreventlow.r-universe.dev',
+  CRAN = 'https://cloud.r-project.org'
+))
+
+# Install package
+install.packages('BFHcharts')
+```
+
+### From GitHub
+
+```r
 # install.packages("devtools")
 devtools::install_github("johanreventlow/BFHcharts")
 ```
