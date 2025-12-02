@@ -1,3 +1,23 @@
+# BFHcharts 0.5.0
+
+## Breaking Changes
+
+* **Removed complex TTL-based caching system (~1,500 LOC):** The grob height cache and panel height cache have been removed to simplify the codebase. These caches were disabled by default and rarely used in production.
+  - **Removed:** `.grob_height_cache`, `.panel_height_cache`, and all related configuration functions
+  - **Kept:** Simple marquee style cache (~45 LOC) which is always beneficial
+  - **Impact:** No performance regression for typical usage (caches were disabled by default)
+  - **Benefit:** Reduced code complexity from ~2,700 to ~1,200 lines in label placement utilities
+  - Updated `docs/CACHING_SYSTEM.md` to reflect simplified architecture
+  - Fixes GitHub issue #42
+
+## Internal Improvements
+
+* Simplified label height measurement - removed `use_cache` parameters from all measurement functions
+* Removed global state management complexity (TTL tracking, stats, purge logic)
+* Updated documentation to explain caching removal rationale
+
+---
+
 # BFHcharts 0.4.1
 
 ## Improvements
