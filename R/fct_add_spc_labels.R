@@ -47,7 +47,6 @@
 #'
 #' @keywords internal
 #' @noRd
-#' @family label-placement
 add_spc_labels <- function(
     plot,
     qic_data,

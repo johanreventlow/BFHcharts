@@ -92,7 +92,6 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
 #'
 #' @keywords internal
 #' @noRd
-#' @family spc-formatting
 format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
   # Input validation
   if (is.na(val)) {

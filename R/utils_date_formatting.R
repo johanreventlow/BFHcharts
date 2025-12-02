@@ -31,7 +31,6 @@ NULL
 #'
 #' @keywords internal
 #' @noRd
-#' @family spc-date-formatting
 #' @examples
 #' \dontrun{
 #' dates <- seq(as.Date("2024-01-01"), by = "week", length.out = 52)
@@ -118,8 +117,6 @@ detect_date_interval <- function(dates, debug = FALSE) {
 #'
 #' @keywords internal
 #' @noRd
-#' @family spc-date-formatting
-#' @seealso [bfh_qic()]
 #' @examples
 #' \dontrun{
 #' dates <- seq(as.Date("2024-01-01"), by = "month", length.out = 24)
@@ -273,7 +270,6 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
 #'
 #' @keywords internal
 #' @noRd
-#' @family spc-date-formatting
 #' @examples
 #' \dontrun{
 #' parse_danish_dates(c("01-01-2024", "15-03-2024", "31-12-2024"))

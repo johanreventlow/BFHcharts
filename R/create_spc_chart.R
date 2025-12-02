@@ -109,10 +109,6 @@ NULL
 #' suppressed and only the directional indicator shown at the plot edge.
 #'
 #' @export
-#' @family spc-plotting
-#' @seealso
-#'   - [BFHtheme::theme_bfh()] for BFHtheme styling
-#'   - [BFHtheme::add_bfh_logo()] to add hospital branding
 #' @importFrom BFHtheme theme_bfh add_bfh_logo
 #' @examples
 #' \dontrun{

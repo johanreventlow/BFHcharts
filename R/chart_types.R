@@ -17,7 +17,6 @@ NULL
 #' Mapping mellem danske UI labels og engelske qicharts2 koder.
 #'
 #' @format Named character vector med dansk label → engelsk kode
-#' @family spc-chart-types
 #' @keywords internal
 #' @noRd
 #' @examples
@@ -39,7 +38,6 @@ CHART_TYPES_DA <- c(
 #' Valid qicharts2 chart type codes.
 #'
 #' @format Character vector of valid chart codes
-#' @family spc-chart-types
 #' @keywords internal
 #' @noRd
 CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t")
@@ -53,7 +51,6 @@ CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s
 #' Danske beskrivelser af hver chart type til dokumentation og UI.
 #'
 #' @format Named character vector med engelsk kode → dansk beskrivelse
-#' @family spc-chart-types
 #' @keywords internal
 #' @noRd
 CHART_TYPE_DESCRIPTIONS <- c(
@@ -79,7 +76,6 @@ CHART_TYPE_DESCRIPTIONS <- c(
 #' @param danish_selection Valgt chart type (dansk label eller engelsk kode)
 #' @return Engelsk qicharts2 kode (fx "i", "run", "p")
 #'
-#' @family spc-chart-types
 #' @keywords internal
 #' @noRd
 #' @examples
@@ -126,8 +122,6 @@ get_qic_chart_type <- function(danish_selection) {
 #' - **p**, **pp**: Proportion charts (numerator/denominator)
 #' - **u**, **up**: Rate charts (events/exposure)
 #'
-#' @family spc-chart-types
-#' @seealso [bfh_qic()]
 #' @keywords internal
 #' @noRd
 #' @examples
@@ -151,7 +145,6 @@ chart_type_requires_denominator <- function(chart_type) {
 #' @param chart_type Chart type (engelsk kode eller dansk navn)
 #' @return Dansk beskrivelse af chart type
 #'
-#' @family spc-chart-types
 #' @keywords internal
 #' @noRd
 #' @examples

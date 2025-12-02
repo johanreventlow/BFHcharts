@@ -43,7 +43,6 @@
 #'
 #' @keywords internal
 #' @noRd
-#' @family spc-config
 #' @examples
 #' \dontrun{
 #' # Default configuration
@@ -82,7 +81,6 @@ FONT_SCALING_CONFIG <- list(
 #'
 #' @keywords internal
 #' @noRd
-#' @family spc-config
 #' @examples
 #' \dontrun{
 #' # Standard web plot

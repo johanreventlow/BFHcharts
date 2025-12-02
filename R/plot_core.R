@@ -48,8 +48,6 @@ NULL
 #'
 #' @keywords internal
 #' @noRd
-#' @family spc-plotting
-#' @seealso [bfh_qic()]
 #' @examples
 #' \dontrun{
 #' library(qicharts2)

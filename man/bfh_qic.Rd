@@ -519,10 +519,3 @@ if (summary_stats$sigma_signal[2]) {
 }
 }
 }
-\seealso{
-\itemize{
-\item \code{\link[BFHtheme:theme_bfh]{BFHtheme::theme_bfh()}} for BFHtheme styling
-\item \code{\link[BFHtheme:add_bfh_logo]{BFHtheme::add_bfh_logo()}} to add hospital branding
-}
-}
-\concept{spc-plotting}

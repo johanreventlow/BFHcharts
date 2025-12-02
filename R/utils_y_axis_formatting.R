@@ -35,7 +35,6 @@ NULL
 #'
 #' @keywords internal
 #' @noRd
-#' @family spc-formatting
 #' @examples
 #' \dontrun{
 #' library(ggplot2)

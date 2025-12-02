@@ -20,7 +20,6 @@ NULL
 #'
 #' @return x if not NULL, otherwise y
 #' @name null-coalesce
-#' @family spc-helpers
 #' @keywords internal
 #' @noRd
 `%||%` <- function(x, y) {
@@ -248,7 +247,6 @@ validate_qic_data <- function(qic_data) {
 #' Mapping of unit codes to Danish labels.
 #'
 #' @format Named character vector
-#' @family spc-helpers
 #' @keywords internal
 #' @noRd
 Y_AXIS_UNITS_DA <- c(
@@ -266,7 +264,6 @@ Y_AXIS_UNITS_DA <- c(
 #' @param unit_code Unit code ("count", "percent", etc.)
 #'
 #' @return Danish unit label
-#' @family spc-helpers
 #' @keywords internal
 #' @noRd
 #' @examples

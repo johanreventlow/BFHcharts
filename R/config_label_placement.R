@@ -41,7 +41,6 @@
 #'   \item{height_fallback_npc}{Fallback højde hvis måling fejler (NPC)}
 #' }
 #'
-#' @family label-placement-config
 #' @keywords internal
 #' @noRd
 LABEL_PLACEMENT_CONFIG <- list(
@@ -147,7 +146,6 @@ LABEL_PLACEMENT_CONFIG <- list(
 #'
 #' @keywords internal
 #' @noRd
-#' @family label-placement-config
 get_label_placement_param <- function(key, default = NULL) {
   # Hent konfiguration
   config <- LABEL_PLACEMENT_CONFIG
@@ -184,7 +182,6 @@ get_label_placement_param <- function(key, default = NULL) {
 #'
 #' @keywords internal
 #' @noRd
-#' @family label-placement-config
 get_label_placement_config <- function() {
   # Returner en kopi for at undgå utilsigtet modification
   as.list(LABEL_PLACEMENT_CONFIG)

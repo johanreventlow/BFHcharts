@@ -11,10 +11,12 @@
 #' * Comprehensive SPC chart types (run, I, P, U, C, etc.)
 #'
 #' @section Main Functions:
+#' The package exports one primary function:
 #' * `bfh_qic()` - High-level wrapper for complete SPC workflow
+#'
+#' Additional exported utilities:
 #' * `bfh_export_pdf()`, `bfh_export_png()` - Export charts to PDF/PNG
 #' * `bfh_extract_spc_stats()`, `bfh_merge_metadata()` - Utility functions
-#' * [BFHtheme::theme_bfh()] - Apply BFH hospital theme styling (from BFHtheme package)
 #'
 #' @section Design Philosophy:
 #' Inspired by BBC's bbplot, BFHcharts follows these principles:

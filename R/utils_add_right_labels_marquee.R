@@ -32,7 +32,6 @@
 #'
 #' @keywords internal
 #' @noRd
-#' @family label-placement
 add_right_labels_marquee <- function(
     p,
     yA,

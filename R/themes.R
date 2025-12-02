@@ -4,7 +4,6 @@
 #' by the BFHtheme package.
 #'
 #' @name spc_themes
-#' @seealso [BFHtheme::theme_bfh()] for general BFH theming
 #' @keywords internal
 #' @noRd
 NULL
@@ -76,8 +75,6 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
 #'
 #' @return Character string with formatted footer
 #'
-#' @family spc-themes
-#' @seealso [BFHtheme::theme_bfh()]
 #' @keywords internal
 #' @noRd
 #' @examples
