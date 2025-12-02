@@ -20,17 +20,16 @@
 # Install pak if you don't have it
 install.packages("pak")
 
-# Install from GitHub (always latest)
-pak::pkg_install("johanreventlow/BFHcharts")
-
-# Or from r-universe (pre-built binaries, faster)
+# For most users: Install stable release from r-universe (fastest)
 pak::pkg_install("BFHcharts", repos = "https://johanreventlow.r-universe.dev")
+
+# For developers: Install latest development version from GitHub
+pak::pkg_install("johanreventlow/BFHcharts")
 ```
 
-**Fordele ved pak:**
-- ⚡ Hurtigere installation (parallelle downloads)
-- 🔒 Dependency resolution og konflikt-håndtering
-- 📦 Pre-built binaries fra r-universe (ingen compilation)
+**r-universe vs GitHub:**
+- **r-universe**: Pre-built binaries, ingen compilation, baseret på releases (anbefalet)
+- **GitHub**: Seneste kode, kræver build tools, langsom (til udvikling)
 
 ### Using install.packages
 
