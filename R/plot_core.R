@@ -259,162 +259,20 @@ bfh_spc_plot <- function(qic_data,
 #' @keywords internal
 #' @noRd
 apply_x_axis_formatting <- function(plot, qic_data, viewport) {
-  data_x_min <- min(qic_data$x, na.rm = TRUE)
-  data_x_max <- max(qic_data$x, na.rm = TRUE)
+  x_col <- qic_data$x
 
-  # Convert Date to POSIXct for uniform handling
-  if (inherits(data_x_max, "Date")) {
-    data_x_max <- as.POSIXct(data_x_max)
-    data_x_min <- as.POSIXct(data_x_min)
+  # Dispatch to appropriate formatter based on x-column type
+  if (inherits(x_col, c("POSIXct", "POSIXt", "Date"))) {
+    # Compute min/max and normalize to POSIXct for temporal formatter
+    data_x_min <- min(x_col, na.rm = TRUE)
+    data_x_max <- max(x_col, na.rm = TRUE)
+    data_x_min <- normalize_to_posixct(data_x_min)
+    data_x_max <- normalize_to_posixct(data_x_max)
+
+    apply_temporal_x_axis(plot, x_col, data_x_min, data_x_max)
+  } else if (is.numeric(x_col)) {
+    apply_numeric_x_axis(plot)
+  } else {
+    plot  # Unknown type → return unchanged
   }
-
-  # Intelligent date formatting for Date/POSIXct columns
-  if (inherits(qic_data$x, c("POSIXct", "POSIXt", "Date"))) {
-    # Convert Date to POSIXct
-    if (inherits(qic_data$x, "Date")) {
-      qic_data$x <- as.POSIXct(qic_data$x)
-    }
-
-    # Detect interval pattern and get optimal formatting
-    interval_info <- detect_date_interval(qic_data$x)
-    format_config <- get_optimal_formatting(interval_info)
-
-    # Helper function to round dates to interval start
-    round_to_interval_start <- function(date, interval_type) {
-      if (interval_type == "monthly") {
-        lubridate::floor_date(date, unit = "month")
-      } else if (interval_type == "weekly") {
-        lubridate::floor_date(date, unit = "week")
-      } else {
-        date
-      }
-    }
-
-    # Calculate adaptive interval size based on data density
-    base_interval_secs <- if (interval_info$type == "weekly") {
-      7 * 24 * 60 * 60
-    } else if (interval_info$type == "monthly") {
-      30 * 24 * 60 * 60
-    } else if (interval_info$type == "daily") {
-      24 * 60 * 60
-    } else {
-      NULL
-    }
-
-    interval_size <- if (!is.null(base_interval_secs)) {
-      timespan_secs <- as.numeric(difftime(data_x_max, data_x_min, units = "secs"))
-      potential_breaks <- timespan_secs / base_interval_secs
-
-      if (potential_breaks > 15) {
-        multipliers <- if (interval_info$type == "weekly") {
-          c(2, 4, 13)
-        } else if (interval_info$type == "monthly") {
-          c(3, 6, 12)
-        } else {
-          c(2, 4, 8)
-        }
-
-        mult <- tail(multipliers, 1)
-        for (m in multipliers) {
-          if (potential_breaks / m <= 15) {
-            mult <- m
-            break
-          }
-        }
-
-        # Convert to difftime for proper POSIXct seq() behavior
-        as.difftime(base_interval_secs * mult, units = "secs")
-      } else {
-        # Convert to difftime for proper POSIXct seq() behavior
-        as.difftime(base_interval_secs, units = "secs")
-      }
-    } else {
-      NULL
-    }
-
-    # Apply scale based on interval type and smart labels configuration
-    if (interval_info$type == "weekly" && !is.null(format_config$use_smart_labels) && format_config$use_smart_labels) {
-      rounded_start <- round_to_interval_start(data_x_min, "weekly")
-      rounded_end <- lubridate::ceiling_date(data_x_max, unit = "week")
-      breaks_posix <- seq(from = rounded_start, to = rounded_end + interval_size, by = interval_size)
-      breaks_posix <- breaks_posix[breaks_posix >= data_x_min]
-
-      if (length(breaks_posix) == 0 || breaks_posix[1] != data_x_min) {
-        breaks_posix <- unique(c(data_x_min, breaks_posix))
-      }
-
-      # Ensure breaks are POSIXct (seq with difftime should return POSIXct, but be explicit)
-      breaks_posix <- as.POSIXct(breaks_posix)
-
-      plot <- plot + BFHtheme::scale_x_datetime_bfh(
-        expand = ggplot2::expansion(mult = c(0.025, 0)),
-        labels = format_config$labels,
-        breaks = breaks_posix
-      )
-    } else if (interval_info$type == "monthly" && !is.null(format_config$use_smart_labels) && format_config$use_smart_labels) {
-      rounded_start <- round_to_interval_start(data_x_min, "monthly")
-      rounded_end <- lubridate::ceiling_date(data_x_max, unit = "month")
-
-      interval_months <- round(as.numeric(interval_size) / (30 * 24 * 60 * 60))
-      extended_end <- seq(rounded_end, by = paste(interval_months, "months"), length.out = 2)[2]
-      breaks_posix <- seq(from = rounded_start, to = extended_end, by = paste(interval_months, "months"))
-      breaks_posix <- breaks_posix[breaks_posix >= data_x_min]
-
-      if (length(breaks_posix) == 0 || breaks_posix[1] != data_x_min) {
-        breaks_posix <- unique(c(data_x_min, breaks_posix))
-      }
-
-      # Ensure breaks are POSIXct
-      breaks_posix <- as.POSIXct(breaks_posix)
-
-      plot <- plot + BFHtheme::scale_x_datetime_bfh(
-        expand = ggplot2::expansion(mult = c(0.025, 0)),
-        labels = format_config$labels,
-        breaks = breaks_posix
-      )
-    } else if (!is.null(format_config$breaks) && !is.null(interval_size)) {
-      # Standard intelligent formatting with calculated breaks
-      if (interval_info$type == "monthly") {
-        rounded_start <- round_to_interval_start(data_x_min, "monthly")
-        rounded_end <- lubridate::ceiling_date(data_x_max, unit = "month")
-        interval_months <- round(as.numeric(interval_size) / (30 * 24 * 60 * 60))
-        extended_end <- seq(rounded_end, by = paste(interval_months, "months"), length.out = 2)[2]
-        breaks_posix <- seq(from = rounded_start, to = extended_end, by = paste(interval_months, "months"))
-        breaks_posix <- breaks_posix[breaks_posix >= data_x_min]
-
-        if (length(breaks_posix) == 0 || breaks_posix[1] != data_x_min) {
-          breaks_posix <- unique(c(data_x_min, breaks_posix))
-        }
-      } else {
-        rounded_start <- round_to_interval_start(data_x_min, interval_info$type)
-        breaks_posix <- seq(from = rounded_start, to = data_x_max + interval_size, by = interval_size)
-        breaks_posix <- breaks_posix[breaks_posix >= data_x_min]
-
-        if (length(breaks_posix) == 0 || breaks_posix[1] != data_x_min) {
-          breaks_posix <- unique(c(data_x_min, breaks_posix))
-        }
-      }
-
-      # Ensure breaks are POSIXct
-      breaks_posix <- as.POSIXct(breaks_posix)
-
-      plot <- plot + BFHtheme::scale_x_datetime_bfh(
-        labels = format_config$labels,
-        breaks = breaks_posix
-      )
-    } else {
-      # Fallback to breaks_pretty with intelligent count
-      plot <- plot + BFHtheme::scale_x_datetime_bfh(
-        labels = format_config$labels,
-        breaks = scales::breaks_pretty(n = format_config$n_breaks)
-      )
-    }
-  } else if (is.numeric(qic_data$x)) {
-    # Numeric X-axis (observation sequence)
-    plot <- plot + BFHtheme::scale_x_continuous_bfh(
-      breaks = scales::pretty_breaks(n = 8)
-    )
-  }
-
-  return(plot)
 }
