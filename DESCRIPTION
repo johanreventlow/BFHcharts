@@ -1,6 +1,6 @@
 Package: BFHcharts
 Title: SPC Visualization for Healthcare Quality Improvement
-Version: 0.5.1
+Version: 0.6.0
 Authors@R: c(
     person(
       "Johan", "Reventlow",
@@ -44,5 +44,6 @@ Suggests:
     vdiffr,
     covr,
     pdftools (>= 3.3.0),
-    withr
+    withr,
+    BFHllm
 Config/testthat/edition: 3

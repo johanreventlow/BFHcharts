@@ -1,3 +1,34 @@
+# BFHcharts 0.6.0
+
+## New Features
+
+* **AI-assisted SPC analysis generation:** Automatically generate analysis text for PDF exports with intelligent fallback to Danish standard texts:
+  - `bfh_generate_analysis()` - Generates analysis using AI (BFHllm) or standard texts
+  - `bfh_interpret_spc_signals()` - Danish standard texts for Anhøj SPC signals (runs, crossings, outliers)
+  - `bfh_build_analysis_context()` - Collects context from `bfh_qic_result` for analysis
+  - `bfh_export_pdf()` gains `auto_analysis` and `use_ai` parameters for automatic analysis generation
+  - Graceful degradation: Falls back to standard texts if AI unavailable or fails
+  - BFHllm added as optional dependency (Suggests, not required)
+  - Fixes GitHub issue #69
+
+**Example usage:**
+```r
+# Auto-generate analysis with AI (if BFHllm installed)
+bfh_qic(data, x = month, y = infections, chart_type = "i") |>
+  bfh_export_pdf("report.pdf",
+    metadata = list(
+      data_definition = "Antal infektioner pr. 1000 patientdage",
+      target = 2.5
+    ),
+    auto_analysis = TRUE
+  )
+
+# Use standard texts only (no AI)
+bfh_generate_analysis(result, use_ai = FALSE)
+```
+
+---
+
 # BFHcharts 0.5.1
 
 ## New Features

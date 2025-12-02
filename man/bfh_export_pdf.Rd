@@ -9,7 +9,9 @@ bfh_export_pdf(
   output,
   metadata = list(),
   template = "bfh-diagram2",
-  template_path = NULL
+  template_path = NULL,
+  auto_analysis = FALSE,
+  use_ai = NULL
 )
 }
 \arguments{
@@ -33,6 +35,18 @@ bfh_export_pdf(
 \item{template_path}{Optional path to a custom Typst template file. When provided,
 this overrides the packaged template. The template must exist and be a valid
 Typst file (.typ). Default is NULL (uses packaged BFH template).}
+
+\item{auto_analysis}{Logical. If TRUE and \code{metadata$analysis} is not provided,
+automatically generates analysis text using \code{bfh_generate_analysis()}.
+Default is FALSE for backward compatibility.}
+
+\item{use_ai}{Logical or NULL. Controls AI usage for auto-analysis:
+\itemize{
+\item \code{NULL} (default): Auto-detect BFHllm availability
+\item \code{TRUE}: Use AI via BFHllm (with fallback to standard texts)
+\item \code{FALSE}: Use standard texts only (no AI)
+}
+Only used when \code{auto_analysis = TRUE}.}
 }
 \value{
 The input object \code{x} invisibly, enabling pipe chaining
