@@ -28,6 +28,7 @@ bfh_export_pdf(
 \item \code{author}: Author name (optional)
 \item \code{date}: Report date (default: Sys.Date())
 \item \code{data_definition}: Data definition text (optional)
+\item \code{target}: Target value for analysis context (numeric or character, optional)
 }}
 
 \item{template}{Character string specifying template name (default: "bfh-diagram2")}

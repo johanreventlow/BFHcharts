@@ -14,6 +14,7 @@
 #'     \item \code{author}: Author name (optional)
 #'     \item \code{date}: Report date (default: Sys.Date())
 #'     \item \code{data_definition}: Data definition text (optional)
+#'     \item \code{target}: Target value for analysis context (numeric or character, optional)
 #'   }
 #' @param template Character string specifying template name (default: "bfh-diagram2")
 #' @param template_path Optional path to a custom Typst template file. When provided,
@@ -167,15 +168,21 @@ bfh_export_pdf <- function(x,
     if (field %in% known_fields) {
       value <- metadata[[field]]
 
-      # Type validation: Must be character or NULL
+      # Type validation: Must be character or NULL (with special cases)
       if (!is.null(value) && !is.character(value)) {
         # Special case: date can be Date object
         if (field == "date" && inherits(value, "Date")) {
           next  # Allow Date objects for date field
         }
+        # Special case: target can be numeric
+        if (field == "target" && is.numeric(value)) {
+          next  # Allow numeric values for target field
+        }
         stop(
-          "metadata$", field, " must be a character string (or Date for 'date' field)\n",
-          "  Got: ", class(value)[1],
+          "metadata$", field, " must be a character string",
+          if (field == "date") " (or Date object)" else "",
+          if (field == "target") " (or numeric)" else "",
+          "\n  Got: ", class(value)[1],
           call. = FALSE
         )
       }

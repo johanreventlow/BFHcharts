@@ -1,30 +1,29 @@
-# BFHcharts PDF Export Demo
-# Demonstrerer run chart og PDF eksport med hospital branding
+# BFHcharts PDF Export Demo - AI-Assisteret SPC Analyse (v0.6.0)
+# Demonstrerer automatisk analyse-generering med BFHcharts og BFHllm
 #
 # Kræver:
 # - Quarto CLI >= 1.4.0 (https://quarto.org)
-# - BFHllm pakke (https://github.com/johanreventlow/BFHllm)
-# - GOOGLE_API_KEY eller GEMINI_API_KEY i .Renviron
+# - BFHllm pakke (valgfri - https://github.com/johanreventlow/BFHllm)
+# - GOOGLE_API_KEY eller GEMINI_API_KEY i .Renviron (kun for AI)
 
 # Load packages
 devtools::load_all()
 
 # Tjek om BFHllm er installeret
-if (!requireNamespace("BFHllm", quietly = TRUE)) {
-  warning(
-    "BFHllm ikke installeret - AI-analyse vil blive sprunget over.\n",
-    "  Installer med: pak::pkg_install('johanreventlow/BFHllm')"
-  )
-  use_ai <- FALSE
-} else {
+bfhllm_available <- requireNamespace("BFHllm", quietly = TRUE)
+if (bfhllm_available) {
   library(BFHllm)
-  use_ai <- BFHllm::bfhllm_chat_available()
-  if (!use_ai) {
-    warning(
-      "BFHllm kræver GOOGLE_API_KEY eller GEMINI_API_KEY i .Renviron.\n",
-      "  AI-analyse vil blive sprunget over."
-    )
+  ai_ready <- BFHllm::bfhllm_chat_available()
+  if (ai_ready) {
+    cat("✓ BFHllm tilgængelig - AI-analyse aktiveret\n")
+  } else {
+    cat("⚠ BFHllm installeret, men API key mangler\n")
+    cat("  Tilføj GOOGLE_API_KEY eller GEMINI_API_KEY til .Renviron\n")
   }
+} else {
+  cat("ℹ BFHllm ikke installeret - bruger danske standardtekster\n")
+  cat("  Installer med: pak::pkg_install('johanreventlow/BFHllm')\n")
+  ai_ready <- FALSE
 }
 
 # Tjek om Quarto er tilgængelig
@@ -33,14 +32,7 @@ if (!quarto_available()) {
        "  Installer fra: https://quarto.org\n",
        "  PDF export kræver Quarto med Typst support.")
 }
-
-cat("Quarto tilgængelig - PDF export muligt\n")
-if (use_ai) {
-  cat("BFHllm tilgængelig - AI-analyse aktiveret\n")
-} else {
-  cat("BFHllm ikke tilgængelig - bruger manuel analyse\n")
-}
-cat("\n")
+cat("✓ Quarto tilgængelig - PDF export muligt\n\n")
 
 # =============================================================================
 # EKSEMPEL DATA: Ventetider på akutmodtagelsen
@@ -80,85 +72,118 @@ if (interactive()) {
 }
 
 # =============================================================================
-# GENERER AI-ANALYSE (hvis BFHllm tilgængelig)
+# DEMO 1: AUTOMATISK ANALYSE (NEMMESTE MÅDE)
 # =============================================================================
 
-if (use_ai) {
-  cat("Genererer AI-analyse med BFHllm...\n")
+cat("\n=== DEMO 1: Automatisk analyse med auto_analysis = TRUE ===\n\n")
 
-  # Ekstraher SPC metadata fra resultat
-  # BFHcharts returnerer allerede metadata i resultat$summary
-  # Vi skal pakke det ind i den struktur BFHllm forventer
-  spc_metadata <- list(
-    metadata = list(
-      chart_type = resultat$config$chart_type,
-      n_points = nrow(resultat$qic_data),
-      signals_detected = sum(resultat$summary$løbelængde_signal,
-                           resultat$summary$sigma_signal,
-                           na.rm = TRUE),
-      anhoej_rules = list(
-        longest_run = resultat$summary$længste_løb,
-        n_crossings = resultat$summary$antal_kryds,
-        n_crossings_min = resultat$summary$antal_kryds_min
-      )
-    ),
-    qic_data = resultat$qic_data,
-    summary = resultat$summary  # Gem også for visning senere
-  )
+cat("Eksporterer til PDF med automatisk analyse...\n")
 
-  # Definer kontekst for AI-analysen
-  ai_context <- list(
-    data_definition = "Gennemsnitlig ventetid fra ankomst til første lægekontakt, målt ugentligt fra EPJ",
-    chart_title = "Ventetid på Akutmodtagelsen",
-    y_axis_unit = "minutter",
-    target_value = 45  # Mål: max 45 minutter ventetid
-  )
-
-  # Generer AI-forbedringsforslag baseret på Anhøj-regler
-  ai_analyse <- BFHllm::bfhllm_spc_suggestion(
-    spc_result = spc_metadata,
-    context = ai_context,
-    max_chars = 350,
-    use_rag = TRUE  # Brug SPC knowledge base
-  )
-
-  cat("AI-analyse genereret:\n")
-  cat(ai_analyse, "\n\n")
-} else {
-  # Fallback: Manuel analyse hvis BFHllm ikke tilgængelig
-  ai_analyse <- "Lean-projektet har reduceret ventetiden med gennemsnitligt 15 minutter.
-                  Forbedringen er statistisk signifikant og vedvarende."
-}
-
-# =============================================================================
-# EKSPORT TIL PDF
-# =============================================================================
-
-cat("Eksporterer til PDF...\n")
-
-# Definer output sti
-pdf_fil <- "ventetid_rapport.pdf"
-
-# Eksporter med metadata (inkl. AI-genereret analyse)
+# Den simpleste måde: Lad bfh_export_pdf() generere analysen automatisk
 resultat |>
   bfh_export_pdf(
-    output = pdf_fil,
+    output = "ventetid_auto_analyse.pdf",
     metadata = list(
       hospital = "Bispebjerg og Frederiksberg Hospital",
       department = "Akutmodtagelsen",
-      analysis = ai_analyse,  # Brug AI-genereret analyse
-      data_definition = "Gennemsnitlig ventetid fra ankomst til første lægekontakt,
-                         målt ugentligt fra EPJ.",
+      data_definition = "Gennemsnitlig ventetid fra ankomst til første lægekontakt, målt ugentligt fra EPJ",
+      target = 45,  # Mål: max 45 minutter
+      author = "Kvalitetsafdelingen",
+      date = Sys.Date()
+    ),
+    auto_analysis = TRUE,  # ⭐ NY FUNKTION: Automatisk analyse-generering
+    use_ai = NULL  # NULL = auto-detect BFHllm (default)
+  )
+
+cat("✅ PDF eksporteret til: ventetid_auto_analyse.pdf\n")
+cat("   (Analyse genereret automatisk - AI hvis tilgængelig, ellers standardtekster)\n\n")
+
+# =============================================================================
+# DEMO 2: MANUEL ANALYSE-GENERERING (MERE KONTROL)
+# =============================================================================
+
+cat("=== DEMO 2: Manuel analyse-generering med bfh_generate_analysis() ===\n\n")
+
+# Generer analyse separat for at se output først
+cat("Genererer analyse...\n")
+
+analyse_tekst <- bfh_generate_analysis(
+  x = resultat,
+  metadata = list(
+    data_definition = "Gennemsnitlig ventetid fra ankomst til første lægekontakt, målt ugentligt fra EPJ",
+    target = 45
+  ),
+  use_ai = NULL,  # NULL = auto-detect, TRUE = force AI, FALSE = force standardtekster
+  max_chars = 350
+)
+
+cat("\nGenereret analyse:\n")
+cat(strrep("─", 70), "\n")
+cat(strwrap(analyse_tekst, width = 68, prefix = "│ "), sep = "\n")
+cat(strrep("─", 70), "\n\n")
+
+# Brug den genererede analyse i PDF
+cat("Eksporterer til PDF med manuel analyse...\n")
+
+resultat |>
+  bfh_export_pdf(
+    output = "ventetid_manuel_analyse.pdf",
+    metadata = list(
+      hospital = "Bispebjerg og Frederiksberg Hospital",
+      department = "Akutmodtagelsen",
+      analysis = analyse_tekst,  # Brug pre-genereret analyse
+      data_definition = "Gennemsnitlig ventetid fra ankomst til første lægekontakt, målt ugentligt fra EPJ",
       author = "Kvalitetsafdelingen",
       date = Sys.Date()
     )
+    # auto_analysis = FALSE er default når metadata$analysis er angivet
   )
 
-cat("\n✅ PDF eksporteret til:", normalizePath(pdf_fil), "\n")
+cat("✅ PDF eksporteret til: ventetid_manuel_analyse.pdf\n")
+cat("   (Analyse genereret manuelt og inkluderet i metadata)\n\n")
 
 # =============================================================================
-# BONUS: Eksporter også til PNG
+# DEMO 3: FORCE STANDARDTEKSTER (UDEN AI)
 # =============================================================================
+
+cat("=== DEMO 3: Tvungen brug af standardtekster (uden AI) ===\n\n")
+
+standardtekst_analyse <- bfh_generate_analysis(
+  x = resultat,
+  metadata = list(
+    data_definition = "Ventetid i minutter",
+    target = 45
+  ),
+  use_ai = FALSE,  # ⭐ Tving brug af danske standardtekster
+  max_chars = 350
+)
+
+cat("Standardtekst-analyse:\n")
+cat(strrep("─", 70), "\n")
+cat(strwrap(standardtekst_analyse, width = 68, prefix = "│ "), sep = "\n")
+cat(strrep("─", 70), "\n\n")
+
+resultat |>
+  bfh_export_pdf(
+    output = "ventetid_standardtekst.pdf",
+    metadata = list(
+      hospital = "Bispebjerg og Frederiksberg Hospital",
+      department = "Akutmodtagelsen",
+      data_definition = "Gennemsnitlig ventetid fra ankomst til første lægekontakt, målt ugentligt fra EPJ",
+      author = "Kvalitetsafdelingen"
+    ),
+    auto_analysis = TRUE,
+    use_ai = FALSE  # ⭐ Tving brug af standardtekster
+  )
+
+cat("✅ PDF eksporteret til: ventetid_standardtekst.pdf\n")
+cat("   (Analyse genereret med danske standardtekster - ingen AI)\n\n")
+
+# =============================================================================
+# BONUS: PNG EKSPORT (uændret fra før)
+# =============================================================================
+
+cat("=== BONUS: PNG eksport ===\n\n")
 
 png_fil <- "ventetid_chart.png"
 
@@ -170,42 +195,53 @@ resultat |>
     dpi = 300
   )
 
-cat("✅ PNG eksporteret til:", normalizePath(png_fil), "\n")
+cat("✅ PNG eksporteret til:", normalizePath(png_fil), "\n\n")
 
 # =============================================================================
-# VIS OPSUMMERING
+# SAMMENFATNING
 # =============================================================================
 
-cat("\n=== Eksport Fuldført ===\n")
+cat(strrep("═", 70), "\n")
+cat("DEMO FULDFØRT\n")
+cat(strrep("═", 70), "\n\n")
 
-if (use_ai) {
-  cat("\nAI-Analyse Input (BFHllm):\n")
-  cat("  - Titel:", ai_context$chart_title, "\n")
-  cat("  - Data definition:", ai_context$data_definition, "\n")
-  cat("  - Anhøj-regler metadata:\n")
-  if (!is.null(spc_metadata$summary)) {
-    anhoj <- spc_metadata$summary
-    cat("    · Centerline:", round(anhoj$centerlinje, 1), "minutter\n")
-    cat("    · Længste løb:", anhoj$længste_løb, "/", anhoj$længste_løb_max, "\n")
-    cat("    · Antal kryds:", anhoj$antal_kryds, "/", anhoj$antal_kryds_min, "\n")
-    cat("    · Løbelængde signal:", anhoj$løbelængde_signal, "\n")
-    cat("    · Sigma signal:", anhoj$sigma_signal, "\n")
-  }
-  cat("\nGenereret AI-analyse:\n")
-  cat(strwrap(ai_analyse, width = 70, prefix = "  "), sep = "\n")
-  cat("\n")
+cat("Nye funktioner i BFHcharts v0.6.0:\n\n")
+
+cat("1. bfh_generate_analysis()\n")
+cat("   - Genererer analyse-tekst automatisk\n")
+cat("   - Bruger AI (BFHllm) hvis tilgængelig\n")
+cat("   - Falder tilbage til danske standardtekster\n")
+cat("   - Parametre: use_ai, max_chars\n\n")
+
+cat("2. bfh_export_pdf() med auto_analysis\n")
+cat("   - auto_analysis = TRUE → genererer analyse automatisk\n")
+cat("   - use_ai = NULL → auto-detect BFHllm\n")
+cat("   - use_ai = FALSE → tving standardtekster\n")
+cat("   - Overskriver ALDRIG bruger-angivet metadata$analysis\n\n")
+
+cat("3. Graceful degradation\n")
+cat("   - Virker uden BFHllm (bruger standardtekster)\n")
+cat("   - Fanger AI-fejl og falder tilbage automatisk\n")
+cat("   - Ingen breaking changes - fuld bagudkompatibilitet\n\n")
+
+cat("Oprettede filer:\n")
+cat("  • ventetid_auto_analyse.pdf    (automatisk - AI eller standardtekst)\n")
+cat("  • ventetid_manuel_analyse.pdf  (pre-genereret analyse)\n")
+cat("  • ventetid_standardtekst.pdf   (tvungen standardtekst)\n")
+cat("  • ventetid_chart.png           (PNG billede)\n\n")
+
+if (ai_ready) {
+  cat("AI-status: ✓ BFHllm aktiveret\n")
+  cat("           Alle PDF'er bruger AI-genereret analyse\n")
+} else if (bfhllm_available) {
+  cat("AI-status: ⚠ BFHllm installeret, men API key mangler\n")
+  cat("           Alle PDF'er bruger danske standardtekster\n")
+} else {
+  cat("AI-status: ℹ BFHllm ikke installeret\n")
+  cat("           Alle PDF'er bruger danske standardtekster\n")
 }
 
-cat("\nRun chart data:\n")
+cat("\nRun chart summary:\n")
 print(resultat$summary)
 
-cat("\nFiler oprettet:\n")
-cat("  - PDF rapport:", pdf_fil, "\n")
-cat("  - PNG billede:", png_fil, "\n")
-
-if (use_ai) {
-  cat("\nBFHllm integration:\n")
-  cat("  ✓ AI-analyse inkluderet i PDF\n")
-  cat("  ✓ Baseret på Anhøj-regler og SPC knowledge base\n")
-  cat("  ✓ Max 350 tegn, dansk, handlingsorienteret\n")
-}
+cat("\n", strrep("═", 70), "\n")
