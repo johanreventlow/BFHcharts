@@ -527,24 +527,33 @@ bfh_create_typst_document <- function(chart_image,
   }
   chart_basename <- basename(chart_image)
   local_chart <- file.path(output_dir, chart_basename)
-  copy_success <- file.copy(chart_image, local_chart, overwrite = TRUE)
-  if (!copy_success) {
-    stop(
-      "Failed to copy chart image to output directory.",
-      call. = FALSE
-    )
-  }
 
-  # Security: Verify file copy integrity (size check)
-  src_size <- file.info(chart_image)$size
-  dest_size <- file.info(local_chart)$size
-  if (is.na(dest_size) || dest_size != src_size) {
-    unlink(local_chart)
-    stop(
-      "Chart image copy integrity check failed (size mismatch)",
-      call. = FALSE
-    )
+  # Normalize paths to compare (handles relative vs absolute, symlinks, etc.)
+  chart_image_norm <- normalizePath(chart_image, mustWork = TRUE)
+  local_chart_norm <- normalizePath(local_chart, mustWork = FALSE)
+
+  # Only copy if source and destination are different files
+  if (chart_image_norm != local_chart_norm) {
+    copy_success <- file.copy(chart_image, local_chart, overwrite = TRUE)
+    if (!copy_success) {
+      stop(
+        "Failed to copy chart image to output directory.",
+        call. = FALSE
+      )
+    }
+
+    # Security: Verify file copy integrity (size check)
+    src_size <- file.info(chart_image)$size
+    dest_size <- file.info(local_chart)$size
+    if (is.na(dest_size) || dest_size != src_size) {
+      unlink(local_chart)
+      stop(
+        "Chart image copy integrity check failed (size mismatch)",
+        call. = FALSE
+      )
+    }
   }
+  # If files are the same, local_chart is already correct - no copy needed
 
   # Build Typst document content with relative paths
   typst_content <- build_typst_content(
