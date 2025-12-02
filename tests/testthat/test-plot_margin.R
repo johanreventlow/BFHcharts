@@ -386,10 +386,12 @@ test_that("plot_margin with lines scales with base_size", {
     plot_margin = ggplot2::margin(0.5, 0.5, 0.5, 0.5, unit = "lines")
   )
 
-  expect_s3_class(plot_small, "ggplot")
-  expect_s3_class(plot_large, "ggplot")
+  expect_s3_class(plot_small, "bfh_qic_result")
+  expect_s3_class(plot_large, "bfh_qic_result")
+  expect_s3_class(plot_small$plot, "ggplot")
+  expect_s3_class(plot_large$plot, "ggplot")
 
   # Both should have margin objects
-  expect_s3_class(plot_small$theme$plot.margin, "ggplot2::margin")
-  expect_s3_class(plot_large$theme$plot.margin, "ggplot2::margin")
+  expect_s3_class(plot_small$plot$theme$plot.margin, "ggplot2::margin")
+  expect_s3_class(plot_large$plot$theme$plot.margin, "ggplot2::margin")
 })
