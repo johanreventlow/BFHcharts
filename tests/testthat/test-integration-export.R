@@ -128,7 +128,7 @@ test_that("PNG export works with different chart types", {
   chart_types <- list(
     list(type = "run", args = list()),
     list(type = "i", args = list()),
-    list(type = "p", args = list(n = "surgeries")),
+    list(type = "p", args = list(n = quote(surgeries))),
     list(type = "c", args = list())
   )
 
