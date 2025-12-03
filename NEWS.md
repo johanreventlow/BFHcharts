@@ -1,5 +1,13 @@
 # BFHcharts 0.6.0
 
+## Package Size Reduction
+
+* **Removed bundled Mari fonts (~2.7 MB):** Mari font files are copyrighted and cannot be redistributed. The Typst template now uses a font fallback chain: `Mari → Roboto → Arial → Helvetica → sans-serif`.
+  - **Internal users** (with Mari installed): Full hospital branding preserved - no visible changes
+  - **External users**: Readable fallback fonts used automatically
+  - **Package size** reduced by 66% (4.1 MB → 1.4 MB)
+  - **Legal compliance**: No copyright issues blocking CRAN/public release
+
 ## New Features
 
 * **AI-assisted SPC analysis generation:** Automatically generate analysis text for PDF exports with intelligent fallback to Danish standard texts:

@@ -41,6 +41,18 @@ install.packages("BFHcharts", repos = "https://johanreventlow.r-universe.dev")
 devtools::install_github("johanreventlow/BFHcharts")
 ```
 
+## Font Requirements
+
+BFHcharts PDF export uses the **Mari font** for hospital branding when available.
+
+### Internal Users (Region Hovedstaden)
+Mari font is installed automatically on hospital computers. **No action needed** - PDFs will display full hospital branding.
+
+### External Users
+The package uses font fallback: **Mari → Roboto → Arial → Helvetica → sans-serif**.
+
+PDFs will be fully functional and readable, but without Region Hovedstaden specific branding. This is by design - Mari font is copyrighted and cannot be redistributed with the package.
+
 ## Quick Start
 
 ```r

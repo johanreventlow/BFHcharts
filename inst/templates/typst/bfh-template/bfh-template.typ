@@ -60,7 +60,7 @@
   date : datetime.today(),
   doc
 ) = {
-  set text(font: "Mari", 
+  set text(font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
            lang: "da",
            //fill: rgb("fdfdfd")
          )
@@ -93,8 +93,8 @@
       //lorem(100),
       height: 100%,
       width: 100%,
-      text(rgb("ffffff"), 
-      font: "Mari",
+      text(rgb("ffffff"),
+      font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
       size: 55pt
     )[
   Medicinsikkert Hospital \
@@ -174,7 +174,7 @@
   outliers_actual: none,
   chart
 ) = {
-  set text(font: "Mari",
+  set text(font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
            lang: "da",
          )
 
@@ -240,13 +240,13 @@ show table.cell: it => {
             par(
               leading: 0.65em,
               [#text(
-                rgb("fff"), 
-                font: "Arial",
+                rgb("fff"),
+                font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
                 size: 13pt,
-                //weight: "bold", 
+                //weight: "bold",
                 hospital ) \
                 #text(
-                  font: "Arial",
+                  font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
                   //weight: "bold",
                   size: 13pt,
                   rgb("fff"),
