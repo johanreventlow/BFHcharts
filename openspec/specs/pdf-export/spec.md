@@ -1,13 +1,9 @@
 # Specification: pdf-export
 
-## Overview
+## Purpose
 
-This specification defines font handling for PDF export in BFHcharts.
-
----
-
-## MODIFIED Requirements
-
+This specification defines font handling for PDF export in BFHcharts, ensuring legal compliance by not bundling copyrighted fonts while maintaining functionality for both internal users (with Mari font) and external users (without Mari font).
+## Requirements
 ### Requirement: Typst template SHALL use font fallback chain
 
 The Typst template SHALL use a font fallback chain to support both internal users (with Mari font) and external users (without Mari).
@@ -71,28 +67,3 @@ length(font_files) == 0  # TRUE - no font files
 
 ---
 
-## Non-Functional Requirements
-
-### Requirement: Backward compatibility SHALL be maintained
-
-Existing code using `bfh_export_pdf()` SHALL continue to work without modification.
-
-#### Scenario: Existing PDF export code works unchanged
-
-**Given** existing code that calls `bfh_export_pdf()`
-**When** the code is run after the font removal
-**Then** the PDF SHALL be generated successfully
-**And** no API changes SHALL be required
-
-```r
-# Existing code - should work unchanged
-result <- bfh_qic(data, x = month, y = infections, chart_type = "i")
-bfh_export_pdf(result, "report.pdf",
-  metadata = list(
-    hospital = "BFH",
-    department = "Quality",
-    analysis = "Process stable"
-  )
-)
-expect_true(file.exists("report.pdf"))
-```
