@@ -209,6 +209,8 @@ test_that("create_plot_footer output is suitable for plot caption", {
 })
 
 test_that("apply_spc_theme can be used in bfh_qic workflow", {
+  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+
   # Integration test: verify theme application works in real workflow
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),

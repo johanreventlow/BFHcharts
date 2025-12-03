@@ -326,6 +326,8 @@ test_that("Chart type utilities handle edge cases consistently", {
 })
 
 test_that("Chart type utilities work in bfh_qic", {
+  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+
   # Integration test: verify chart type utilities work in real workflow
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),

@@ -1,3 +1,6 @@
+# Skip on CI - requires BFHtheme fonts not available on CI
+skip_on_ci()
+
 test_that("notes parameter creates plot without errors", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),

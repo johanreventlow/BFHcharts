@@ -1,4 +1,6 @@
 # Test plot_margin parameter functionality
+# Skip entire file on CI - requires BFHtheme fonts not available on CI
+skip_on_ci()
 
 # Setup test data
 setup_test_data <- function() {
