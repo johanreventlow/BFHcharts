@@ -8,7 +8,7 @@ bfh_export_pdf(
   x,
   output,
   metadata = list(),
-  template = "bfh-diagram2",
+  template = "bfh-diagram",
   template_path = NULL,
   auto_analysis = FALSE,
   use_ai = NULL
@@ -24,14 +24,18 @@ bfh_export_pdf(
 \item \code{hospital}: Hospital name (default: "Bispebjerg og Frederiksberg Hospital")
 \item \code{department}: Department/unit name (optional)
 \item \code{analysis}: Analysis text with findings (optional)
-\item \code{details}: Period info, averages (optional)
+\item \code{details}: Period info, averages (auto-generated if not provided).
+Auto-generated format: "Periode: feb. 2019 – mar. 2022 • Gns. måned: 58938/97266 •
+Seneste måned: 60756/88509 • Nuværende niveau: 64,5\\%"
 \item \code{author}: Author name (optional)
 \item \code{date}: Report date (default: Sys.Date())
 \item \code{data_definition}: Data definition text (optional)
 \item \code{target}: Target value for analysis context (numeric or character, optional)
+\item \code{footer_content}: Additional content to display below the chart (optional).
+Supports markdown formatting (bold, italic, line breaks).
 }}
 
-\item{template}{Character string specifying template name (default: "bfh-diagram2")}
+\item{template}{Character string specifying template name (default: "bfh-diagram")}
 
 \item{template_path}{Optional path to a custom Typst template file. When provided,
 this overrides the packaged template. The template must exist and be a valid
@@ -80,11 +84,27 @@ Typst templates for hospital branding. Requires Quarto CLI for compilation.
 \item This differs from PNG export where title is in the image
 }
 
+\strong{Plot Optimization for PDF:}
+\itemize{
+\item Plot margins are set to 0mm for optimal fit in Typst template
+\item Blank axis titles (NULL or empty) are removed with element_blank()
+\item User-defined axis titles are preserved
+}
+
 \strong{SPC Statistics:}
 \itemize{
 \item Automatically extracted from bfh_qic_result$summary
 \item Displayed in SPC table on PDF
 \item Includes: runs (serielængde), crossings (antal kryds), outliers
+}
+
+\strong{Auto-Generated Details:}
+\itemize{
+\item If \code{metadata$details} is not provided, details are auto-generated
+\item Format: "Periode: start - slut . Gns. interval: values . Seneste interval: values . Nuvaerende niveau: cl"
+\item p/u-charts show numerator/denominator (e.g., "58938/97266")
+\item Other chart types show only values (e.g., "127")
+\item Interval labels adapt to data frequency (month, week, day, etc.)
 }
 }
 \examples{

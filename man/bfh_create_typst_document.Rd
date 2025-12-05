@@ -9,7 +9,7 @@ bfh_create_typst_document(
   output,
   metadata,
   spc_stats,
-  template = "bfh-diagram2",
+  template = "bfh-diagram",
   template_path = NULL
 )
 }
@@ -22,7 +22,7 @@ bfh_create_typst_document(
 
 \item{spc_stats}{List with SPC statistics (runs, crossings, outliers)}
 
-\item{template}{Template name (default: "bfh-diagram2")}
+\item{template}{Template name (default: "bfh-diagram")}
 
 \item{template_path}{Optional custom template path. When provided, overrides
 the packaged template (default: NULL uses packaged template)}

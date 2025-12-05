@@ -622,7 +622,7 @@ test_that("build_typst_content includes date parameter", {
     chart_image = chart_image,
     metadata = metadata,
     spc_stats = spc_stats,
-    template = "bfh-diagram2",
+    template = "bfh-diagram",
     template_file = template_file
   )
 
@@ -647,7 +647,7 @@ test_that("build_typst_content escapes file paths", {
     chart_image = chart_image,
     metadata = metadata,
     spc_stats = spc_stats,
-    template = "bfh-diagram2",
+    template = "bfh-diagram",
     template_file = template_file
   )
 
@@ -739,7 +739,7 @@ test_that("bfh_create_typst_document works with chart from different directory",
     output = output_path,
     metadata = list(title = "Test Chart", hospital = "Test Hospital"),
     spc_stats = list(),
-    template = "bfh-diagram2"
+    template = "bfh-diagram"
   )
 
   # Verify document was created
@@ -838,7 +838,7 @@ test_that("generated Typst contains metadata and chart reference", {
       date = as.Date("2025-03-15")
     ),
     spc_stats = list(runs_expected = 7, runs_actual = 5),
-    template = "bfh-diagram2"
+    template = "bfh-diagram"
   )
 
   content <- paste(readLines(output_path), collapse = "\n")
@@ -1040,4 +1040,648 @@ test_that("build_typst_content uses content blocks for title and analysis", {
 
   # Cleanup
   unlink(temp_template)
+})
+
+# ============================================================================
+# TESTS FOR prepare_plot_for_export() - Issue #71, #72
+# ============================================================================
+
+test_that("prepare_plot_for_export sets plot margins correctly", {
+  # Create a simple ggplot
+  plot <- ggplot2::ggplot(data.frame(x = 1:10, y = 1:10)) +
+    ggplot2::geom_point(ggplot2::aes(x = x, y = y))
+
+  # Test PDF margins (0mm)
+  pdf_plot <- BFHcharts:::prepare_plot_for_export(plot, margin_mm = 0)
+  expect_s3_class(pdf_plot, "ggplot")
+
+  # Test custom margins (5mm)
+  custom_plot <- BFHcharts:::prepare_plot_for_export(plot, margin_mm = 5)
+  expect_s3_class(custom_plot, "ggplot")
+})
+
+test_that("prepare_plot_for_export validates inputs", {
+  plot <- ggplot2::ggplot(data.frame(x = 1:10, y = 1:10)) +
+    ggplot2::geom_point(ggplot2::aes(x = x, y = y))
+
+  # Invalid plot type
+  expect_error(
+    BFHcharts:::prepare_plot_for_export("not a plot", margin_mm = 0),
+    "plot must be a ggplot2 object"
+  )
+
+  # Invalid margin_mm (negative)
+  expect_error(
+    BFHcharts:::prepare_plot_for_export(plot, margin_mm = -5),
+    "margin_mm must be a non-negative number"
+  )
+
+  # Invalid margin_mm (non-numeric)
+  expect_error(
+    BFHcharts:::prepare_plot_for_export(plot, margin_mm = "5"),
+    "margin_mm must be a non-negative number"
+  )
+})
+
+# ============================================================================
+# TESTS FOR apply_spc_theme() axis title removal - Issue #72
+# ============================================================================
+
+test_that("apply_spc_theme removes blank axis titles", {
+  # Create plot with no axis labels
+  plot_no_labels <- ggplot2::ggplot(data.frame(x = 1:10, y = 1:10)) +
+    ggplot2::geom_point(ggplot2::aes(x = x, y = y)) +
+    ggplot2::labs(x = NULL, y = NULL)
+
+  result <- BFHcharts:::apply_spc_theme(plot_no_labels, base_size = 14)
+
+  # Check that axis titles are set to element_blank in theme
+  built <- ggplot2::ggplot_build(result)
+  theme_elements <- built$plot$theme
+
+  expect_true(inherits(theme_elements$axis.title.x.bottom, "element_blank"))
+  expect_true(inherits(theme_elements$axis.title.y.left, "element_blank"))
+})
+
+test_that("apply_spc_theme preserves user-defined axis titles", {
+  # Create plot with custom axis labels
+  plot_with_labels <- ggplot2::ggplot(data.frame(x = 1:10, y = 1:10)) +
+    ggplot2::geom_point(ggplot2::aes(x = x, y = y)) +
+    ggplot2::labs(x = "Custom X Label", y = "Custom Y Label")
+
+  result <- BFHcharts:::apply_spc_theme(plot_with_labels, base_size = 14)
+
+  # Check that labels are preserved
+  expect_equal(result$labels$x, "Custom X Label")
+  expect_equal(result$labels$y, "Custom Y Label")
+
+  # Build plot to check theme - axis titles should NOT be element_blank
+  built <- ggplot2::ggplot_build(result)
+  theme_elements <- built$plot$theme
+
+  # If axis titles were preserved, they should not be element_blank
+  if (!is.null(theme_elements$axis.title.x.bottom)) {
+    expect_false(inherits(theme_elements$axis.title.x.bottom, "element_blank"))
+  }
+  if (!is.null(theme_elements$axis.title.y.left)) {
+    expect_false(inherits(theme_elements$axis.title.y.left, "element_blank"))
+  }
+})
+
+test_that("apply_spc_theme handles partial axis labels", {
+  # Only X-axis has label
+  plot_x_only <- ggplot2::ggplot(data.frame(x = 1:10, y = 1:10)) +
+    ggplot2::geom_point(ggplot2::aes(x = x, y = y)) +
+    ggplot2::labs(x = "Month", y = NULL)
+
+  result <- BFHcharts:::apply_spc_theme(plot_x_only, base_size = 14)
+
+  # X label should be preserved
+  expect_equal(result$labels$x, "Month")
+
+  # Y should be NULL
+  expect_null(result$labels$y)
+
+  # Check theme - Y-axis title should be element_blank
+  built <- ggplot2::ggplot_build(result)
+  theme_elements <- built$plot$theme
+
+  expect_true(inherits(theme_elements$axis.title.y.left, "element_blank"))
+})
+
+test_that("apply_spc_theme handles empty string axis titles", {
+  # Create plot with empty string labels (should be treated as blank)
+  plot_empty <- ggplot2::ggplot(data.frame(x = 1:10, y = 1:10)) +
+    ggplot2::geom_point(ggplot2::aes(x = x, y = y)) +
+    ggplot2::labs(x = "", y = "  ")  # Empty and whitespace-only
+
+  result <- BFHcharts:::apply_spc_theme(plot_empty, base_size = 14)
+
+  # Build to check theme
+  built <- ggplot2::ggplot_build(result)
+  theme_elements <- built$plot$theme
+
+  # Both should be element_blank (empty strings treated as blank)
+  expect_true(inherits(theme_elements$axis.title.x.bottom, "element_blank"))
+  expect_true(inherits(theme_elements$axis.title.y.left, "element_blank"))
+})
+
+test_that("apply_spc_theme sets default 5mm margins", {
+  # Create simple plot
+  plot <- ggplot2::ggplot(data.frame(x = 1:10, y = 1:10)) +
+    ggplot2::geom_point(ggplot2::aes(x = x, y = y))
+
+  result <- BFHcharts:::apply_spc_theme(plot, base_size = 14)
+
+  # Check that plot has margins applied
+  built <- ggplot2::ggplot_build(result)
+  theme_elements <- built$plot$theme
+
+  # Margin should be set (not NULL)
+  expect_false(is.null(theme_elements$plot.margin))
+})
+
+test_that("apply_spc_theme respects custom plot_margin override", {
+  # Create simple plot
+  plot <- ggplot2::ggplot(data.frame(x = 1:10, y = 1:10)) +
+    ggplot2::geom_point(ggplot2::aes(x = x, y = y))
+
+  # Test with numeric vector
+  result <- BFHcharts:::apply_spc_theme(plot, base_size = 14, plot_margin = c(10, 10, 10, 10))
+  expect_s3_class(result, "ggplot")
+
+  # Test with margin object
+  result2 <- BFHcharts:::apply_spc_theme(plot, base_size = 14,
+                                          plot_margin = ggplot2::margin(0, 0, 0, 0, "mm"))
+  expect_s3_class(result2, "ggplot")
+})
+
+# ============================================================================
+# TESTS FOR bfh_generate_details() - Issue #73
+# ============================================================================
+
+test_that("bfh_generate_details generates correct format for p-chart", {
+  data <- data.frame(
+    month = seq(as.Date("2019-02-01"), by = "month", length.out = 12),
+    numerator = c(50, 55, 48, 52, 60, 58, 45, 62, 55, 50, 53, 57),
+    denominator = c(100, 110, 95, 105, 120, 115, 90, 130, 110, 100, 105, 115)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, numerator, n = denominator, chart_type = "p", y_axis_unit = "percent")
+  )
+
+  details <- BFHcharts:::bfh_generate_details(result)
+
+  # Should contain all parts
+  expect_match(details, "Periode:")
+  expect_match(details, "feb\\. 2019")  # Start date (Danish format)
+  expect_match(details, "jan\\. 2020")  # End date (Danish format)
+  expect_match(details, "Gns\\. måned:")
+  expect_match(details, "Seneste måned:")
+  expect_match(details, "Nuværende niveau:")
+
+  # Should contain numerator/denominator format (/)
+  expect_match(details, "/")
+
+  # Should use bullet separator
+  expect_match(details, "\u2022")  # bullet character
+})
+
+test_that("bfh_generate_details generates correct format for i-chart", {
+  data <- data.frame(
+    week = seq(as.Date("2024-01-01"), by = "week", length.out = 12),
+    value = c(120, 125, 118, 130, 122, 128, 115, 135, 126, 120, 127, 132)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, week, value, chart_type = "i")
+  )
+
+  details <- BFHcharts:::bfh_generate_details(result)
+
+  # Should contain all parts
+  expect_match(details, "Periode:")
+  expect_match(details, "Gns\\. uge:")  # Weekly interval
+  expect_match(details, "Seneste uge:")
+  expect_match(details, "Nuværende niveau:")
+
+  # Should NOT contain denominator format for i-chart
+  # The "/" should only appear in date-range part if at all
+  parts <- strsplit(details, "\u2022")[[1]]
+  gns_part <- parts[grepl("Gns\\.", parts)]
+  expect_false(grepl("/", gns_part))
+})
+
+test_that("bfh_generate_details handles different intervals", {
+  # Monthly data
+  monthly_data <- data.frame(
+    date = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+  monthly_result <- suppressWarnings(
+    bfh_qic(monthly_data, date, value, chart_type = "i")
+  )
+  monthly_details <- BFHcharts:::bfh_generate_details(monthly_result)
+  expect_match(monthly_details, "måned")
+
+  # Daily data
+  daily_data <- data.frame(
+    date = seq(as.Date("2024-01-01"), by = "day", length.out = 30),
+    value = rpois(30, lambda = 50)
+  )
+  daily_result <- suppressWarnings(
+    bfh_qic(daily_data, date, value, chart_type = "i")
+  )
+  daily_details <- BFHcharts:::bfh_generate_details(daily_result)
+  expect_match(daily_details, "dag")
+})
+
+test_that("bfh_generate_details validates input", {
+  # Should error for non-bfh_qic_result
+  expect_error(
+    BFHcharts:::bfh_generate_details("not a result"),
+    "must be a bfh_qic_result object"
+  )
+
+  expect_error(
+    BFHcharts:::bfh_generate_details(data.frame(x = 1:10)),
+    "must be a bfh_qic_result object"
+  )
+})
+
+test_that("format_danish_date_short formats dates correctly", {
+  # Test various months
+  expect_equal(BFHcharts:::format_danish_date_short(as.Date("2019-02-15")), "feb. 2019")
+  expect_equal(BFHcharts:::format_danish_date_short(as.Date("2024-10-01")), "okt. 2024")
+  expect_equal(BFHcharts:::format_danish_date_short(as.Date("2023-05-20")), "maj 2023")
+  expect_equal(BFHcharts:::format_danish_date_short(as.Date("2022-12-31")), "dec. 2022")
+
+  # Test edge cases
+  expect_true(is.na(BFHcharts:::format_danish_date_short(NULL)))
+  expect_true(is.na(BFHcharts:::format_danish_date_short(NA)))
+})
+
+test_that("get_danish_interval_label returns correct labels", {
+  expect_equal(BFHcharts:::get_danish_interval_label("daily"), "dag")
+  expect_equal(BFHcharts:::get_danish_interval_label("weekly"), "uge")
+  expect_equal(BFHcharts:::get_danish_interval_label("monthly"), "måned")
+  expect_equal(BFHcharts:::get_danish_interval_label("quarterly"), "kvartal")
+  expect_equal(BFHcharts:::get_danish_interval_label("yearly"), "år")
+  expect_equal(BFHcharts:::get_danish_interval_label("irregular"), "periode")
+  expect_equal(BFHcharts:::get_danish_interval_label("unknown"), "periode")
+})
+
+test_that("format_centerline_for_details handles different y_axis_units", {
+  # Percent (value <= 1 should be multiplied by 100)
+  expect_match(BFHcharts:::format_centerline_for_details(0.645, "percent"), "64,5%")
+
+  # Count (integer value)
+  expect_match(BFHcharts:::format_centerline_for_details(127, "count"), "127")
+
+  # Rate (1 decimal)
+  expect_match(BFHcharts:::format_centerline_for_details(5.5, "rate"), "5,5")
+
+  # NA value
+  expect_equal(BFHcharts:::format_centerline_for_details(NA, "count"), "Nuværende niveau: -")
+  expect_equal(BFHcharts:::format_centerline_for_details(NULL, "count"), "Nuværende niveau: -")
+})
+
+test_that("bfh_export_pdf auto-generates details when not provided", {
+  skip_if_not(quarto_available(), "Quarto not available")
+  skip_on_cran()
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
+  )
+
+  temp_file <- tempfile(fileext = ".pdf")
+
+  # Export without providing details
+  bfh_export_pdf(result, temp_file)
+
+  # PDF should be created
+  expect_true(file.exists(temp_file))
+
+  # Cleanup
+  unlink(temp_file)
+})
+
+test_that("bfh_export_pdf preserves user-provided details", {
+  skip_if_not(quarto_available(), "Quarto not available")
+  skip_on_cran()
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
+  )
+
+  temp_file <- tempfile(fileext = ".pdf")
+
+  # Export with custom details - should use the custom one, not auto-generate
+  bfh_export_pdf(
+    result,
+    temp_file,
+    metadata = list(details = "Custom details text")
+  )
+
+  # PDF should be created (verifying the override works)
+  expect_true(file.exists(temp_file))
+
+  # Cleanup
+  unlink(temp_file)
+})
+
+# ============================================================================
+# TESTS FOR extract_spc_stats_extended() - Issue #74
+# ============================================================================
+
+test_that("extract_spc_stats_extended calculates outliers for i-chart", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+    value = c(50, 52, 48, 100, 51, 49, 53, 47, 52, 50, 48, 51,
+              49, 52, 48, 10, 51, 50, 52, 48, 51, 49, 50, 52)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i")
+  )
+
+  stats <- BFHcharts:::extract_spc_stats_extended(result)
+
+  # Should have outliers data
+  expect_equal(stats$outliers_expected, 0)
+  expect_equal(stats$outliers_actual, 2)  # 100 and 10 are outliers
+  expect_false(stats$is_run_chart)
+})
+
+test_that("extract_spc_stats_extended handles run chart correctly", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "run")
+  )
+
+  stats <- BFHcharts:::extract_spc_stats_extended(result)
+
+  # Should NOT have outliers data for run chart
+  expect_null(stats$outliers_expected)
+  expect_null(stats$outliers_actual)
+  expect_true(stats$is_run_chart)
+
+  # Should still have runs and crossings
+  expect_false(is.null(stats$runs_expected))
+  expect_false(is.null(stats$runs_actual))
+  expect_false(is.null(stats$crossings_expected))
+  expect_false(is.null(stats$crossings_actual))
+})
+
+test_that("extract_spc_stats_extended includes runs and crossings", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i")
+  )
+
+  stats <- BFHcharts:::extract_spc_stats_extended(result)
+
+  # Should have all expected fields
+  expect_true("runs_expected" %in% names(stats))
+  expect_true("runs_actual" %in% names(stats))
+  expect_true("crossings_expected" %in% names(stats))
+  expect_true("crossings_actual" %in% names(stats))
+  expect_true("outliers_expected" %in% names(stats))
+  expect_true("outliers_actual" %in% names(stats))
+  expect_true("is_run_chart" %in% names(stats))
+})
+
+test_that("build_typst_content includes is_run_chart parameter", {
+  # Create minimal test setup
+  test_metadata <- list(
+    hospital = "Test Hospital",
+    title = "Test Title"
+  )
+
+  test_spc_stats <- list(
+    runs_expected = 8,
+    runs_actual = 6,
+    crossings_expected = 5,
+    crossings_actual = 7,
+    outliers_expected = 0,
+    outliers_actual = 2,
+    is_run_chart = FALSE
+  )
+
+  # Create temp files
+  temp_template <- tempfile(fileext = ".typ")
+  file.create(temp_template)
+
+  content <- BFHcharts:::build_typst_content(
+    chart_image = "chart.png",
+    metadata = test_metadata,
+    spc_stats = test_spc_stats,
+    template_file = temp_template,
+    template = "test-template"
+  )
+
+  content_str <- paste(content, collapse = "\n")
+
+  # Should include is_run_chart parameter
+  expect_match(content_str, "is_run_chart: false")
+
+  # Should include outliers
+  expect_match(content_str, "outliers_expected: 0")
+  expect_match(content_str, "outliers_actual: 2")
+
+  # Cleanup
+  unlink(temp_template)
+})
+
+test_that("build_typst_content handles run chart is_run_chart=true", {
+  test_metadata <- list(
+    hospital = "Test Hospital",
+    title = "Test Title"
+  )
+
+  test_spc_stats <- list(
+    runs_expected = 7,
+    runs_actual = 5,
+    is_run_chart = TRUE
+    # No outliers for run chart
+  )
+
+  temp_template <- tempfile(fileext = ".typ")
+  file.create(temp_template)
+
+  content <- BFHcharts:::build_typst_content(
+    chart_image = "chart.png",
+    metadata = test_metadata,
+    spc_stats = test_spc_stats,
+    template_file = temp_template,
+    template = "test-template"
+  )
+
+  content_str <- paste(content, collapse = "\n")
+
+  # Should include is_run_chart: true
+  expect_match(content_str, "is_run_chart: true")
+
+  # Should NOT include outliers parameters (they're NULL)
+  expect_false(grepl("outliers_expected", content_str))
+  expect_false(grepl("outliers_actual", content_str))
+
+  # Cleanup
+  unlink(temp_template)
+})
+
+
+# ============================================================================
+# TESTS FOR LABEL RECALCULATION FOR PDF EXPORT
+# ============================================================================
+
+test_that("strip_label_layers removes GeomMarquee layers", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i")
+  )
+
+  # Count layers before stripping
+  layers_before <- length(result$plot$layers)
+
+  # Strip label layers
+  plot_stripped <- BFHcharts:::strip_label_layers(result$plot)
+
+  # Should have fewer layers
+  layers_after <- length(plot_stripped$layers)
+  expect_lt(layers_after, layers_before)
+
+  # Verify no Marquee layers remain
+  has_marquee <- any(vapply(plot_stripped$layers, function(layer) {
+    grepl("Marquee", class(layer$geom)[1], ignore.case = TRUE)
+  }, logical(1)))
+  expect_false(has_marquee)
+})
+
+test_that("strip_label_layers preserves non-label layers", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i")
+  )
+
+  # Strip label layers
+  plot_stripped <- BFHcharts:::strip_label_layers(result$plot)
+
+  # Should still have line and point layers
+  layer_classes <- vapply(plot_stripped$layers, function(layer) {
+    class(layer$geom)[1]
+  }, character(1))
+
+  expect_true(any(grepl("Line|Path", layer_classes)))
+  expect_true(any(grepl("Point", layer_classes)))
+})
+
+test_that("strip_label_layers handles plot without labels", {
+  # Create a basic ggplot without marquee labels
+  basic_plot <- ggplot2::ggplot(mtcars, ggplot2::aes(x = mpg, y = hp)) +
+    ggplot2::geom_point()
+
+  layers_before <- length(basic_plot$layers)
+  plot_stripped <- BFHcharts:::strip_label_layers(basic_plot)
+  layers_after <- length(plot_stripped$layers)
+
+  # Should have same number of layers (none removed)
+  expect_equal(layers_before, layers_after)
+})
+
+test_that("strip_label_layers handles non-ggplot input", {
+  # Should return input unchanged for non-ggplot
+  result <- BFHcharts:::strip_label_layers("not a plot")
+  expect_equal(result, "not a plot")
+
+  result2 <- BFHcharts:::strip_label_layers(NULL)
+  expect_null(result2)
+})
+
+test_that("recalculate_labels_for_export produces valid ggplot", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i")
+  )
+
+  # Recalculate labels for PDF dimensions
+  plot_recalc <- BFHcharts:::recalculate_labels_for_export(
+    result,
+    target_width_mm = 202,
+    target_height_mm = 140
+  )
+
+  # Should return a valid ggplot
+
+  expect_s3_class(plot_recalc, "ggplot")
+
+  # Should have layers (including re-added labels)
+  expect_gt(length(plot_recalc$layers), 0)
+})
+
+test_that("recalculate_labels_for_export validates input class", {
+  # Should error for non-bfh_qic_result
+  expect_error(
+    BFHcharts:::recalculate_labels_for_export(
+      list(plot = ggplot2::ggplot()),
+      target_width_mm = 202,
+      target_height_mm = 140
+    ),
+    "must be a bfh_qic_result object"
+  )
+})
+
+test_that("PDF dimension constants are defined", {
+  # Verify constants exist and have reasonable values
+  expect_true(exists("PDF_CHART_WIDTH_MM", envir = asNamespace("BFHcharts")))
+  expect_true(exists("PDF_CHART_HEIGHT_MM", envir = asNamespace("BFHcharts")))
+  expect_true(exists("PDF_LABEL_SIZE", envir = asNamespace("BFHcharts")))
+
+  width <- get("PDF_CHART_WIDTH_MM", envir = asNamespace("BFHcharts"))
+  height <- get("PDF_CHART_HEIGHT_MM", envir = asNamespace("BFHcharts"))
+  label_size <- get("PDF_LABEL_SIZE", envir = asNamespace("BFHcharts"))
+
+  # Should be reasonable dimensions in mm
+  expect_gt(width, 100)
+  expect_lt(width, 300)
+  expect_gt(height, 50)
+  expect_lt(height, 250)
+
+  # PDF_LABEL_SIZE should be 6 (calibrated for PDF template dimensions)
+  expect_equal(label_size, 6)
+})
+
+test_that("label_config is stored in bfh_qic_result config", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i", freeze = 6)
+  )
+
+  # Should have label_config in config
+  expect_true("label_config" %in% names(result$config))
+
+  label_config <- result$config$label_config
+
+  # Should contain expected fields
+  expect_true("centerline_value" %in% names(label_config))
+  expect_true("has_frys_column" %in% names(label_config))
+  expect_true("has_skift_column" %in% names(label_config))
+
+  # has_frys_column should be TRUE since we passed freeze = 6
+  expect_true(label_config$has_frys_column)
 })

@@ -141,7 +141,7 @@ bfh_export_pdf(
     author = NULL,
     date = Sys.Date()
   ),
-  template = "bfh-diagram2"  # Template name
+  template = "bfh-diagram"  # Template name
 )
 ```
 

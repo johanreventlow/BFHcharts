@@ -10,13 +10,17 @@
 #'     \item \code{hospital}: Hospital name (default: "Bispebjerg og Frederiksberg Hospital")
 #'     \item \code{department}: Department/unit name (optional)
 #'     \item \code{analysis}: Analysis text with findings (optional)
-#'     \item \code{details}: Period info, averages (optional)
+#'     \item \code{details}: Period info, averages (auto-generated if not provided).
+#'       Auto-generated format: "Periode: feb. 2019 – mar. 2022 • Gns. måned: 58938/97266 •
+#'       Seneste måned: 60756/88509 • Nuværende niveau: 64,5\%"
 #'     \item \code{author}: Author name (optional)
 #'     \item \code{date}: Report date (default: Sys.Date())
 #'     \item \code{data_definition}: Data definition text (optional)
 #'     \item \code{target}: Target value for analysis context (numeric or character, optional)
+#'     \item \code{footer_content}: Additional content to display below the chart (optional).
+#'       Supports markdown formatting (bold, italic, line breaks).
 #'   }
-#' @param template Character string specifying template name (default: "bfh-diagram2")
+#' @param template Character string specifying template name (default: "bfh-diagram")
 #' @param template_path Optional path to a custom Typst template file. When provided,
 #'   this overrides the packaged template. The template must exist and be a valid
 #'   Typst file (.typ). Default is NULL (uses packaged BFH template).
@@ -51,10 +55,22 @@
 #' - Title appears in PDF header, NOT in chart image
 #' - This differs from PNG export where title is in the image
 #'
+#' **Plot Optimization for PDF:**
+#' - Plot margins are set to 0mm for optimal fit in Typst template
+#' - Blank axis titles (NULL or empty) are removed with element_blank()
+#' - User-defined axis titles are preserved
+#'
 #' **SPC Statistics:**
 #' - Automatically extracted from bfh_qic_result$summary
 #' - Displayed in SPC table on PDF
 #' - Includes: runs (serielængde), crossings (antal kryds), outliers
+#'
+#' **Auto-Generated Details:**
+#' - If \code{metadata$details} is not provided, details are auto-generated
+#' - Format: "Periode: start - slut . Gns. interval: values . Seneste interval: values . Nuvaerende niveau: cl"
+#' - p/u-charts show numerator/denominator (e.g., "58938/97266")
+#' - Other chart types show only values (e.g., "127")
+#' - Interval labels adapt to data frequency (month, week, day, etc.)
 #'
 #' @export
 #' @seealso
@@ -104,7 +120,7 @@
 bfh_export_pdf <- function(x,
                            output,
                            metadata = list(),
-                           template = "bfh-diagram2",
+                           template = "bfh-diagram",
                            template_path = NULL,
                            auto_analysis = FALSE,
                            use_ai = NULL) {
@@ -151,7 +167,7 @@ bfh_export_pdf <- function(x,
   # METADATA VALIDATION - Type checking and length limits
   # ============================================================================
   known_fields <- c("hospital", "department", "analysis", "details", "author",
-                    "date", "data_definition", "target")
+                    "date", "data_definition", "target", "footer_content")
 
   # Warn about unknown metadata fields (may indicate typos or misuse)
   unknown_fields <- setdiff(names(metadata), known_fields)
@@ -207,6 +223,13 @@ bfh_export_pdf <- function(x,
       metadata = metadata,
       use_ai = use_ai
     )
+  }
+
+  # ============================================================================
+  # AUTO-DETAILS - Generate details text if not provided
+  # ============================================================================
+  if (is.null(metadata$details)) {
+    metadata$details <- bfh_generate_details(x)
   }
 
   # ============================================================================
@@ -327,14 +350,34 @@ bfh_export_pdf <- function(x,
   # Create plot without title for PDF (title goes in Typst template)
   plot_no_title <- x$plot + ggplot2::labs(title = NULL, subtitle = NULL)
 
+  # Update the bfh_qic_result object with the title-stripped plot
+  # This is needed for recalculate_labels_for_export()
+  x_for_export <- x
+  x_for_export$plot <- plot_no_title
+
+  # Recalculate label positions for PDF export
+  # - target dimensions (PDF_CHART): used for label POSITIONING (visible chart area)
+  # - font sizing uses fixed PDF_LABEL_SIZE constant (calibrated for 250x140mm)
+  plot_for_export <- recalculate_labels_for_export(
+    x = x_for_export,
+    target_width_mm = PDF_CHART_WIDTH_MM,
+    target_height_mm = PDF_CHART_HEIGHT_MM
+  )
+
+  # Apply PDF-specific theme adjustments (zero margins)
+  plot_for_export <- prepare_plot_for_export(plot_for_export, margin_mm = 0)
+
   # Export chart to temporary PNG
+  # Note: ggsave uses PDF_IMAGE dimensions (250x140mm) for the actual image size
+  # while labels were calculated for PDF_CHART dimensions (202x140mm) which
+  # represents the visible area in the Typst template
   chart_png <- file.path(temp_dir, "chart.png")
   tryCatch(
     ggplot2::ggsave(
       filename = chart_png,
-      plot = plot_no_title,
-      width = 250 / 25.4,  # 250mm in inches
-      height = 140 / 25.4, # 140mm in inches
+      plot = plot_for_export,
+      width = PDF_IMAGE_WIDTH_MM / 25.4,  # 250mm - original working size
+      height = PDF_IMAGE_HEIGHT_MM / 25.4, # 140mm
       dpi = 150,  # Reduced from 300 for 4x faster generation & 75% smaller files
       units = "in",
       device = "png"
@@ -348,8 +391,8 @@ bfh_export_pdf <- function(x,
     }
   )
 
-  # Extract SPC statistics from summary
-  spc_stats <- extract_spc_stats(x$summary)
+  # Extract SPC statistics (including outliers and run chart detection)
+  spc_stats <- extract_spc_stats_extended(x)
 
   # Merge user metadata with defaults
   metadata_full <- merge_metadata(metadata, chart_title)
@@ -467,7 +510,7 @@ check_quarto_version <- function(version_string, min_version) {
 #' @param output Path for output .typ file
 #' @param metadata List with template parameters (hospital, department, title, etc.)
 #' @param spc_stats List with SPC statistics (runs, crossings, outliers)
-#' @param template Template name (default: "bfh-diagram2")
+#' @param template Template name (default: "bfh-diagram")
 #' @param template_path Optional custom template path. When provided, overrides
 #'   the packaged template (default: NULL uses packaged template)
 #'
@@ -478,7 +521,7 @@ bfh_create_typst_document <- function(chart_image,
                                       output,
                                       metadata,
                                       spc_stats,
-                                      template = "bfh-diagram2",
+                                      template = "bfh-diagram",
                                       template_path = NULL) {
   # Get output directory (where document.typ will be created)
   output_dir <- dirname(output)
@@ -780,6 +823,49 @@ extract_spc_stats <- function(summary) {
   bfh_extract_spc_stats(summary)
 }
 
+#' Extract Extended SPC Statistics from QIC Result
+#'
+#' Internal function that extracts SPC statistics including outliers and
+#' run chart detection from a complete bfh_qic_result object.
+#'
+#' @param x A bfh_qic_result object from bfh_qic()
+#'
+#' @return Named list with extended SPC statistics:
+#' \describe{
+#'   \item{runs_expected}{Expected maximum run length}
+#'   \item{runs_actual}{Actual longest run length}
+#'   \item{crossings_expected}{Expected minimum crossings}
+#'   \item{crossings_actual}{Actual number of crossings}
+#'   \item{outliers_expected}{Expected outliers (0 for non-run charts, NULL for run charts)}
+#'   \item{outliers_actual}{Actual outliers count (NULL for run charts)}
+#'   \item{is_run_chart}{Logical indicating if this is a run chart}
+#' }
+#'
+#' @keywords internal
+#' @noRd
+extract_spc_stats_extended <- function(x) {
+
+  # Start with basic stats from summary
+  stats <- bfh_extract_spc_stats(x$summary)
+
+
+  # Determine if this is a run chart
+  chart_type <- x$config$chart_type
+  is_run_chart <- !is.null(chart_type) && chart_type == "run"
+  stats$is_run_chart <- is_run_chart
+
+
+  # Calculate outliers from qic_data (only for non-run charts)
+  if (!is_run_chart && !is.null(x$qic_data) && "sigma.signal" %in% names(x$qic_data)) {
+    stats$outliers_expected <- 0
+    stats$outliers_actual <- sum(x$qic_data$sigma.signal, na.rm = TRUE)
+  }
+  # For run charts, outliers remain NULL (row will be hidden in Typst)
+
+
+  return(stats)
+}
+
 #' Merge User Metadata with Defaults
 #'
 #' Merges user-provided metadata with package defaults for PDF generation.
@@ -914,6 +1000,10 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   if (!is.null(metadata$data_definition)) {
     params$data_definition <- sprintf('"%s"', escape_typst_string(metadata$data_definition))
   }
+  if (!is.null(metadata$footer_content)) {
+    # Footer content supports rich text - use content block [...]
+    params$footer_content <- sprintf('[%s]', markdown_to_typst(metadata$footer_content))
+  }
 
   # Date parameter - format for Typst template
   if (!is.null(metadata$date)) {
@@ -940,6 +1030,11 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   }
   if (!is.null(spc_stats$outliers_actual)) {
     params$outliers_actual <- as.character(spc_stats$outliers_actual)
+  }
+
+  # Run chart flag (for hiding outlier row in Typst)
+  if (!is.null(spc_stats$is_run_chart)) {
+    params$is_run_chart <- if (spc_stats$is_run_chart) "true" else "false"
   }
 
   # Build parameter string
@@ -1037,5 +1132,303 @@ markdown_to_typst <- function(text) {
   result <- gsub("\\n", "\\\\\n", result)
 
   return(result)
+}
+
+
+# ============================================================================
+# LABEL RECALCULATION FOR PDF EXPORT
+# ============================================================================
+
+#' Strip Label Layers from Plot
+#'
+#' Removes marquee label layers from a ggplot object to prepare for
+#' recalculation with different viewport dimensions.
+#'
+#' @param plot A ggplot2 object
+#'
+#' @return ggplot2 object without marquee label layers
+#'
+#' @details
+#' Identifies layers by checking if the geom class name contains "Marquee".
+#' This allows the plot to be re-labeled with correct positions for
+#' different export dimensions.
+#'
+#' @keywords internal
+#' @noRd
+strip_label_layers <- function(plot) {
+  if (!inherits(plot, "ggplot")) {
+    return(plot)
+  }
+
+  # Identify layers to keep (everything except GeomMarquee)
+  layers_to_keep <- vapply(plot$layers, function(layer) {
+    geom_class <- class(layer$geom)[1]
+    !grepl("Marquee", geom_class, ignore.case = TRUE)
+  }, logical(1))
+
+  # Keep only non-marquee layers
+  plot$layers <- plot$layers[layers_to_keep]
+
+  return(plot)
+}
+
+
+#' Recalculate SPC Labels for Export Dimensions
+#'
+#' Removes existing label layers and re-adds them with positions
+#' calculated for the target export dimensions. This ensures labels
+#' are correctly positioned for PDF output regardless of the original
+#' interactive viewport size.
+#'
+#' @param x A bfh_qic_result object
+#' @param target_width_mm Target width in mm for label POSITIONING (visible chart area)
+#' @param target_height_mm Target height in mm for label POSITIONING
+#'
+#' @return ggplot object with recalculated label positions
+#'
+#' @details
+#' Label positioning uses target dimensions (the visible chart area in the template).
+#' Font sizing uses the fixed PDF_LABEL_SIZE constant (6pt), which is calibrated
+#' for the PDF template dimensions (250x140mm). This ensures consistent label
+#' appearance regardless of how the chart was created (interactive RStudio,
+#' batch script, etc.).
+#'
+#' @keywords internal
+#' @noRd
+recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm) {
+  # Validate input
+  if (!inherits(x, "bfh_qic_result")) {
+    stop("x must be a bfh_qic_result object", call. = FALSE)
+  }
+
+  # Convert target dimensions to inches for label positioning
+  target_width_inches <- target_width_mm / 25.4
+  target_height_inches <- target_height_mm / 25.4
+
+  # Strip existing label layers
+  plot_stripped <- strip_label_layers(x$plot)
+
+  # Extract configuration
+  config <- x$config
+  label_config <- config$label_config
+
+  # Use fixed PDF_LABEL_SIZE for consistent sizing regardless of how the
+  # chart was created (interactive RStudio window, batch script, etc.)
+  # This value is calibrated for the PDF template dimensions (250x140mm)
+  new_label_size <- PDF_LABEL_SIZE
+
+  # Re-add labels with TARGET dimensions for positioning
+  # and fixed PDF_LABEL_SIZE for font sizing
+  plot_with_labels <- add_spc_labels(
+    plot = plot_stripped,
+    qic_data = x$qic_data,
+    y_axis_unit = config$y_axis_unit %||% "count",
+    label_size = new_label_size,
+    viewport_width = target_width_inches,
+    viewport_height = target_height_inches,
+    target_text = config$target_text,
+    centerline_value = label_config$centerline_value,
+    has_frys_column = label_config$has_frys_column,
+    has_skift_column = label_config$has_skift_column,
+    verbose = FALSE
+  )
+
+  return(plot_with_labels)
+}
+
+
+#' Prepare Plot for Export with Custom Margins
+#'
+#' Applies export-specific margin adjustments to a ggplot object.
+#' Used primarily by PDF export to override the default 5mm margins
+#' (set by apply_spc_theme) to 0mm for Typst template compatibility.
+#'
+#' Note: Axis title removal is now handled centrally by apply_spc_theme()
+#' when the plot is created via bfh_qic().
+#'
+#' @param plot A ggplot2 object
+#' @param margin_mm Numeric. Margin size in millimeters (default: 0 for PDF)
+#'
+#' @return Modified ggplot2 object with updated margins
+#'
+#' @details
+#' **Usage:**
+#' - PDF export: margin_mm = 0 for optimal fit in Typst template
+#' - PNG export: No longer needed (default 5mm from bfh_qic is correct)
+#'
+#' @keywords internal
+#' @noRd
+prepare_plot_for_export <- function(plot, margin_mm = 0) {
+  # Validate inputs
+  if (!inherits(plot, "ggplot")) {
+    stop("plot must be a ggplot2 object", call. = FALSE)
+  }
+
+  if (!is.numeric(margin_mm) || length(margin_mm) != 1 || margin_mm < 0) {
+    stop("margin_mm must be a non-negative number", call. = FALSE)
+  }
+
+  # Set plot margins (axis title removal is now in apply_spc_theme)
+  plot <- plot + ggplot2::theme(
+    plot.margin = ggplot2::margin(margin_mm, margin_mm, margin_mm, margin_mm, "mm")
+  )
+
+  return(plot)
+}
+
+
+# ============================================================================
+# AUTO-GENERATED DETAILS
+# ============================================================================
+
+#' Generate Details Text for PDF Export
+#'
+#' Automatically generates a details string based on chart data, including
+#' period range, averages, latest values, and current level (centerline).
+#'
+#' @param x A \code{bfh_qic_result} object from \code{bfh_qic()}
+#'
+#' @return Character string with formatted details, e.g.:
+#'   "Periode: feb. 2019 – mar. 2022 • Gns. måned: 58938/97266 •
+#'    Seneste måned: 60756/88509 • Nuværende niveau: 64,5%"
+#'
+#' @details
+#' **Format:**
+#' - Period range with Danish date formatting
+#' - Average values per interval (numerator/denominator for p/u-charts)
+#' - Latest period values
+#' - Current level (centerline value) with appropriate unit formatting
+#'
+#' **Chart Type Handling:**
+#' - p-chart, u-chart: Shows numerator/denominator (e.g., "58938/97266")
+#' - Other chart types: Shows only the value (e.g., "127")
+#'
+#' **Interval Detection:**
+#' - Uses detect_date_interval() to determine the interval type
+
+#' - Labels adapt: "måned", "uge", "dag", "kvartal", "år"
+#'
+#' @keywords internal
+#' @noRd
+bfh_generate_details <- function(x) {
+  # Validate input
+
+  if (!inherits(x, "bfh_qic_result")) {
+    stop("x must be a bfh_qic_result object from bfh_qic()", call. = FALSE)
+  }
+
+  qic_data <- x$qic_data
+  config <- x$config
+
+  # 1. Detect interval type from x-axis data
+  interval_info <- detect_date_interval(qic_data$x)
+  interval_label <- get_danish_interval_label(interval_info$type)
+
+  # 2. Format period range
+  start_date <- format_danish_date_short(min(qic_data$x, na.rm = TRUE))
+  end_date <- format_danish_date_short(max(qic_data$x, na.rm = TRUE))
+  periode <- sprintf("Periode: %s \u2013 %s", start_date, end_date)  # en-dash
+
+  # 3. Calculate averages (numerator/denominator or value only)
+  chart_type <- config$chart_type
+
+  # Check if denominator data is available
+  has_denominator_data <- "y.sum" %in% names(qic_data) &&
+                          "n" %in% names(qic_data) &&
+                          !all(is.na(qic_data$n))
+
+  # Use numerator/denominator format for:
+  # - p/u-charts (always)
+  # - run charts IF they have denominator data (i.e., created from proportion data)
+  uses_denominator <- (chart_type %in% c("p", "u")) ||
+                      (chart_type == "run" && has_denominator_data)
+
+  if (uses_denominator) {
+    # Charts with denominator: show numerator/denominator
+    avg_num <- round(mean(qic_data$y.sum, na.rm = TRUE))
+    avg_den <- round(mean(qic_data$n, na.rm = TRUE))
+    gns <- sprintf("Gns. %s: %s/%s", interval_label,
+                   format(avg_num, big.mark = ".", decimal.mark = ","),
+                   format(avg_den, big.mark = ".", decimal.mark = ","))
+  } else {
+    # Other chart types: show only value
+    avg_val <- round(mean(qic_data$y, na.rm = TRUE))
+    gns <- sprintf("Gns. %s: %s", interval_label,
+                   format(avg_val, big.mark = ".", decimal.mark = ","))
+  }
+
+  # 4. Get latest period values
+  last_row <- utils::tail(qic_data, 1)
+
+  if (uses_denominator) {
+    last_num <- round(last_row$y.sum)
+    last_den <- round(last_row$n)
+    seneste <- sprintf("Seneste %s: %s/%s", interval_label,
+                       format(last_num, big.mark = ".", decimal.mark = ","),
+                       format(last_den, big.mark = ".", decimal.mark = ","))
+  } else {
+    last_val <- round(last_row$y)
+    seneste <- sprintf("Seneste %s: %s", interval_label,
+                       format(last_val, big.mark = ".", decimal.mark = ","))
+  }
+
+  # 5. Get current level (centerline value) with proper formatting
+  cl_value <- last_row$cl
+  y_axis_unit <- config$y_axis_unit %||% "count"
+
+  niveau <- format_centerline_for_details(cl_value, y_axis_unit)
+
+  # 6. Combine with bullet separator
+  paste(periode, gns, seneste, niveau, sep = " \u2022 ")  # bullet character
+}
+
+#' Format Centerline Value for Details
+#'
+#' Formats the centerline value based on y_axis_unit with appropriate
+#' decimal places and unit suffix.
+#'
+#' @param cl_value Numeric centerline value
+#' @param y_axis_unit Character string: "percent", "count", "rate", etc.
+#'
+#' @return Formatted string, e.g., "Nuværende niveau: 64,5%"
+#'
+#' @keywords internal
+#' @noRd
+format_centerline_for_details <- function(cl_value, y_axis_unit) {
+  if (is.null(cl_value) || is.na(cl_value)) {
+    return("Nuværende niveau: -")
+  }
+
+  formatted <- switch(y_axis_unit,
+    "percent" = {
+      # Percentage: multiply by 100 if needed, show 1 decimal
+      if (cl_value <= 1) {
+        sprintf("%.1f%%", cl_value * 100)
+      } else {
+        sprintf("%.1f%%", cl_value)
+      }
+    },
+    "rate" = {
+      # Rate: typically per 1000 or similar, show 1 decimal
+      sprintf("%.1f", cl_value)
+    },
+    "time" = {
+      # Time: show as-is with 1 decimal
+      sprintf("%.1f", cl_value)
+    },
+    # Default (count and others): show as integer or 1 decimal
+    {
+      if (cl_value == round(cl_value)) {
+        format(round(cl_value), big.mark = ".", decimal.mark = ",")
+      } else {
+        format(round(cl_value, 1), big.mark = ".", decimal.mark = ",", nsmall = 1)
+      }
+    }
+  )
+
+  # Replace . with , for Danish decimal notation (if not already done)
+  formatted <- gsub("\\.", ",", formatted)
+
+  sprintf("Nuværende niveau: %s", formatted)
 }
 

@@ -1,142 +1,3 @@
-/*#let bfh-short(
-  author : none,
-  date : datetime.today(),
-  doc
-) = {
-  set text(font: "Arial", 
-           lang: "da")
-  
-
-  set par(justify: true)
-  set text(hyphenate: false)
-  set heading(numbering: "1.")
-  show heading.where(level: 1): it => [
-    #set text(24pt)
-    #(it.body)
-      ]
-  show heading.where(level: 2): it => [
-    #counter(heading).display() #(it.body)
-
-      ]
-    
-  set page(
-    "a4",
-    margin: (top: 42mm, left: 25mm),
-    header-ascent: 0.71cm,
-    header: [
-      #place(left, image("Logo_Bispebjerg_og Frederiksberg_RGB.png", height: 15mm), dy: 12mm)
-      #place(right + bottom)[
-        #author\
-        #if type(date) == datetime [
-          #date.display("[day]/[month]/[year]")
-        ] else [
-          #date
-        ]
-      ]
-    ],
-    footer: [
-      #place(
-        right,
-        dy: -0.6cm,
-        dx: 1.9cm,
-        //image("footer.png")
-      )
-      #place(
-        right,
-        dx: 1.55cm,
-        dy: 0.58cm,
-        text(fill: white, weight: "bold", counter(page).display())
-      )
-    ]
-  )
-
-  doc
-}
-
-
-
-#let bfh-diagram(
-  author : none,
-  date : datetime.today(),
-  doc
-) = {
-  set text(font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
-           lang: "da",
-           //fill: rgb("fdfdfd")
-         )
-  
-  set page(
-    "a4",
-    flipped: true,
-    margin: (5mm),
-    header: [
-      #place(left, 
-      image("images/Logo_Bispebjerg_og Frederiksberg_RGB.png", 
-      //image("Logo_Bispebjerg_png.png", 
-      height: 14mm,
-    ), dy: 18.67mm, dx: 4.67mm)
-    ]
-  )
-
-    grid(
-    rows: (23.33mm, 50mm, auto),
-    columns: 100%,
-    //gutter: 1em,
-    block(
-      height: 100%,
-      width: 100%
-    ),
-
-    block(
-      fill: rgb("007dbb"),
-      inset: (left: 3.3mm, rest: 5mm),
-      //lorem(100),
-      height: 100%,
-      width: 100%,
-      text(rgb("ffffff"),
-      font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
-      size: 55pt
-    )[
-  Medicinsikkert Hospital \
-  Medicin scannet ved dispensering
-]
-      ),
-    /*block(
-      inset: 14pt
-    )[
-      //#set par(leading: 3mm)
-      //#lorem(500)
-]*/
-    grid(
-      columns: (3fr, 1fr),
-      gutter: 14pt,
-
-    block(
-      fill: rgb("e4e5ea"),
-      height: auto,
-      width: 100%,
-      inset: (left: 4mm, rest: 5mm)
-      
-    )[
-      #lorem(300)
-    ],
-
-        block(
-      fill: rgb("e4e5ea"),
-      height: 300pt,
-      width: 100%,
-      inset: 14pt
-    )[
-      #lorem(50)
-    ],
-    )
-    
-  )
-
-  //doc
-}
-*/
-
 // BFH SPC Diagram Template
 // Generates A4 landscape PDF with hospital branding, SPC chart, and metadata
 //
@@ -155,9 +16,11 @@
 //   crossings_actual: Actual antal kryds value for SPC table (optional)
 //   outliers_expected: Expected obs. uden for kontrolgrænse value (optional)
 //   outliers_actual: Actual obs. uden for kontrolgrænse value (optional)
+//   is_run_chart: Boolean indicating if this is a run chart (hides outlier row)
+//   footer_content: Additional content to display below the chart (optional)
 //   chart: Chart content (image or other content) (required via content parameter)
 //
-#let bfh-diagram2(
+#let bfh-diagram(
   hospital: "Bispebjerg og Frederiksberg Hospital",
   department: none,
   title: "Paper Title",
@@ -172,6 +35,8 @@
   crossings_actual: none,
   outliers_expected: none,
   outliers_actual: none,
+  is_run_chart: false,
+  footer_content: none,
   chart
 ) = {
   set text(font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
@@ -201,6 +66,7 @@ show table.cell: it => {
     "a4",
     flipped: true,
     margin: (4.67mm),
+    fill: rgb("ffff00"),  // Gul baggrundsfarve for at visualisere margins
     foreground: (
        place(
          image("images/Hospital_Maerke_RGB_A1_str.png", 
@@ -215,7 +81,7 @@ show table.cell: it => {
   )
 
     grid(
-      rows: (51.33mm, auto),
+      rows: (51.33mm, auto, auto, auto),
       columns: (4.67mm, auto),
         block(
           
@@ -266,6 +132,7 @@ show table.cell: it => {
       ),
 
   grid.cell(
+  fill: rgb("ffffff"),
     colspan: 2,
         if analysis != none {
           block(inset: (left: 18.67mm, top: 4.67mm, rest: 0mm),
@@ -278,6 +145,7 @@ show table.cell: it => {
 
 
 grid.cell(
+    fill: rgb("ffffff"),
     colspan: 2,
     grid(
       rows: (auto),
@@ -285,7 +153,7 @@ grid.cell(
       block(inset: (left: 18.67mm, top: 4.67mm, right: 4.67mm, 
       bottom: 0mm),
       width: 100%,
-      //fill: rgb("ccebfa"),
+      fill: rgb("ccebfa"), //Blå baggrundsfarve - husk at fjerne
           block(inset: (0mm),
           text(fill: rgb("888888"),
                //weight: "light",
@@ -311,6 +179,27 @@ grid.cell(
          #if (runs_expected != none or runs_actual != none or
             crossings_expected != none or crossings_actual != none or
             outliers_expected != none or outliers_actual != none) {
+
+           // Helper function for signal cell (grey background, white text)
+           let signal-cell(content) = {
+             box(
+               fill: rgb("888888"),
+               inset: 2mm,
+               radius: 2pt,
+               text(fill: white, weight: "extrabold", size: 28pt, content)
+             )
+           }
+
+           // Helper function for normal cell
+           let normal-cell(content) = {
+             text(fill: rgb("888888"), weight: "extrabold", size: 28pt, content)
+           }
+
+           // Check for signal conditions
+           let runs_signal = (runs_expected != none and runs_actual != none and runs_actual > runs_expected)
+           let crossings_signal = (crossings_expected != none and crossings_actual != none and crossings_actual < crossings_expected)
+           let outliers_signal = (outliers_actual != none and outliers_actual > 0)
+
            table(
              columns: (27mm, 18mm, 18mm),
              stroke: none,
@@ -320,15 +209,38 @@ grid.cell(
                [FORVENTET],
                [FAKTISK],
              ),
+             // Row 1: SERIELÆNGDE
              [SERIELÆNGDE (MAKSIMUM)],
              [#if runs_expected != none {str(runs_expected)} else {[-]}],
-             [#if runs_actual != none {str(runs_actual)} else {[-]}],
+             [#if runs_actual != none {
+               if runs_signal {
+                 signal-cell(str(runs_actual))
+               } else {
+                 normal-cell(str(runs_actual))
+               }
+             } else {[-]}],
+             // Row 2: ANTAL KRYDS
              [ANTAL KRYDS (MINIMUM)],
              [#if crossings_expected != none {str(crossings_expected)} else {[-]}],
-             [#if crossings_actual != none {str(crossings_actual)} else {[-]}],
-             [OBS. UDEN FOR KONTROLGRÆNSE],
-             [#if outliers_expected != none {str(outliers_expected)} else {[-]}],
-             [#if outliers_actual != none {str(outliers_actual)} else {[-]}],
+             [#if crossings_actual != none {
+               if crossings_signal {
+                 signal-cell(str(crossings_actual))
+               } else {
+                 normal-cell(str(crossings_actual))
+               }
+             } else {[-]}],
+             // Row 3: OBS. UDEN FOR KONTROLGRÆNSE (only for non-run charts)
+             ..if not is_run_chart {(
+               [OBS. UDEN FOR KONTROLGRÆNSE],
+               [#if outliers_expected != none {str(outliers_expected)} else {[-]}],
+               [#if outliers_actual != none {
+                 if outliers_signal {
+                   signal-cell(str(outliers_actual))
+                 } else {
+                   normal-cell(str(outliers_actual))
+                 }
+               } else {[-]}],
+             )},
            )
            v(2mm)
          }
@@ -346,15 +258,26 @@ grid.cell(
        ]
 
 
-            
+
 )
-      
+
     )
+  ),
+
+  // Footer content section - only show if provided
+  grid.cell(
+    //fill: rgb("ffffff"),
+    colspan: 2,
+    if footer_content != none {
+      block(inset: (left: 18.67mm, top: 4.67mm, right: 4.67mm, bottom: 4.67mm),
+        text(
+          fill: rgb("888888"),
+          size: 9pt,
+          footer_content
+        )
+      )
+    }
   )
 )
-      
-}
 
-   /*grid(
-      rows: (51.33mm, auto),
-      columns: (4.67mm, auto),*/
+}

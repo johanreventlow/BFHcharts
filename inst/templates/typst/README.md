@@ -2,7 +2,7 @@
 
 This directory contains Typst templates for generating PDF reports with SPC charts.
 
-## Template: bfh-diagram2
+## Template: bfh-diagram
 
 The main template for SPC chart reports with hospital branding.
 
@@ -34,6 +34,7 @@ The `bfh_export_pdf()` function uses this template automatically. You can also u
 | `crossings_actual` | number | none | Actual antal kryds (optional) |
 | `outliers_expected` | number | none | Expected outliers (optional) |
 | `outliers_actual` | number | none | Actual outliers (optional) |
+| `footer_content` | content | none | Additional content below chart (optional) |
 | `chart` | content | required | Chart image or content |
 
 ### Requirements
@@ -66,7 +67,9 @@ A4 Landscape Layout:
 │                        │                │
 │                        │ Data           │
 │                        │ Definition     │
-└────────────────────────┴────────────────┘
+├────────────────────────┴────────────────┤
+│ Footer Content (if provided)            │
+└─────────────────────────────────────────┘
 ```
 
 ### Customization
