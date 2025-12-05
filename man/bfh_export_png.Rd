@@ -46,6 +46,14 @@ workflows.
 \item This differs from PDF export which strips the title for Typst template
 }
 
+\strong{Plot Optimization:}
+\itemize{
+\item Plot already has 5mm margins from bfh_qic() via apply_spc_theme()
+\item Blank axis titles are automatically removed when plot is created
+\item User-defined axis titles are preserved
+\item No additional processing needed at export time
+}
+
 \strong{Pipe Compatibility:}
 \itemize{
 \item Returns input object invisibly for chaining

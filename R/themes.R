@@ -19,13 +19,14 @@ NULL
 #'
 #' Uses BFHtheme::theme_bfh() as base and adds SPC-specific modifications:
 #' - Capped coordinate system (via lemon::coord_capped_cart)
-#' - SPC-appropriate margins and spacing
-#' - Custom plot margins if specified
+#' - Default 5mm plot margins for visual balance
+#' - Automatic removal of blank axis titles (NULL or empty strings)
+#' - Custom plot margins if specified (overrides default)
 #'
 #' @param plot ggplot2 object
 #' @param base_size Base font size
 #' @param plot_margin Numeric vector of length 4 (top, right, bottom, left) in mm,
-#'   or a margin object from ggplot2::margin(), or NULL for default
+#'   or a margin object from ggplot2::margin(), or NULL for default (5mm all sides)
 #'
 #' @return Modified ggplot2 object with theme applied
 #'
@@ -37,9 +38,9 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
     BFHtheme::theme_bfh(base_size = base_size) +
     lemon::coord_capped_cart(bottom = "right", gap = 0)
 
-  # Apply custom margins if provided
+  # Apply margins: use custom if provided, otherwise default 5mm
   if (!is.null(plot_margin)) {
-    if (inherits(plot_margin, "ggplot2::margin")) {
+    if (inherits(plot_margin, "margin")) {
       # User provided a margin object - use directly
       plot <- plot + ggplot2::theme(plot.margin = plot_margin)
     } else if (is.numeric(plot_margin) && length(plot_margin) == 4) {
@@ -54,6 +55,22 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
         )
       )
     }
+  } else {
+    # Default: 5mm margins for visual balance
+    plot <- plot + ggplot2::theme(
+      plot.margin = ggplot2::margin(5, 5, 5, 5, "mm")
+    )
+  }
+
+  # Remove blank axis titles (NULL or empty strings become element_blank)
+  x_title <- plot$labels$x
+  if (is.null(x_title) || (is.character(x_title) && nchar(trimws(x_title)) == 0)) {
+    plot <- plot + ggplot2::theme(axis.title.x.bottom = ggplot2::element_blank())
+  }
+
+  y_title <- plot$labels$y
+  if (is.null(y_title) || (is.character(y_title) && nchar(trimws(y_title)) == 0)) {
+    plot <- plot + ggplot2::theme(axis.title.y.left = ggplot2::element_blank())
   }
 
   return(plot)

@@ -257,6 +257,76 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
 }
 
 # ============================================================================
+# DANISH DATE FORMATTING
+# ============================================================================
+
+# Danish month abbreviations (standard)
+.danish_months <- c(
+  "jan.", "feb.", "mar.", "apr.", "maj", "jun.",
+  "jul.", "aug.", "sep.", "okt.", "nov.", "dec."
+)
+
+#' Format Date in Short Danish Format
+#'
+#' Formats a Date or POSIXt object to short Danish format with abbreviated
+#' month names (e.g., "feb. 2019", "okt. 2024").
+#'
+#' @param date Date or POSIXt object to format
+#'
+#' @return Character string in format "mmm. yyyy" (e.g., "feb. 2019")
+#'
+#' @keywords internal
+#' @noRd
+#' @examples
+#' \dontrun{
+#' format_danish_date_short(as.Date("2019-02-15"))
+#' # Returns: "feb. 2019"
+#'
+#' format_danish_date_short(as.Date("2024-10-01"))
+#' # Returns: "okt. 2024"
+#' }
+format_danish_date_short <- function(date) {
+  if (is.null(date) || length(date) == 0 || is.na(date)) {
+    return(NA_character_)
+  }
+
+  # Convert to Date if POSIXt
+  date <- as.Date(date)
+
+  # Extract month (1-12) and year
+  month_num <- as.integer(format(date, "%m"))
+  year <- format(date, "%Y")
+
+  # Get Danish month abbreviation
+  month_abbr <- .danish_months[month_num]
+
+  # Combine: "feb. 2019"
+  paste(month_abbr, year)
+}
+
+#' Get Danish Interval Label
+#'
+#' Returns the Danish label for a detected interval type.
+#'
+#' @param interval_type Character string from detect_date_interval()$type
+#'
+#' @return Character string with Danish interval label
+#'
+#' @keywords internal
+#' @noRd
+get_danish_interval_label <- function(interval_type) {
+  switch(interval_type,
+    "daily" = "dag",
+    "weekly" = "uge",
+    "monthly" = "måned",
+    "quarterly" = "kvartal",
+    "yearly" = "år",
+    "periode"  # Default for irregular/unknown
+
+)
+}
+
+# ============================================================================
 # DATE PARSING
 # ============================================================================
 

@@ -817,7 +817,16 @@ bfh_qic <- function(data,
     exclude = exclude,
     cl = cl,
     multiply = multiply,
-    agg.fun = agg.fun
+    agg.fun = agg.fun,
+    # Label placement metadata for PDF export recalculation
+    label_config = list(
+      centerline_value = cl,
+      has_frys_column = !is.null(freeze),
+      has_skift_column = !is.null(part),
+      original_viewport_width = width_inches,
+      original_viewport_height = height_inches,
+      original_label_size = label_size
+    )
   )
 
   # Return based on user parameters

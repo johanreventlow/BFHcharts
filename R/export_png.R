@@ -27,6 +27,12 @@
 #' - The chart title (if present) is rendered in the PNG image
 #' - This differs from PDF export which strips the title for Typst template
 #'
+#' **Plot Optimization:**
+#' - Plot already has 5mm margins from bfh_qic() via apply_spc_theme()
+#' - Blank axis titles are automatically removed when plot is created
+#' - User-defined axis titles are preserved
+#' - No additional processing needed at export time
+#'
 #' **Pipe Compatibility:**
 #' - Returns input object invisibly for chaining
 #' - Example: \code{bfh_qic(...) |> bfh_export_png("chart.png")}
@@ -125,6 +131,8 @@ bfh_export_png <- function(x,
   height_inches <- height_mm / 25.4
 
   # Extract plot from bfh_qic_result object
+  # Note: Plot already has 5mm margins and blank axis titles removed
+  # via apply_spc_theme() in bfh_qic()
   plot <- x$plot
 
   # Create output directory if it doesn't exist
