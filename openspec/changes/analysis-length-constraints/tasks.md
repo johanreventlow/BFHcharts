@@ -9,9 +9,10 @@
   - Tilføj `analysis_min_chars = 300` parameter
   - Tilføj `analysis_max_chars = 400` parameter
   - Videregiv til `bfh_generate_analysis()` når auto_analysis = TRUE
-- [ ] 1.3 Verificer BFHllm understøtter `min_chars`:
-  - Tjek `BFHllm::bfhllm_spc_suggestion()` signatur
-  - Opdater BFHllm hvis nødvendigt
+- [ ] 1.3 Opdater BFHllm pakken:
+  - Tilføj `min_chars` parameter til `bfhllm_spc_suggestion()`
+  - Opdater prompt til at inkludere min/max instruktion
+  - Opdater default max_chars fra 350 til 400
 
 ## 2. Tests
 

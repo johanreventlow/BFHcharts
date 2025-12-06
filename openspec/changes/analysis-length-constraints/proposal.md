@@ -20,9 +20,11 @@ Ved at indføre konfigurerbare minimum og maksimum tegngrænser:
 - Tilføj `analysis_min_chars` og `analysis_max_chars` parametre
 - Videregiv til `bfh_generate_analysis()` når `auto_analysis = TRUE`
 
-### BFHllm integration:
-- Forudsætter at `BFHllm::bfhllm_spc_suggestion()` understøtter `min_chars` parameter
-- Hvis BFHllm ikke understøtter dette, skal ændringen koordineres med BFHllm pakken
+### BFHllm ændring (koordineret):
+- Opdater `BFHllm::bfhllm_spc_suggestion()` til at acceptere `min_chars` parameter
+- Nuværende signatur: `bfhllm_spc_suggestion(spc_result, context, max_chars = 350, ...)`
+- Ny signatur: `bfhllm_spc_suggestion(spc_result, context, min_chars = 300, max_chars = 400, ...)`
+- Opdater prompt til at inkludere min_chars instruktion
 
 ## Eksempel
 
