@@ -4,7 +4,13 @@
 \alias{bfh_generate_analysis}
 \title{Generate SPC Analysis Text}
 \usage{
-bfh_generate_analysis(x, metadata = list(), use_ai = NULL, max_chars = 350)
+bfh_generate_analysis(
+  x,
+  metadata = list(),
+  use_ai = NULL,
+  min_chars = 300,
+  max_chars = 400
+)
 }
 \arguments{
 \item{x}{A \code{bfh_qic_result} object from \code{bfh_qic()}}
@@ -26,7 +32,9 @@ bfh_generate_analysis(x, metadata = list(), use_ai = NULL, max_chars = 350)
 \item \code{FALSE}: Use standard texts only
 }}
 
-\item{max_chars}{Maximum characters in AI-generated output. Default 350.}
+\item{min_chars}{Minimum characters in AI-generated output. Default 300.}
+
+\item{max_chars}{Maximum characters in AI-generated output. Default 400.}
 }
 \value{
 Character string with analysis text suitable for PDF export.

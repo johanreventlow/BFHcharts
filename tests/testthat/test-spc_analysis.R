@@ -260,3 +260,58 @@ test_that("bfh_generate_analysis falls back gracefully when AI unavailable", {
   expect_type(analysis, "character")
   expect_gt(nchar(analysis), 0)
 })
+
+test_that("bfh_generate_analysis accepts min_chars and max_chars parameters", {
+  skip_if_not_installed("qicharts2")
+
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+
+  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
+
+  # Test with custom min/max chars (should not error)
+  analysis <- bfh_generate_analysis(
+    result,
+    use_ai = FALSE,
+    min_chars = 200,
+    max_chars = 500
+  )
+
+  expect_type(analysis, "character")
+  expect_gt(nchar(analysis), 0)
+})
+
+test_that("bfh_generate_analysis has correct default values", {
+  skip_if_not_installed("qicharts2")
+
+  # Check function defaults
+  fn_args <- formals(bfh_generate_analysis)
+
+  expect_equal(fn_args$min_chars, 300)
+  expect_equal(fn_args$max_chars, 400)
+})
+
+test_that("bfh_generate_analysis validates min_chars < max_chars", {
+  skip_if_not_installed("qicharts2")
+
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+
+  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
+
+  # min_chars equal to max_chars should error
+  expect_error(
+    bfh_generate_analysis(result, min_chars = 300, max_chars = 300),
+    "min_chars must be less than max_chars"
+  )
+
+  # min_chars greater than max_chars should error
+  expect_error(
+    bfh_generate_analysis(result, min_chars = 500, max_chars = 300),
+    "min_chars must be less than max_chars"
+  )
+})

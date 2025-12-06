@@ -1685,3 +1685,50 @@ test_that("label_config is stored in bfh_qic_result config", {
   # has_frys_column should be TRUE since we passed freeze = 6
   expect_true(label_config$has_frys_column)
 })
+
+
+# ==============================================================================
+# Analysis Length Parameters tests
+# ==============================================================================
+
+test_that("bfh_export_pdf has analysis_min_chars and analysis_max_chars parameters", {
+  # Check function signature includes new parameters
+  fn_args <- formals(bfh_export_pdf)
+
+  expect_true("analysis_min_chars" %in% names(fn_args))
+  expect_true("analysis_max_chars" %in% names(fn_args))
+
+  # Check default values
+  expect_equal(fn_args$analysis_min_chars, 300)
+  expect_equal(fn_args$analysis_max_chars, 400)
+})
+
+test_that("bfh_export_pdf accepts custom analysis length parameters", {
+  skip_if_not(quarto_available(), "Quarto not available")
+  skip_on_cran()
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
+  )
+
+  temp_file <- tempfile(fileext = ".pdf")
+
+  # Should not error with custom analysis length parameters
+  expect_no_error(
+    bfh_export_pdf(
+      result,
+      temp_file,
+      auto_analysis = TRUE,
+      use_ai = FALSE,
+      analysis_min_chars = 200,
+      analysis_max_chars = 500
+    )
+  )
+
+  if (file.exists(temp_file)) unlink(temp_file)
+})

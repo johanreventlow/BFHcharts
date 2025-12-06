@@ -11,7 +11,9 @@ bfh_export_pdf(
   template = "bfh-diagram",
   template_path = NULL,
   auto_analysis = FALSE,
-  use_ai = NULL
+  use_ai = NULL,
+  analysis_min_chars = 300,
+  analysis_max_chars = 400
 )
 }
 \arguments{
@@ -51,6 +53,12 @@ Default is FALSE for backward compatibility.}
 \item \code{TRUE}: Use AI via BFHllm (with fallback to standard texts)
 \item \code{FALSE}: Use standard texts only (no AI)
 }
+Only used when \code{auto_analysis = TRUE}.}
+
+\item{analysis_min_chars}{Minimum characters for AI-generated analysis. Default 300.
+Only used when \code{auto_analysis = TRUE}.}
+
+\item{analysis_max_chars}{Maximum characters for AI-generated analysis. Default 400.
 Only used when \code{auto_analysis = TRUE}.}
 }
 \value{

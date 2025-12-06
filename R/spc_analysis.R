@@ -222,7 +222,8 @@ if (!inherits(x, "bfh_qic_result")) {
 #'   - `NULL` (default): Auto-detect BFHllm availability
 #'   - `TRUE`: Use AI (requires BFHllm package)
 #'   - `FALSE`: Use standard texts only
-#' @param max_chars Maximum characters in AI-generated output. Default 350.
+#' @param min_chars Minimum characters in AI-generated output. Default 300.
+#' @param max_chars Maximum characters in AI-generated output. Default 400.
 #'
 #' @return Character string with analysis text suitable for PDF export.
 #'
@@ -256,10 +257,17 @@ if (!inherits(x, "bfh_qic_result")) {
 bfh_generate_analysis <- function(x,
                                    metadata = list(),
                                    use_ai = NULL,
-                                   max_chars = 350) {
+                                   min_chars = 300,
+                                   max_chars = 400) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()")
+  }
+
+  # Validate min_chars < max_chars
+
+  if (min_chars >= max_chars) {
+    stop("min_chars must be less than max_chars")
   }
 
   # Byg kontekst
@@ -305,6 +313,7 @@ bfh_generate_analysis <- function(x,
         BFHllm::bfhllm_spc_suggestion(
           spc_result = spc_result,
           context = llm_context,
+          min_chars = min_chars,
           max_chars = max_chars,
           use_rag = TRUE
         )
