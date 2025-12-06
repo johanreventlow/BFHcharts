@@ -81,7 +81,7 @@ show table.cell: it => {
   )
 
     grid(
-      rows: (51.33mm, auto, auto, auto),
+      rows: (51.33mm, 25mm, auto, auto),
       columns: (4.67mm, auto),
         block(
           
@@ -153,7 +153,7 @@ grid.cell(
       block(inset: (left: 18.67mm, top: 4.67mm, right: 4.67mm, 
       bottom: 0mm),
       width: 100%,
-      fill: rgb("ccebfa"), //Blå baggrundsfarve - husk at fjerne
+      //fill: rgb("ccebfa"), //Blå baggrundsfarve - husk at fjerne
           block(inset: (0mm),
           text(fill: rgb("888888"),
                //weight: "light",
@@ -266,7 +266,7 @@ grid.cell(
 
   // Footer content section - only show if provided
   grid.cell(
-    //fill: rgb("ffffff"),
+    fill: rgb("ffffff"),
     colspan: 2,
     if footer_content != none {
       block(inset: (left: 18.67mm, top: 4.67mm, right: 4.67mm, bottom: 4.67mm),

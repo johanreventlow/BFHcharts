@@ -933,7 +933,8 @@ bfh_merge_metadata <- function(metadata, chart_title) {
     details = NULL,
     author = NULL,
     date = Sys.Date(),
-    data_definition = NULL
+    data_definition = NULL,
+    footer_content = NULL
   )
 
   # Handle NULL metadata
