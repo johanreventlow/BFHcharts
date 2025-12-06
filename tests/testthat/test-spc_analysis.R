@@ -290,7 +290,7 @@ test_that("bfh_generate_analysis has correct default values", {
   fn_args <- formals(bfh_generate_analysis)
 
   expect_equal(fn_args$min_chars, 300)
-  expect_equal(fn_args$max_chars, 400)
+  expect_equal(fn_args$max_chars, 375)
 })
 
 test_that("bfh_generate_analysis validates min_chars < max_chars", {

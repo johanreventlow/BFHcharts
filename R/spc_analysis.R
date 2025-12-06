@@ -223,7 +223,7 @@ if (!inherits(x, "bfh_qic_result")) {
 #'   - `TRUE`: Use AI (requires BFHllm package)
 #'   - `FALSE`: Use standard texts only
 #' @param min_chars Minimum characters in AI-generated output. Default 300.
-#' @param max_chars Maximum characters in AI-generated output. Default 400.
+#' @param max_chars Maximum characters in AI-generated output. Default 375.
 #'
 #' @return Character string with analysis text suitable for PDF export.
 #'
@@ -258,7 +258,7 @@ bfh_generate_analysis <- function(x,
                                    metadata = list(),
                                    use_ai = NULL,
                                    min_chars = 300,
-                                   max_chars = 400) {
+                                   max_chars = 375) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()")

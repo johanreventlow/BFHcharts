@@ -1700,7 +1700,7 @@ test_that("bfh_export_pdf has analysis_min_chars and analysis_max_chars paramete
 
   # Check default values
   expect_equal(fn_args$analysis_min_chars, 300)
-  expect_equal(fn_args$analysis_max_chars, 400)
+  expect_equal(fn_args$analysis_max_chars, 375)
 })
 
 test_that("bfh_export_pdf accepts custom analysis length parameters", {

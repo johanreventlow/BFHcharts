@@ -9,7 +9,7 @@ bfh_generate_analysis(
   metadata = list(),
   use_ai = NULL,
   min_chars = 300,
-  max_chars = 400
+  max_chars = 375
 )
 }
 \arguments{
@@ -34,7 +34,7 @@ bfh_generate_analysis(
 
 \item{min_chars}{Minimum characters in AI-generated output. Default 300.}
 
-\item{max_chars}{Maximum characters in AI-generated output. Default 400.}
+\item{max_chars}{Maximum characters in AI-generated output. Default 375.}
 }
 \value{
 Character string with analysis text suitable for PDF export.

@@ -36,7 +36,7 @@
 #'   Only used when \code{auto_analysis = TRUE}.
 #' @param analysis_min_chars Minimum characters for AI-generated analysis. Default 300.
 #'   Only used when \code{auto_analysis = TRUE}.
-#' @param analysis_max_chars Maximum characters for AI-generated analysis. Default 400.
+#' @param analysis_max_chars Maximum characters for AI-generated analysis. Default 375.
 #'   Only used when \code{auto_analysis = TRUE}.
 #'
 #' @return The input object \code{x} invisibly, enabling pipe chaining
@@ -129,7 +129,7 @@ bfh_export_pdf <- function(x,
                            auto_analysis = FALSE,
                            use_ai = NULL,
                            analysis_min_chars = 300,
-                           analysis_max_chars = 400) {
+                           analysis_max_chars = 375) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop(
