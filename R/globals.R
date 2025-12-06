@@ -33,9 +33,9 @@ DEFAULT_LABEL_SIZE_MULTIPLIER <- 6
 
 # PNG image dimensions for ggsave (what gets embedded in Typst)
 # These are the original dimensions that work with the Typst template
-# Height reduced from 140mm to 115mm to allow space for footer_content
+# Height adjusted based on visual testing to fill available space
 PDF_IMAGE_WIDTH_MM <- 250
-PDF_IMAGE_HEIGHT_MM <- 115
+PDF_IMAGE_HEIGHT_MM <- 133
 
 # Target dimensions for label placement calculation (in mm)
 # These represent the actual visible chart area in the Typst template
@@ -46,7 +46,7 @@ PDF_IMAGE_HEIGHT_MM <- 115
 # - Chart area insets: left 18.67mm, right 4.67mm
 # Labels should be positioned for how they appear in final PDF
 PDF_CHART_WIDTH_MM <- 202
-PDF_CHART_HEIGHT_MM <- 115
+PDF_CHART_HEIGHT_MM <- 133
 
 # Fixed label size for PDF export
 # This ensures consistent, readable labels regardless of how the chart was created

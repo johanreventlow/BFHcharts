@@ -66,22 +66,22 @@ show table.cell: it => {
     "a4",
     flipped: true,
     margin: (4.67mm),
-    fill: rgb("ffff00"),  // Gul baggrundsfarve for at visualisere margins
+    //fill: rgb("ffff00"),  // Gul baggrundsfarve for at visualisere margins
     foreground: (
        place(
-         image("images/Hospital_Maerke_RGB_A1_str.png", 
+         image("images/Hospital_Maerke_RGB_A1_str.png",
          height: 14mm
-       ), 
+       ),
        //dy: 28mm,
        //dy: 32.67mm,
-       //dy: 37.33mm, 
+       //dy: 37.33mm,
        dy: 46.7mm,
        dx: 4.6mm)
      )
   )
 
     grid(
-      rows: (51.33mm, 25mm, auto, auto),
+      rows: (51.33mm, 25mm, 1fr, 5mm),
       columns: (4.67mm, auto),
         block(
           
@@ -264,16 +264,21 @@ grid.cell(
     )
   ),
 
-  // Footer content section - only show if provided
+  // Footer content section - fixed 5mm height, no padding
   grid.cell(
     fill: rgb("ffffff"),
     colspan: 2,
     if footer_content != none {
-      block(inset: (left: 18.67mm, top: 4.67mm, right: 4.67mm, bottom: 4.67mm),
-        text(
-          fill: rgb("888888"),
-          size: 9pt,
-          footer_content
+      block(
+        width: 100%,
+        height: 100%,
+        inset: (left: 14mm, right: 0mm),
+        align(right + horizon,
+          text(
+            fill: rgb("888888"),
+            size: 6pt,
+            upper(footer_content)
+          )
         )
       )
     }
