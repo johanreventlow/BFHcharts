@@ -1124,8 +1124,10 @@ markdown_to_typst <- function(text) {
 
   result <- text
 
-
   # Escape Typst special characters in content (but not our formatting markers)
+  # Escape @ (used for references/citations in Typst)
+  result <- gsub("@", "\\\\@", result)
+
   # Escape hash (#) that's not part of our conversion
   # Don't escape [ ] as we need them for content blocks
   result <- gsub("(?<!\\*)#", "\\\\#", result, perl = TRUE)

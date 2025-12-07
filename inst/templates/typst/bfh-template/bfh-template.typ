@@ -81,7 +81,7 @@ show table.cell: it => {
   )
 
     grid(
-      rows: (51.33mm, 25mm, 1fr, 5mm),
+      rows: (51.33mm, 22.66mm, 1fr),
       columns: (4.67mm, auto),
         block(
           
@@ -255,6 +255,18 @@ grid.cell(
                     size: 9pt,
                     data_definition)
          }
+
+         // Footer content and production date - placed at bottom of this column
+         #v(1fr)  // Push to bottom
+         #align(right)[
+           #text(fill: rgb("888888"), size: 6pt)[
+             #if footer_content != none {
+               upper(footer_content)
+               linebreak()
+             }
+             #upper[PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")]
+           ]
+         ]
        ]
 
 
@@ -262,26 +274,6 @@ grid.cell(
 )
 
     )
-  ),
-
-  // Footer content section - fixed 5mm height, no padding
-  grid.cell(
-    fill: rgb("ffffff"),
-    colspan: 2,
-    if footer_content != none {
-      block(
-        width: 100%,
-        height: 100%,
-        inset: (left: 14mm, right: 0mm),
-        align(right + horizon,
-          text(
-            fill: rgb("888888"),
-            size: 6pt,
-            upper(footer_content)
-          )
-        )
-      )
-    }
   )
 )
 
