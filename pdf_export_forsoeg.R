@@ -21,17 +21,17 @@ result <-
   y = taeller,
   n = naevner,
   target_value = 0.95,
-  chart_type = "run",
+  chart_type = "p",
   y_axis_unit = "percent",
-  ylab = "Procent",
-  # xlab = "Måned",
+  # ylab = "Procent",
+  # xlab = "Udskrivelsesmåned",
   chart_title = "Andel FMK ajourført til tiden efter indlæggelse"
 ) 
 
 # result$plot <- result$plot +
 #   ggplot2::theme(#plot.margin = ggplot2::margin(5, 5, 5, 5, "mm"),
 #     plot.background = element_rect(fill = "red")
-#                  )
+                 # )
 
 # Vis chart i viewer (interaktiv mode)
 if (interactive()) {
@@ -51,7 +51,7 @@ result |>
       data_definition = "Andel udskrevne patienter der har fået ajourført deres medicinkort via FMK inden for den aftalte tid ud af alle indlæggelser, hvor medicin er ordineret, udleveret eller administreret. K",
       target = 0.95,  # Mål: max 45 minutter
       author = "Kvalitetsafdelingen",
-      footer_content = "Kilde: Sundhedsdatastyrelsen\n**Bemærk:** Data er foreløbige",
+      footer_content = "Kilde: Sundhedsdatastyrelsen\nKontakt: johan.reventlow@reventlow.dk",
       date = Sys.Date()
     ),
     auto_analysis = TRUE,  # ⭐ NY FUNKTION: Automatisk analyse-generering
