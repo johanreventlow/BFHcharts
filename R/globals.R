@@ -32,24 +32,32 @@ DEFAULT_LABEL_SIZE_MULTIPLIER <- 6
 # ============================================================================
 
 # PNG image dimensions for ggsave (what gets embedded in Typst)
-# These are the original dimensions that work with the Typst template
-# Height adjusted based on visual testing to fill available space
-PDF_IMAGE_WIDTH_MM <- 221
-PDF_IMAGE_HEIGHT_MM <- 126.67
+# These dimensions should match the available chart area in the Typst template
+# Based on 6.6mm grid layout:
+# - A4 landscape: 297x210mm
+# - Page margins: bottom 6.6mm, rest 0mm
+# - Chart area inset left: 26.4mm (4x grid)
+# - Chart area inset right: 6.6mm (1x grid)
+# - SPC column width: 72.6mm (11x grid)
+# Image width: 297 - 26.4 - 6.6 - 72.6 = 191.4mm
+# Image height: 210 - 6.6 (bottom margin) - 59.4 - 26.4 - 6.6 (top inset) - 6.6 (bottom inset) = 104.4mm
+PDF_IMAGE_WIDTH_MM <- 191.4
+PDF_IMAGE_HEIGHT_MM <- 104.4
 
 # Target dimensions for label placement calculation (in mm)
 # These represent the actual visible chart area in the Typst template
-# Based on bfh-diagram layout:
+# Based on bfh-diagram 6.6mm grid layout:
 # - A4 landscape: 297x210mm
-# - Page margins: 4.67mm each side
-# - Left grid column: 4.67mm
-# - SPC table column: 62mm
-# - Chart area insets: left 18.67mm, right 4.67mm
-# Chart width: 297 - (2 * 4.67) - 4.67 - 18.67 - 4.67 - 62 = 197.65mm
-# Chart height: 210 - (2 * 4.67) - 51.33 - 25 = 124.33mm
+# - Page margins: bottom 6.6mm, rest 0mm
+# - Header row: 59.4mm (9x grid)
+# - Analysis row: 26.4mm (4x grid)
+# - Chart area insets: left 26.4mm, right 6.6mm, top 6.6mm
+# - SPC table column: 72.6mm (11x grid)
+# Chart width: 297 - 26.4 - 6.6 - 72.6 = 191.4mm
+# Chart height: 210 - 6.6 (bottom margin) - 59.4 - 26.4 - 6.6 (top inset) - 6.6 (bottom inset) = 104.4mm
 # Labels should be positioned for how they appear in final PDF
-PDF_CHART_WIDTH_MM <- 197.65
-PDF_CHART_HEIGHT_MM <- 126.67
+PDF_CHART_WIDTH_MM <- 191.4
+PDF_CHART_HEIGHT_MM <- 104.4
 
 # Fixed label size for PDF export
 # This ensures consistent, readable labels regardless of how the chart was created

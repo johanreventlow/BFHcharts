@@ -28,13 +28,13 @@
   details: none,
   author: none,
   date: datetime.today(),
-  data_definition: none,
-  runs_expected: none,
-  runs_actual: none,
-  crossings_expected: none,
-  crossings_actual: none,
-  outliers_expected: none,
-  outliers_actual: none,
+  data_definition: lorem(75),
+  runs_expected: 7,
+  runs_actual: 8,
+  crossings_expected: 15,
+  crossings_actual: 10,
+  outliers_expected: 0,
+  outliers_actual: 0,
   is_run_chart: false,
   footer_content: none,
   chart
@@ -45,19 +45,14 @@
 
 
 show table.cell: it => {
-  if it.x == 0 {
-    set text(fill: rgb("888888"), size: 9pt, weight: "regular")
-    pad(top: 2mm, bottom: 2mm, it)
-  } else if it.y == 0 {
+  // Header row (y == 0): small grey text, centered
+  if it.y == 0 {
     set text(fill: rgb("888888"), size: 9pt, weight: "regular")
     set align(center)
     it
   } else {
-    set align(center)
-    set text(fill: rgb("888888"), 
-    weight: "extrabold",
-    size: 28pt)
-    pad(2mm, it)
+    // Data rows: let the box helper functions handle styling
+    it
   }
 }
  
@@ -65,46 +60,37 @@ show table.cell: it => {
   set page(
     "a4",
     flipped: true,
-    margin: (4.67mm),
+    margin: (bottom: 6.6mm, rest: 0mm),
     //fill: rgb("ffff00"),  // Gul baggrundsfarve for at visualisere margins
     foreground: (
        place(
          image("images/Hospital_Maerke_RGB_A1_str.png",
-         height: 14mm
+         height: 19.8mm
        ),
-       //dy: 28mm,
+       //dy: 46.2mm,
        //dy: 32.67mm,
-       //dy: 37.33mm,
-       dy: 46.7mm,
-       dx: 4.6mm)
+       //dy: 37.33mm, 
+       //dy: 66mm,
+       dy: 170.4mm,
+       //dy: 177mm,
+       dx: 0mm)
+       //dx: 4.67mm)
      )
   )
 
     grid(
-      rows: (51.33mm, 22.66mm, 1fr),
-      columns: (4.67mm, auto),
-        block(
-          
-          //fill: rgb("e5f2f8"),
-          //fill: rgb("ccebfa"),
-          //fill: rgb("4db9ef"),
-          //fill: rgb("ffffff"),
-          //fill: rgb("DCF1FC"),
-          //fill: rgb("99D7F6"),
-          //fill: rgb("007dbb"),
-          height: 100%,
-          width: 100%
-        ),
-  
+      //rows: (51.33mm, 22.66mm, 1fr),
+      rows: (59.4mm, 22.1mm, 1fr),
+      //rows: (52.8mm, 26.4mm, 1fr),
         block(
           //fill: rgb("DCF1FC"),
           fill: rgb("007dbb"),
-          inset: (left: 14mm, rest: 4.67mm),
+          inset: (left: 26.4mm, rest: 6.6mm),
           height: 100%,
           width: 100%,
           align(top,
             par(
-              leading: 0.65em,
+              //leading: 0.65em,
               [#text(
                 rgb("fff"),
                 font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
@@ -121,7 +107,7 @@ show table.cell: it => {
             ) +
           align(bottom,
             par(
-              leading: 0.4em,
+              leading: 0.5em,
                 text(rgb("fff"), 
                 size: 38pt,
                 title
@@ -133,25 +119,25 @@ show table.cell: it => {
 
   grid.cell(
   fill: rgb("ffffff"),
-    colspan: 2,
         if analysis != none {
-          block(inset: (left: 18.67mm, top: 4.67mm, rest: 0mm),
+          block(inset: (left: 26.4mm, top: 6.6mm, right: 6.6mm, bottom: 0mm),
+          par(
+            //leading: .6em,
           text(
                size: 15pt,
           analysis)
           )
+        )
         }
       ),
 
 
 grid.cell(
     fill: rgb("ffffff"),
-    colspan: 2,
     grid(
       rows: (auto),
-      columns: (auto, 62mm),
-      block(inset: (left: 18.67mm, top: 4.67mm, right: 4.67mm, 
-      bottom: 0mm),
+      columns: (auto, 72.6mm),
+      block(inset: (left: 26.4mm, top: 6.6mm, right: 6.6mm, bottom: 0mm),
       width: 100%,
       //fill: rgb("ccebfa"), //Blå baggrundsfarve - husk at fjerne
           block(inset: (0mm),
@@ -161,12 +147,12 @@ grid.cell(
                upper(details))) +
           
           text(
-               size: 11pt,
                chart
-             )
+             ) 
+             
         ),
-      block(inset: (left: 0mm, top: 4.67mm, right: 0mm),
-       //fill: rgb("ccebfa"),
+      block(inset: (left: 0mm, top: 6.6mm, right: 6.6mm),
+      //fill: rgb("ccebfa"),
       width: 100%,
       //height: 100%, */
        [
@@ -180,19 +166,42 @@ grid.cell(
             crossings_expected != none or crossings_actual != none or
             outliers_expected != none or outliers_actual != none) {
 
+           // Fixed cell dimensions for consistent alignment
+           let cell-width = 13.2mm
+           let cell-height = 9.9mm
+           let cell-inset = 0mm
+           let label-width = 33mm
+
            // Helper function for signal cell (grey background, white text)
            let signal-cell(content) = {
              box(
                fill: rgb("888888"),
-               inset: 2mm,
-               radius: 2pt,
-               text(fill: white, weight: "extrabold", size: 28pt, content)
+               width: cell-width,
+               height: cell-height,
+               inset: cell-inset,
+               radius: 0pt,
+               align(center + horizon, text(fill: white, weight: "extrabold", size: 28pt, content))
              )
            }
 
-           // Helper function for normal cell
+           // Helper function for normal cell (same dimensions, no background)
            let normal-cell(content) = {
-             text(fill: rgb("888888"), weight: "extrabold", size: 28pt, content)
+             box(
+               width: cell-width,
+               height: cell-height,
+               inset: cell-inset,
+               align(center + horizon, text(fill: rgb("888888"), weight: "extrabold", size: 28pt, content))
+             )
+           }
+
+           // Helper function for label cell (first column, left-aligned)
+           let label-cell(content) = {
+             box(
+               width: label-width,
+               height: cell-height,
+               inset: cell-inset,
+               align(left + horizon, text(fill: rgb("888888"), size: 9pt, weight: "regular", content))
+             )
            }
 
            // Check for signal conditions
@@ -201,17 +210,18 @@ grid.cell(
            let outliers_signal = (outliers_actual != none and outliers_actual > 0)
 
            table(
-             columns: (27mm, 18mm, 18mm),
-             stroke: none,
+             columns: (33mm, 13.2mm, 13.2mm),
+             column-gutter: 3.3mm,
+             stroke: 0mm,
              inset: (0mm),
              table.header(
                [],
-               [FORVENTET],
-               [FAKTISK],
+               pad(bottom: 1mm, align(center)[FORVENTET]),
+               pad(bottom: 1mm, align(center)[FAKTISK]),
              ),
              // Row 1: SERIELÆNGDE
-             [SERIELÆNGDE (MAKSIMUM)],
-             [#if runs_expected != none {str(runs_expected)} else {[-]}],
+             [#label-cell[SERIELÆNGDE (MAKSIMUM)]],
+             [#if runs_expected != none {normal-cell(str(runs_expected))} else {[-]}],
              [#if runs_actual != none {
                if runs_signal {
                  signal-cell(str(runs_actual))
@@ -220,8 +230,8 @@ grid.cell(
                }
              } else {[-]}],
              // Row 2: ANTAL KRYDS
-             [ANTAL KRYDS (MINIMUM)],
-             [#if crossings_expected != none {str(crossings_expected)} else {[-]}],
+             [#label-cell[ANTAL KRYDS (MINIMUM)]],
+             [#if crossings_expected != none {normal-cell(str(crossings_expected))} else {[-]}],
              [#if crossings_actual != none {
                if crossings_signal {
                  signal-cell(str(crossings_actual))
@@ -231,8 +241,8 @@ grid.cell(
              } else {[-]}],
              // Row 3: OBS. UDEN FOR KONTROLGRÆNSE (only for non-run charts)
              ..if not is_run_chart {(
-               [OBS. UDEN FOR KONTROLGRÆNSE],
-               [#if outliers_expected != none {str(outliers_expected)} else {[-]}],
+               [#label-cell[OBS. UDEN FOR KONTROLGRÆNSE]],
+               [#if outliers_expected != none {normal-cell(str(outliers_expected))} else {[-]}],
                [#if outliers_actual != none {
                  if outliers_signal {
                    signal-cell(str(outliers_actual))
@@ -251,9 +261,11 @@ grid.cell(
                     size: 9pt,
                     upper([Datadefinition]))
            linebreak()
+           par(justify: true,
            text(fill: rgb("888888"),
                     size: 9pt,
                     data_definition)
+                  )
          }
 
          // Footer content and production date - placed at bottom of this column
