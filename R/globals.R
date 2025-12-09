@@ -40,9 +40,9 @@ DEFAULT_LABEL_SIZE_MULTIPLIER <- 6
 # - Chart area inset right: 6.6mm (1x grid)
 # - SPC column width: 72.6mm (11x grid)
 # Image width: 297 - 26.4 - 6.6 - 72.6 = 191.4mm
-# Image height: 210 - 6.6 (bottom margin) - 59.4 - 26.4 - 6.6 (top inset) - 6.6 (bottom inset) = 104.4mm
+# Image height: 210 - 6.6 (bottom margin) - 52.8 - 26.4 - 2 (top inset) - 13.2 (bottom space) = 109mm
 PDF_IMAGE_WIDTH_MM <- 191.4
-PDF_IMAGE_HEIGHT_MM <- 104.4
+PDF_IMAGE_HEIGHT_MM <- 109
 
 # Target dimensions for label placement calculation (in mm)
 # These represent the actual visible chart area in the Typst template
@@ -54,10 +54,10 @@ PDF_IMAGE_HEIGHT_MM <- 104.4
 # - Chart area insets: left 26.4mm, right 6.6mm, top 6.6mm
 # - SPC table column: 72.6mm (11x grid)
 # Chart width: 297 - 26.4 - 6.6 - 72.6 = 191.4mm
-# Chart height: 210 - 6.6 (bottom margin) - 59.4 - 26.4 - 6.6 (top inset) - 6.6 (bottom inset) = 104.4mm
+# Chart height: 210 - 6.6 (bottom margin) - 52.8 - 26.4 - 2 (top inset) - 13.2 (bottom space) = 109mm
 # Labels should be positioned for how they appear in final PDF
 PDF_CHART_WIDTH_MM <- 191.4
-PDF_CHART_HEIGHT_MM <- 104.4
+PDF_CHART_HEIGHT_MM <- 109
 
 # Fixed label size for PDF export
 # This ensures consistent, readable labels regardless of how the chart was created

@@ -68,10 +68,10 @@ show table.cell: it => {
          height: 19.8mm
        ),
        //dy: 46.2mm,
-       //dy: 32.67mm,
-       //dy: 37.33mm, 
+       dy: 39.6mm,
+       //dy: 59.43mm, 
        //dy: 66mm,
-       dy: 170.4mm,
+       //dy: 170.4mm,
        //dy: 177mm,
        dx: 0mm)
        //dx: 4.67mm)
@@ -80,8 +80,8 @@ show table.cell: it => {
 
     grid(
       //rows: (51.33mm, 22.66mm, 1fr),
-      rows: (59.4mm, 22.1mm, 1fr),
-      //rows: (52.8mm, 26.4mm, 1fr),
+      //rows: (59.4mm, 22.1mm, 1fr),
+      rows: (52.8mm, 26.4mm, 1fr),
         block(
           //fill: rgb("DCF1FC"),
           fill: rgb("007dbb"),
@@ -137,7 +137,7 @@ grid.cell(
     grid(
       rows: (auto),
       columns: (auto, 72.6mm),
-      block(inset: (left: 26.4mm, top: 6.6mm, right: 6.6mm, bottom: 0mm),
+      block(inset: (left: 26.4mm, top: 2mm, right: 6.6mm, bottom: 0mm),
       width: 100%,
       //fill: rgb("ccebfa"), //Blå baggrundsfarve - husk at fjerne
           block(inset: (0mm),
@@ -145,13 +145,21 @@ grid.cell(
                //weight: "light",
                size: 9pt,
                upper(details))) +
-          
+
           text(
                chart
-             ) 
-             
+             ) +
+
+          // Production date below chart with 6.6mm space from bottom
+          v(1fr) +
+          align(left)[
+            #text(fill: rgb("888888"), size: 6pt)[
+              #upper[PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")]
+            ]
+          ]
+
         ),
-      block(inset: (left: 0mm, top: 6.6mm, right: 6.6mm),
+      block(inset: (left: 0mm, top: 2mm, right: 6.6mm),
       //fill: rgb("ccebfa"),
       width: 100%,
       //height: 100%, */
@@ -230,7 +238,7 @@ grid.cell(
                }
              } else {[-]}],
              // Row 2: ANTAL KRYDS
-             [#label-cell[ANTAL KRYDS (MINIMUM)]],
+             [#label-cell[ANTAL KRYDS \ (MINIMUM)]],
              [#if crossings_expected != none {normal-cell(str(crossings_expected))} else {[-]}],
              [#if crossings_actual != none {
                if crossings_signal {
@@ -252,7 +260,6 @@ grid.cell(
                } else {[-]}],
              )},
            )
-           v(2mm)
          }
          // Data definition section - only show if provided
          #if data_definition != none {
@@ -268,17 +275,15 @@ grid.cell(
                   )
          }
 
-         // Footer content and production date - placed at bottom of this column
+         // Footer content - placed at bottom of this column
          #v(1fr)  // Push to bottom
-         #align(right)[
-           #text(fill: rgb("888888"), size: 6pt)[
-             #if footer_content != none {
-               upper(footer_content)
-               linebreak()
-             }
-             #upper[PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")]
+         #if footer_content != none {
+           align(right)[
+             #text(fill: rgb("888888"), size: 6pt)[
+               #upper(footer_content)
+             ]
            ]
-         ]
+         }
        ]
 
 
