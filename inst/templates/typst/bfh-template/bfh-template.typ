@@ -36,7 +36,7 @@
   outliers_expected: 0,
   outliers_actual: 0,
   is_run_chart: false,
-  footer_content: none,
+  footer_content: "Kilde: Sundhedsdatastyrelsen\nKontakt: johan.reventlow@regionh.dk",
   chart
 ) = {
   set text(font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
@@ -93,13 +93,11 @@ show table.cell: it => {
               //leading: 0.65em,
               [#text(
                 rgb("fff"),
-                font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
+                font: ("Mari Bold", "Roboto", "Arial", "Helvetica", "sans-serif"),
                 size: 13pt,
-                //weight: "bold",
                 hospital ) \
                 #text(
-                  font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
-                  //weight: "bold",
+                  font: ("Mari Bold", "Roboto", "Arial", "Helvetica", "sans-serif"),
                   size: 13pt,
                   rgb("fff"),
                   department
@@ -125,6 +123,7 @@ show table.cell: it => {
             //leading: .6em,
           text(
                size: 15pt,
+               //font: ("Mari Book", "Roboto", "Arial", "Helvetica", "sans-serif"),
           analysis)
           )
         )
@@ -150,13 +149,14 @@ grid.cell(
                chart
              ) +
 
-          // Production date below chart with 6.6mm space from bottom
+          // Production date and footer content below chart
           v(1fr) +
-          align(left)[
-            #text(fill: rgb("888888"), size: 6pt)[
-              #upper[PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")]
-            ]
-          ]
+          grid(
+            columns: (1fr, 1fr),
+            align: bottom,
+            align(left, text(fill: rgb("888888"), size: 6pt, upper[PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")])),
+            align(right, if footer_content != none { text(fill: rgb("888888"), size: 6pt, upper(footer_content)) })
+          )
 
         ),
       block(inset: (left: 0mm, top: 2mm, right: 6.6mm),
@@ -270,19 +270,10 @@ grid.cell(
            linebreak()
            par(justify: true,
            text(fill: rgb("888888"),
+           //font: ("Mari Book", "Roboto", "Arial", "Helvetica", "sans-serif"),
                     size: 9pt,
                     data_definition)
                   )
-         }
-
-         // Footer content - placed at bottom of this column
-         #v(1fr)  // Push to bottom
-         #if footer_content != none {
-           align(right)[
-             #text(fill: rgb("888888"), size: 6pt)[
-               #upper(footer_content)
-             ]
-           ]
          }
        ]
 

@@ -22,9 +22,17 @@
       "Bash(openspec validate:*)",
       "Bash(gh issue edit:*)",
       "Bash(gh issue comment:*)",
-      "Bash(openspec archive:*)"
+      "Bash(openspec archive:*)",
+      "SlashCommand(/openspec:archive add-spc-analysis-ai)",
+      "WebFetch(domain:github.com)",
+      "Bash(ls:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
   }
 }
