@@ -297,14 +297,23 @@ bfh_generate_analysis <- function(x,
       qic_data = x$qic_data
     )
 
+    # Byg fallback-analyse som baseline for AI
+    baseline_analysis <- build_fallback_analysis(context,
+                                                 min_chars = min_chars,
+                                                 max_chars = max_chars)
+
     # Byg kontekst til BFHllm
     llm_context <- list(
       data_definition = context$data_definition %||% "",
       chart_title = context$chart_title %||% "",
       y_axis_unit = context$y_axis_unit %||% "",
       target_value = context$target_value,
-      # Inkluder standardtekster som eksempler
-      signal_examples = paste(context$signal_interpretations, collapse = " ")
+      hospital = context$hospital %||% "",
+      department = context$department %||% "",
+      n_points = context$n_points,
+      centerline = context$centerline,
+      # Fagligt korrekt baseline-analyse baseret p\u00e5 Anh\u00f8j-regler
+      baseline_analysis = baseline_analysis
     )
 
     # Kald BFHllm
@@ -315,7 +324,8 @@ bfh_generate_analysis <- function(x,
           context = llm_context,
           min_chars = min_chars,
           max_chars = max_chars,
-          use_rag = TRUE
+          use_rag = TRUE,
+          timeout = 30
         )
       },
       error = function(e) {
@@ -333,18 +343,267 @@ bfh_generate_analysis <- function(x,
   }
 
   # === FALLBACK: STANDARDTEKSTER ===
-
-  # Kombinér signal-fortolkninger
-  if (length(context$signal_interpretations) > 0) {
-    analysis <- paste(context$signal_interpretations, collapse = " ")
-  } else {
-    analysis <- "Processen viser stabil adfærd uden særlige signaler."
-  }
-
-  # Tilføj titel hvis tilgængelig
-  if (!is.null(context$chart_title) && nchar(context$chart_title) > 0) {
-    analysis <- paste0(context$chart_title, ": ", analysis)
-  }
-
+  analysis <- build_fallback_analysis(context,
+                                      min_chars = min_chars,
+                                      max_chars = max_chars)
   return(analysis)
+}
+
+
+# Intern funktion: Byg komplet fallback-analysetekst
+# Kombinerer stabilitetsvurdering + målvurdering + handlingsforslag
+# og justerer til min_chars-max_chars intervallet.
+build_fallback_analysis <- function(context,
+                                    min_chars = 300,
+                                    max_chars = 375) {
+  spc_stats <- context$spc_stats
+  target_value <- context$target_value
+  centerline <- context$centerline
+  n_points <- context$n_points
+
+  # --- Detect signaler ---
+  has_runs <- !is.null(spc_stats$runs_actual) &&
+    !is.null(spc_stats$runs_expected) &&
+    spc_stats$runs_actual > spc_stats$runs_expected
+
+  has_crossings <- !is.null(spc_stats$crossings_actual) &&
+    !is.null(spc_stats$crossings_expected) &&
+    spc_stats$crossings_actual < spc_stats$crossings_expected
+
+  has_outliers <- !is.null(spc_stats$outliers_actual) &&
+    spc_stats$outliers_actual > 0
+
+  is_stable <- !has_runs && !has_crossings && !has_outliers
+
+  # --- 1. Stabilitetstekst ---
+  stability <- fallback_stability_text(
+    spc_stats, has_runs, has_crossings, has_outliers
+  )
+
+  # --- 2. M\u00e5lvurdering ---
+  has_target <- !is.null(target_value) && !is.na(target_value) &&
+    !is.null(centerline) && !is.na(centerline)
+
+  target_text <- ""
+  at_target <- FALSE
+
+  if (has_target) {
+    fmt <- format_target_value(target_value)
+    tolerance <- max(abs(target_value) * 0.05, 0.01)
+
+    if (abs(centerline - target_value) <= tolerance) {
+      target_text <- sprintf("Niveauet ligger t\u00e6t p\u00e5 m\u00e5let (%s).", fmt)
+      at_target <- TRUE
+    } else if (centerline > target_value) {
+      target_text <- sprintf("Niveauet ligger over m\u00e5let (%s).", fmt)
+    } else {
+      target_text <- sprintf("Niveauet ligger under m\u00e5let (%s).", fmt)
+    }
+  }
+
+  # --- 3. Handlingsforslag ---
+  action <- fallback_action_text(is_stable, has_target, at_target)
+
+  # --- Kombinér ---
+  parts <- c(stability, target_text, action)
+  parts <- parts[nchar(parts) > 0]
+  text <- paste(parts, collapse = " ")
+
+  # --- Justér længde ---
+  text <- adjust_fallback_length(text, min_chars, max_chars, n_points)
+
+  return(text)
+}
+
+
+# Stabilitetstekst baseret på signalkombination
+fallback_stability_text <- function(spc_stats,
+                                    has_runs,
+                                    has_crossings,
+                                    has_outliers) {
+  if (!has_runs && !has_crossings && !has_outliers) {
+    paste0(
+      "Processen viser stabil og forudsigelig adf\u00e6rd. Variationen er ",
+      "naturlig, og der er ingen tegn p\u00e5 systematiske \u00e6ndringer i ",
+      "hverken seriel\u00e6ngde, antal krydsninger eller kontrolgr\u00e6nser."
+    )
+
+  } else if (has_runs && !has_crossings && !has_outliers) {
+    sprintf(
+      paste0(
+        "Der er tegn p\u00e5 et skift i procesniveauet. L\u00e6ngste serie ",
+        "(%d) overstiger forventet maksimum (%d), hvilket indikerer at ",
+        "processen har \u00e6ndret sig. Unders\u00f8g hvad der kan have ",
+        "for\u00e5rsaget \u00e6ndringen."
+      ),
+      spc_stats$runs_actual, spc_stats$runs_expected
+    )
+
+  } else if (!has_runs && has_crossings && !has_outliers) {
+    sprintf(
+      paste0(
+        "Der er tegn p\u00e5 gruppering i data. Antal krydsninger (%d) er ",
+        "under forventet minimum (%d), hvilket tyder p\u00e5 at ",
+        "datapunkterne klumper sig i stedet for at variere tilf\u00e6ldigt ",
+        "omkring centrallinjen."
+      ),
+      spc_stats$crossings_actual, spc_stats$crossings_expected
+    )
+
+  } else if (!has_runs && !has_crossings && has_outliers) {
+    sprintf(
+      paste0(
+        "Der er fundet %d observation(er) uden for kontrolgr\u00e6nserne. ",
+        "Disse enkeltstående afvigelser b\u00f8r unders\u00f8ges for ",
+        "s\u00e6rlige \u00e5rsager, da de kan skyldes us\u00e6dvanlige ",
+        "h\u00e6ndelser eller m\u00e5lefejl."
+      ),
+      spc_stats$outliers_actual
+    )
+
+  } else if (has_runs && has_crossings && !has_outliers) {
+    sprintf(
+      paste0(
+        "Processen viser systematisk ustabilitet. B\u00e5de seriel\u00e6ngde ",
+        "(%d > %d) og antal krydsninger (%d < %d) afviger fra det ",
+        "forventede, hvilket peger p\u00e5 en grundl\u00e6ggende ",
+        "proces\u00e6ndring."
+      ),
+      spc_stats$runs_actual, spc_stats$runs_expected,
+      spc_stats$crossings_actual, spc_stats$crossings_expected
+    )
+
+  } else if (has_runs && !has_crossings && has_outliers) {
+    sprintf(
+      paste0(
+        "Processen viser et niveauskift (seriel\u00e6ngde %d > %d) og %d ",
+        "observation(er) uden for kontrolgr\u00e6nserne. Unders\u00f8g om ",
+        "niveauskiftet og de ekstreme v\u00e6rdier har samme underliggende ",
+        "\u00e5rsag."
+      ),
+      spc_stats$runs_actual, spc_stats$runs_expected,
+      spc_stats$outliers_actual
+    )
+
+  } else if (!has_runs && has_crossings && has_outliers) {
+    sprintf(
+      paste0(
+        "Processen viser gruppering (krydsninger %d < %d) og %d ",
+        "observation(er) uden for kontrolgr\u00e6nserne. Dette m\u00f8nster ",
+        "kan indikere at processen p\u00e5virkes af skiftende betingelser."
+      ),
+      spc_stats$crossings_actual, spc_stats$crossings_expected,
+      spc_stats$outliers_actual
+    )
+
+  } else {
+    # Alle tre signaler
+    sprintf(
+      paste0(
+        "Processen er ustabil med flere samtidige signaler: niveauskift ",
+        "(seriel\u00e6ngde %d > %d), gruppering (krydsninger %d < %d) og ",
+        "%d observation(er) uden for kontrolgr\u00e6nserne. En grundig ",
+        "analyse anbefales."
+      ),
+      spc_stats$runs_actual, spc_stats$runs_expected,
+      spc_stats$crossings_actual, spc_stats$crossings_expected,
+      spc_stats$outliers_actual
+    )
+  }
+}
+
+
+# Handlingsforslag baseret på stabilitet og mål
+fallback_action_text <- function(is_stable, has_target, at_target) {
+  if (is_stable && has_target && at_target) {
+    paste0(
+      "Forts\u00e6t den nuv\u00e6rende praksis og overv\u00e5g processen ",
+      "l\u00f8bende for at fastholde det gode niveau."
+    )
+
+  } else if (is_stable && has_target && !at_target) {
+    paste0(
+      "Processen er stabil men n\u00e5r ikke m\u00e5let. Forbedring ",
+      "kr\u00e6ver en bevidst \u00e6ndring af processen \u2013 den ",
+      "nuv\u00e6rende praksis vil levere samme resultat."
+    )
+
+  } else if (is_stable && !has_target) {
+    paste0(
+      "Overvej at fasts\u00e6tte et m\u00e5l for indikatoren for at ",
+      "kunne vurdere om det aktuelle niveau er tilfredsstillende og om ",
+      "der er behov for forbedring."
+    )
+
+  } else if (!is_stable && has_target && at_target) {
+    paste0(
+      "Selvom m\u00e5let aktuelt er opfyldt, er processen ustabil. ",
+      "Identific\u00e9r og adress\u00e9r \u00e5rsagerne til variationen ",
+      "for at sikre at niveauet kan fastholdes."
+    )
+
+  } else if (!is_stable && has_target && !at_target) {
+    paste0(
+      "Priorit\u00e9r at identificere og fjerne de s\u00e6rlige ",
+      "\u00e5rsager til variationen f\u00f8r yderligere ",
+      "forbedringstiltag iv\u00e6rks\u00e6ttes."
+    )
+
+  } else {
+    # Ustabil, intet mål
+    paste0(
+      "Identific\u00e9r og unders\u00f8g \u00e5rsagerne til den ",
+      "us\u00e6dvanlige variation. N\u00e5r processen er bragt under ",
+      "kontrol, kan der fasts\u00e6ttes et realistisk m\u00e5l."
+    )
+  }
+}
+
+
+# Formatér målværdi til visning
+format_target_value <- function(x) {
+  if (is.null(x) || is.na(x)) return("")
+  if (x == round(x)) {
+    as.character(as.integer(x))
+  } else {
+    format(round(x, 2), decimal.mark = ",", nsmall = 1)
+  }
+}
+
+
+# Justér tekst til min/max længde
+adjust_fallback_length <- function(text, min_chars, max_chars, n_points) {
+  current <- nchar(text)
+
+  # Pad hvis for kort
+  if (current < min_chars) {
+    if (!is.null(n_points) && !is.na(n_points)) {
+      padding <- sprintf(
+        "Analysen er baseret p\u00e5 %d datapunkter.", n_points
+      )
+      text <- paste(text, padding)
+      current <- nchar(text)
+    }
+  }
+
+  # Pad med generisk tekst hvis stadig for kort
+  if (current < min_chars) {
+    extra <- paste0(
+      "Fortsat monitorering anbefales for at f\u00f8lge processens ",
+      "udvikling over tid."
+    )
+    text <- paste(text, extra)
+    current <- nchar(text)
+  }
+
+  # Trim hvis for lang: find sidste punktum inden for max_chars
+  if (current > max_chars) {
+    truncated <- substr(text, 1, max_chars)
+    last_period <- max(gregexpr("\\.", truncated)[[1]])
+    if (last_period > min_chars) {
+      text <- substr(text, 1, last_period)
+    }
+  }
+
+  return(text)
 }

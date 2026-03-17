@@ -705,7 +705,7 @@ bfh_compile_typst <- function(typst_file, output) {
   result <- tryCatch(
     system2(
       "quarto",
-      args = c("typst", "compile", typst_file, output),
+      args = c("typst", "compile", shQuote(typst_file), shQuote(output)),
       stdout = TRUE,
       stderr = TRUE
     ),
