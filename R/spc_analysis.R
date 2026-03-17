@@ -149,8 +149,8 @@ if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()")
   }
 
-  # Udtræk SPC statistikker
-  spc_stats <- bfh_extract_spc_stats(x$summary)
+  # Udtræk SPC statistikker (inkl. outliers fra qic_data)
+  spc_stats <- extract_spc_stats_extended(x)
 
   # Generer standardtekster
   signal_interpretations <- bfh_interpret_spc_signals(spc_stats)
