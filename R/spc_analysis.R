@@ -382,6 +382,7 @@ build_fallback_analysis <- function(context,
 
   # --- 2. M\u00e5lvurdering ---
   has_target <- !is.null(target_value) && !is.na(target_value) &&
+    is.numeric(target_value) &&
     !is.null(centerline) && !is.na(centerline)
 
   target_text <- ""
