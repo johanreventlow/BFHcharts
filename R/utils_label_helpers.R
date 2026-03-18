@@ -77,14 +77,10 @@ sanitize_marquee_text <- function(text) {
     text <- text[1]
   }
 
-  # SECURITY: Escape ALL special characters including < and >
-  # While marquee's markdown parser may handle these, we escape them
-  # for defense-in-depth security to prevent any potential markup injection
-
-  # Escape HTML/XML special characters first
-  text <- gsub("&", "&amp;", text)   # Ampersand first (to avoid double-escaping)
-  text <- gsub("<", "&lt;", text)    # Less than
-  text <- gsub(">", "&gt;", text)    # Greater than
+  # Escape marquee-relevante specialtegn
+  # NB: < og > escapes IKKE — marquee bruger markdown, ikke HTML,
+  # saa < og > er sikre og skal vises som-de-er (fx "> 80%", "< 5")
+  text <- gsub("&", "&amp;", text)   # Ampersand (undgaa double-escaping)
 
   # Escape marquee special characters
   text <- gsub("\\{", "&#123;", text) # Left brace
