@@ -443,10 +443,13 @@ quarto_available <- function(min_version = "1.4.0", use_cache = TRUE) {
     return(get(cache_key, envir = .quarto_cache))
   }
 
+  # Find quarto executable (resolves PATH + known locations)
+  quarto_cmd <- find_quarto()
+
   # Try to run quarto --version
   version_output <- tryCatch(
     {
-      system2("quarto", args = "--version", stdout = TRUE, stderr = TRUE)
+      system2(quarto_cmd, args = "--version", stdout = TRUE, stderr = TRUE)
     },
     error = function(e) NULL,
     warning = function(w) NULL
@@ -460,10 +463,103 @@ quarto_available <- function(min_version = "1.4.0", use_cache = TRUE) {
     result <- check_quarto_version(version_output[1], min_version)
   }
 
-  # Cache the result
+  # Cache the result (cache both availability and path)
   assign(cache_key, result, envir = .quarto_cache)
+  if (result) {
+    assign("quarto_path", quarto_cmd, envir = .quarto_cache)
+  }
 
   return(result)
+}
+
+
+#' Find Quarto CLI Executable
+#'
+#' Searches for Quarto in PATH and known installation locations (RStudio bundled,
+#' standalone install). Caches the found path for session reuse.
+#'
+#' @return Character path to quarto executable, or "quarto" if not found
+#'   (will fail gracefully at system2 call)
+#' @keywords internal
+find_quarto <- function() {
+  # Return cached path if available
+  if (exists("quarto_path", envir = .quarto_cache)) {
+    return(get("quarto_path", envir = .quarto_cache))
+  }
+
+  # 1. Check if quarto is in PATH
+  quarto_in_path <- Sys.which("quarto")
+  if (nchar(quarto_in_path) > 0 && file.exists(quarto_in_path)) {
+    assign("quarto_path", as.character(quarto_in_path), envir = .quarto_cache)
+    return(as.character(quarto_in_path))
+  }
+
+  # 2. Check option (bruger kan saette options(bfhcharts.quarto_path = "..."))
+  opt_path <- getOption("bfhcharts.quarto_path")
+  if (!is.null(opt_path) && file.exists(opt_path)) {
+    assign("quarto_path", opt_path, envir = .quarto_cache)
+    return(opt_path)
+  }
+
+  # 3. Check environment variable
+  env_path <- Sys.getenv("QUARTO_PATH", "")
+  if (nchar(env_path) > 0 && file.exists(env_path)) {
+    assign("quarto_path", env_path, envir = .quarto_cache)
+    return(env_path)
+  }
+
+  # 4. Search known locations (Windows: RStudio bundled, standalone installs)
+  if (.Platform$OS.type == "windows") {
+    candidates <- c(
+      # RStudio bundled (nyeste layout)
+      file.path(Sys.getenv("ProgramFiles"),
+                "RStudio/resources/app/bin/quarto/bin/quarto.exe"),
+      # RStudio aeldre layout
+      file.path(Sys.getenv("ProgramFiles"),
+                "RStudio/bin/quarto/bin/quarto.exe"),
+      # Posit-branded RStudio
+      file.path(Sys.getenv("ProgramFiles"),
+                "Posit/RStudio/resources/app/bin/quarto/bin/quarto.exe"),
+      # Standalone Quarto install
+      file.path(Sys.getenv("LOCALAPPDATA"),
+                "Programs/Quarto/bin/quarto.exe"),
+      file.path(Sys.getenv("ProgramFiles"), "Quarto/bin/quarto.exe")
+    )
+  } else {
+    candidates <- c(
+      # macOS / Linux
+      "/usr/local/bin/quarto",
+      "/opt/quarto/bin/quarto",
+      file.path(Sys.getenv("HOME"), ".local/bin/quarto"),
+      # RStudio bundled (macOS)
+      "/Applications/RStudio.app/Contents/Resources/app/bin/quarto/bin/quarto"
+    )
+  }
+
+  for (path in candidates) {
+    if (file.exists(path)) {
+      assign("quarto_path", path, envir = .quarto_cache)
+      return(path)
+    }
+  }
+
+  # Fallback: return "quarto" and let system2 fail with clear error
+  "quarto"
+}
+
+
+#' Get Cached Quarto Path
+#'
+#' Returns the path to quarto executable found by \code{find_quarto()}.
+#' Call \code{quarto_available()} first to ensure the path is resolved.
+#'
+#' @return Character path to quarto executable
+#' @keywords internal
+get_quarto_path <- function() {
+  if (exists("quarto_path", envir = .quarto_cache)) {
+    return(get("quarto_path", envir = .quarto_cache))
+  }
+  find_quarto()
 }
 
 #' Check Quarto Version Against Minimum
@@ -703,7 +799,7 @@ bfh_compile_typst <- function(typst_file, output) {
   # Use quarto typst compile (not quarto render which expects .qmd files)
   result <- tryCatch(
     system2(
-      "quarto",
+      get_quarto_path(),
       args = c("typst", "compile", shQuote(typst_file), shQuote(output)),
       stdout = TRUE,
       stderr = TRUE
