@@ -122,8 +122,26 @@ format_y_axis_percent <- function(y_range = NULL) {
 
   accuracy <- if (use_decimals) 0.1 else 1
 
+  # Custom breaks-funktion: begraens aksemaerker til [0%, 100%]
+
+  # Kontrolgraenser og labels maa godt stikke udenfor, men y-aksen
+  # skal ikke vise fx 120% eller -20%.
+  percent_breaks <- function(limits) {
+    # Beregn "pæne" breaks over hele range
+    b <- scales::breaks_pretty(n = 5)(limits)
+    # Begraens til [0, 1] (= 0-100%)
+    b <- b[b >= 0 & b <= 1]
+    # Sikr at 0 og 1 (100%) altid er med naar data er taet paa
+    if (length(b) > 0) {
+      if (limits[1] <= 0.05 && !0 %in% b) b <- c(0, b)
+      if (limits[2] >= 0.95 && !1 %in% b) b <- c(b, 1)
+    }
+    sort(unique(b))
+  }
+
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
+    breaks = percent_breaks,
     labels = scales::label_percent(accuracy = accuracy)
   )
 }
