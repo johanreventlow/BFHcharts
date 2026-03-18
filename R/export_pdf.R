@@ -375,20 +375,19 @@ bfh_export_pdf <- function(x,
   # Apply PDF-specific theme adjustments (zero margins)
   plot_for_export <- prepare_plot_for_export(plot_for_export, margin_mm = 0)
 
-  # Export chart to temporary PNG
+  # Export chart to temporary SVG (vector format for sharp rendering in PDF)
   # Note: ggsave uses PDF_IMAGE dimensions (250x140mm) for the actual image size
   # while labels were calculated for PDF_CHART dimensions (202x140mm) which
   # represents the visible area in the Typst template
-  chart_png <- file.path(temp_dir, "chart.png")
+  chart_svg <- file.path(temp_dir, "chart.svg")
   tryCatch(
     ggplot2::ggsave(
-      filename = chart_png,
+      filename = chart_svg,
       plot = plot_for_export,
       width = PDF_IMAGE_WIDTH_MM / 25.4,  # 250mm - original working size
       height = PDF_IMAGE_HEIGHT_MM / 25.4, # 140mm
-      dpi = 150,  # Reduced from 300 for 4x faster generation & 75% smaller files
       units = "in",
-      device = "png"
+      device = "svg"
     ),
     error = function(e) {
       stop(
@@ -408,7 +407,7 @@ bfh_export_pdf <- function(x,
   # Create Typst document
   typst_file <- file.path(temp_dir, "document.typ")
   bfh_create_typst_document(
-    chart_image = chart_png,
+    chart_image = chart_svg,
     output = typst_file,
     metadata = metadata_full,
     spc_stats = spc_stats,
@@ -514,7 +513,7 @@ check_quarto_version <- function(version_string, min_version) {
 #' Generates a Typst document (.typ) using BFH hospital template with
 #' chart image and metadata.
 #'
-#' @param chart_image Path to chart PNG image
+#' @param chart_image Path to chart image (SVG or PNG)
 #' @param output Path for output .typ file
 #' @param metadata List with template parameters (hospital, department, title, etc.)
 #' @param spc_stats List with SPC statistics (runs, crossings, outliers)
@@ -961,7 +960,7 @@ merge_metadata <- function(metadata, chart_title) {
 
 #' Build Typst Document Content
 #'
-#' @param chart_image Filename of chart PNG (relative to document location, already copied)
+#' @param chart_image Filename of chart image (relative to document location, already copied)
 #' @param metadata Metadata list
 #' @param spc_stats SPC statistics list
 #' @param template Template name
