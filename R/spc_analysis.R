@@ -473,8 +473,7 @@ fallback_stability_text <- function(spc_stats,
   if (!has_runs && !has_crossings && !has_outliers) {
     paste0(
       "Processen er stabil og forudsigelig. Variationen er ",
-      "naturlig, og der er ingen tegn p\u00e5 systematiske \u00e6ndringer i ",
-      "hverken seriel\u00e6ngde, antal krydsninger eller kontrolgr\u00e6nser."
+      "naturlig uden tegn p\u00e5 systematiske \u00e6ndringer."
     )
 
   } else if (has_runs && !has_crossings && !has_outliers) {
@@ -515,7 +514,7 @@ fallback_stability_text <- function(spc_stats,
       paste0(
         "Processen viser systematisk ustabilitet. B\u00e5de seriel\u00e6ngde ",
         "(%d > %d) og antal krydsninger (%d < %d) afviger fra det ",
-        "forventede, hvilket peger p\u00e5 en grundl\u00e6ggende ",
+        "forventede. Dette peger p\u00e5 en grundl\u00e6ggende ",
         "proces\u00e6ndring."
       ),
       spc_stats$runs_actual, spc_stats$runs_expected,
