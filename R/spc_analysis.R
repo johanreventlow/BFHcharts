@@ -572,9 +572,9 @@ fallback_action_text <- function(is_stable, has_target, at_target) {
 
   } else if (is_stable && has_target && !at_target) {
     paste0(
-      "Processen er stabil men n\u00e5r ikke m\u00e5let. Forbedring ",
-      "kr\u00e6ver en bevidst \u00e6ndring af processen \u2013 den ",
-      "nuv\u00e6rende praksis vil levere samme resultat."
+      "Processen er stabil, men n\u00e5r ikke m\u00e5let. En bevidst ",
+      "proces\u00e6ndring er n\u00f8dvendig. Den nuv\u00e6rende praksis ",
+      "vil forts\u00e6tte med at levere de samme resultater."
     )
 
   } else if (is_stable && !has_target) {
