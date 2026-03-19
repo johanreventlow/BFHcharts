@@ -376,22 +376,53 @@ build_fallback_analysis <- function(context,
 
   # --- Detect signaler ---
   has_runs <- !is.null(spc_stats$runs_actual) &&
+    !is.na(spc_stats$runs_actual) &&
     !is.null(spc_stats$runs_expected) &&
+    !is.na(spc_stats$runs_expected) &&
     spc_stats$runs_actual > spc_stats$runs_expected
 
   has_crossings <- !is.null(spc_stats$crossings_actual) &&
+    !is.na(spc_stats$crossings_actual) &&
     !is.null(spc_stats$crossings_expected) &&
+    !is.na(spc_stats$crossings_expected) &&
     spc_stats$crossings_actual < spc_stats$crossings_expected
 
   has_outliers <- !is.null(spc_stats$outliers_actual) &&
+    !is.na(spc_stats$outliers_actual) &&
     spc_stats$outliers_actual > 0
 
   is_stable <- !has_runs && !has_crossings && !has_outliers
 
-  # --- 1. Stabilitetstekst ---
-  stability <- fallback_stability_text(
-    spc_stats, has_runs, has_crossings, has_outliers
-  )
+  # --- Detect ingen variation (alle SPC-stats er NA) ---
+  no_variation <- (is.null(spc_stats$runs_actual) || is.na(spc_stats$runs_actual)) &&
+    (is.null(spc_stats$crossings_actual) || is.na(spc_stats$crossings_actual))
+
+  if (no_variation) {
+    # Alle datapunkter er identiske — SPC kan ikke anvendes
+    cl_fmt <- if (!is.null(centerline) && !is.na(centerline)) {
+      format_target_value(centerline, y_axis_unit = context$y_axis_unit)
+    } else {
+      "ukendt"
+    }
+
+    stability <- sprintf(
+      paste0(
+        "Niveauet ligger konstant p\u00e5 %s. Da alle datapunkter er ",
+        "identiske, kan processen ikke vurderes med statistisk ",
+        "proceskontrol."
+      ),
+      cl_fmt
+    )
+
+    # M\u00e5lvurdering og handling h\u00e5ndteres nedenfor som normalt
+  }
+
+  # --- 1. Stabilitetstekst (kun hvis ikke ingen-variation) ---
+  if (!no_variation) {
+    stability <- fallback_stability_text(
+      spc_stats, has_runs, has_crossings, has_outliers
+    )
+  }
 
   # --- 2. M\u00e5lvurdering ---
   has_target <- !is.null(target_value) && !is.na(target_value) &&
@@ -437,7 +468,7 @@ fallback_stability_text <- function(spc_stats,
                                     has_outliers) {
   if (!has_runs && !has_crossings && !has_outliers) {
     paste0(
-      "Processen viser stabil og forudsigelig adf\u00e6rd. Variationen er ",
+      "Processen er stabil og forudsigelig. Variationen er ",
       "naturlig, og der er ingen tegn p\u00e5 systematiske \u00e6ndringer i ",
       "hverken seriel\u00e6ngde, antal krydsninger eller kontrolgr\u00e6nser."
     )
