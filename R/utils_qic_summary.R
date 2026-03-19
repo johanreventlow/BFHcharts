@@ -58,11 +58,34 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   available_cols <- intersect(summary_cols, names(qic_data))
 
   # Extract unique summary rows per part
-  # Use split + first row approach to handle variable control limits in p/u charts
+  # Use split + per-part aggregation for correct Anhøj statistics
   if ("part" %in% names(qic_data)) {
-    # Split by part and take first row of each group
     parts <- split(qic_data[, available_cols, drop = FALSE], qic_data$part)
-    raw_summary <- do.call(rbind, lapply(parts, function(x) x[1, , drop = FALSE]))
+    raw_summary <- do.call(rbind, lapply(parts, function(x) {
+      row <- x[1, , drop = FALSE]
+      # Genberegn Anh\u00f8j-stats per part (qicharts2 beregner globalt)
+      safe_max <- function(v) {
+        v <- v[!is.na(v)]
+        if (length(v) == 0) return(NA_real_)
+        max(v)
+      }
+      safe_min <- function(v) {
+        v <- v[!is.na(v)]
+        if (length(v) == 0) return(NA_real_)
+        min(v)
+      }
+      if ("longest.run" %in% names(x))
+        row$longest.run <- safe_max(x$longest.run)
+      if ("longest.run.max" %in% names(x))
+        row$longest.run.max <- safe_max(x$longest.run.max)
+      if ("n.crossings" %in% names(x))
+        row$n.crossings <- safe_max(x$n.crossings)
+      if ("n.crossings.min" %in% names(x))
+        row$n.crossings.min <- safe_max(x$n.crossings.min)
+      if ("runs.signal" %in% names(x))
+        row$runs.signal <- any(x$runs.signal, na.rm = TRUE)
+      row
+    }))
     row.names(raw_summary) <- NULL
   } else {
     # No parts - take first row only

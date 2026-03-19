@@ -898,20 +898,27 @@ bfh_extract_spc_stats <- function(summary) {
   # Brug seneste part (sidste raekke) for aktuel proces-statistik
   row <- summary[nrow(summary), ]
 
+  # Helper: konverter NA, NaN og Inf til NA
+  clean_val <- function(x) {
+    if (is.null(x) || length(x) == 0) return(NULL)
+    if (is.na(x) || is.nan(x) || is.infinite(x)) return(NA_real_)
+    x
+  }
+
   # Runs (serielængde)
   if ("længste_løb_max" %in% names(row)) {
-    stats$runs_expected <- row$længste_løb_max
+    stats$runs_expected <- clean_val(row$længste_løb_max)
   }
   if ("længste_løb" %in% names(row)) {
-    stats$runs_actual <- row$længste_løb
+    stats$runs_actual <- clean_val(row$længste_løb)
   }
 
   # Crossings (antal kryds)
   if ("antal_kryds_min" %in% names(row)) {
-    stats$crossings_expected <- row$antal_kryds_min
+    stats$crossings_expected <- clean_val(row$antal_kryds_min)
   }
   if ("antal_kryds" %in% names(row)) {
-    stats$crossings_actual <- row$antal_kryds
+    stats$crossings_actual <- clean_val(row$antal_kryds)
   }
 
   # Outliers (would need to be added to summary in future)
@@ -1122,25 +1129,24 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
     params$date <- sprintf('"%s"', date_str)
   }
 
-  # SPC statistics (only include if not NULL and not NA)
-  if (!is.null(spc_stats$runs_expected) && !is.na(spc_stats$runs_expected)) {
-    params$runs_expected <- as.character(spc_stats$runs_expected)
+  # SPC statistics — send "?" for NA (vises i tabel), udelad kun NULL
+  spc_val <- function(x) {
+    if (is.null(x)) return(NULL)
+    if (is.na(x) || is.infinite(x)) return("\"?\"")
+    as.character(x)
   }
-  if (!is.null(spc_stats$runs_actual) && !is.na(spc_stats$runs_actual)) {
-    params$runs_actual <- as.character(spc_stats$runs_actual)
-  }
-  if (!is.null(spc_stats$crossings_expected) && !is.na(spc_stats$crossings_expected)) {
-    params$crossings_expected <- as.character(spc_stats$crossings_expected)
-  }
-  if (!is.null(spc_stats$crossings_actual) && !is.na(spc_stats$crossings_actual)) {
-    params$crossings_actual <- as.character(spc_stats$crossings_actual)
-  }
-  if (!is.null(spc_stats$outliers_expected) && !is.na(spc_stats$outliers_expected)) {
-    params$outliers_expected <- as.character(spc_stats$outliers_expected)
-  }
-  if (!is.null(spc_stats$outliers_actual) && !is.na(spc_stats$outliers_actual)) {
-    params$outliers_actual <- as.character(spc_stats$outliers_actual)
-  }
+  if (!is.null(spc_stats$runs_expected))
+    params$runs_expected <- spc_val(spc_stats$runs_expected)
+  if (!is.null(spc_stats$runs_actual))
+    params$runs_actual <- spc_val(spc_stats$runs_actual)
+  if (!is.null(spc_stats$crossings_expected))
+    params$crossings_expected <- spc_val(spc_stats$crossings_expected)
+  if (!is.null(spc_stats$crossings_actual))
+    params$crossings_actual <- spc_val(spc_stats$crossings_actual)
+  if (!is.null(spc_stats$outliers_expected))
+    params$outliers_expected <- spc_val(spc_stats$outliers_expected)
+  if (!is.null(spc_stats$outliers_actual))
+    params$outliers_actual <- spc_val(spc_stats$outliers_actual)
 
   # Run chart flag (for hiding outlier row in Typst)
   if (!is.null(spc_stats$is_run_chart)) {
