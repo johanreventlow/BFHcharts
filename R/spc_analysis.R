@@ -374,28 +374,30 @@ build_fallback_analysis <- function(context,
   centerline <- context$centerline
   n_points <- context$n_points
 
-  # --- Detect signaler ---
-  has_runs <- !is.null(spc_stats$runs_actual) &&
-    !is.na(spc_stats$runs_actual) &&
-    !is.null(spc_stats$runs_expected) &&
-    !is.na(spc_stats$runs_expected) &&
+  # --- Detect signaler (sikker mod NULL og NA) ---
+  safe_check <- function(x) !is.null(x) && length(x) > 0 && !is.na(x)
+
+  has_runs <- safe_check(spc_stats$runs_actual) &&
+    safe_check(spc_stats$runs_expected) &&
     spc_stats$runs_actual > spc_stats$runs_expected
 
-  has_crossings <- !is.null(spc_stats$crossings_actual) &&
-    !is.na(spc_stats$crossings_actual) &&
-    !is.null(spc_stats$crossings_expected) &&
-    !is.na(spc_stats$crossings_expected) &&
+  has_crossings <- safe_check(spc_stats$crossings_actual) &&
+    safe_check(spc_stats$crossings_expected) &&
     spc_stats$crossings_actual < spc_stats$crossings_expected
 
-  has_outliers <- !is.null(spc_stats$outliers_actual) &&
-    !is.na(spc_stats$outliers_actual) &&
+  has_outliers <- safe_check(spc_stats$outliers_actual) &&
     spc_stats$outliers_actual > 0
 
   is_stable <- !has_runs && !has_crossings && !has_outliers
 
-  # --- Detect ingen variation (alle SPC-stats er NA) ---
-  no_variation <- (is.null(spc_stats$runs_actual) || is.na(spc_stats$runs_actual)) &&
-    (is.null(spc_stats$crossings_actual) || is.na(spc_stats$crossings_actual))
+  # --- Detect ingen variation (alle SPC-stats er NA eller NULL) ---
+  runs_missing <- is.null(spc_stats$runs_actual) ||
+    length(spc_stats$runs_actual) == 0 ||
+    is.na(spc_stats$runs_actual)
+  crossings_missing <- is.null(spc_stats$crossings_actual) ||
+    length(spc_stats$crossings_actual) == 0 ||
+    is.na(spc_stats$crossings_actual)
+  no_variation <- runs_missing && crossings_missing
 
   if (no_variation) {
     # Alle datapunkter er identiske — SPC kan ikke anvendes
