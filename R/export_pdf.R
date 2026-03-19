@@ -895,8 +895,8 @@ bfh_extract_spc_stats <- function(summary) {
     return(stats)
   }
 
-  # Extract from first row (or aggregate if multiple phases)
-  row <- summary[1, ]
+  # Brug seneste part (sidste raekke) for aktuel proces-statistik
+  row <- summary[nrow(summary), ]
 
   # Runs (serielængde)
   if ("længste_løb_max" %in% names(row)) {
@@ -958,10 +958,16 @@ extract_spc_stats_extended <- function(x) {
   stats$is_run_chart <- is_run_chart
 
 
-  # Calculate outliers from qic_data (only for non-run charts)
+  # Calculate outliers from qic_data (only for non-run charts, seneste part kun)
   if (!is_run_chart && !is.null(x$qic_data) && "sigma.signal" %in% names(x$qic_data)) {
     stats$outliers_expected <- 0
-    stats$outliers_actual <- sum(x$qic_data$sigma.signal, na.rm = TRUE)
+    if ("part" %in% names(x$qic_data)) {
+      latest_part <- max(x$qic_data$part, na.rm = TRUE)
+      latest_rows <- x$qic_data$part == latest_part
+      stats$outliers_actual <- sum(x$qic_data$sigma.signal[latest_rows], na.rm = TRUE)
+    } else {
+      stats$outliers_actual <- sum(x$qic_data$sigma.signal, na.rm = TRUE)
+    }
   }
   # For run charts, outliers remain NULL (row will be hidden in Typst)
 

@@ -179,10 +179,23 @@ if (!inherits(x, "bfh_qic_result")) {
     chart_type = x$config$chart_type,
     y_axis_unit = x$config$y_axis_unit,
 
-    # Fra qic_data
-    n_points = if (!is.null(x$qic_data)) nrow(x$qic_data) else NA_integer_,
+    # Fra qic_data (seneste part hvis median-knaek)
+    n_points = if (!is.null(x$qic_data)) {
+      if ("part" %in% names(x$qic_data)) {
+        sum(x$qic_data$part == max(x$qic_data$part, na.rm = TRUE))
+      } else {
+        nrow(x$qic_data)
+      }
+    } else {
+      NA_integer_
+    },
     centerline = if (!is.null(x$qic_data) && "cl" %in% names(x$qic_data)) {
-      x$qic_data$cl[1]
+      if ("part" %in% names(x$qic_data)) {
+        latest_rows <- x$qic_data$part == max(x$qic_data$part, na.rm = TRUE)
+        x$qic_data$cl[latest_rows][1]
+      } else {
+        x$qic_data$cl[1]
+      }
     } else {
       NA_real_
     },
