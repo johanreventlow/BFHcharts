@@ -1122,23 +1122,23 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
     params$date <- sprintf('"%s"', date_str)
   }
 
-  # SPC statistics (only include if not NULL)
-  if (!is.null(spc_stats$runs_expected)) {
+  # SPC statistics (only include if not NULL and not NA)
+  if (!is.null(spc_stats$runs_expected) && !is.na(spc_stats$runs_expected)) {
     params$runs_expected <- as.character(spc_stats$runs_expected)
   }
-  if (!is.null(spc_stats$runs_actual)) {
+  if (!is.null(spc_stats$runs_actual) && !is.na(spc_stats$runs_actual)) {
     params$runs_actual <- as.character(spc_stats$runs_actual)
   }
-  if (!is.null(spc_stats$crossings_expected)) {
+  if (!is.null(spc_stats$crossings_expected) && !is.na(spc_stats$crossings_expected)) {
     params$crossings_expected <- as.character(spc_stats$crossings_expected)
   }
-  if (!is.null(spc_stats$crossings_actual)) {
+  if (!is.null(spc_stats$crossings_actual) && !is.na(spc_stats$crossings_actual)) {
     params$crossings_actual <- as.character(spc_stats$crossings_actual)
   }
-  if (!is.null(spc_stats$outliers_expected)) {
+  if (!is.null(spc_stats$outliers_expected) && !is.na(spc_stats$outliers_expected)) {
     params$outliers_expected <- as.character(spc_stats$outliers_expected)
   }
-  if (!is.null(spc_stats$outliers_actual)) {
+  if (!is.null(spc_stats$outliers_actual) && !is.na(spc_stats$outliers_actual)) {
     params$outliers_actual <- as.character(spc_stats$outliers_actual)
   }
 
