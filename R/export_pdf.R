@@ -1178,6 +1178,10 @@ escape_typst_string <- function(s) {
   s <- gsub("\\\\", "\\\\\\\\", s)
   s <- gsub('"', '\\\\"', s)
 
+  # Escape Typst special characters
+  s <- gsub("<", "\\\\<", s)
+  s <- gsub(">", "\\\\>", s)
+
   return(s)
 }
 
@@ -1220,6 +1224,10 @@ markdown_to_typst <- function(text) {
   result <- text
 
   # Escape Typst special characters in content (but not our formatting markers)
+  # Escape < and > (used for labels in Typst, e.g. <label>)
+  result <- gsub("<", "\\\\<", result)
+  result <- gsub(">", "\\\\>", result)
+
   # Escape @ (used for references/citations in Typst)
   result <- gsub("@", "\\\\@", result)
 
