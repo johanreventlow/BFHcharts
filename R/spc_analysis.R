@@ -70,8 +70,7 @@ bfh_interpret_spc_signals <- function(spc_stats) {
         sprintf(
           paste0(
             "Krydsnings-signal: Kun %d krydsninger af centerlinjen, under ",
-            "forventet minimum (%d). Dette indikerer stratificering eller ",
-            "clustering i data."
+            "forventet minimum (%d). Dette indikerer gruppering i data."
           ),
           spc_stats$crossings_actual,
           spc_stats$crossings_expected
@@ -480,9 +479,8 @@ fallback_stability_text <- function(spc_stats,
     sprintf(
       paste0(
         "Der er tegn p\u00e5 et skift i procesniveauet. L\u00e6ngste serie ",
-        "(%d) overstiger forventet maksimum (%d), hvilket indikerer at ",
-        "processen har \u00e6ndret sig. Unders\u00f8g hvad der kan have ",
-        "for\u00e5rsaget \u00e6ndringen."
+        "(%d) overstiger forventet maksimum (%d). Dette indikerer at ",
+        "processen har \u00e6ndret sig."
       ),
       spc_stats$runs_actual, spc_stats$runs_expected
     )
@@ -490,10 +488,9 @@ fallback_stability_text <- function(spc_stats,
   } else if (!has_runs && has_crossings && !has_outliers) {
     sprintf(
       paste0(
-        "Der er tegn p\u00e5 gruppering i data. Antal krydsninger (%d) er ",
-        "under forventet minimum (%d), hvilket tyder p\u00e5 at ",
-        "datapunkterne klumper sig i stedet for at variere tilf\u00e6ldigt ",
-        "omkring centrallinjen."
+        "Der er tegn p\u00e5 gruppering i data. Antal krydsninger (%d) ",
+        "er under forventet minimum (%d). Datapunkterne varierer ikke ",
+        "tilf\u00e6ldigt omkring centrallinjen."
       ),
       spc_stats$crossings_actual, spc_stats$crossings_expected
     )
@@ -502,9 +499,9 @@ fallback_stability_text <- function(spc_stats,
     sprintf(
       paste0(
         "Der er fundet %d observation(er) uden for kontrolgr\u00e6nserne. ",
-        "Disse enkeltstående afvigelser b\u00f8r unders\u00f8ges for ",
-        "s\u00e6rlige \u00e5rsager, da de kan skyldes us\u00e6dvanlige ",
-        "h\u00e6ndelser eller m\u00e5lefejl."
+        "Disse afvigelser b\u00f8r unders\u00f8ges for s\u00e6rlige ",
+        "\u00e5rsager, da de kan skyldes us\u00e6dvanlige h\u00e6ndelser ",
+        "eller m\u00e5lefejl."
       ),
       spc_stats$outliers_actual
     )
@@ -579,15 +576,15 @@ fallback_action_text <- function(is_stable, has_target, at_target) {
   } else if (is_stable && !has_target) {
     paste0(
       "Overvej at fasts\u00e6tte et m\u00e5l for indikatoren for at ",
-      "kunne vurdere om det aktuelle niveau er tilfredsstillende og om ",
+      "kunne vurdere, om det aktuelle niveau er tilfredsstillende, og om ",
       "der er behov for forbedring."
     )
 
   } else if (!is_stable && has_target && at_target) {
     paste0(
       "Selvom m\u00e5let aktuelt er opfyldt, er processen ustabil. ",
-      "Identific\u00e9r og adress\u00e9r \u00e5rsagerne til variationen ",
-      "for at sikre at niveauet kan fastholdes."
+      "Identificer \u00e5rsagerne til variationen for at sikre, at ",
+      "niveauet kan fastholdes."
     )
 
   } else if (!is_stable && has_target && !at_target) {
