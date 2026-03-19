@@ -633,18 +633,7 @@ format_target_value <- function(x, y_axis_unit = NULL) {
 adjust_fallback_length <- function(text, min_chars, max_chars, n_points) {
   current <- nchar(text)
 
-  # Pad hvis for kort
-  if (current < min_chars) {
-    if (!is.null(n_points) && !is.na(n_points)) {
-      padding <- sprintf(
-        "Analysen er baseret p\u00e5 %d datapunkter.", n_points
-      )
-      text <- paste(text, padding)
-      current <- nchar(text)
-    }
-  }
-
-  # Pad med generisk tekst hvis stadig for kort
+  # Pad med generisk tekst hvis for kort
   if (current < min_chars) {
     extra <- paste0(
       "Fortsat monitorering anbefales for at f\u00f8lge processens ",
