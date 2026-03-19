@@ -402,7 +402,7 @@ build_fallback_analysis <- function(context,
   at_target <- FALSE
 
   if (has_target) {
-    fmt <- format_target_value(target_value)
+    fmt <- format_target_value(target_value, y_axis_unit = context$y_axis_unit)
     tolerance <- max(abs(target_value) * 0.05, 0.01)
 
     if (abs(centerline - target_value) <= tolerance) {
@@ -575,8 +575,18 @@ fallback_action_text <- function(is_stable, has_target, at_target) {
 
 
 # Formatér målværdi til visning
-format_target_value <- function(x) {
+# y_axis_unit bruges til at afgøre om værdien skal vises som procent
+format_target_value <- function(x, y_axis_unit = NULL) {
   if (is.null(x) || is.na(x)) return("")
+
+  # Konverter proportion til procent hvis relevant
+  if (!is.null(y_axis_unit) && y_axis_unit == "percent" && x <= 1 && x > 0) {
+    return(paste0(round(x * 100), "%"))
+  }
+  if (!is.null(y_axis_unit) && y_axis_unit == "percent" && x > 1) {
+    return(paste0(round(x), "%"))
+  }
+
   if (x == round(x)) {
     as.character(as.integer(x))
   } else {
