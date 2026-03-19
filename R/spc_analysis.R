@@ -155,20 +155,21 @@ if (!inherits(x, "bfh_qic_result")) {
   # Generer standardtekster
   signal_interpretations <- bfh_interpret_spc_signals(spc_stats)
 
-  # Detect om der er signaler
+  # Detect om der er signaler (sikker mod NULL og NA)
+  safe_val <- function(x) !is.null(x) && length(x) > 0 && !is.na(x)
+
   has_signals <- FALSE
-  if (!is.null(spc_stats$runs_actual) && !is.null(spc_stats$runs_expected)) {
+  if (safe_val(spc_stats$runs_actual) && safe_val(spc_stats$runs_expected)) {
     if (spc_stats$runs_actual > spc_stats$runs_expected) {
       has_signals <- TRUE
     }
   }
-  if (!is.null(spc_stats$crossings_actual) &&
-      !is.null(spc_stats$crossings_expected)) {
+  if (safe_val(spc_stats$crossings_actual) && safe_val(spc_stats$crossings_expected)) {
     if (spc_stats$crossings_actual < spc_stats$crossings_expected) {
       has_signals <- TRUE
     }
   }
-  if (!is.null(spc_stats$outliers_actual) && spc_stats$outliers_actual > 0) {
+  if (safe_val(spc_stats$outliers_actual) && spc_stats$outliers_actual > 0) {
     has_signals <- TRUE
   }
 
