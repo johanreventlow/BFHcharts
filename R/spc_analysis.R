@@ -189,13 +189,13 @@ if (!inherits(x, "bfh_qic_result")) {
     } else {
       NA_integer_
     },
-    centerline = if (!is.null(x$qic_data) && "cl" %in% names(x$qic_data)) {
-      if ("part" %in% names(x$qic_data)) {
-        latest_rows <- x$qic_data$part == max(x$qic_data$part, na.rm = TRUE)
-        x$qic_data$cl[latest_rows][1]
-      } else {
-        x$qic_data$cl[1]
-      }
+    # Brug summary (har korrekt per-part centerlinje) fremfor qic_data
+    # (som har samme cl i alle raekker uanset part)
+    centerline = if (!is.null(x$summary) && "centerlinje" %in% names(x$summary) &&
+                     nrow(x$summary) > 0) {
+      x$summary$centerlinje[nrow(x$summary)]
+    } else if (!is.null(x$qic_data) && "cl" %in% names(x$qic_data)) {
+      x$qic_data$cl[1]
     } else {
       NA_real_
     },
