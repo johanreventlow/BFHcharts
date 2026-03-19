@@ -33,9 +33,11 @@
 bfh_interpret_spc_signals <- function(spc_stats) {
   interpretations <- character(0)
 
+  # Helper: sikker mod NULL, NA og length-0
+  ok <- function(x) !is.null(x) && length(x) > 0 && !is.na(x)
 
 # Serielængde-signal (runs)
-  if (!is.null(spc_stats$runs_actual) && !is.null(spc_stats$runs_expected)) {
+  if (ok(spc_stats$runs_actual) && ok(spc_stats$runs_expected)) {
     if (spc_stats$runs_actual > spc_stats$runs_expected) {
       interpretations <- c(
         interpretations,
@@ -61,8 +63,7 @@ bfh_interpret_spc_signals <- function(spc_stats) {
   }
 
   # Krydsnings-signal (crossings)
-  if (!is.null(spc_stats$crossings_actual) &&
-      !is.null(spc_stats$crossings_expected)) {
+  if (ok(spc_stats$crossings_actual) && ok(spc_stats$crossings_expected)) {
     if (spc_stats$crossings_actual < spc_stats$crossings_expected) {
       interpretations <- c(
         interpretations,
@@ -89,7 +90,7 @@ bfh_interpret_spc_signals <- function(spc_stats) {
   }
 
   # Outliers
-  if (!is.null(spc_stats$outliers_actual) && spc_stats$outliers_actual > 0) {
+  if (ok(spc_stats$outliers_actual) && spc_stats$outliers_actual > 0) {
     interpretations <- c(
       interpretations,
       sprintf(
@@ -104,7 +105,7 @@ bfh_interpret_spc_signals <- function(spc_stats) {
 
   # Hvis ingen signaler og ingen fortolkninger
   if (length(interpretations) == 0) {
-    interpretations <- "Processen viser stabil adfærd uden særlige signaler."
+    interpretations <- "Processen er stabil uden s\u00e6rlige signaler."
   }
 
   return(interpretations)
