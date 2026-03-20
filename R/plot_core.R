@@ -103,10 +103,21 @@ bfh_spc_plot <- function(qic_data,
     qic_data$anhoej.signal <- FALSE
   }
 
+  # Beregn punktfarve baseret på sigma.signal (outliers faar hospital_blue)
+  if ("sigma.signal" %in% names(qic_data)) {
+    qic_data$point_colour <- ifelse(
+      !is.na(qic_data$sigma.signal) & qic_data$sigma.signal == TRUE,
+      BFHtheme::bfh_cols("hospital_blue"),
+      BFHtheme::bfh_cols("hospital_grey")
+    )
+  } else {
+    qic_data$point_colour <- BFHtheme::bfh_cols("hospital_grey")
+  }
+
   # Calculate responsive geom sizes based on base_size
   scale_factor <- viewport$base_size / 14
 
-  ucl_linewidth <- 2.5 * scale_factor
+  ucl_linewidth <- 0.3 * scale_factor
   target_linewidth <- 1 * scale_factor
   data_linewidth <- 1 * scale_factor
   cl_linewidth <- 1 * scale_factor
@@ -143,7 +154,7 @@ bfh_spc_plot <- function(qic_data,
         hjust = 0.05,
         vjust = -0.2,
         linewidth = ucl_linewidth,
-        linecolour = NA,
+        linecolour = BFHtheme::bfh_cols("light_blue"),
         textcolour = BFHtheme::bfh_cols("hospital_grey"),
         size = 3.0,
         na.rm = TRUE
@@ -154,7 +165,7 @@ bfh_spc_plot <- function(qic_data,
         hjust = 0.05,
         vjust = 1.2,
         linewidth = ucl_linewidth,
-        linecolour = NA,
+        linecolour = BFHtheme::bfh_cols("light_blue"),
         textcolour = BFHtheme::bfh_cols("hospital_grey"),
         size = 3.0,
         na.rm = TRUE
@@ -186,7 +197,7 @@ bfh_spc_plot <- function(qic_data,
     ),
     ggplot2::geom_point(
       ggplot2::aes(y = y, group = part),
-      colour = BFHtheme::bfh_cols("hospital_grey"),
+      colour = qic_data$point_colour,
       size = point_size,
       na.rm = TRUE
     ),
