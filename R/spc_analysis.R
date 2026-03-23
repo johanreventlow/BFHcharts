@@ -657,3 +657,43 @@ adjust_fallback_length <- function(text, min_chars, max_chars, n_points) {
 
   return(text)
 }
+
+
+# Cache-environment for YAML-tekster (indlæses kun én gang per session)
+.spc_text_cache <- new.env(parent = emptyenv())
+
+# Indlæs SPC-analysetekster fra YAML
+load_spc_texts <- function() {
+  if (!is.null(.spc_text_cache$texts)) {
+    return(.spc_text_cache$texts)
+  }
+
+  yaml_path <- system.file("texts", "spc_analysis.yml",
+                           package = "BFHcharts")
+  if (yaml_path == "") {
+    warning("spc_analysis.yml not found, using empty texts")
+    return(list())
+  }
+
+  texts <- yaml::read_yaml(yaml_path)
+  .spc_text_cache$texts <- texts
+  return(texts)
+}
+
+
+# Vælg tilfældig variant og erstat {placeholders} med værdier
+pick_text <- function(variants, data = list()) {
+  if (length(variants) == 0) return("")
+
+  text <- variants[[sample.int(length(variants), 1)]]
+
+  for (key in names(data)) {
+    text <- gsub(
+      paste0("\\{", key, "\\}"),
+      as.character(data[[key]]),
+      text
+    )
+  }
+
+  return(text)
+}
