@@ -965,16 +965,20 @@ extract_spc_stats_extended <- function(x) {
   stats$is_run_chart <- is_run_chart
 
 
-  # Calculate outliers from qic_data (only for non-run charts, seneste part kun)
+  # Tæl outliers fra qic_data (kun non-run charts, seneste part,
+  # kun de seneste 6 observationer - ældre outliers ignoreres i analysen
+  # men vises stadig visuelt i diagrammet)
   if (!is_run_chart && !is.null(x$qic_data) && "sigma.signal" %in% names(x$qic_data)) {
     stats$outliers_expected <- 0
-    if ("part" %in% names(x$qic_data)) {
-      latest_part <- max(x$qic_data$part, na.rm = TRUE)
-      latest_rows <- x$qic_data$part == latest_part
-      stats$outliers_actual <- sum(x$qic_data$sigma.signal[latest_rows], na.rm = TRUE)
-    } else {
-      stats$outliers_actual <- sum(x$qic_data$sigma.signal, na.rm = TRUE)
+    qd <- x$qic_data
+    if ("part" %in% names(qd)) {
+      latest_part <- max(qd$part, na.rm = TRUE)
+      qd <- qd[qd$part == latest_part, ]
     }
+    n_obs <- nrow(qd)
+    recent_start <- max(1, n_obs - 5)
+    recent_signals <- qd$sigma.signal[recent_start:n_obs]
+    stats$outliers_actual <- sum(recent_signals, na.rm = TRUE)
   }
   # For run charts, outliers remain NULL (row will be hidden in Typst)
 
