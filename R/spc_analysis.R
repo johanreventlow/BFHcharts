@@ -401,23 +401,17 @@ build_fallback_analysis <- function(context,
   no_variation <- runs_missing && crossings_missing
 
   if (no_variation) {
-    # Alle datapunkter er identiske — SPC kan ikke anvendes
     cl_fmt <- if (!is.null(centerline) && !is.na(centerline)) {
       format_target_value(centerline, y_axis_unit = context$y_axis_unit)
     } else {
       "ukendt"
     }
 
-    stability <- sprintf(
-      paste0(
-        "Niveauet er konstant p\u00e5 %s. Da alle datapunkter er ",
-        "identiske, kan processen ikke vurderes med statistisk ",
-        "proceskontrol."
-      ),
-      cl_fmt
+    texts <- load_spc_texts()
+    stability <- pick_text(
+      texts$stability$no_variation,
+      data = list(centerline = cl_fmt)
     )
-
-    # M\u00e5lvurdering og handling h\u00e5ndteres nedenfor som normalt
   }
 
   # --- 1. Stabilitetstekst (kun hvis ikke ingen-variation) ---
@@ -438,14 +432,15 @@ build_fallback_analysis <- function(context,
   if (has_target) {
     fmt <- format_target_value(target_value, y_axis_unit = context$y_axis_unit)
     tolerance <- max(abs(target_value) * 0.05, 0.01)
+    texts <- load_spc_texts()
 
     if (abs(centerline - target_value) <= tolerance) {
-      target_text <- sprintf("Niveauet ligger t\u00e6t p\u00e5 m\u00e5let (%s).", fmt)
+      target_text <- pick_text(texts$target$at_target, data = list(target = fmt))
       at_target <- TRUE
     } else if (centerline > target_value) {
-      target_text <- sprintf("Niveauet ligger over m\u00e5let (%s).", fmt)
+      target_text <- pick_text(texts$target$over_target, data = list(target = fmt))
     } else {
-      target_text <- sprintf("Niveauet ligger under m\u00e5let (%s).", fmt)
+      target_text <- pick_text(texts$target$under_target, data = list(target = fmt))
     }
   }
 
@@ -464,144 +459,62 @@ build_fallback_analysis <- function(context,
 }
 
 
-# Stabilitetstekst baseret på signalkombination
+# Stabilitetstekst baseret på signalkombination (fra YAML)
 fallback_stability_text <- function(spc_stats,
                                     has_runs,
                                     has_crossings,
                                     has_outliers) {
-  if (!has_runs && !has_crossings && !has_outliers) {
-    paste0(
-      "Processen er stabil og forudsigelig. Variationen er ",
-      "naturlig og uden tegn p\u00e5 systematiske \u00e6ndringer."
-    )
+  texts <- load_spc_texts()
+  if (length(texts) == 0) return("Processen er under vurdering.")
 
+  key <- if (!has_runs && !has_crossings && !has_outliers) {
+    "no_signals"
   } else if (has_runs && !has_crossings && !has_outliers) {
-    sprintf(
-      paste0(
-        "Der er tegn p\u00e5 et skift i procesniveauet. L\u00e6ngste serie ",
-        "(%d) overstiger det forventede maksimum (%d). Dette indikerer, at ",
-        "processen har \u00e6ndret sig."
-      ),
-      spc_stats$runs_actual, spc_stats$runs_expected
-    )
-
+    "runs_only"
   } else if (!has_runs && has_crossings && !has_outliers) {
-    sprintf(
-      paste0(
-        "Der er tegn p\u00e5 gruppering i data. Antallet af krydsninger (%d) ",
-        "er under forventet minimum (%d). Datapunkterne varierer ikke ",
-        "tilf\u00e6ldigt omkring centrallinjen."
-      ),
-      spc_stats$crossings_actual, spc_stats$crossings_expected
-    )
-
+    "crossings_only"
   } else if (!has_runs && !has_crossings && has_outliers) {
-    sprintf(
-      paste0(
-        "Der er fundet %d observation(er) uden for kontrolgr\u00e6nserne. ",
-        "Disse afvigelser b\u00f8r unders\u00f8ges for s\u00e6rlige ",
-        "\u00e5rsager, da de kan skyldes us\u00e6dvanlige h\u00e6ndelser ",
-        "eller m\u00e5lefejl."
-      ),
-      spc_stats$outliers_actual
-    )
-
+    "outliers_only"
   } else if (has_runs && has_crossings && !has_outliers) {
-    sprintf(
-      paste0(
-        "Processen viser systematisk ustabilitet. B\u00e5de seriel\u00e6ngde ",
-        "(%d > %d) og antal krydsninger (%d < %d) afviger fra det ",
-        "forventede. Dette peger p\u00e5 en grundl\u00e6ggende ",
-        "proces\u00e6ndring."
-      ),
-      spc_stats$runs_actual, spc_stats$runs_expected,
-      spc_stats$crossings_actual, spc_stats$crossings_expected
-    )
-
+    "runs_crossings"
   } else if (has_runs && !has_crossings && has_outliers) {
-    sprintf(
-      paste0(
-        "Processen viser et niveauskift (seriel\u00e6ngde %d > %d) og %d ",
-        "observation(er) uden for kontrolgr\u00e6nserne. Unders\u00f8g, om ",
-        "niveauskiftet og de ekstreme v\u00e6rdier har samme underliggende ",
-        "\u00e5rsag."
-      ),
-      spc_stats$runs_actual, spc_stats$runs_expected,
-      spc_stats$outliers_actual
-    )
-
+    "runs_outliers"
   } else if (!has_runs && has_crossings && has_outliers) {
-    sprintf(
-      paste0(
-        "Processen viser gruppering (krydsninger %d < %d) og %d ",
-        "observation(er) uden for kontrolgr\u00e6nserne. Dette m\u00f8nster ",
-        "kan indikere, at processen p\u00e5virkes af skiftende betingelser."
-      ),
-      spc_stats$crossings_actual, spc_stats$crossings_expected,
-      spc_stats$outliers_actual
-    )
-
+    "crossings_outliers"
   } else {
-    # Alle tre signaler
-    sprintf(
-      paste0(
-        "Processen er ustabil med flere samtidige signaler: niveauskift ",
-        "(seriel\u00e6ngde %d > %d), gruppering (krydsninger %d < %d) og ",
-        "%d observation(er) uden for kontrolgr\u00e6nserne. En grundig ",
-        "analyse anbefales."
-      ),
-      spc_stats$runs_actual, spc_stats$runs_expected,
-      spc_stats$crossings_actual, spc_stats$crossings_expected,
-      spc_stats$outliers_actual
-    )
+    "all_signals"
   }
+
+  pick_text(texts$stability[[key]], data = list(
+    runs_actual = spc_stats$runs_actual,
+    runs_expected = spc_stats$runs_expected,
+    crossings_actual = spc_stats$crossings_actual,
+    crossings_expected = spc_stats$crossings_expected,
+    outliers_actual = spc_stats$outliers_actual
+  ))
 }
 
 
-# Handlingsforslag baseret på stabilitet og mål
+# Handlingsforslag baseret på stabilitet og mål (fra YAML)
 fallback_action_text <- function(is_stable, has_target, at_target) {
-  if (is_stable && has_target && at_target) {
-    paste0(
-      "Forts\u00e6t den nuv\u00e6rende praksis og overv\u00e5g processen ",
-      "l\u00f8bende for at fastholde det aktuelle niveau."
-    )
+  texts <- load_spc_texts()
+  if (length(texts) == 0) return("")
 
+  key <- if (is_stable && has_target && at_target) {
+    "stable_at_target"
   } else if (is_stable && has_target && !at_target) {
-    paste0(
-      "Processen er stabil, men n\u00e5r ikke m\u00e5let. En m\u00e5lrettet ",
-      "proces\u00e6ndring er n\u00f8dvendig. Den nuv\u00e6rende praksis ",
-      "vil forts\u00e6tte med at levere de samme resultater."
-    )
-
+    "stable_not_at_target"
   } else if (is_stable && !has_target) {
-    paste0(
-      "Overvej at fasts\u00e6tte et m\u00e5l for indikatoren for at ",
-      "kunne vurdere, om det aktuelle niveau er tilfredsstillende, og om ",
-      "der er behov for forbedring."
-    )
-
+    "stable_no_target"
   } else if (!is_stable && has_target && at_target) {
-    paste0(
-      "Selvom m\u00e5let aktuelt er opfyldt, er processen ustabil. ",
-      "Identific\u00e9r \u00e5rsagerne til variationen for at sikre, at ",
-      "niveauet kan fastholdes."
-    )
-
+    "unstable_at_target"
   } else if (!is_stable && has_target && !at_target) {
-    paste0(
-      "Priorit\u00e9r at identificere og fjerne de s\u00e6rlige ",
-      "\u00e5rsager til variationen, f\u00f8r yderligere ",
-      "forbedringstiltag iv\u00e6rks\u00e6ttes."
-    )
-
+    "unstable_not_at_target"
   } else {
-    # Ustabil, intet mål
-    paste0(
-      "Identific\u00e9r og unders\u00f8g \u00e5rsagerne til den ",
-      "us\u00e6dvanlige variation. N\u00e5r processen er under ",
-      "kontrol, kan der fasts\u00e6ttes et realistisk m\u00e5l."
-    )
+    "unstable_no_target"
   }
+
+  pick_text(texts$action[[key]])
 }
 
 
@@ -629,20 +542,17 @@ format_target_value <- function(x, y_axis_unit = NULL) {
 # Justér tekst til min/max længde
 adjust_fallback_length <- function(text, min_chars, max_chars, n_points) {
   current <- nchar(text)
+  texts <- load_spc_texts()
 
-  # Pad hvis for kort: tilf\u00f8j datapunkt-info og/eller generisk kontekst
   if (current < min_chars && !is.null(n_points) && !is.na(n_points)) {
-    text <- paste(text, sprintf(
-      "Analysen er baseret p\u00e5 %d datapunkter.", n_points
-    ))
+    padding <- pick_text(texts$padding$data_points,
+                         data = list(n_points = n_points))
+    text <- paste(text, padding)
     current <- nchar(text)
   }
 
   if (current < min_chars) {
-    text <- paste(text, paste0(
-      "Nye datapunkter kan \u00e6ndre billedet, s\u00e5 l\u00f8bende ",
-      "opf\u00f8lgning anbefales."
-    ))
+    text <- paste(text, pick_text(texts$padding$generic))
     current <- nchar(text)
   }
 
