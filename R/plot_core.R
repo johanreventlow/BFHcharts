@@ -148,26 +148,20 @@ bfh_spc_plot <- function(qic_data,
         fill = BFHtheme::bfh_cols("very_light_blue"),
         alpha = 0.5
       ),
-      geomtextpath::geom_textline(
-        ggplot2::aes(y = ucl, x = x, label = "\u00d8vre kontrolgr\u00e6nse"),
+      # TODO: Genaktiver geom_textline når geomtextpath cold-start (~3s) er løst
+      # Se BFHcharts #88
+      ggplot2::geom_line(
+        ggplot2::aes(y = ucl, x = x),
         inherit.aes = FALSE,
-        hjust = 0.05,
-        vjust = -0.2,
         linewidth = ucl_linewidth,
-        linecolour = BFHtheme::bfh_cols("light_blue"),
-        textcolour = BFHtheme::bfh_cols("hospital_grey"),
-        size = 3.0,
+        colour = BFHtheme::bfh_cols("light_blue"),
         na.rm = TRUE
       ),
-      geomtextpath::geom_textline(
-        ggplot2::aes(y = lcl, x = x, label = "Nedre kontrolgr\u00e6nse"),
+      ggplot2::geom_line(
+        ggplot2::aes(y = lcl, x = x),
         inherit.aes = FALSE,
-        hjust = 0.05,
-        vjust = 1.2,
         linewidth = ucl_linewidth,
-        linecolour = BFHtheme::bfh_cols("light_blue"),
-        textcolour = BFHtheme::bfh_cols("hospital_grey"),
-        size = 3.0,
+        colour = BFHtheme::bfh_cols("light_blue"),
         na.rm = TRUE
       )
     ))
