@@ -126,10 +126,12 @@ format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
     return(format_time_auto(val, y_range))
   }
 
-  # Default formatting - dansk notation
+  # Default formatting - kontekstuel dansk notation
   if (isTRUE(all.equal(val, round(val), tolerance = 1e-10))) {
     return(format(round(val), decimal.mark = ","))
+  } else if (abs(val) < 1) {
+    return(format(round(val, 2), decimal.mark = ",", nsmall = 2))
   } else {
-    return(format(val, decimal.mark = ",", nsmall = 1))
+    return(format(round(val, 1), decimal.mark = ",", nsmall = 1))
   }
 }

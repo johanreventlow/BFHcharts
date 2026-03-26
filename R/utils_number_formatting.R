@@ -67,7 +67,7 @@ format_scaled_number <- function(val, scale, suffix) {
   if (isTRUE(all.equal(scaled, round(scaled), tolerance = 1e-10))) {
     paste0(round(scaled), suffix)
   } else {
-    paste0(format(scaled, decimal.mark = ",", nsmall = 1), suffix)
+    paste0(format(round(scaled, 1), decimal.mark = ",", nsmall = 1), suffix)
   }
 }
 
@@ -85,11 +85,15 @@ format_unscaled_number <- function(val) {
     return(NA_character_)
   }
 
-  # Use all.equal() for floating point comparison
+  # Heltal: ingen decimaler
   if (isTRUE(all.equal(val, round(val), tolerance = 1e-10))) {
     format(round(val), big.mark = ".", decimal.mark = ",")
+  } else if (abs(val) < 1) {
+    # Andele (0-1): 2 decimaler
+    format(round(val, 2), big.mark = ".", decimal.mark = ",", nsmall = 2)
   } else {
-    format(val, big.mark = ".", decimal.mark = ",", nsmall = 1)
+    # Alt andet: 1 decimal
+    format(round(val, 1), big.mark = ".", decimal.mark = ",", nsmall = 1)
   }
 }
 
@@ -139,10 +143,14 @@ format_rate_danish <- function(val) {
     return(NA_character_)
   }
 
-  # Use all.equal() for floating point comparison
+  # Heltal: ingen decimaler
   if (isTRUE(all.equal(val, round(val), tolerance = 1e-10))) {
     format(round(val), decimal.mark = ",")
+  } else if (abs(val) < 1) {
+    # Andele (0-1): 2 decimaler
+    format(round(val, 2), decimal.mark = ",", nsmall = 2)
   } else {
-    format(val, decimal.mark = ",", nsmall = 1)
+    # Alt andet: 1 decimal
+    format(round(val, 1), decimal.mark = ",", nsmall = 1)
   }
 }
