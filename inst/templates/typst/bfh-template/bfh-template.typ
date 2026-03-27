@@ -23,7 +23,7 @@
 #let bfh-diagram(
   hospital: "Bispebjerg og Frederiksberg Hospital",
   department: none,
-  title: "Paper Title",
+  title: [Skriv en kort titel, eller tilføj en konklusion,\ *der tydeligt opsummerer hvad grafen fortæller*],
   analysis: none,
   details: none,
   author: none,
@@ -36,7 +36,7 @@
   outliers_expected: 0,
   outliers_actual: 0,
   is_run_chart: false,
-  footer_content: "Kilde: Sundhedsdatastyrelsen\nKontakt: johan.reventlow@regionh.dk",
+  footer_content: none,
   chart
 ) = {
   set text(font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
@@ -104,14 +104,11 @@ show table.cell: it => {
                 )]        )
             ) +
           align(bottom,
-            par(
-              leading: 0.15em,
-                text(rgb("fff"),
-                size: 38pt,
-                title
-                )
-              )
-            ) 
+            par(leading: 0.15em, {
+              set text(rgb("fff"), size: 38pt)
+              title
+            })
+          ) 
         
       ),
 
