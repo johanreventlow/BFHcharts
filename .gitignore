@@ -28,5 +28,7 @@ Rplots.pdf
 *.psd
 # Demo/test files
 demo_test.R
+# Generated PDF analysis files
+*.pdf
 # Copyright-protected fonts (must not be bundled)
 inst/templates/typst/*/fonts/
