@@ -26,13 +26,15 @@
       "SlashCommand(/openspec:archive add-spc-analysis-ai)",
       "WebFetch(domain:github.com)",
       "Bash(ls:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(git fetch:*)",
+      "WebFetch(domain:api.github.com)"
     ],
     "deny": [],
     "ask": []
   },
   "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true
+    "enabled": false,
+    "autoAllowBashIfSandboxed": false
   }
 }

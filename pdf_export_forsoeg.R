@@ -23,8 +23,8 @@ result <-
   target_value = 0.95,
   chart_type = "p",
   y_axis_unit = "percent",
-  # ylab = "Procent",
-  # xlab = "Udskrivelsesmåned",
+  ylab = "Procent",
+  #xlab = "Udskrivelsesmåned",
   chart_title = "Andel FMK ajourført til tiden efter indlæggelse"
 ) 
 
@@ -48,10 +48,10 @@ result |>
     metadata = list(
       hospital = "Bispebjerg og Frederiksberg Hospital",
       department = "Akutafdelingen",
-      data_definition = "Andel udskrevne patienter der har fået ajourført deres medicinkort via FMK inden for den aftalte tid ud af alle indlæggelser, hvor medicin er ordineret, udleveret eller administreret. K",
+      data_definition = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus commodo sem et ipsum scelerisque, eget consequat lectus condimentum. Proin consectetur sapien eu cursus maximus. Nunc eu fermentum nibh. Nulla vitae nisi eget libero ornare maximus et eget leo. Nunc vestibulum risus mollis, hendrerit augue nec, tristique lectus. Integer et lectus id massa laoreet pellentesque at et orci. Etiam in purus malesuada, faucibus dui eu, feugiat arcu. Phasellus vulputate, sem eu egestas consequat, nisl est sodales metus, non posuere justo sapien in magna. Praesent mauris erat, aliquam in velit imperdiet, porttitor fermentum massa. Vivamus non tincidunt magna. Curabitur commodo non elit. ",
       target = 0.95,  # Mål: max 45 minutter
       author = "Kvalitetsafdelingen",
-      footer_content = "Kilde: Sundhedsdatastyrelsen\nKontakt: johan.reventlow@reventlow.dk",
+      footer_content = "Kilde: Sundhedsdatastyrelsen - Kontakt: johan.reventlow@regionh.dk",
       date = Sys.Date()
     ),
     auto_analysis = TRUE,  # ⭐ NY FUNKTION: Automatisk analyse-generering
