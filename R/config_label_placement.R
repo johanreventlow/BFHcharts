@@ -120,11 +120,50 @@ LABEL_PLACEMENT_CONFIG <- list(
   #            Tidligere værdi 1.44 var en workaround for legacy fallback-baseret højde.
   #            Nu med faktiske grob målinger: 1.0 = ingen ekstra margin
 
-  height_fallback_npc = 0.13
+  height_fallback_npc = 0.13,
   # 13% NPC fallback
   # Rationale: Hvis grob-måling fejler, brug denne værdi.
   #            Baseret på typisk 2-line label (8pt header + 24pt value).
   #            Konservativ værdi der passer til de fleste cases.
+
+  # === Note Label Placement ===
+
+  note_label_offset_factor = 0.06,
+  # Label offset som andel af y-range
+  # Rationale: 6% af y-range giver passende afstand fra datapunkt til label-center.
+  #            Skalerer proportionelt med plotstørrelse.
+
+  note_line_buffer_factor = 0.03,
+  # Minimumsafstand fra label-kant til linje (andel af y-range)
+  # Rationale: 3% af y-range sikrer at labels aldrig rører en linje.
+
+  note_max_label_width = 25,
+  # Word-wrap bredde i tegn
+  # Rationale: 25 tegn giver kompakt multi-line labels der ikke er for brede.
+
+  note_line_penalty_weight = 100,
+  # Penalty-vægt for nærhed til linjer
+  # Rationale: Høj vægt sikrer at linje-undgåelse prioriteres over andre faktorer.
+
+  note_label_overlap_weight = 80,
+  # Penalty-vægt for overlap med andre labels
+  # Rationale: Næsthøjeste prioritet - labels må ikke overlappe hinanden.
+
+  note_distance_weight = 1,
+  # Penalty-vægt for afstand fra datapunkt
+  # Rationale: Lav vægt - afstand er en tiebreaker, ikke en primær faktor.
+
+  note_bounds_penalty = 1000,
+  # Penalty for labels uden for plotområdet
+  # Rationale: Meget høj - labels uden for bounds er aldrig acceptable.
+
+  note_char_width_factor = 0.008,
+  # Estimeret bredde per tegn som andel af x-range
+  # Rationale: Approksimation til bounding box bredde-beregning.
+
+  note_line_height_factor = 0.04
+  # Estimeret højde per tekstlinje som andel af y-range
+  # Rationale: Approksimation til bounding box højde-beregning.
 )
 
 #' Hent label placement parameter med default fallback
