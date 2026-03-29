@@ -149,34 +149,72 @@ add_plot_enhancements <- function(plot,
       comment_data_num <- comment_data
     }
 
+    # Forbered datapunkter for processlinje-undgåelse
+    data_points_num <- data.frame(
+      x = if (inherits(qic_data$x, c("Date", "POSIXct", "POSIXt"))) {
+        as.numeric(qic_data$x)
+      } else {
+        qic_data$x
+      },
+      y = qic_data$y,
+      stringsAsFactors = FALSE
+    )
+
     # Placer labels
     label_data <- place_note_labels(
       comment_data = comment_data_num,
       line_positions = if (!is.null(line_positions)) line_positions else numeric(0),
       y_range = y_range,
-      x_range = x_range_num
+      x_range = x_range_num,
+      data_points = data_points_num
     )
 
     if (nrow(label_data) > 0) {
-      # Konverter x-koordinater tilbage til original type
-      if (inherits(x_range, "Date")) {
-        label_data$label_x <- as.Date(label_data$label_x, origin = "1970-01-01")
-        label_data$point_x <- as.Date(label_data$point_x, origin = "1970-01-01")
-      } else if (inherits(x_range, c("POSIXct", "POSIXt"))) {
-        tz <- attr(x_range, "tzone") %||% "UTC"
-        label_data$label_x <- as.POSIXct(label_data$label_x, origin = "1970-01-01", tz = tz)
-        label_data$point_x <- as.POSIXct(label_data$point_x, origin = "1970-01-01", tz = tz)
+      # Helper: konverter numerisk x tilbage til original type (Date/POSIXct)
+      tz <- if (inherits(x_range, c("POSIXct", "POSIXt"))) {
+        attr(x_range, "tzone") %||% "UTC"
+      } else {
+        "UTC"
+      }
+      restore_x <- function(values) {
+        if (inherits(x_range, "Date")) as.Date(values, origin = "1970-01-01")
+        else if (inherits(x_range, c("POSIXct", "POSIXt"))) as.POSIXct(values, origin = "1970-01-01", tz = tz)
+        else values
       }
 
-      # Tegn pile (kun for forskudte labels)
+      label_data$label_x <- restore_x(label_data$label_x)
+      label_data$point_x <- restore_x(label_data$point_x)
+      label_data$arrow_x <- restore_x(label_data$arrow_x)
+
       arrow_data <- label_data[label_data$draw_arrow, ]
       if (nrow(arrow_data) > 0) {
+        # Forkort pilens endpoint med fast afstand (3% af plottet) fra datapunktet
+        x_span <- diff(as.numeric(x_range))
+        y_span_arrow <- diff(y_range)
+        pad_norm <- 0.03
+
+        for (r in seq_len(nrow(arrow_data))) {
+          dx_norm <- (as.numeric(arrow_data$point_x[r]) - as.numeric(arrow_data$arrow_x[r])) / x_span
+          dy_norm <- (arrow_data$point_y[r] - arrow_data$arrow_y[r]) / y_span_arrow
+          seg_len_norm <- sqrt(dx_norm^2 + dy_norm^2)
+          if (seg_len_norm > 1e-10) {
+            shrink <- min(pad_norm / seg_len_norm, 0.4)
+            arrow_data$end_x[r] <- as.numeric(arrow_data$point_x[r]) - shrink * (as.numeric(arrow_data$point_x[r]) - as.numeric(arrow_data$arrow_x[r]))
+            arrow_data$end_y[r] <- arrow_data$point_y[r] - shrink * (arrow_data$point_y[r] - arrow_data$arrow_y[r])
+          } else {
+            arrow_data$end_x[r] <- as.numeric(arrow_data$point_x[r])
+            arrow_data$end_y[r] <- arrow_data$point_y[r]
+          }
+        }
+
+        arrow_data$end_x <- restore_x(arrow_data$end_x)
+
         plot <- plot +
           ggplot2::geom_segment(
             data = arrow_data,
             ggplot2::aes(
-              x = label_x, y = label_y,
-              xend = point_x, yend = point_y
+              x = arrow_x, y = arrow_y,
+              xend = end_x, yend = end_y
             ),
             colour = BFHtheme::bfh_cols("hospital_grey"),
             linewidth = 0.3,

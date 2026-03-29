@@ -3,7 +3,12 @@
 # ==============================================================================
 # FORMÅL: Deterministisk label placement for SPC chart noter.
 #         Placerer labels ved datapunkter og undgår horisontale linjer
-#         (CL, UCL, LCL, target) samt andre labels.
+#         (CL, UCL, LCL, target), proceslinjen (geom_line mellem punkter),
+#         datapunkter, og andre labels.
+#
+#         VIGTIGT: Al scoring sker i normaliseret [0,1] space for at
+#         håndtere vidt forskellige skalaer på x- og y-aksen
+#         (f.eks. POSIXct sekunder vs. procent-brøker).
 #
 # ANVENDES AF:
 #   - plot_enhancements.R (comment rendering)
@@ -16,12 +21,17 @@
 #' Placer note-labels med intelligent collision avoidance
 #'
 #' Beregner optimale positioner for note-labels der undgår horisontale
-#' referencelinjer (CL, UCL, LCL, target) og andre labels.
+#' referencelinjer (CL, UCL, LCL, target), proceslinjen mellem datapunkter,
+#' selve datapunkterne, og andre allerede placerede labels.
 #'
-#' @param comment_data data.frame med x, y, comment kolonner (fra extract_comment_data())
+#' Al scoring sker i normaliseret [0,1] space for at håndtere
+#' forskellige skalaer (f.eks. Date/POSIXct vs. procent).
+#'
+#' @param comment_data data.frame med x, y, comment kolonner
 #' @param line_positions named numeric vector med y-værdier for linjer (kan indeholde NA)
 #' @param y_range numeric(2) plot y-range
 #' @param x_range numeric(2) plot x-range
+#' @param data_points data.frame med x, y for alle datapunkter
 #' @param config list med placement parametre (fra get_label_placement_config())
 #' @return data.frame med label_x, label_y, point_x, point_y, label_text, draw_arrow
 #'
@@ -31,11 +41,13 @@ place_note_labels <- function(comment_data,
                               line_positions,
                               y_range,
                               x_range,
+                              data_points = NULL,
                               config = NULL) {
-  # Tom result structure
   empty_result <- data.frame(
     label_x = numeric(0),
     label_y = numeric(0),
+    arrow_x = numeric(0),
+    arrow_y = numeric(0),
     point_x = numeric(0),
     point_y = numeric(0),
     label_text = character(0),
@@ -43,7 +55,6 @@ place_note_labels <- function(comment_data,
     stringsAsFactors = FALSE
   )
 
-  # Håndter NULL/tom input
   if (is.null(comment_data) || nrow(comment_data) == 0) {
     return(empty_result)
   }
@@ -53,10 +64,9 @@ place_note_labels <- function(comment_data,
     if (exists("get_label_placement_config", mode = "function")) {
       config <- get_label_placement_config()
     } else {
-      # Fallback defaults
       config <- list(
-        note_label_offset_factor = 0.06,
-        note_line_buffer_factor = 0.03,
+        note_label_offset_factor = 0.15,
+        note_line_buffer_factor = 0.06,
         note_max_label_width = 25,
         note_line_penalty_weight = 100,
         note_label_overlap_weight = 80,
@@ -68,53 +78,77 @@ place_note_labels <- function(comment_data,
     }
   }
 
-  # Fjern NA fra line_positions
-  line_y_values <- line_positions[!is.na(line_positions)]
-
-  # Beregn afstande i data-enheder
+  # Normaliserings-funktioner: data coords -> [0,1]
   y_span <- diff(y_range)
   x_span <- diff(x_range)
-  label_offset <- y_span * config$note_label_offset_factor
-  line_buffer <- y_span * config$note_line_buffer_factor
+  norm_x <- function(x) (x - x_range[1]) / x_span
+  norm_y <- function(y) (y - y_range[1]) / y_span
+  denorm_x <- function(nx) nx * x_span + x_range[1]
+  denorm_y <- function(ny) ny * y_span + y_range[1]
 
-  # Placer labels greedy (en ad gangen)
+  # Normaliser line_positions til [0,1]
+  line_y_norm <- norm_y(line_positions[!is.na(line_positions)])
+
+  # Normaliser data_points
+  segments_norm <- NULL
+  data_points_norm <- NULL
+  if (!is.null(data_points) && nrow(data_points) > 0) {
+    data_points_norm <- data.frame(
+      x = norm_x(data_points$x),
+      y = norm_y(data_points$y),
+      stringsAsFactors = FALSE
+    )
+    data_points_norm <- data_points_norm[!is.na(data_points_norm$x) & !is.na(data_points_norm$y), ]
+
+    # Byg segmenter i normaliseret space
+    if (nrow(data_points_norm) >= 2) {
+      dp <- data_points_norm[order(data_points_norm$x), ]
+      n <- nrow(dp)
+      segments_norm <- data.frame(
+        x1 = dp$x[-n], y1 = dp$y[-n],
+        x2 = dp$x[-1], y2 = dp$y[-1],
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  offset <- config$note_label_offset_factor
+  buffer <- config$note_line_buffer_factor
+
   placed_labels <- list()
   results <- vector("list", nrow(comment_data))
 
   for (i in seq_len(nrow(comment_data))) {
     row <- comment_data[i, ]
-    px <- row$x
-    py <- row$y
+    px_data <- row$x
+    py_data <- row$y
+    px <- norm_x(px_data)
+    py <- norm_y(py_data)
 
-    # Word-wrap tekst
     wrapped_text <- stringr::str_wrap(row$comment, width = config$note_max_label_width)
-
-    # Beregn bounding box
-    bbox <- estimate_label_bbox(
-      wrapped_text, x_span, y_span,
+    bbox <- estimate_label_bbox_norm(
+      wrapped_text,
       config$note_char_width_factor,
       config$note_line_height_factor
     )
 
-    # Generer 8 kandidatpositioner
-    candidates <- generate_candidates(px, py, label_offset, bbox, x_span)
+    candidates <- generate_candidates_norm(px, py, offset)
 
-    # Scor hver kandidat
     best_score <- Inf
     best_candidate <- candidates[[1]]
 
     for (candidate in candidates) {
-      score <- score_candidate(
-        candidate_x = candidate$x,
-        candidate_y = candidate$y,
+      score <- score_candidate_norm(
+        cx = candidate$x,
+        cy = candidate$y,
         bbox = bbox,
-        line_y_values = line_y_values,
+        line_y_norm = line_y_norm,
+        segments_norm = segments_norm,
+        data_points_norm = data_points_norm,
         placed_labels = placed_labels,
         point_x = px,
         point_y = py,
-        y_range = y_range,
-        x_range = x_range,
-        line_buffer = line_buffer,
+        buffer = buffer,
         config = config
       )
 
@@ -124,25 +158,30 @@ place_note_labels <- function(comment_data,
       }
     }
 
-    # Gem placering
-    # Beregn om arrow skal tegnes (label er forskudt fra punkt)
-    dist_from_point <- sqrt(
-      ((best_candidate$x - px) / x_span)^2 +
-        ((best_candidate$y - py) / y_span)^2
-    )
-    draw_arrow <- dist_from_point > 0.01
+    # Konverter bedste position tilbage til data coords
+    label_x_data <- denorm_x(best_candidate$x)
+    label_y_data <- denorm_y(best_candidate$y)
 
-    placed_labels[[i]] <- list(
-      x = best_candidate$x,
-      y = best_candidate$y,
-      bbox = bbox
+    # Arrow: beregn startpunkt på label-kant (ikke center)
+    dist_norm <- sqrt((best_candidate$x - px)^2 + (best_candidate$y - py)^2)
+    draw_arrow <- dist_norm > 0.02
+
+    # Beregn pilens startpunkt: skæring mellem linje (center->punkt) og label-boks
+    arrow_start <- compute_arrow_start(
+      best_candidate$x, best_candidate$y, bbox, px, py
     )
+    arrow_x_data <- denorm_x(arrow_start$x)
+    arrow_y_data <- denorm_y(arrow_start$y)
+
+    placed_labels[[i]] <- list(x = best_candidate$x, y = best_candidate$y, bbox = bbox)
 
     results[[i]] <- data.frame(
-      label_x = best_candidate$x,
-      label_y = best_candidate$y,
-      point_x = px,
-      point_y = py,
+      label_x = label_x_data,
+      label_y = label_y_data,
+      arrow_x = arrow_x_data,
+      arrow_y = arrow_y_data,
+      point_x = px_data,
+      point_y = py_data,
       label_text = wrapped_text,
       draw_arrow = draw_arrow,
       stringsAsFactors = FALSE
@@ -153,108 +192,145 @@ place_note_labels <- function(comment_data,
 }
 
 
-#' Generer 8 kandidatpositioner for en label
-#'
-#' @param px numeric datapunkt x
-#' @param py numeric datapunkt y
-#' @param offset numeric label offset i y-enheder
-#' @param bbox list med width og height
-#' @param x_span numeric x-range bredde
-#' @return list af candidates med x og y
+#' Generer 8 kandidatpositioner i normaliseret [0,1] space
 #'
 #' @keywords internal
 #' @noRd
-generate_candidates <- function(px, py, offset, bbox, x_span) {
-  x_offset <- x_span * 0.03  # Horisontal forskydning
+generate_candidates_norm <- function(px, py, offset) {
+  x_off <- offset * 0.5
+  off2 <- offset * 1.6  # Større offset for ekstra kandidater
 
   list(
+    # Primære (1x offset)
     list(x = px, y = py + offset),                  # 1. Over
     list(x = px, y = py - offset),                  # 2. Under
-    list(x = px + x_offset, y = py + offset),       # 3. Over-højre
-    list(x = px + x_offset, y = py - offset),       # 4. Under-højre
-    list(x = px - x_offset, y = py + offset),       # 5. Over-venstre
-    list(x = px - x_offset, y = py - offset),       # 6. Under-venstre
-    list(x = px + x_offset * 1.5, y = py),          # 7. Højre
-    list(x = px - x_offset * 1.5, y = py)           # 8. Venstre
+    list(x = px + x_off, y = py + offset),          # 3. Over-højre
+    list(x = px + x_off, y = py - offset),          # 4. Under-højre
+    list(x = px - x_off, y = py + offset),          # 5. Over-venstre
+    list(x = px - x_off, y = py - offset),          # 6. Under-venstre
+    list(x = px + x_off * 1.5, y = py),             # 7. Højre
+    list(x = px - x_off * 1.5, y = py),             # 8. Venstre
+    # Sekundære (1.6x offset - længere væk)
+    list(x = px, y = py + off2),                    # 9. Langt over
+    list(x = px, y = py - off2),                    # 10. Langt under
+    list(x = px + x_off, y = py + off2),            # 11. Langt over-højre
+    list(x = px + x_off, y = py - off2),            # 12. Langt under-højre
+    list(x = px - x_off, y = py + off2),            # 13. Langt over-venstre
+    list(x = px - x_off, y = py - off2)             # 14. Langt under-venstre
   )
 }
 
 
-#' Scor en kandidatposition
-#'
-#' Lavere score er bedre. Scorer baseret på nærhed til linjer,
-#' overlap med andre labels, afstand fra datapunkt, og bounds.
-#'
-#' @param candidate_x numeric kandidat x-position
-#' @param candidate_y numeric kandidat y-position
-#' @param bbox list med width og height
-#' @param line_y_values numeric vector af linje y-positioner (uden NA)
-#' @param placed_labels list af allerede placerede labels
-#' @param point_x numeric datapunkt x
-#' @param point_y numeric datapunkt y
-#' @param y_range numeric(2) y-axis range
-#' @param x_range numeric(2) x-axis range
-#' @param line_buffer numeric minimumsafstand til linje
-#' @param config list med penalty weights
-#' @return numeric score (lavere er bedre)
+#' Scor en kandidatposition i normaliseret [0,1] space
 #'
 #' @keywords internal
 #' @noRd
-score_candidate <- function(candidate_x, candidate_y, bbox,
-                            line_y_values, placed_labels,
-                            point_x, point_y,
-                            y_range, x_range,
-                            line_buffer, config) {
+score_candidate_norm <- function(cx, cy, bbox,
+                                 line_y_norm, segments_norm,
+                                 data_points_norm, placed_labels,
+                                 point_x, point_y,
+                                 buffer, config) {
   score <- 0
-  y_span <- diff(y_range)
-  x_span <- diff(x_range)
 
   half_h <- bbox$height / 2
   half_w <- bbox$width / 2
 
-  # --- Bounds penalty ---
-  label_top <- candidate_y + half_h
-  label_bot <- candidate_y - half_h
-  label_left <- candidate_x - half_w
-  label_right <- candidate_x + half_w
+  label_top <- cy + half_h
+  label_bot <- cy - half_h
+  label_left <- cx - half_w
+  label_right <- cx + half_w
 
-  if (label_top > y_range[2] || label_bot < y_range[1] ||
-      label_left < x_range[1] || label_right > x_range[2]) {
+  # --- 1. Bounds penalty (0 til 1 space) ---
+  if (label_top > 1 || label_bot < 0 || label_left < 0 || label_right > 1) {
     score <- score + config$note_bounds_penalty
   }
 
-  # --- Linje-overlap penalty ---
-  if (length(line_y_values) > 0) {
-    for (line_y in line_y_values) {
-      # Afstand fra label-kant til linje
-      dist_to_line <- min(abs(label_top - line_y), abs(label_bot - line_y))
-      # Hvis linjen er INDE i label-boksen, dist = 0
-      if (line_y >= label_bot && line_y <= label_top) {
-        dist_to_line <- 0
+  # --- 2. Horisontale referencelinjer ---
+  if (length(line_y_norm) > 0) {
+    for (ly in line_y_norm) {
+      if (ly >= label_bot && ly <= label_top) {
+        # Linjen skærer label-boksen
+        score <- score + config$note_line_penalty_weight
+      } else {
+        dist <- min(abs(label_top - ly), abs(label_bot - ly))
+        if (dist < buffer) {
+          proximity <- 1 - (dist / buffer)
+          score <- score + config$note_line_penalty_weight * proximity^2
+        }
+      }
+    }
+  }
+
+  # --- 3. Proceslinjen (diagonale segmenter) ---
+  if (!is.null(segments_norm) && nrow(segments_norm) > 0) {
+    for (s in seq_len(nrow(segments_norm))) {
+      seg <- segments_norm[s, ]
+      # Hurtig x-range skip
+      seg_x_min <- min(seg$x1, seg$x2)
+      seg_x_max <- max(seg$x1, seg$x2)
+      if (seg_x_max < label_left - buffer || seg_x_min > label_right + buffer) next
+
+      # Sample 20 punkter langs segmentet, check mod label-boks
+      intersects <- FALSE
+      min_dist <- Inf
+      for (t in seq(0, 1, length.out = 20)) {
+        sx <- seg$x1 + t * (seg$x2 - seg$x1)
+        sy <- seg$y1 + t * (seg$y2 - seg$y1)
+
+        # Er punktet inde i label-boksen?
+        if (sx >= label_left && sx <= label_right &&
+            sy >= label_bot && sy <= label_top) {
+          intersects <- TRUE
+          break
+        }
+
+        # Afstand til nærmeste kant af label-boks
+        dx <- max(label_left - sx, 0, sx - label_right)
+        dy <- max(label_bot - sy, 0, sy - label_top)
+        dist <- sqrt(dx^2 + dy^2)
+        if (dist < min_dist) min_dist <- dist
       }
 
-      if (dist_to_line < line_buffer) {
-        # Penalty stiger kraftigt jo tættere vi er
-        proximity <- 1 - (dist_to_line / line_buffer)
+      if (intersects) {
+        score <- score + config$note_line_penalty_weight
+      } else if (min_dist < buffer) {
+        proximity <- 1 - (min_dist / buffer)
         score <- score + config$note_line_penalty_weight * proximity^2
       }
     }
   }
 
-  # --- Label-label overlap penalty ---
+  # --- 4. Datapunkt-overlap ---
+  if (!is.null(data_points_norm) && nrow(data_points_norm) > 0) {
+    point_radius <- 0.015  # Cirkulær radius i normaliseret space
+
+    for (dp in seq_len(nrow(data_points_norm))) {
+      dpx <- data_points_norm$x[dp]
+      dpy <- data_points_norm$y[dp]
+
+      # Check om punktet er inden for label-boks + radius
+      if (dpx >= (label_left - point_radius) &&
+          dpx <= (label_right + point_radius) &&
+          dpy >= (label_bot - point_radius) &&
+          dpy <= (label_top + point_radius)) {
+        score <- score + config$note_line_penalty_weight * 0.5
+      }
+    }
+  }
+
+  # --- 5. Label-label overlap ---
   if (length(placed_labels) > 0) {
     for (placed in placed_labels) {
       p_half_h <- placed$bbox$height / 2
       p_half_w <- placed$bbox$width / 2
 
-      # Check bounding box overlap
       x_overlap <- max(0,
-        min(candidate_x + half_w, placed$x + p_half_w) -
-          max(candidate_x - half_w, placed$x - p_half_w)
+        min(cx + half_w, placed$x + p_half_w) -
+          max(cx - half_w, placed$x - p_half_w)
       )
       y_overlap <- max(0,
-        min(candidate_y + half_h, placed$y + p_half_h) -
-          max(candidate_y - half_h, placed$y - p_half_h)
+        min(cy + half_h, placed$y + p_half_h) -
+          max(cy - half_h, placed$y - p_half_h)
       )
 
       if (x_overlap > 0 && y_overlap > 0) {
@@ -266,38 +342,98 @@ score_candidate <- function(candidate_x, candidate_y, bbox,
     }
   }
 
-  # --- Afstandspræference (normaliseret) ---
-  norm_dist <- sqrt(
-    ((candidate_x - point_x) / x_span)^2 +
-      ((candidate_y - point_y) / y_span)^2
-  )
+  # --- 6. Afstandspræference ---
+  norm_dist <- sqrt((cx - point_x)^2 + (cy - point_y)^2)
   score <- score + config$note_distance_weight * norm_dist
 
   score
 }
 
 
-#' Estimér bounding box for wrappet tekst
-#'
-#' Approksimerer bredde og højde i data-enheder baseret på tegnantal.
+#' Estimér bounding box i normaliseret [0,1] space
 #'
 #' @param text character wrappet tekst (kan indeholde newlines)
-#' @param x_span numeric x-range bredde
-#' @param y_span numeric y-range højde
-#' @param char_width_factor numeric bredde per tegn som andel af x_span
-#' @param line_height_factor numeric højde per linje som andel af y_span
-#' @return list med width og height i data-enheder
+#' @param char_width_factor numeric bredde per tegn som brøkdel af plot-bredde
+#' @param line_height_factor numeric højde per linje som brøkdel af plot-højde
+#' @return list med width og height i normaliseret [0,1] space
 #'
 #' @keywords internal
 #' @noRd
-estimate_label_bbox <- function(text, x_span, y_span,
-                                char_width_factor, line_height_factor) {
+estimate_label_bbox_norm <- function(text, char_width_factor, line_height_factor) {
   lines <- strsplit(text, "\n")[[1]]
   n_lines <- length(lines)
   max_chars <- max(nchar(lines))
 
   list(
-    width = max_chars * char_width_factor * x_span,
-    height = n_lines * line_height_factor * y_span
+    width = max_chars * char_width_factor,
+    height = n_lines * line_height_factor
+  )
+}
+
+
+#' Beregn pilens startpunkt på label-kanten
+#'
+#' Finder skæringen mellem linjen fra label-center til datapunktet
+#' og label-boksens kant. Pilen starter fra kanten, ikke fra center.
+#'
+#' @param cx,cy label center i normaliseret space
+#' @param bbox list med width og height
+#' @param px,py datapunkt i normaliseret space
+#' @return list med x, y for pilens startpunkt
+#'
+#' @keywords internal
+#' @noRd
+compute_arrow_start <- function(cx, cy, bbox, px, py) {
+  dx <- px - cx
+  dy <- py - cy
+
+  # Hvis punkt og center er sammenfaldende, returner center
+  if (abs(dx) < 1e-10 && abs(dy) < 1e-10) {
+    return(list(x = cx, y = cy))
+  }
+
+  half_w <- bbox$width / 2
+  half_h <- bbox$height / 2
+
+  # Beregn t for skæring med hver kant af boksen
+  # Vi søger den mindste positive t der rammer en kant
+  t_candidates <- numeric(0)
+
+  # Venstre/højre kanter
+  if (abs(dx) > 1e-10) {
+    t_right <- half_w / dx   # Højre kant hvis dx > 0
+    t_left <- -half_w / dx   # Venstre kant hvis dx < 0
+    for (t in c(t_right, t_left)) {
+      if (t > 0) {
+        hit_y <- cy + t * dy
+        if (abs(hit_y - cy) <= half_h + 1e-10) {
+          t_candidates <- c(t_candidates, t)
+        }
+      }
+    }
+  }
+
+  # Top/bund kanter
+  if (abs(dy) > 1e-10) {
+    t_top <- half_h / dy     # Top kant hvis dy > 0
+    t_bot <- -half_h / dy    # Bund kant hvis dy < 0
+    for (t in c(t_top, t_bot)) {
+      if (t > 0) {
+        hit_x <- cx + t * dx
+        if (abs(hit_x - cx) <= half_w + 1e-10) {
+          t_candidates <- c(t_candidates, t)
+        }
+      }
+    }
+  }
+
+  if (length(t_candidates) == 0) {
+    return(list(x = cx, y = cy))
+  }
+
+  t_min <- min(t_candidates)
+  list(
+    x = cx + t_min * dx,
+    y = cy + t_min * dy
   )
 }

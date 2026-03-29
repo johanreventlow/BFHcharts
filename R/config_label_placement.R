@@ -128,14 +128,14 @@ LABEL_PLACEMENT_CONFIG <- list(
 
   # === Note Label Placement ===
 
-  note_label_offset_factor = 0.06,
-  # Label offset som andel af y-range
-  # Rationale: 6% af y-range giver passende afstand fra datapunkt til label-center.
-  #            Skalerer proportionelt med plotstørrelse.
+  note_label_offset_factor = 0.15,
+  # Label offset i normaliseret [0,1] space
+  # Rationale: 15% af plottet giver god afstand fra datapunkt til label-center.
+  #            Sekundære kandidater placeres ved 1.6x (24%) for ekstra plads.
 
-  note_line_buffer_factor = 0.03,
-  # Minimumsafstand fra label-kant til linje (andel af y-range)
-  # Rationale: 3% af y-range sikrer at labels aldrig rører en linje.
+  note_line_buffer_factor = 0.06,
+  # Minimumsafstand fra label-kant til linje i normaliseret space
+  # Rationale: 6% buffer sikrer tydelig visuel separation fra linjer og segmenter.
 
   note_max_label_width = 25,
   # Word-wrap bredde i tegn

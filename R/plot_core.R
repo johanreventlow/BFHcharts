@@ -122,7 +122,8 @@ bfh_spc_plot <- function(qic_data,
   data_linewidth <- 1 * scale_factor
   cl_linewidth <- 1 * scale_factor
   point_size <- 2 * scale_factor
-  comment_size <- 6 * scale_factor
+  # Match y-axis text size (base_size * 0.8 pt, konverteret til mm for geom_text)
+  comment_size <- (viewport$base_size * 0.8) / ggplot2::.pt
 
   # Detect arrow symbols in target_text for target line suppression
   suppress_targetline <- FALSE
