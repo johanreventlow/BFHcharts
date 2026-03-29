@@ -260,41 +260,29 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
     stop("Ugyldige y-akse limits: [", ymin, ", ", ymax, "]")
   }
 
+  # Pre-compute transformerede limits (faste ved mapper-oprettelse)
+  y0 <- info$trans(ymin)
+  y1 <- info$trans(ymax)
+  y_range_trans <- y1 - y0
+
+  if (abs(y_range_trans) < .Machine$double.eps) {
+    stop(sprintf(
+      "Y-akse range er praktisk talt nul efter transformation: y0=%.10f, y1=%.10f",
+      y0, y1
+    ))
+  }
+
   # Y-data → NPC mapper
   y_to_npc <- function(y) {
     if (any(is.na(y))) {
       result <- rep(NA_real_, length(y))
       valid <- !is.na(y)
       if (any(valid)) {
-        yt <- info$trans(y[valid])
-        y0 <- info$trans(ymin)
-        y1 <- info$trans(ymax)
-
-        # Protect against division by zero
-        if (abs(y1 - y0) < .Machine$double.eps) {
-          stop(sprintf(
-            "Y-akse range er praktisk talt nul efter transformation: y0=%.10f, y1=%.10f",
-            y0, y1
-          ))
-        }
-
-        result[valid] <- (yt - y0) / (y1 - y0)
+        result[valid] <- (info$trans(y[valid]) - y0) / y_range_trans
       }
       return(result)
     }
-    yt <- info$trans(y)
-    y0 <- info$trans(ymin)
-    y1 <- info$trans(ymax)
-
-    # Protect against division by zero
-    if (abs(y1 - y0) < .Machine$double.eps) {
-      stop(sprintf(
-        "Y-akse range er praktisk talt nul efter transformation: y0=%.10f, y1=%.10f",
-        y0, y1
-      ))
-    }
-
-    (yt - y0) / (y1 - y0)
+    (info$trans(y) - y0) / y_range_trans
   }
 
   # NPC → Y-data inverse mapper
@@ -303,17 +291,11 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
       result <- rep(NA_real_, length(npc))
       valid <- !is.na(npc)
       if (any(valid)) {
-        y0 <- info$trans(ymin)
-        y1 <- info$trans(ymax)
-        yt <- y0 + npc[valid] * (y1 - y0)
-        result[valid] <- info$inv_trans(yt)
+        result[valid] <- info$inv_trans(y0 + npc[valid] * y_range_trans)
       }
       return(result)
     }
-    y0 <- info$trans(ymin)
-    y1 <- info$trans(ymax)
-    yt <- y0 + npc * (y1 - y0)
-    info$inv_trans(yt)
+    info$inv_trans(y0 + npc * y_range_trans)
   }
 
   list(
@@ -1297,12 +1279,10 @@ place_two_labels_npc <- function(
     ))
   }
 
-  # Collision detection
-  min_center_gap <- label_height_npc_value + gap_labels
+  # Collision detection (min_center_gap allerede beregnet ovenfor)
 
-  # OPTIMIZATION: Early exit hvis ingen kollision
+  # Early exit hvis ingen kollision
   if (abs(yA - yB) >= min_center_gap) {
-    # Ingen kollision - returnér optimal placering med det samme
     return(list(
       yA = yA,
       yB = yB,
@@ -1313,10 +1293,9 @@ place_two_labels_npc <- function(
     ))
   }
 
-  # Kollision detekteret - fortsæt med resolution logic
-  if (abs(yA - yB) < min_center_gap) {
-    # Kollision detekteret
-    warnings <- c(warnings, "Label kollision detekteret - justerer placering")
+  # Kollision detekteret - resolution logic
+  warnings <- c(warnings, "Label kollision detekteret - justerer placering")
+  {
 
     # Sortér efter linje-position (lower først)
     if (yA_npc < yB_npc) {

@@ -61,10 +61,6 @@ add_spc_labels <- function(
     verbose = FALSE,
     debug_mode = FALSE) {
 
-  # Viewport dimensions are now in inches (direct input from bfh_qic)
-  viewport_width_inches <- viewport_width
-  viewport_height_inches <- viewport_height
-
   # Input validation ----
   if (!inherits(plot, "gg")) {
     stop("plot skal være et ggplot object")
@@ -297,8 +293,8 @@ add_spc_labels <- function(
     gpA = grid::gpar(col = BFHtheme::bfh_cols("hospital_blue")),
     gpB = grid::gpar(col = BFHtheme::bfh_cols("hospital_dark_grey")),
     label_size = label_size,
-    viewport_width = viewport_width_inches,
-    viewport_height = viewport_height_inches,
+    viewport_width = viewport_width,
+    viewport_height = viewport_height,
     verbose = verbose,
     debug_mode = debug_mode,
     .built_plot = built_plot
