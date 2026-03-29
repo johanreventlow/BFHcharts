@@ -228,6 +228,32 @@ bfh_spc_plot <- function(qic_data,
   # Y-axis formatting based on unit type ----
   plot <- apply_y_axis_formatting(plot, plot_config$y_axis_unit, qic_data)
 
+  # Collect line positions for note label placement ----
+  line_positions <- c(
+    cl = if (!is.null(qic_data$cl)) {
+      latest_part <- max(qic_data$part, na.rm = TRUE)
+      part_cl <- qic_data$cl[qic_data$part == latest_part & !is.na(qic_data$part)]
+      if (length(part_cl) > 0 && !all(is.na(part_cl))) part_cl[!is.na(part_cl)][1] else NA_real_
+    } else {
+      NA_real_
+    },
+    ucl = if (!is.null(qic_data$ucl) && any(!is.na(qic_data$ucl))) {
+      stats::median(qic_data$ucl, na.rm = TRUE)
+    } else {
+      NA_real_
+    },
+    lcl = if (!is.null(qic_data$lcl) && any(!is.na(qic_data$lcl))) {
+      stats::median(qic_data$lcl, na.rm = TRUE)
+    } else {
+      NA_real_
+    },
+    target = if (!is.null(qic_data$target) && any(!is.na(qic_data$target))) {
+      qic_data$target[!is.na(qic_data$target)][1]
+    } else {
+      NA_real_
+    }
+  )
+
   # Add plot enhancements (extended lines, comments) ----
   plot <- add_plot_enhancements(
     plot = plot,
@@ -236,7 +262,8 @@ bfh_spc_plot <- function(qic_data,
     cl_linewidth = cl_linewidth,
     target_linewidth = target_linewidth,
     comment_size = comment_size,
-    suppress_targetline = suppress_targetline
+    suppress_targetline = suppress_targetline,
+    line_positions = line_positions
   )
 
   # Apply theme ----

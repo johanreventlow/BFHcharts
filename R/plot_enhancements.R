@@ -14,7 +14,7 @@ NULL
 #' Add Extended Lines and Comments to SPC Plot
 #'
 #' Extends centerline and target lines 20% beyond the last data point
-#' and adds comment annotations using ggrepel.
+#' and adds comment annotations with line-aware placement.
 #'
 #' @param plot ggplot object
 #' @param qic_data QIC data frame
@@ -33,7 +33,8 @@ add_plot_enhancements <- function(plot,
                                   cl_linewidth = 1,
                                   target_linewidth = 1,
                                   comment_size = 6,
-                                  suppress_targetline = FALSE) {
+                                  suppress_targetline = FALSE,
+                                  line_positions = NULL) {
   # Calculate extended x position (20% beyond last data point)
   last_x <- max(qic_data$x, na.rm = TRUE)
   first_x <- min(qic_data$x, na.rm = TRUE)
@@ -129,22 +130,72 @@ add_plot_enhancements <- function(plot,
     }
   }
 
-  # Add comments
+  # Add comments med intelligent placement
   if (!is.null(comment_data) && nrow(comment_data) > 0) {
-    plot <- plot +
-      ggrepel::geom_text_repel(
-        data = comment_data,
-        ggplot2::aes(x = x, y = y, label = comment),
-        size = comment_size,
-        color = BFHtheme::bfh_cols("hospital_dark_grey"),
-        box.padding = 0.5,
-        point.padding = 0.5,
-        segment.color = BFHtheme::bfh_cols("hospital_grey"),
-        segment.size = 0.3,
-        arrow = grid::arrow(length = grid::unit(0.015, "npc")),
-        max.overlaps = Inf,
-        inherit.aes = FALSE
-      )
+    # Beregn y_range og x_range fra data
+    y_vals <- qic_data$y[!is.na(qic_data$y)]
+    all_y <- c(y_vals, qic_data$ucl, qic_data$lcl)
+    all_y <- all_y[!is.na(all_y)]
+    y_range <- range(all_y)
+    x_range <- range(qic_data$x, na.rm = TRUE)
+
+    # Konverter x_range til numerisk for placement (håndter Date/POSIXct)
+    if (inherits(x_range, c("Date", "POSIXct", "POSIXt"))) {
+      x_range_num <- as.numeric(x_range)
+      comment_data_num <- comment_data
+      comment_data_num$x <- as.numeric(comment_data$x)
+    } else {
+      x_range_num <- x_range
+      comment_data_num <- comment_data
+    }
+
+    # Placer labels
+    label_data <- place_note_labels(
+      comment_data = comment_data_num,
+      line_positions = if (!is.null(line_positions)) line_positions else numeric(0),
+      y_range = y_range,
+      x_range = x_range_num
+    )
+
+    if (nrow(label_data) > 0) {
+      # Konverter x-koordinater tilbage til original type
+      if (inherits(x_range, "Date")) {
+        label_data$label_x <- as.Date(label_data$label_x, origin = "1970-01-01")
+        label_data$point_x <- as.Date(label_data$point_x, origin = "1970-01-01")
+      } else if (inherits(x_range, c("POSIXct", "POSIXt"))) {
+        tz <- attr(x_range, "tzone") %||% "UTC"
+        label_data$label_x <- as.POSIXct(label_data$label_x, origin = "1970-01-01", tz = tz)
+        label_data$point_x <- as.POSIXct(label_data$point_x, origin = "1970-01-01", tz = tz)
+      }
+
+      # Tegn pile (kun for forskudte labels)
+      arrow_data <- label_data[label_data$draw_arrow, ]
+      if (nrow(arrow_data) > 0) {
+        plot <- plot +
+          ggplot2::geom_segment(
+            data = arrow_data,
+            ggplot2::aes(
+              x = label_x, y = label_y,
+              xend = point_x, yend = point_y
+            ),
+            colour = BFHtheme::bfh_cols("hospital_grey"),
+            linewidth = 0.3,
+            arrow = grid::arrow(length = grid::unit(1.5, "mm"), type = "closed"),
+            inherit.aes = FALSE
+          )
+      }
+
+      # Tegn labels
+      plot <- plot +
+        ggplot2::geom_text(
+          data = label_data,
+          ggplot2::aes(x = label_x, y = label_y, label = label_text),
+          size = comment_size,
+          colour = BFHtheme::bfh_cols("hospital_dark_grey"),
+          lineheight = 0.9,
+          inherit.aes = FALSE
+        )
+    }
   }
 
   return(plot)
