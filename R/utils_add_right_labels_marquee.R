@@ -140,6 +140,17 @@ add_right_labels_marquee <- function(
       temp_pdf <- tempfile(fileext = ".pdf")
       grDevices::cairo_pdf(filename = temp_pdf, width = viewport_width, height = viewport_height)
       temp_device_opened <- TRUE
+
+      # CRITICAL: on.exit umiddelbart efter device open for at forhindre leaks ved fejl
+      on.exit(
+        {
+          if (temp_device_opened && grDevices::dev.cur() > 1) {
+            tryCatch(grDevices::dev.off(), error = function(e) NULL)
+          }
+          if (exists("temp_pdf")) unlink(temp_pdf, force = TRUE)
+        },
+        add = TRUE
+      )
     }
 
     device_size <- list(
@@ -488,12 +499,12 @@ add_right_labels_marquee <- function(
       ggplot2::scale_color_identity()
   }
 
-  # Cleanup temporary device if opened
+  # Normal-path cleanup: luk device og markér som lukket
+  # (on.exit håndterer error-path; vi sætter flag til FALSE så on.exit er no-op)
   if (temp_device_opened) {
-    if (verbose) {
-      message("[VIEWPORT_STRATEGY] Closing temporary device")
-    }
-    grDevices::dev.off()
+    tryCatch(grDevices::dev.off(), error = function(e) NULL)
+    if (exists("temp_pdf")) unlink(temp_pdf, force = TRUE)
+    temp_device_opened <- FALSE
   }
 
   # Attach metadata

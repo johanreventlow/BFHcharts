@@ -115,10 +115,18 @@ add_spc_labels <- function(
     }
   )
 
-  # Auto-scale label_size baseret på device height (hvis tilgængelig)
+  # Auto-scale label_size baseret på viewport/device height
+  # FIX (#90): Kun auto-scale når viewport IKKE er givet.
+  # Viewport-dimensioner er den autoritative kilde til sizing.
+  # Uden dette fix er label_size ikke-deterministisk (afhænger af åben device).
   device_height_baseline <- 7.8 # inches (reference: 751px @ 96dpi)
 
-  if (device_info$open && !is.na(device_info$height)) {
+  if (!is.null(viewport_height)) {
+    # Viewport er givet - brug den som autoritativ kilde (deterministisk)
+    scale_factor <- pmax(1.0, viewport_height / device_height_baseline)
+    label_size <- label_size * scale_factor
+  } else if (device_info$open && !is.na(device_info$height)) {
+    # Legacy path: ingen viewport, brug åben device (ikke-deterministisk men nødvendigt)
     dev_height <- device_info$height
     scale_factor <- pmax(1.0, dev_height / device_height_baseline)
     label_size <- label_size * scale_factor

@@ -595,28 +595,6 @@ measure_panel_height_inches <- function(p, panel = 1, device_width = 7, device_h
     marquee_size = NULL,
     fallback_npc = 0.13,
     return_details = FALSE) {
-  # PHASE 1 DIAGNOSTIC: Capture device context before measurement
-  dev_info <- list(
-    dev_cur = grDevices::dev.cur(),
-    dev_size = grDevices::dev.size(),
-    dev_size_px = grDevices::dev.size("px"),
-    timestamp = Sys.time()
-  )
-
-  # PHASE 1 DIAGNOSTIC: Capture viewport state
-  vp_info <- tryCatch(
-    {
-      list(
-        current_vp = grid::current.vpPath(),
-        vp_width = as.numeric(grid::convertWidth(grid::unit(1, "npc"), "inches", valueOnly = TRUE)),
-        vp_height = as.numeric(grid::convertHeight(grid::unit(1, "npc"), "inches", valueOnly = TRUE))
-      )
-    },
-    error = function(e) {
-      list(current_vp = "ERROR", vp_width = NA, vp_height = NA, error = e$message)
-    }
-  )
-
   # Create grob and measure (assumes active device exists)
   # FIX: Apply marquee_size scaling to style if provided
   # marquee_grob uses style-based sizing, not explicit size parameter
@@ -641,56 +619,36 @@ measure_panel_height_inches <- function(p, panel = 1, device_width = 7, device_h
     style = style
   )
 
-  # CRITICAL FIX: Force grob rendering by calling makeContent
-  # Marquee grobs use lazy evaluation and may not have dimensions until rendered
-  tryCatch(
+  # FIX (#93): Sikr at h_native ALTID er defineret, selv ved dobbelt-fejl.
+  # Marquee grobs bruger lazy evaluation - makeContent forcerer rendering.
+  h_native <- tryCatch(
     {
       g_rendered <- grid::makeContent(g)
-      h_native <- grid::grobHeight(g_rendered)
+      grid::grobHeight(g_rendered)
     },
     error = function(e) {
-      # Fallback to direct measurement if makeContent fails
-      h_native <<- grid::grobHeight(g)
+      # Fallback til direkte måling hvis makeContent fejler
+      tryCatch(
+        grid::grobHeight(g),
+        error = function(e2) {
+          # Dobbelt-fejl: returner fallback som grid unit
+          grid::unit(fallback_npc, "npc")
+        }
+      )
     }
   )
-
-  # DEBUG: Uncomment to troubleshoot label height calculations
-  # h_native_value <- as.numeric(h_native)
-  # h_native_unit <- attr(h_native, "unit")
-  # text_preview <- substring(gsub("\n", " ", text), 1, 30)
-  #
-  # message(sprintf(
-  #   "[GROB_DEBUG] Text: '%s...' | Native: %s (%.6f %s)",
-  #   text_preview, as.character(h_native), h_native_value, h_native_unit
-  # ))
-  # message(sprintf(
-  #   "[DEVICE_DEBUG] Device: #%d | Size: %.3f × %.3f inches | Viewport: %s (%.3f × %.3f in)",
-  #   dev_info$dev_cur, dev_info$dev_size[1], dev_info$dev_size[2],
-  #   as.character(vp_info$current_vp), vp_info$vp_width, vp_info$vp_height
-  # ))
 
   # Convert to NPC
   if (!is.null(panel_height_inches)) {
     h_inches <- grid::convertHeight(h_native, "inches", valueOnly = TRUE)
     h_npc <- h_inches / panel_height_inches
-    # DEBUG: Uncomment for detailed conversion info
-    # h_native_value <- as.numeric(h_native)
-    # message(sprintf(
-    #   "[GROB_DEBUG] Panel-based: h_inches=%.4f (from native %.6f), panel_height=%.4f, h_npc=%.4f",
-    #   h_inches, h_native_value, panel_height_inches, h_npc
-    # ))
   } else {
     h_npc <- grid::convertHeight(h_native, "npc", valueOnly = TRUE)
     h_inches <- grid::convertHeight(h_native, "inches", valueOnly = TRUE)
-    # DEBUG: Uncomment for detailed conversion info
-    # h_native_value <- as.numeric(h_native)
     # message(sprintf(
-    #   "[GROB_DEBUG] Viewport-based: h_npc=%.4f, h_inches=%.4f (from native %.6f)",
-    #   h_npc, h_inches, h_native_value
-    # ))
   }
 
-  # Safety margin from config
+  # Safety margin fra config (direkte kald - altid tilgængelig i pakken)
   safety_margin <- if (exists("get_label_placement_config", mode = "function")) {
     cfg <- get_label_placement_config()
     value <- cfg[["height_safety_margin"]]
@@ -811,9 +769,20 @@ estimate_label_heights_npc <- function(
   )
   temp_dev <- grDevices::dev.cur()
 
-  # Ensure cleanup of temp file
+  # CRITICAL: on.exit for device cleanup + file removal + device restore
+  # Håndterer både normal exit og fejl i purrr::map
   on.exit(
     {
+      # Luk temp device hvis den stadig er aktiv
+      if (grDevices::dev.cur() == temp_dev) {
+        tryCatch(grDevices::dev.off(), error = function(e) NULL)
+      }
+      # Restore original device
+      if (current_dev > 1 && current_dev != temp_dev &&
+        current_dev %in% grDevices::dev.list()) {
+        tryCatch(grDevices::dev.set(current_dev), error = function(e) NULL)
+      }
+      # Slet temp fil
       unlink(temp_svg, force = TRUE)
     },
     add = TRUE,
@@ -849,208 +818,9 @@ estimate_label_heights_npc <- function(
     )
   })
 
-  # Luk off-screen device hvis den stadig er aktiv
-  if (grDevices::dev.cur() == temp_dev) {
-    grDevices::dev.off()
-  }
-
-  # Vend tilbage til oprindelig device hvis den var reel (ikke null og ikke vores temp)
-  if (current_dev > 1 && current_dev != temp_dev) {
-    if (current_dev %in% grDevices::dev.list()) {
-      tryCatch(
-        {
-          grDevices::dev.set(current_dev)
-        },
-        error = function(e) {
-          # Ignorer hvis device ikke findes
-        }
-      )
-    }
-  }
-
   return(results)
 }
 
-#' Estimér label højde fra marquee markup VED FAKTISK GROB-MÅLING
-#'
-#' Opretter et marquee grob med de faktiske styles og måler højden præcist.
-#' Dette giver korrekt højde på alle panelstørrelser uden magic numbers.
-#'
-#' @param text Marquee string med font size markup (fx "{.8 **Header**}  \\n{.24 **Value**}")
-#' @param style marquee style object (default: classic_style med right align)
-#' @param panel_height_inches Panel højde i inches (hvis kendt, ellers NULL for auto-detect)
-#' @param fallback_npc Fallback værdi hvis grob-måling fejler (default 0.13)
-#' @param return_details Hvis TRUE, returnér list med npc, inches og panel_height (default FALSE)
-#'
-#' @return Hvis return_details=FALSE: Numerisk værdi med label højde i NPC (0-1)
-#'         Hvis return_details=TRUE: List med:
-#'           - npc: Label højde i NPC koordinater
-#'           - inches: Label højde i inches (absolut)
-#'           - panel_height_inches: Panel højde i inches
-#'
-#' @details
-#' Denne funktion erstatter den tidligere estimation-baserede tilgang med
-#' faktisk måling. Det eliminerer alle magic numbers (pt_to_npc_factor,
-#' line_spacing, safety_margin) og giver præcis højde på:
-#' - Små paneler (facetter)
-#' - Store paneler
-#' - Forskellige base_size værdier
-#' - Forskellige font families
-#'
-#' @keywords internal
-#' @noRd
-#' @examples
-#' \dontrun{
-#' label <- "{.8 **CL**}  \n{.24 **45%**}"
-#' style <- marquee::modify_style(
-#'   marquee::classic_style(),
-#'   "p",
-#'   margin = marquee::trbl(0),
-#'   align = "right"
-#' )
-#'
-#' # Simpel brug (backward compatible)
-#' height <- estimate_label_height_npc(label, style = style)
-#' # Returns faktisk målt højde (typisk ~0.10-0.15 for 2-line label)
-#'
-#' # Detaljeret brug (ny API for fixed gaps)
-#' height_details <- estimate_label_height_npc(label, style = style, return_details = TRUE)
-#' # Returns list(npc = 0.12, inches = 0.5, panel_height_inches = 4.2)
-#' }
-estimate_label_height_npc <- function(
-    text,
-    style = NULL,
-    panel_height_inches = NULL,
-    fallback_npc = 0.13,
-    return_details = FALSE) {
-  tryCatch(
-    {
-      # Default style hvis ikke angivet
-      # NOTE: marquee_grob accepterer kun 'style' parameter, ikke separate
-      # size/lineheight/family. Disse skal specificeres gennem style-objektet.
-      if (is.null(style)) {
-        style <- marquee::modify_style(
-          marquee::classic_style(),
-          "p",
-          margin = marquee::trbl(0),
-          align = "right"
-        )
-      }
-
-      # Opret marquee grob for at måle faktisk højde
-      # NOTE: marquee_grob() bruger default size fra style
-      # For at måle korrekt skal vi bruge samme setup som ved rendering
-
-      # VIGTIGT: Sikr at der er en aktiv device for at undgå Rplots.pdf
-      # Grob operationer kræver en graphics device, men vi vil ikke skabe filer
-      device_was_open <- grDevices::dev.cur() != 1
-
-      if (!device_was_open) {
-        # Åbn en usynlig device uden fil output
-        # Vi SKAL åbne device før nogen grid operationer for at undgå Rplots.pdf
-        # Brug png med /dev/null på Unix eller NUL på Windows
-        null_file <- if (.Platform$OS.type == "windows") "NUL" else "/dev/null"
-        suppressMessages(
-          grDevices::png(filename = null_file, width = 480, height = 480)
-        )
-      }
-
-      g <- marquee::marquee_grob(
-        text = text,
-        x = 0.5,
-        y = 0.5,
-        style = style
-      )
-
-      # Mål højde i native units
-      h_native <- grid::grobHeight(g)
-
-      # Luk midlertidig device hvis vi åbnede en
-      if (!device_was_open) {
-        grDevices::dev.off()
-      }
-
-      # Konverter til NPC
-      # Hvis panel_height kendt, brug den; ellers brug current viewport
-      if (!is.null(panel_height_inches)) {
-        h_inches <- grid::convertHeight(h_native, "inches", valueOnly = TRUE)
-        h_npc <- h_inches / panel_height_inches
-      } else {
-        # Auto-detect fra current viewport
-        h_npc <- grid::convertHeight(h_native, "npc", valueOnly = TRUE)
-        # Beregn også inches for details-return
-        h_inches <- grid::convertHeight(h_native, "inches", valueOnly = TRUE)
-      }
-
-      # Tilføj sikkerhedsmargin for at være konservativ
-      # Dette sikrer at labels ikke overlapper selv med små afrundingsfejl
-      # HENT FRA CONFIG for at gøre det konfigurerbart
-      safety_margin <- if (exists("get_label_placement_config", mode = "function")) {
-        cfg <- get_label_placement_config()
-        value <- cfg[["height_safety_margin"]]
-        if (is.null(value)) 1.05 else value
-      } else if (exists("get_label_placement_param", mode = "function")) {
-        get_label_placement_param("height_safety_margin")
-      } else {
-        1.05 # Fallback hvis config ikke tilgængelig
-      }
-      h_npc <- h_npc * safety_margin
-      h_inches_with_margin <- h_inches * safety_margin
-
-      # Sanity check: Verificer at målingen er rimelig
-      # VIGTIGT: Fra 2025-01-05 - Tillad store labels (>50%) på små paneler
-      # Dette er nødvendigt for facets og lave viewports
-      if (!is.finite(h_npc) || h_npc <= 0) {
-        # Silently use fallback when grob measurement fails
-        # This can happen with empty labels or certain edge cases
-        if (return_details) {
-          return(list(
-            npc = fallback_npc,
-            inches = NA_real_,
-            panel_height_inches = panel_height_inches
-          ))
-        }
-        return(fallback_npc)
-      }
-
-      # Warn hvis label er meget stor relativt til panel (men tillad det)
-      if (h_npc > 0.5) {
-        warning(
-          sprintf(
-            "Label optager %.1f%% af panel højde (%.2f inches). ",
-            h_npc * 100, panel_height_inches
-          ),
-          "Dette kan indikere et meget lille panel eller en fejlmåling."
-        )
-      }
-
-      # Prepare return value based on return_details flag
-      if (return_details) {
-        return(list(
-          npc = as.numeric(h_npc),
-          inches = as.numeric(h_inches_with_margin),
-          panel_height_inches = panel_height_inches
-        ))
-      } else {
-        return(as.numeric(h_npc))
-      }
-    },
-    error = function(e) {
-      warning(
-        "Grob-baseret højdemåling fejlede: ", e$message,
-        " - bruger fallback: ", fallback_npc
-      )
-      if (return_details) {
-        return(list(
-          npc = fallback_npc,
-          inches = NA_real_,
-          panel_height_inches = panel_height_inches
-        ))
-      }
-      return(fallback_npc)
-    }
-  )
-}
 
 
 # ==============================================================================
@@ -1249,7 +1019,13 @@ place_two_labels_npc <- function(
       stop("label_height_npc skal være positiv, modtog: ", label_height_npc_value)
     }
     if (label_height_npc_value > 0.5) {
-      stop("label_height_npc må ikke overstige 0.5 (50% af panel), modtog: ", label_height_npc_value)
+      # FIX (#92): Tillad store labels på små paneler/facets med degraded placement
+      # Tidligere: hard stop. Nu: warning + best-effort.
+      # Konsistent med estimate_label_height_npc() der allerede tillader >50%.
+      warning(sprintf(
+        "Label optager %.0f%% af panel - degraded placement forventet",
+        label_height_npc_value * 100
+      ))
     }
   }
 
@@ -1406,6 +1182,19 @@ place_two_labels_npc <- function(
     yB_npc <- NA_real_
   }
 
+  # Re-check: begge kan være NA efter out-of-bounds conversion
+  if (is.na(yA_npc) && is.na(yB_npc)) {
+    warnings <- c(warnings, "Begge linjer uden for panel - ingen labels placeret")
+    return(list(
+      yA = NA_real_,
+      yB = NA_real_,
+      sideA = NA_character_,
+      sideB = NA_character_,
+      warnings = warnings,
+      placement_quality = "failed"
+    ))
+  }
+
   # Hvis kun én linje er valid
   if (is.na(yA_npc) && !is.na(yB_npc)) {
     yB <- propose_single_label(yB_npc, pref_pos[2], label_height_npc_value, gap_line, pad_top, pad_bot)
@@ -1435,7 +1224,7 @@ place_two_labels_npc <- function(
   low_bound <- pad_bot + half
   high_bound <- 1 - pad_top - half
 
-  pref_pos <- rep_len(pref_pos, 2)
+  # pref_pos allerede normaliseret til length 2 ved input validation (linje 1047)
 
   # Hvis linjer er meget tætte, flip strategy: en over, en under
   line_gap_npc <- abs(yA_npc - yB_npc)
@@ -1480,23 +1269,21 @@ place_two_labels_npc <- function(
     # Prioriter CL (A) til foretrukken side
     if (pref_pos[1] == "under") {
       # CL under, Target over
-      yA <- clamp01(yA_npc - gap_line - half)
-      yB <- clamp01(yA_npc + gap_line + half)
+      yA <- clamp_to_bounds(yA_npc - gap_line - half, low_bound, high_bound)
+      yB <- clamp_to_bounds(yA_npc + gap_line + half, low_bound, high_bound)
       sideA <- "under"
       sideB <- "over"
     } else {
       # CL over, Target under
-      yA <- clamp01(yA_npc + gap_line + half)
-      yB <- clamp01(yA_npc - gap_line - half)
+      yA <- clamp_to_bounds(yA_npc + gap_line + half, low_bound, high_bound)
+      yB <- clamp_to_bounds(yA_npc - gap_line - half, low_bound, high_bound)
       sideA <- "over"
       sideB <- "under"
     }
 
-    # Verificér at begge labels er inden for bounds
-    if (yA < low_bound || yA > high_bound || yB < low_bound || yB > high_bound) {
-      warnings <- c(warnings, "Label(s) uden for bounds - justerer til bounds")
-      yA <- clamp01(yA)
-      yB <- clamp01(yB)
+    # Verificér at begge labels er inden for bounds (clamp_to_bounds sikrer dette)
+    if (yA == low_bound || yA == high_bound || yB == low_bound || yB == high_bound) {
+      warnings <- c(warnings, "Label(s) justeret til bounds")
       placement_quality <- "acceptable"
     }
 
@@ -1632,8 +1419,8 @@ place_two_labels_npc <- function(
             "NIVEAU 1: Reduceret label gap til ",
             round(reduction_factor * 100), "% - line-gaps overholdt"
           ))
-          yA <- clamp01(proposed_yA)
-          yB <- clamp01(proposed_yB)
+          yA <- clamp_to_bounds(proposed_yA, low_bound, high_bound)
+          yB <- clamp_to_bounds(proposed_yB, low_bound, high_bound)
           reduced_gap_successful <- TRUE
           placement_quality <- "acceptable"
           break
@@ -1653,8 +1440,8 @@ place_two_labels_npc <- function(
 
         # Check om flip A løser problemet
         if (abs(test_yA - proposed_yB) >= label_height_npc_value) { # Minimum: labels må ikke overlappe
-          yA <- clamp01(test_yA)
-          yB <- clamp01(proposed_yB)
+          yA <- clamp_to_bounds(test_yA, low_bound, high_bound)
+          yB <- clamp_to_bounds(proposed_yB, low_bound, high_bound)
           sideA <- propA_flipped$side
           warnings <- c(warnings, "NIVEAU 2a: Flippet label A til modsatte side - konflikt løst")
           placement_quality <- "acceptable"
@@ -1667,8 +1454,8 @@ place_two_labels_npc <- function(
           test_yB <- if (verifyB_flipped$violated) verifyB_flipped$y else propB_flipped$center
 
           if (abs(proposed_yA - test_yB) >= label_height_npc_value) {
-            yA <- clamp01(proposed_yA)
-            yB <- clamp01(test_yB)
+            yA <- clamp_to_bounds(proposed_yA, low_bound, high_bound)
+            yB <- clamp_to_bounds(test_yB, low_bound, high_bound)
             sideB <- propB_flipped$side
             warnings <- c(warnings, "NIVEAU 2b: Flippet label B til modsatte side - konflikt løst")
             placement_quality <- "acceptable"
@@ -1676,8 +1463,8 @@ place_two_labels_npc <- function(
           } else {
             # Strategi 3: Flip BEGGE labels til modsatte side
             if (abs(test_yA - test_yB) >= label_height_npc_value) {
-              yA <- clamp01(test_yA)
-              yB <- clamp01(test_yB)
+              yA <- clamp_to_bounds(test_yA, low_bound, high_bound)
+              yB <- clamp_to_bounds(test_yB, low_bound, high_bound)
               sideA <- propA_flipped$side
               sideB <- propB_flipped$side
               warnings <- c(warnings, "NIVEAU 2c: Flippet BEGGE labels til modsatte side - konflikt løst")
@@ -1697,10 +1484,10 @@ place_two_labels_npc <- function(
 
         # Prioriter den vigtigste label tættest på sin linje
         if (priority == "A") {
-          yA <- clamp01(proposed_yA)
+          yA <- clamp_to_bounds(proposed_yA, low_bound, high_bound)
           yB <- if (yA < shelf_threshold) high_bound else low_bound # Modsatte shelf
         } else {
-          yB <- clamp01(proposed_yB)
+          yB <- clamp_to_bounds(proposed_yB, low_bound, high_bound)
           yA <- if (yB < shelf_threshold) high_bound else low_bound
         }
         placement_quality <- "degraded"
@@ -1709,11 +1496,11 @@ place_two_labels_npc <- function(
       # Sikkert at enforce line-gaps uden collision
       if (verifyA$violated) {
         warnings <- c(warnings, "Label A justeret for line-gap compliance")
-        yA <- clamp01(verifyA$y)
+        yA <- clamp_to_bounds(verifyA$y, low_bound, high_bound)
       }
       if (verifyB$violated) {
         warnings <- c(warnings, "Label B justeret for line-gap compliance")
-        yB <- clamp01(verifyB$y)
+        yB <- clamp_to_bounds(verifyB$y, low_bound, high_bound)
       }
     }
   }
