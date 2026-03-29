@@ -600,7 +600,7 @@ pick_text <- function(variants, data = list()) {
   for (key in names(data)) {
     text <- gsub(
       paste0("\\{", key, "\\}"),
-      as.character(data[[key]]),
+      as.character(data[[key]] %||% ""),
       text
     )
   }
