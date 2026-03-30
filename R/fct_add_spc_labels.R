@@ -136,6 +136,9 @@ add_spc_labels <- function(
   }
 
   # Ekstrahér CL værdi fra seneste part ----
+  # INTENTIONEL ASYMMETRI: CL hentes fra seneste part (centerlinjen ændres ved
+  # faseovergange), mens target hentes som første non-NA (target er typisk
+  # konstant og sat af brugeren uafhængigt af faser).
   cl_value <- NA_real_
   if (!is.null(qic_data$cl) && any(!is.na(qic_data$cl))) {
     if ("part" %in% names(qic_data)) {
@@ -228,19 +231,19 @@ add_spc_labels <- function(
     )
   }
 
-  # Håndter pil-positioning ----
+  # Build plot og mapper én gang - genbrug til arrow-placering + labels
+  built_plot <- ggplot2::ggplot_build(plot)
+  shared_mapper <- npc_mapper_from_built(built_plot, original_plot = plot)
+
+  # Håndter pil-positioning via NPC panel bounds (ikke rå data-ekstremer,
+  # som afviger ved axis expansion eller manuelle limits)
   if (has_arrow) {
-    y_min <- min(qic_data$y, na.rm = TRUE)
-    y_max <- max(qic_data$y, na.rm = TRUE)
-    y_range_plot <- y_max - y_min
-
-    inset_margin_factor <- 0.01
+    inset_npc <- 0.01
     arrow_y_position <- if (arrow_type == "down") {
-      y_min + (y_range_plot * inset_margin_factor)
+      shared_mapper$npc_to_y(inset_npc)
     } else {
-      y_max - (y_range_plot * inset_margin_factor)
+      shared_mapper$npc_to_y(1 - inset_npc)
     }
-
     target_value <- arrow_y_position
   }
 
@@ -263,25 +266,13 @@ add_spc_labels <- function(
   }
 
   # Placer labels med advanced placement system ----
-  if (has_arrow) {
-    label_params <- list(
-      pad_top = 0.01,
-      pad_bot = 0.01,
-      gap_labels = 0, # CRITICAL: Disable collision avoidance for arrows
-      pref_pos = c("under", "under"),
-      priority = "A"
-    )
-  } else {
-    label_params <- list(
-      pad_top = 0.01,
-      pad_bot = 0.01,
-      pref_pos = c("under", "under"),
-      priority = "A"
-    )
-  }
-
-  # PERFORMANCE: Build plot én gang og genbruge
-  built_plot <- ggplot2::ggplot_build(plot)
+  label_params <- list(
+    pad_top = 0.01,
+    pad_bot = 0.01,
+    pref_pos = c("under", "under"),
+    priority = "A"
+  )
+  if (has_arrow) label_params$gap_labels <- 0
 
   plot_with_labels <- add_right_labels_marquee(
     p = plot,
@@ -297,7 +288,8 @@ add_spc_labels <- function(
     viewport_height = viewport_height,
     verbose = verbose,
     debug_mode = debug_mode,
-    .built_plot = built_plot
+    .built_plot = built_plot,
+    .mapper = shared_mapper
   )
 
   # Attach metadata about arrow detection for targetline suppression

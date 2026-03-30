@@ -744,11 +744,12 @@ estimate_label_heights_npc <- function(
   meas_width <- if (!is.null(device_width)) device_width else 8
   meas_height <- if (!is.null(device_height)) device_height else 4.5
 
-  # Open ONE off-screen SVG device for all measurements
-  temp_svg <- tempfile(fileext = ".svg")
-  suppressMessages(
-    grDevices::svg(filename = temp_svg, width = meas_width, height = meas_height)
-  )
+  # Open ONE off-screen Cairo PDF device for all measurements
+  # NOTE: Cairo PDF for konsistens med measure_panel_height_from_gtable() og
+  # add_right_labels_marquee() - alle målinger bruger samme backend for at undgå
+  # metriske forskelle mellem rendering-kontekster (SVG vs PDF).
+  temp_pdf <- tempfile(fileext = ".pdf")
+  grDevices::cairo_pdf(filename = temp_pdf, width = meas_width, height = meas_height)
   temp_dev <- grDevices::dev.cur()
 
   # CRITICAL: on.exit for device cleanup + file removal + device restore
@@ -765,7 +766,7 @@ estimate_label_heights_npc <- function(
         tryCatch(grDevices::dev.set(current_dev), error = function(e) NULL)
       }
       # Slet temp fil
-      unlink(temp_svg, force = TRUE)
+      unlink(temp_pdf, force = TRUE)
     },
     add = TRUE,
     after = FALSE

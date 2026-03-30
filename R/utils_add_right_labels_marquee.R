@@ -3,6 +3,72 @@
 #
 # Extracted from bfh_layout_reference_dev.R POC
 
+# Cache for resolved font family per device-type
+# (systemfonts-registrering != PostScript font database)
+.font_cache <- new.env(parent = emptyenv())
+
+.resolve_font_family <- function(family = NULL) {
+  # Detektér device-type: "cairo", "postscript" eller "other"
+  dev_type <- tryCatch(
+    {
+      dev_name <- names(grDevices::dev.cur())
+      if (is.null(dev_name) || dev_name == "null device") {
+        "other"
+      } else if (grepl("cairo", dev_name, ignore.case = TRUE)) {
+        "cairo"
+      } else if (grepl("pdf|postscript", dev_name, ignore.case = TRUE)) {
+        "postscript"
+      } else {
+        "other"
+      }
+    },
+    error = function(e) "other"
+  )
+
+  cache_key <- paste0("resolved_", dev_type)
+  if (exists(cache_key, envir = .font_cache)) {
+    return(.font_cache[[cache_key]])
+  }
+
+  resolved <- tryCatch(
+    {
+      f <- family %||% BFHtheme::theme_bfh()$text$family
+      if (is.null(f) || length(f) == 0 || nchar(f) == 0) {
+        "sans"
+      } else if (dev_type == "postscript") {
+        # PostScript/PDF devices har egen font-database - check der
+        ps_fonts <- names(grDevices::pdfFonts())
+        if (!f %in% ps_fonts) {
+          warning(sprintf(
+            "[FONT_FALLBACK] Font '%s' ikke i PostScript font database - bruger 'sans'",
+            f
+          ))
+          "sans"
+        } else {
+          f
+        }
+      } else if (requireNamespace("systemfonts", quietly = TRUE)) {
+        available <- systemfonts::system_fonts()$family
+        if (!f %in% available) {
+          warning(sprintf(
+            "[FONT_FALLBACK] Font '%s' ikke registreret på systemet - bruger 'sans'",
+            f
+          ))
+          "sans"
+        } else {
+          f
+        }
+      } else {
+        f
+      }
+    },
+    error = function(e) "sans"
+  )
+
+  .font_cache[[cache_key]] <- resolved
+  resolved
+}
+
 #' Add right-aligned marquee labels med NPC-baseret placering
 #'
 #' Anvender marquee::geom_marquee for at placere to-linje labels ved højre kant
@@ -54,7 +120,8 @@ add_right_labels_marquee <- function(
     viewport_height = NULL,
     verbose = TRUE,
     debug_mode = FALSE,
-    .built_plot = NULL) {
+    .built_plot = NULL,
+    .mapper = NULL) {
   # Beregn responsive størrelser baseret på label_size (baseline = 6)
   scale_factor <- label_size / 6
 
@@ -99,7 +166,26 @@ add_right_labels_marquee <- function(
   } else {
     ggplot2::ggplot_build(p)
   }
+
+  # Gem device-state FØR ggplot_gtable (som kan åbne side-effect devices)
+  pre_gtable_devs <- grDevices::dev.list()
   gtable <- ggplot2::ggplot_gtable(built_plot)
+
+  # Luk evt. side-effect devices åbnet af ggplot_gtable
+  post_gtable_devs <- grDevices::dev.list()
+  leaked_devs <- setdiff(post_gtable_devs, pre_gtable_devs)
+  if (length(leaked_devs) > 0) {
+    on.exit(
+      {
+        for (dev_id in leaked_devs) {
+          if (dev_id %in% grDevices::dev.list()) {
+            tryCatch(grDevices::dev.off(dev_id), error = function(e) NULL)
+          }
+        }
+      },
+      add = TRUE
+    )
+  }
 
   # Detektér device størrelse for korrekt panel height measurement
   # STRATEGI:
@@ -139,13 +225,14 @@ add_right_labels_marquee <- function(
       }
       temp_pdf <- tempfile(fileext = ".pdf")
       grDevices::cairo_pdf(filename = temp_pdf, width = viewport_width, height = viewport_height)
+      temp_dev_num <- grDevices::dev.cur()
       temp_device_opened <- TRUE
 
-      # CRITICAL: on.exit umiddelbart efter device open for at forhindre leaks ved fejl
+      # on.exit lukker specifikt den device vi åbnede (ikke blot current device)
       on.exit(
         {
-          if (temp_device_opened && grDevices::dev.cur() > 1) {
-            tryCatch(grDevices::dev.off(), error = function(e) NULL)
+          if (temp_device_opened && temp_dev_num %in% grDevices::dev.list()) {
+            tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)
           }
           if (exists("temp_pdf")) unlink(temp_pdf, force = TRUE)
         },
@@ -331,7 +418,7 @@ add_right_labels_marquee <- function(
   if (is.null(params$priority)) params$priority <- "A"
 
   # Build mapper
-  mapper <- npc_mapper_from_built(built_plot, original_plot = p)
+  mapper <- if (!is.null(.mapper)) .mapper else npc_mapper_from_built(built_plot, original_plot = p)
 
   # Konverter y-værdier til NPC
   yA_npc <- if (!is.na(yA)) mapper$y_to_npc(yA) else NA_real_
@@ -377,48 +464,57 @@ add_right_labels_marquee <- function(
   x_range <- built_plot$layout$panel_params[[1]]$x.range
   x_max_value <- x_range[2]
 
-  # FIX: Detektér om x-aksen er Date/POSIXct eller numerisk ved at inspicere scale type
-  # CRITICAL: Efter ggplot_build() er datetime værdier transformeret til plain numeric
-  # Vi skal bruge scale's inverse transformation + timezone for korrekt konvertering
-  x_is_temporal <- FALSE
+  # Detektér om x-aksen er Date, POSIXct/datetime, eller numerisk
+  # CRITICAL: Efter ggplot_build() er temporal værdier transformeret til plain numeric.
+  # Vi skelner Date fra POSIXct for at undgå unødvendig POSIXct-coercion på Date-skalaer
+  # (som kan introducere timezone/DST-forskydninger).
+  x_is_date <- FALSE
+  x_is_datetime <- FALSE
   x_scale <- NULL
 
   tryCatch(
     {
-      # Hent x-scale fra built plot for at detektere type
       x_scale <- built_plot$layout$panel_scales_x[[1]]
 
-      # Check hvis scale er datetime/date baseret på scale class eller trans name
       if (!is.null(x_scale)) {
         scale_class <- class(x_scale)[1]
         trans_name <- if (!is.null(x_scale$trans)) x_scale$trans$name else ""
 
-        # Datetime scales har typisk "time" eller "date" i trans name eller scale class
-        if (grepl("time|date", tolower(trans_name)) ||
-            grepl("Date|Time", scale_class)) {
-          x_is_temporal <- TRUE
+        # Date-skalaer: trans name er typisk "date" (uden "time")
+        # Datetime-skalaer: trans name er typisk "time" eller "hms"
+        if (grepl("^date$", tolower(trans_name)) ||
+            (grepl("Date", scale_class) && !grepl("Time|time", scale_class))) {
+          x_is_date <- TRUE
+        } else if (grepl("time|hms", tolower(trans_name)) ||
+                   grepl("Time", scale_class)) {
+          x_is_datetime <- TRUE
         }
       }
     },
     error = function(e) {
       # Fallback: hvis scale detection fejler, antag numerisk
-      x_is_temporal <- FALSE
     }
   )
 
-  if (x_is_temporal && !is.null(x_scale)) {
-    # CODEX FIX: Brug scale's inverse transformation + timezone for korrekt konvertering
-    # Dette undgår warning om numeric values i datetime scale
-    tz <- if (!is.null(x_scale$timezone)) x_scale$timezone else "UTC"
-
-    # Brug inverse transformation hvis tilgængelig, ellers fallback
+  if (x_is_date && !is.null(x_scale)) {
+    # Date path: konvertér direkte til Date (ingen timezone involveret)
     if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
       x_max <- x_scale$trans$inverse(x_max_value)
-      # Ensure POSIXct class and set timezone
+      if (!inherits(x_max, "Date")) {
+        x_max <- as.Date(x_max, origin = "1970-01-01")
+      }
+    } else {
+      x_max <- as.Date(x_max_value, origin = "1970-01-01")
+    }
+  } else if (x_is_datetime && !is.null(x_scale)) {
+    # POSIXct path: brug scale's inverse transformation + timezone
+    tz <- if (!is.null(x_scale$timezone)) x_scale$timezone else "UTC"
+
+    if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
+      x_max <- x_scale$trans$inverse(x_max_value)
       x_max <- as.POSIXct(x_max, origin = "1970-01-01")
       attr(x_max, "tzone") <- tz
     } else {
-      # Fallback: direkte konvertering
       x_max <- as.POSIXct(x_max_value, origin = "1970-01-01", tz = tz)
     }
   } else {
@@ -426,8 +522,15 @@ add_right_labels_marquee <- function(
     x_max <- x_max_value
   }
 
-  # Opret label data med korrekt x-type
-  if (x_is_temporal) {
+  # Opret label data med korrekt x-type (matcher den detekterede scale)
+  if (x_is_date) {
+    label_data <- tibble::tibble(
+      x = as.Date(character()),
+      y = numeric(),
+      label = character(),
+      color = character()
+    )
+  } else if (x_is_datetime) {
     label_data <- tibble::tibble(
       x = as.POSIXct(character()),
       y = numeric(),
@@ -471,19 +574,7 @@ add_right_labels_marquee <- function(
   # Tilføj labels (marquee_size already calculated above)
   result <- p
   if (nrow(label_data) > 0) {
-    # Defensiv font fallback: Hvis BFHtheme font ikke er tilgængelig, brug "sans"
-    # BFHtheme bør håndtere fallback chain internt, men vi sikrer mod edge cases
-    font_family <- tryCatch(
-      {
-        family <- BFHtheme::theme_bfh()$text$family
-        if (is.null(family) || length(family) == 0 || nchar(family) == 0) {
-          "sans"
-        } else {
-          family
-        }
-      },
-      error = function(e) "sans"
-    )
+    font_family <- .resolve_font_family()
 
     result <- result +
       marquee::geom_marquee(
@@ -499,10 +590,12 @@ add_right_labels_marquee <- function(
       ggplot2::scale_color_identity()
   }
 
-  # Normal-path cleanup: luk device og markér som lukket
+  # Normal-path cleanup: luk specifik device og markér som lukket
   # (on.exit håndterer error-path; vi sætter flag til FALSE så on.exit er no-op)
-  if (temp_device_opened) {
-    tryCatch(grDevices::dev.off(), error = function(e) NULL)
+  if (temp_device_opened && exists("temp_dev_num")) {
+    if (temp_dev_num %in% grDevices::dev.list()) {
+      tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)
+    }
     if (exists("temp_pdf")) unlink(temp_pdf, force = TRUE)
     temp_device_opened <- FALSE
   }
