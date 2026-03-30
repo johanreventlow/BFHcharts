@@ -98,6 +98,15 @@ bfh_spc_plot <- function(qic_data,
     ))
   }
 
+  # Cache BFHtheme farver (undgår gentagne opslag)
+  cols <- list(
+    blue = BFHtheme::bfh_cols("hospital_blue"),
+    grey = BFHtheme::bfh_cols("hospital_grey"),
+    dark_grey = BFHtheme::bfh_cols("hospital_dark_grey"),
+    light_blue = BFHtheme::bfh_cols("light_blue"),
+    very_light_blue = BFHtheme::bfh_cols("very_light_blue")
+  )
+
   # Add anhoej.signal column if missing (for linetype switching)
   if (!"anhoej.signal" %in% names(qic_data)) {
     qic_data$anhoej.signal <- FALSE
@@ -107,11 +116,11 @@ bfh_spc_plot <- function(qic_data,
   if ("sigma.signal" %in% names(qic_data)) {
     qic_data$point_colour <- ifelse(
       !is.na(qic_data$sigma.signal) & qic_data$sigma.signal == TRUE,
-      BFHtheme::bfh_cols("hospital_blue"),
-      BFHtheme::bfh_cols("hospital_grey")
+      cols$blue,
+      cols$grey
     )
   } else {
-    qic_data$point_colour <- BFHtheme::bfh_cols("hospital_grey")
+    qic_data$point_colour <- cols$grey
   }
 
   # Calculate responsive geom sizes based on base_size
@@ -146,7 +155,7 @@ bfh_spc_plot <- function(qic_data,
     plot_layers <- c(plot_layers, list(
       ggplot2::geom_ribbon(
         ggplot2::aes(ymin = lcl, ymax = ucl),
-        fill = BFHtheme::bfh_cols("very_light_blue"),
+        fill = cols$very_light_blue,
         alpha = 0.5
       ),
       # TODO: Genaktiver geom_textline når geomtextpath cold-start (~3s) er løst
@@ -155,14 +164,14 @@ bfh_spc_plot <- function(qic_data,
         ggplot2::aes(y = ucl, x = x),
         inherit.aes = FALSE,
         linewidth = ucl_linewidth,
-        colour = BFHtheme::bfh_cols("light_blue"),
+        colour = cols$light_blue,
         na.rm = TRUE
       ),
       ggplot2::geom_line(
         ggplot2::aes(y = lcl, x = x),
         inherit.aes = FALSE,
         linewidth = ucl_linewidth,
-        colour = BFHtheme::bfh_cols("light_blue"),
+        colour = cols$light_blue,
         na.rm = TRUE
       )
     ))
@@ -175,7 +184,7 @@ bfh_spc_plot <- function(qic_data,
         ggplot2::aes(y = target, x = x),
         inherit.aes = FALSE,
         linewidth = target_linewidth,
-        colour = BFHtheme::bfh_cols("hospital_dark_grey"),
+        colour = cols$dark_grey,
         linetype = "42",
         na.rm = TRUE
       )
@@ -186,7 +195,7 @@ bfh_spc_plot <- function(qic_data,
   plot_layers <- c(plot_layers, list(
     ggplot2::geom_line(
       ggplot2::aes(y = y, group = part),
-      colour = BFHtheme::bfh_cols("hospital_grey"),
+      colour = cols$grey,
       linewidth = data_linewidth,
       na.rm = TRUE
     ),
@@ -198,7 +207,7 @@ bfh_spc_plot <- function(qic_data,
     ),
     ggplot2::geom_line(
       ggplot2::aes(y = cl, group = part, linetype = anhoej.signal),
-      color = BFHtheme::bfh_cols("hospital_blue"),
+      color = cols$blue,
       linewidth = cl_linewidth
     )
   ))

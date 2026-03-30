@@ -129,18 +129,8 @@ add_right_labels_marquee <- function(
   placement_cfg <- list()
   config_available <- FALSE
 
-  if (exists("get_label_placement_config", mode = "function")) {
-    placement_cfg <- get_label_placement_config()
-    config_available <- TRUE
-  } else if (exists("get_label_placement_param", mode = "function")) {
-    placement_cfg <- list(
-      marquee_lineheight = get_label_placement_param("marquee_lineheight"),
-      marquee_size_factor = get_label_placement_param("marquee_size_factor"),
-      pad_top = get_label_placement_param("pad_top"),
-      pad_bot = get_label_placement_param("pad_bot")
-    )
-    config_available <- TRUE
-  }
+  placement_cfg <- get_label_placement_config()
+  config_available <- TRUE
 
   # Hent marquee_lineheight fra config
   marquee_lineheight <- if (config_available && !is.null(placement_cfg$marquee_lineheight)) {
@@ -311,7 +301,8 @@ add_right_labels_marquee <- function(
         measure_panel_height_from_gtable(
           gtable,
           device_width = device_size$width,
-          device_height = device_size$height
+          device_height = device_size$height,
+          device_ready = temp_device_opened
         )
       },
       error = function(e) {
@@ -357,7 +348,8 @@ add_right_labels_marquee <- function(
       device_width = device_width_for_estimate,
       device_height = device_height_for_estimate,
       marquee_size = marquee_size,
-      return_details = TRUE
+      return_details = TRUE,
+      device_ready = temp_device_opened
     )
     height_A <- heights[[1]]
     height_B <- heights[[2]]
