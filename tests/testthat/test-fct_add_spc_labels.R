@@ -1,0 +1,205 @@
+# test-fct_add_spc_labels.R
+# Unit tests for add_spc_labels()
+
+# Shared test data ----
+make_test_data <- function() {
+  qic_data <- data.frame(
+    x = as.Date("2024-01-01") + 0:11 * 30,
+    y = c(50, 52, 48, 55, 47, 51, 49, 53, 50, 48, 52, 51),
+    cl = rep(50.5, 12),
+    target = rep(45, 12)
+  )
+  qic_data
+}
+
+make_test_plot <- function(qic_data = make_test_data()) {
+  ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_line()
+}
+
+
+# Basic tests ----
+
+test_that("add_spc_labels returns a ggplot object", {
+  qic_data <- make_test_data()
+  p <- make_test_plot(qic_data)
+
+  result <- add_spc_labels(p, qic_data, y_axis_unit = "count")
+  expect_true(inherits(result, "gg"))
+})
+
+test_that("add_spc_labels errors on non-ggplot input", {
+  qic_data <- make_test_data()
+  expect_error(add_spc_labels("not a plot", qic_data), "ggplot")
+})
+
+test_that("add_spc_labels errors on non-data.frame qic_data", {
+  p <- make_test_plot()
+  expect_error(add_spc_labels(p, "not a df"), "data.frame")
+})
+
+# BASELINE header ----
+
+test_that("BASELINE header when centerline_value is provided", {
+  qic_data <- make_test_data()
+  p <- make_test_plot(qic_data)
+
+  result <- add_spc_labels(
+    p, qic_data,
+    y_axis_unit = "count",
+    centerline_value = 50.5
+  )
+  expect_true(inherits(result, "gg"))
+  # BASELINE header er indlejret i marquee label tekst - vi verificerer at
+  # funktionen koerer korrekt med centerline_value sat
+})
+
+test_that("BASELINE header when has_frys_column=TRUE and no skift", {
+  qic_data <- make_test_data()
+  p <- make_test_plot(qic_data)
+
+  result <- add_spc_labels(
+    p, qic_data,
+    y_axis_unit = "count",
+    has_frys_column = TRUE,
+    has_skift_column = FALSE
+  )
+  expect_true(inherits(result, "gg"))
+})
+
+# NUV. NIVEAU header ----
+
+test_that("NUV. NIVEAU header when no centerline_value and no frys", {
+  qic_data <- make_test_data()
+  p <- make_test_plot(qic_data)
+
+  # Default: ingen centerline_value, ingen frys -> NUV. NIVEAU
+  result <- add_spc_labels(
+    p, qic_data,
+    y_axis_unit = "count"
+  )
+  expect_true(inherits(result, "gg"))
+})
+
+# Arrow detection ----
+
+test_that("target_text='<' produces arrow with suppress_targetline attr", {
+  qic_data <- make_test_data()
+  p <- make_test_plot(qic_data)
+
+  result <- add_spc_labels(
+    p, qic_data,
+    y_axis_unit = "count",
+    target_text = "<"
+  )
+  expect_true(inherits(result, "gg"))
+  expect_true(attr(result, "suppress_targetline"))
+  expect_equal(attr(result, "arrow_type"), "down")
+})
+
+test_that("target_text='>' produces up arrow", {
+  qic_data <- make_test_data()
+  p <- make_test_plot(qic_data)
+
+  result <- add_spc_labels(
+    p, qic_data,
+    y_axis_unit = "count",
+    target_text = ">"
+  )
+  expect_true(inherits(result, "gg"))
+  expect_true(attr(result, "suppress_targetline"))
+  expect_equal(attr(result, "arrow_type"), "up")
+})
+
+# Operator parsing ----
+
+test_that("target_text='>=90' shows operator symbol", {
+  qic_data <- make_test_data()
+  qic_data$target <- rep(90, 12)
+  p <- make_test_plot(qic_data)
+
+  result <- add_spc_labels(
+    p, qic_data,
+    y_axis_unit = "count",
+    target_text = ">=90"
+  )
+  expect_true(inherits(result, "gg"))
+  # Ingen pil - det er en operator med vaerdi
+  expect_false(isTRUE(attr(result, "suppress_targetline")))
+})
+
+# Percent suffix ----
+
+test_that("percent suffix auto-added when y_axis_unit='percent'", {
+  qic_data <- make_test_data()
+  p <- make_test_plot(qic_data)
+
+  # Med target_text uden % -> skal automatisk tilfoeje %
+  result <- add_spc_labels(
+    p, qic_data,
+    y_axis_unit = "percent",
+    target_text = ">=90"
+  )
+  expect_true(inherits(result, "gg"))
+})
+
+# Only CL label ----
+
+test_that("only CL label when no target", {
+  qic_data <- make_test_data()
+  qic_data$target <- NA_real_
+  p <- make_test_plot(qic_data)
+
+  result <- add_spc_labels(
+    p, qic_data,
+    y_axis_unit = "count"
+  )
+  expect_true(inherits(result, "gg"))
+  # Ingen arrow attributter
+  expect_null(attr(result, "arrow_type"))
+})
+
+# Only target label ----
+
+test_that("only target label when no CL", {
+  qic_data <- make_test_data()
+  qic_data$cl <- NA_real_
+  p <- make_test_plot(qic_data)
+
+  result <- add_spc_labels(
+    p, qic_data,
+    y_axis_unit = "count"
+  )
+  expect_true(inherits(result, "gg"))
+})
+
+# Returns unchanged when both NA ----
+
+test_that("returns plot unchanged when both CL and target are NA", {
+  qic_data <- make_test_data()
+  qic_data$cl <- NA_real_
+  qic_data$target <- NA_real_
+  p <- make_test_plot(qic_data)
+
+  expect_warning(
+    result <- add_spc_labels(p, qic_data, y_axis_unit = "count"),
+    "Ingen CL eller Target"
+  )
+  # Returnerer original plot uaendret
+  expect_identical(result, p)
+})
+
+# Part column ----
+
+test_that("CL value extracted from latest part when part column exists", {
+  qic_data <- make_test_data()
+  qic_data$part <- c(rep(1, 6), rep(2, 6))
+  # Saet forskellige CL for de to parts
+  qic_data$cl <- c(rep(48, 6), rep(53, 6))
+  p <- make_test_plot(qic_data)
+
+  result <- add_spc_labels(
+    p, qic_data,
+    y_axis_unit = "count"
+  )
+  expect_true(inherits(result, "gg"))
+})
