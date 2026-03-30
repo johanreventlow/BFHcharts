@@ -32,3 +32,5 @@ demo_test.R
 *.pdf
 # Copyright-protected fonts (must not be bundled)
 inst/templates/typst/*/fonts/
+# Git worktrees
+.worktrees/
