@@ -93,11 +93,13 @@ show table.cell: it => {
               //leading: 0.65em,
               [#text(
                 rgb("fff"),
-                font: ("Mari Bold", "Roboto", "Arial", "Helvetica", "sans-serif"),
+                font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
+                weight: "bold",
                 size: 13pt,
                 hospital ) \
                 #text(
-                  font: ("Mari Bold", "Roboto", "Arial", "Helvetica", "sans-serif"),
+                  font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
+                  weight: "bold",
                   size: 13pt,
                   rgb("fff"),
                   department
