@@ -157,11 +157,10 @@ LABEL_PLACEMENT_CONFIG <- list(
   # Penalty for labels uden for plotområdet
   # Rationale: Meget høj - labels uden for bounds er aldrig acceptable.
 
-  note_char_width_factor = 0.008,
-  # Estimeret bredde per tegn som andel af x-range
-  # Rationale: Approksimation til bounding box bredde-beregning.
+  note_char_width_factor = 0.011,
+  # Estimeret bredde per tegn som brøkdel af plot-bredde i [0,1] space
 
-  note_line_height_factor = 0.04
+  note_line_height_factor = 0.07
   # Estimeret højde per tekstlinje som andel af y-range
   # Rationale: Approksimation til bounding box højde-beregning.
 )

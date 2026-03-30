@@ -166,8 +166,7 @@ add_plot_enhancements <- function(plot,
       line_positions = if (!is.null(line_positions)) line_positions else numeric(0),
       y_range = y_range,
       x_range = x_range_num,
-      data_points = data_points_num,
-      text_size = comment_size
+      data_points = data_points_num
     )
 
     if (nrow(label_data) > 0) {

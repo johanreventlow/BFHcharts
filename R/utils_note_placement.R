@@ -32,7 +32,6 @@
 #' @param y_range numeric(2) plot y-range
 #' @param x_range numeric(2) plot x-range
 #' @param data_points data.frame med x, y for alle datapunkter
-#' @param text_size numeric geom_text size i mm (til viewport-responsiv bbox skalering)
 #' @param config list med placement parametre (fra get_label_placement_config())
 #' @return data.frame med label_x, label_y, point_x, point_y, label_text, draw_arrow
 #'
@@ -43,7 +42,6 @@ place_note_labels <- function(comment_data,
                               y_range,
                               x_range,
                               data_points = NULL,
-                              text_size = NULL,
                               config = NULL) {
   empty_result <- data.frame(
     label_x = numeric(0),
@@ -115,19 +113,8 @@ place_note_labels <- function(comment_data,
     }
   }
 
-  # Skalér bbox-faktorer baseret på text_size relativt til reference (base_size=14)
-  # Større tekst (lille viewport) → større bbox → mere plads mellem labels
-  reference_text_size <- (14 * 0.8) / 2.845276  # ≈ 3.94 mm
-  size_scale <- if (!is.null(text_size) && text_size > 0) {
-    text_size / reference_text_size
-  } else {
-    1
-  }
-
-  offset <- config$note_label_offset_factor * size_scale
-  buffer <- config$note_line_buffer_factor * size_scale
-  char_width_scaled <- config$note_char_width_factor * size_scale
-  line_height_scaled <- config$note_line_height_factor * size_scale
+  offset <- config$note_label_offset_factor
+  buffer <- config$note_line_buffer_factor
 
   placed_labels <- list()
   results <- vector("list", nrow(comment_data))
@@ -142,8 +129,8 @@ place_note_labels <- function(comment_data,
     wrapped_text <- stringr::str_wrap(row$comment, width = config$note_max_label_width)
     bbox <- estimate_label_bbox_norm(
       wrapped_text,
-      char_width_scaled,
-      line_height_scaled
+      config$note_char_width_factor,
+      config$note_line_height_factor
     )
 
     candidates <- generate_candidates_norm(px, py, offset)
@@ -229,7 +216,8 @@ place_note_labels <- function(comment_data,
 #' @noRd
 generate_candidates_norm <- function(px, py, offset) {
   x_off <- offset * 0.5
-  off2 <- offset * 1.6
+  off2 <- offset * 1.8
+  off3 <- offset * 2.5  # Meget langt væk - sikrer altid en overlap-fri mulighed
 
   # Alle kandidater har vertikal komponent - undgår at pilen krydser teksten
   list(
@@ -241,14 +229,18 @@ generate_candidates_norm <- function(px, py, offset) {
     list(x = px - x_off, y = py - offset),          # 6. Under-venstre
     list(x = px + x_off, y = py + offset * 0.7),    # 7. Skråt højre-op
     list(x = px - x_off, y = py - offset * 0.7),    # 8. Skråt venstre-ned
-    list(x = px + x_off * 1.3, y = py + offset * 0.7),  # 7b. Skråt højre-op (længere)
-    list(x = px - x_off * 1.3, y = py - offset * 0.7),  # 8b. Skråt venstre-ned (længere)
-    list(x = px, y = py + off2),                    # 9. Langt over
-    list(x = px, y = py - off2),                    # 10. Langt under
-    list(x = px + x_off, y = py + off2),            # 11. Langt over-højre
-    list(x = px + x_off, y = py - off2),            # 12. Langt under-højre
-    list(x = px - x_off, y = py + off2),            # 13. Langt over-venstre
-    list(x = px - x_off, y = py - off2)             # 14. Langt under-venstre
+    list(x = px + x_off * 1.3, y = py + offset * 0.7),  # 9. Skråt højre-op (længere)
+    list(x = px - x_off * 1.3, y = py - offset * 0.7),  # 10. Skråt venstre-ned (længere)
+    list(x = px, y = py + off2),                    # 11. Langt over
+    list(x = px, y = py - off2),                    # 12. Langt under
+    list(x = px + x_off, y = py + off2),            # 13. Langt over-højre
+    list(x = px + x_off, y = py - off2),            # 14. Langt under-højre
+    list(x = px - x_off, y = py + off2),            # 15. Langt over-venstre
+    list(x = px - x_off, y = py - off2),            # 16. Langt under-venstre
+    list(x = px, y = py + off3),                    # 17. Meget langt over
+    list(x = px, y = py - off3),                    # 18. Meget langt under
+    list(x = px + x_off, y = py + off3),            # 19. Meget langt over-højre
+    list(x = px - x_off, y = py - off3)             # 20. Meget langt under-venstre
   )
 }
 
