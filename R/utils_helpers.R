@@ -44,6 +44,16 @@ NULL
 # DATA VALIDATION
 # ============================================================================
 
+#' Check if a scalar value is valid (not NULL, not empty, not NA)
+#'
+#' @param x Value to check
+#' @return logical
+#' @keywords internal
+#' @noRd
+is_valid_scalar <- function(x) {
+  !is.null(x) && length(x) > 0 && !is.na(x[1])
+}
+
 #' Validate Numeric Parameter
 #'
 #' Centralized validation for numeric parameters in bfh_qic.
@@ -270,11 +280,10 @@ extract_comment_data <- function(qic_data, max_length = 100) {
   }
 
   # Extract x, y, and notes
-  comment_data <- data.frame(
+  comment_data <- tibble::tibble(
     x = qic_data$x,
     y = qic_data$y,
-    comment = qic_data$notes,
-    stringsAsFactors = FALSE
+    comment = qic_data$notes
   )
 
   # Filter to non-empty comments only
