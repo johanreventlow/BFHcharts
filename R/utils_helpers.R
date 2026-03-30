@@ -37,44 +37,8 @@ NULL
 #'
 #' @param text Character string to check
 #'
-#' @return Logical, TRUE if arrows detected
-#' @keywords internal
-#' @noRd
-has_arrow_symbol <- function(text) {
-  if (is.null(text) || nchar(trimws(text)) == 0) {
-    return(FALSE)
-  }
-
-  # Check for Unicode arrow symbols
-  if (grepl("[\u2191\u2193\u2192\u2190]", text)) {
-    return(TRUE)
-  }
-
-  # Check for < or > without numbers (will be converted to arrows)
-  # Match < or > at start, optionally followed by whitespace, but NOT followed by digit
-  if (grepl("^<\\s*$|^>\\s*$", text)) {
-    return(TRUE)
-  }
-
-  return(FALSE)
-}
-
-#' Format Target Prefix with Arrow Symbols
-#'
-#' Processes target text to handle arrow symbols.
-#'
-#' @param target_text Raw target text
-#'
-#' @return Formatted target text
-#' @keywords internal
-#' @noRd
-format_target_prefix <- function(target_text) {
-  if (is.null(target_text)) {
-    return("")
-  }
-
-  trimws(target_text)
-}
+# has_arrow_symbol() og format_target_prefix() er defineret i utils_label_helpers.R
+# (kanonisk placering med fuld implementation inkl. parse_target_input())
 
 # ============================================================================
 # DATA VALIDATION

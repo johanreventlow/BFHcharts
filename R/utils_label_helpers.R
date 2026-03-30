@@ -77,10 +77,13 @@ sanitize_marquee_text <- function(text) {
     text <- text[1]
   }
 
-  # Escape marquee-relevante specialtegn
-  # NB: < og > escapes IKKE — marquee bruger markdown, ikke HTML,
-  # saa < og > er sikre og skal vises som-de-er (fx "> 80%", "< 5")
-  text <- gsub("&", "&amp;", text)   # Ampersand (undgaa double-escaping)
+  # Escape marquee-relevante specialtegn (strikt sanitizer)
+  # Operatorer (<, <=, >=, >) i target-labels håndteres SEPARAT via
+  # parse_target_input() som returnerer en struktureret model (operator + value).
+  # Denne sanitizer er generel og SKAL escape alt potentielt farligt.
+  text <- gsub("&", "&amp;", text)   # Ampersand først (undgå double-escaping)
+  text <- gsub("<", "&lt;", text)    # Left angle bracket
+  text <- gsub(">", "&gt;", text)    # Right angle bracket
 
   # Escape marquee special characters
   text <- gsub("\\{", "&#123;", text) # Left brace
@@ -102,6 +105,64 @@ sanitize_marquee_text <- function(text) {
   }
 
   text
+}
+
+# ============================================================================
+# TARGET INPUT PARSING (struktureret model)
+# ============================================================================
+
+#' Parse target input til struktureret model
+#'
+#' Splitter bruger-input i en whitelisted operator og en value-del.
+#' Operatoren konverteres til Unicode-symbol. Value-delen kan derefter
+#' sanitizes separat via sanitize_marquee_text().
+#'
+#' @param target_text character bruger-input (fx ">=90", "<= 25", "<", ">80")
+#' @return list med:
+#'   - `operator`: character Unicode-symbol ("≥", "≤", "↓", "↑", "<", ">", eller "")
+#'   - `value`: character rest-tekst (IKKE sanitized endnu)
+#'   - `is_arrow`: logical TRUE hvis operator er en pil (↓/↑)
+#'   - `display`: character samlet display-tekst (operator + value)
+#' @keywords internal
+#' @noRd
+parse_target_input <- function(target_text) {
+  empty_result <- list(operator = "", value = "", is_arrow = FALSE, display = "")
+
+  if (is.null(target_text) || length(target_text) == 0) return(empty_result)
+  if (!is.character(target_text)) target_text <- as.character(target_text)
+  if (nchar(trimws(target_text)) == 0) return(empty_result)
+
+  # Whitelist: kun disse operatorer accepteres i starten af strengen
+  # Rækkefølge er vigtig: >= og <= skal matches FØR > og <
+  patterns <- list(
+    list(re = "^>=\\s*", symbol = "\U2265", arrow = FALSE),  # ≥
+    list(re = "^<=\\s*", symbol = "\U2264", arrow = FALSE),  # ≤
+    list(re = "^<\\s*$", symbol = "\U2193", arrow = TRUE),   # ↓ (kun < uden tal)
+    list(re = "^>\\s*$", symbol = "\U2191", arrow = TRUE),   # ↑ (kun > uden tal)
+    list(re = "^<\\s*",  symbol = "<",      arrow = FALSE),  # < med tal
+    list(re = "^>\\s*",  symbol = ">",      arrow = FALSE)   # > med tal
+  )
+
+  for (pat in patterns) {
+    if (grepl(pat$re, target_text)) {
+      value <- sub(pat$re, "", target_text)
+
+      # For < og > med tal: check at der faktisk er et tal
+      if (pat$symbol %in% c("<", ">") && !grepl("^-?[0-9]", trimws(value))) {
+        # Intet tal efter < eller > → pil
+        arrow_sym <- if (pat$symbol == "<") "\U2193" else "\U2191"
+        return(list(operator = arrow_sym, value = "", is_arrow = TRUE,
+                    display = arrow_sym))
+      }
+
+      display <- if (pat$arrow) pat$symbol else paste0(pat$symbol, value)
+      return(list(operator = pat$symbol, value = value,
+                  is_arrow = pat$arrow, display = display))
+    }
+  }
+
+  # Ingen operator fundet → alt er value
+  list(operator = "", value = target_text, is_arrow = FALSE, display = target_text)
 }
 
 # ============================================================================
@@ -263,7 +324,8 @@ format_target_prefix <- function(target_text) {
 #'
 #' @keywords internal
 #' @noRd
-create_responsive_label <- function(header, value, label_size = 6, header_pt = 10, value_pt = 30) {
+create_responsive_label <- function(header, value, label_size = 6, header_pt = 10, value_pt = 30,
+                                    operator_prefix = "") {
   # Input validation
   if (!is.numeric(label_size) || length(label_size) != 1 || label_size <= 0) {
     stop("label_size skal være et positivt tal, modtog: ", label_size)
@@ -281,9 +343,16 @@ create_responsive_label <- function(header, value, label_size = 6, header_pt = 1
     stop("header_pt og value_pt skal være positive")
   }
 
-  # Sanitize inputs
+  # Sanitize inputs (operator_prefix er allerede whitelisted via parse_target_input)
   header <- sanitize_marquee_text(header)
   value <- sanitize_marquee_text(value)
+
+  # Sammensæt: operator bypasser sanitizer, value er sanitized
+  display_value <- if (nchar(operator_prefix) > 0) {
+    paste0(operator_prefix, value)
+  } else {
+    value
+  }
 
   # Compute scaled sizes (baseline: label_size = 6)
   scale_factor <- label_size / 6
@@ -303,6 +372,6 @@ create_responsive_label <- function(header, value, label_size = 6, header_pt = 1
     header_size,
     header,
     value_size,
-    value
+    display_value
   )
 }

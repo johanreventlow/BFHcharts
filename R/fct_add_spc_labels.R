@@ -198,36 +198,36 @@ add_spc_labels <- function(
 
   if (!is.na(target_value)) {
     if (!is.null(target_text) && nchar(trimws(target_text)) > 0) {
-      formatted_target_with_prefix <- format_target_prefix(target_text)
-      has_arrow <- has_arrow_symbol(formatted_target_with_prefix)
-
-      # AUTO-ADD PERCENT SUFFIX
-      if (y_axis_unit == "percent" && !has_arrow && !grepl("%", formatted_target_with_prefix, fixed = TRUE)) {
-        formatted_target_with_prefix <- paste0(formatted_target_with_prefix, "%")
-      }
+      # Struktureret parsing: operator og value separeres, så sanitizeren
+      # aldrig ser rå <, >, >=, <= (de er allerede Unicode-symboler).
+      # Operatoren bypasser sanitizeren via operator_prefix parameter.
+      parsed <- parse_target_input(target_text)
+      has_arrow <- parsed$is_arrow
 
       if (has_arrow) {
-        arrow_down_char <- "\U2193"
-        arrow_up_char <- "\U2191"
+        arrow_type <- if (parsed$operator == "\U2193") "down" else "up"
+        target_operator <- parsed$operator
+        target_value_text <- ""
+      } else {
+        target_operator <- parsed$operator
+        target_value_text <- parsed$value
 
-        arrow_type <- if (formatted_target_with_prefix == arrow_down_char) {
-          "down"
-        } else if (formatted_target_with_prefix == arrow_up_char) {
-          "up"
-        } else {
-          warning(sprintf("Unexpected arrow format: '%s'", formatted_target_with_prefix))
-          "down"
+        # AUTO-ADD PERCENT SUFFIX til value-delen (ikke operator)
+        if (y_axis_unit == "percent" && !grepl("%", target_value_text, fixed = TRUE)) {
+          target_value_text <- paste0(target_value_text, "%")
         }
       }
     } else {
       formatted_target <- format_y_value(target_value, y_axis_unit, y_range)
-      formatted_target_with_prefix <- formatted_target
+      target_operator <- ""
+      target_value_text <- formatted_target
     }
 
     label_target <- create_responsive_label(
       header = "UDVIKLINGSMÅL",
-      value = formatted_target_with_prefix,
-      label_size = label_size
+      value = target_value_text,
+      label_size = label_size,
+      operator_prefix = target_operator
     )
   }
 
