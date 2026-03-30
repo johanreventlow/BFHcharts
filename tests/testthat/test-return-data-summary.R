@@ -3,6 +3,7 @@
 # ============================================================================
 
 test_that("default behavior returns bfh_qic_result object", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -36,6 +37,7 @@ test_that("default behavior returns bfh_qic_result object", {
 })
 
 test_that("return.data = TRUE returns data.frame with qic calculations", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -59,6 +61,7 @@ test_that("return.data = TRUE returns data.frame with qic calculations", {
 })
 
 test_that("print.summary = TRUE returns list with plot and summary", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -82,6 +85,7 @@ test_that("print.summary = TRUE returns list with plot and summary", {
 })
 
 test_that("return.data = TRUE and print.summary = TRUE returns list with data and summary", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -106,6 +110,7 @@ test_that("return.data = TRUE and print.summary = TRUE returns list with data an
 })
 
 test_that("summary has correct Danish column names", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -131,6 +136,7 @@ test_that("summary has correct Danish column names", {
 })
 
 test_that("summary works with run charts (no control limits)", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -158,6 +164,7 @@ test_that("summary works with run charts (no control limits)", {
 })
 
 test_that("summary works with p-charts", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 5),
@@ -184,6 +191,7 @@ test_that("summary works with p-charts", {
 })
 
 test_that("summary works with c-charts", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     defects = rpois(12, lambda = 10)
@@ -205,6 +213,7 @@ test_that("summary works with c-charts", {
 })
 
 test_that("summary works with u-charts", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     defects = rpois(12, lambda = 10),
@@ -231,6 +240,7 @@ test_that("summary works with u-charts", {
 })
 
 test_that("summary handles multiple phases correctly", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
     infections = rpois(24, lambda = 15)
@@ -253,6 +263,7 @@ test_that("summary handles multiple phases correctly", {
 })
 
 test_that("summary decimal places are appropriate for y_axis_unit", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 5),
@@ -293,6 +304,7 @@ test_that("summary decimal places are appropriate for y_axis_unit", {
 })
 
 test_that("return.data parameter validation works", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -339,6 +351,7 @@ test_that("return.data parameter validation works", {
 })
 
 test_that("print.summary parameter validation works", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -385,6 +398,7 @@ test_that("print.summary parameter validation works", {
 })
 
 test_that("Anhøj statistics are included in summary", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
@@ -415,6 +429,7 @@ test_that("Anhøj statistics are included in summary", {
 })
 
 test_that("summary returns single row for charts without phases", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
     infections = rpois(24, lambda = 5),
@@ -440,6 +455,7 @@ test_that("summary returns single row for charts without phases", {
 })
 
 test_that("summary returns correct rows for multi-phase charts", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 36),
     infections = rpois(36, lambda = 15)
@@ -464,6 +480,7 @@ test_that("summary returns correct rows for multi-phase charts", {
 })
 
 test_that("i-charts and c-charts have constant control limits in summary", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)

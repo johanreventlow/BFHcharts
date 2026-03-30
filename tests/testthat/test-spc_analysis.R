@@ -148,6 +148,7 @@ test_that("bfh_build_analysis_context extracts context from bfh_qic_result", {
 
 test_that("bfh_build_analysis_context merges user metadata", {
   skip_if_not_installed("qicharts2")
+  set.seed(42)
 
   test_data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -186,6 +187,7 @@ test_that("bfh_generate_analysis rejects invalid input", {
 
 test_that("bfh_generate_analysis returns standard text when use_ai = FALSE", {
   skip_if_not_installed("qicharts2")
+  set.seed(42)
 
   test_data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
@@ -201,6 +203,7 @@ test_that("bfh_generate_analysis returns standard text when use_ai = FALSE", {
 
 test_that("bfh_generate_analysis includes chart title in output", {
   skip_if_not_installed("qicharts2")
+  set.seed(42)
 
   test_data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -222,6 +225,7 @@ test_that("bfh_generate_analysis includes chart title in output", {
 
 test_that("bfh_generate_analysis works with metadata", {
   skip_if_not_installed("qicharts2")
+  set.seed(42)
 
   test_data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -245,6 +249,7 @@ test_that("bfh_generate_analysis works with metadata", {
 
 test_that("bfh_generate_analysis falls back gracefully when AI unavailable", {
   skip_if_not_installed("qicharts2")
+  set.seed(42)
 
   test_data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -263,6 +268,7 @@ test_that("bfh_generate_analysis falls back gracefully when AI unavailable", {
 
 test_that("bfh_generate_analysis accepts min_chars and max_chars parameters", {
   skip_if_not_installed("qicharts2")
+  set.seed(42)
 
   test_data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -295,6 +301,7 @@ test_that("bfh_generate_analysis has correct default values", {
 
 test_that("bfh_generate_analysis validates min_chars < max_chars", {
   skip_if_not_installed("qicharts2")
+  set.seed(42)
 
   test_data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),

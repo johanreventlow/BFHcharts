@@ -30,6 +30,7 @@ test_that("bfh_qic() generates valid run chart", {
 
 test_that("bfh_qic() generates valid p-chart with denominator", {
   library(ggplot2)
+  set.seed(42)
 
   # Create test data
   data <- data.frame(
@@ -57,6 +58,7 @@ test_that("bfh_qic() generates valid p-chart with denominator", {
 
 test_that("bfh_qic() handles phase splits correctly", {
   library(ggplot2)
+  set.seed(42)
 
   # Create test data with intervention
   data <- data.frame(
@@ -131,6 +133,7 @@ test_that("bfh_spc_plot() works with pre-calculated qic data", {
 
 test_that("bfh_qic() handles target values correctly", {
   library(ggplot2)
+  set.seed(42)
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -206,6 +209,7 @@ test_that("bfh_qic() handles exclude parameter correctly", {
 
 test_that("bfh_qic() handles multiply parameter correctly", {
   library(ggplot2)
+  set.seed(42)
 
   # Data in proportions (0-1)
   data <- data.frame(
@@ -231,6 +235,7 @@ test_that("bfh_qic() handles multiply parameter correctly", {
 
 test_that("bfh_qic() handles agg.fun parameter correctly", {
   library(ggplot2)
+  set.seed(42)
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -267,6 +272,7 @@ test_that("bfh_qic() handles agg.fun parameter correctly", {
 })
 
 test_that("bfh_qic() validates exclude parameter", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rnorm(12, 20, 5)
@@ -296,6 +302,7 @@ test_that("bfh_qic() validates exclude parameter", {
 })
 
 test_that("bfh_qic() validates multiply parameter", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rnorm(12, 20, 5)
@@ -336,6 +343,7 @@ test_that("bfh_qic() validates multiply parameter", {
 })
 
 test_that("bfh_qic() validates agg.fun parameter", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rnorm(12, 20, 5)
@@ -355,6 +363,7 @@ test_that("bfh_qic() validates agg.fun parameter", {
 
 test_that("bfh_qic() combines new parameters correctly", {
   library(ggplot2)
+  set.seed(42)
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
@@ -387,6 +396,7 @@ test_that("bfh_qic() combines new parameters correctly", {
 
 test_that("bfh_qic() handles cl parameter correctly", {
   library(ggplot2)
+  set.seed(42)
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -410,6 +420,7 @@ test_that("bfh_qic() handles cl parameter correctly", {
 })
 
 test_that("bfh_qic() validates cl parameter", {
+  set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rnorm(12, 20, 5)
@@ -451,6 +462,7 @@ test_that("bfh_qic() validates cl parameter", {
 
 test_that("bfh_qic() uses cl with phase splits", {
   library(ggplot2)
+  set.seed(42)
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
