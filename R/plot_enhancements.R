@@ -132,11 +132,15 @@ add_plot_enhancements <- function(plot,
 
   # Add comments med intelligent placement
   if (!is.null(comment_data) && nrow(comment_data) > 0) {
-    # Beregn y_range og x_range fra data
+    # Beregn y_range og x_range inkl. ggplot2 expansion (25% mult)
+    # Uden expansion tror algoritmen at labels over/under data er out-of-bounds
     y_vals <- qic_data$y[!is.na(qic_data$y)]
     all_y <- c(y_vals, qic_data$ucl, qic_data$lcl)
     all_y <- all_y[!is.na(all_y)]
-    y_range <- range(all_y)
+    y_data_range <- range(all_y)
+    y_expand <- diff(y_data_range) * 0.25  # Matcher expansion(mult = 0.25)
+    y_range <- c(y_data_range[1] - y_expand, y_data_range[2] + y_expand)
+
     x_range <- range(qic_data$x, na.rm = TRUE)
 
     # Konverter x_range til numerisk for placement (håndter Date/POSIXct)

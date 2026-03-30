@@ -138,7 +138,9 @@ place_note_labels <- function(comment_data,
     best_score <- Inf
     best_candidate <- candidates[[1]]
 
-    for (candidate in candidates) {
+    all_scores <- numeric(length(candidates))
+    for (ci in seq_along(candidates)) {
+      candidate <- candidates[[ci]]
       score <- score_candidate_norm(
         cx = candidate$x,
         cy = candidate$y,
@@ -152,6 +154,7 @@ place_note_labels <- function(comment_data,
         buffer = buffer,
         config = config
       )
+      all_scores[ci] <- score
 
       if (score < best_score) {
         best_score <- score
@@ -286,33 +289,47 @@ score_candidate_norm <- function(cx, cy, bbox,
   }
 
   # --- 3. Proceslinjen (diagonale segmenter) ---
+  # Analytisk check: beregn segmentets y-værdi ved label-boksens x-kanter
   if (!is.null(segments_norm) && nrow(segments_norm) > 0) {
     for (s in seq_len(nrow(segments_norm))) {
       seg <- segments_norm[s, ]
-      # Hurtig x-range skip
       seg_x_min <- min(seg$x1, seg$x2)
       seg_x_max <- max(seg$x1, seg$x2)
       if (seg_x_max < label_left - buffer || seg_x_min > label_right + buffer) next
 
-      # Sample 20 punkter langs segmentet, check mod label-boks
+      # Beregn segmentets y-værdi ved relevante x-positioner (analytisk)
+      seg_dx <- seg$x2 - seg$x1
       intersects <- FALSE
       min_dist <- Inf
-      for (t in seq(0, 1, length.out = 20)) {
-        sx <- seg$x1 + t * (seg$x2 - seg$x1)
-        sy <- seg$y1 + t * (seg$y2 - seg$y1)
 
-        # Er punktet inde i label-boksen?
-        if (sx >= label_left && sx <= label_right &&
-            sy >= label_bot && sy <= label_top) {
-          intersects <- TRUE
-          break
+      if (abs(seg_dx) > 1e-10) {
+        # Samplér y ved label_left, label_right, og midtpunkt
+        x_checks <- c(label_left, label_right, (label_left + label_right) / 2)
+        # Tilføj segment-endpoints inden for label x-range
+        if (seg$x1 >= label_left && seg$x1 <= label_right) x_checks <- c(x_checks, seg$x1)
+        if (seg$x2 >= label_left && seg$x2 <= label_right) x_checks <- c(x_checks, seg$x2)
+
+        for (xc in x_checks) {
+          t_param <- (xc - seg$x1) / seg_dx
+          if (t_param < 0 || t_param > 1) next  # Uden for segmentet
+          sy <- seg$y1 + t_param * (seg$y2 - seg$y1)
+
+          if (sy >= label_bot && sy <= label_top) {
+            intersects <- TRUE
+            break
+          }
+          dist <- min(abs(sy - label_top), abs(sy - label_bot))
+          if (dist < min_dist) min_dist <- dist
         }
-
-        # Afstand til nærmeste kant af label-boks
-        dx <- max(label_left - sx, 0, sx - label_right)
-        dy <- max(label_bot - sy, 0, sy - label_top)
-        dist <- sqrt(dx^2 + dy^2)
-        if (dist < min_dist) min_dist <- dist
+      } else {
+        # Vertikalt segment - check y-range overlap
+        if (seg$x1 >= label_left && seg$x1 <= label_right) {
+          seg_y_min <- min(seg$y1, seg$y2)
+          seg_y_max <- max(seg$y1, seg$y2)
+          if (seg_y_max >= label_bot && seg_y_min <= label_top) {
+            intersects <- TRUE
+          }
+        }
       }
 
       if (intersects) {

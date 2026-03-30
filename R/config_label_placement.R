@@ -128,14 +128,14 @@ LABEL_PLACEMENT_CONFIG <- list(
 
   # === Note Label Placement ===
 
-  note_label_offset_factor = 0.15,
+  note_label_offset_factor = 0.18,
   # Label offset i normaliseret [0,1] space
-  # Rationale: 15% af plottet giver god afstand fra datapunkt til label-center.
-  #            Sekundære kandidater placeres ved 1.6x (24%) for ekstra plads.
+  # Rationale: 18% af plottet giver tilstrækkelig afstand fra datapunkt til label-center,
+  #            også for labels med stor bbox (lang tekst eller multi-line).
 
-  note_line_buffer_factor = 0.06,
+  note_line_buffer_factor = 0.07,
   # Minimumsafstand fra label-kant til linje i normaliseret space
-  # Rationale: 6% buffer sikrer tydelig visuel separation fra linjer og segmenter.
+  # Rationale: 7% buffer sikrer tydelig visuel separation fra linjer og segmenter.
 
   note_max_label_width = 25,
   # Word-wrap bredde i tegn
