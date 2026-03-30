@@ -112,18 +112,7 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
 #' @keywords internal
 #' @noRd
 format_y_axis_percent <- function(y_range = NULL) {
-  # Bestem om vi skal vise decimaler baseret på range
-  # Threshold: 2 procentpoint (0.02 i 0-1 skala)
-  use_decimals <- FALSE
-  if (!is.null(y_range) && length(y_range) == 2) {
-    range_span <- abs(y_range[2] - y_range[1])
-    use_decimals <- range_span < 0.02
-  }
-
-  accuracy <- if (use_decimals) 0.1 else 1
-
-  # Custom breaks-funktion: begrænser aksemærker til [0%, 100%]
-  # og fjerner breaks der formateres til samme label (duplikater)
+  # Custom breaks + accuracy der sikrer unikke labels uden huller
   percent_breaks <- function(limits) {
     b <- scales::breaks_pretty(n = 5)(limits)
     b <- b[b >= 0 & b <= 1]
@@ -131,20 +120,33 @@ format_y_axis_percent <- function(y_range = NULL) {
       if (limits[1] <= 0.05 && !0 %in% b) b <- c(0, b)
       if (limits[2] >= 0.95 && !1 %in% b) b <- c(b, 1)
     }
-    b <- sort(unique(b))
+    sort(unique(b))
+  }
 
-    # Fjern breaks der giver duplikerede labels ved aktuel accuracy
-    if (length(b) > 1) {
-      formatted <- scales::label_percent(accuracy = accuracy)(b)
-      b <- b[!duplicated(formatted)]
+  # Bestem accuracy baseret på faktisk break-interval (beregnes dynamisk)
+  percent_labels <- function(x) {
+    if (length(x) < 2) return(scales::label_percent(accuracy = 1)(x))
+
+    # Beregn mindste interval mellem breaks (i procentpoint)
+    intervals <- diff(sort(x)) * 100
+    min_interval <- min(intervals[intervals > 0])
+
+    # Vælg accuracy der kan skelne alle breaks
+    accuracy <- if (min_interval >= 1) {
+      1       # 1%, 2%, 3%
+    } else if (min_interval >= 0.1) {
+      0.1     # 0.5%, 1.0%, 1.5%
+    } else {
+      0.01    # 0.05%, 0.10%
     }
-    b
+
+    scales::label_percent(accuracy = accuracy)(x)
   }
 
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.25, .25)),
     breaks = percent_breaks,
-    labels = scales::label_percent(accuracy = accuracy)
+    labels = percent_labels
   )
 }
 
