@@ -423,7 +423,8 @@ measure_panel_height_from_built <- function(built_plot, gtable = NULL, panel = 1
 #'
 #' @keywords internal
 #' @noRd
-measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, device_height = 7) {
+measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, device_height = 7,
+                                              device_ready = FALSE) {
   # Find panel viewport navn fra gtable layout
   panel_layout <- gt$layout[gt$layout$name == "panel", , drop = FALSE]
 
@@ -443,45 +444,43 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
     panel_row$b, panel_row$r
   )
 
-  # VIGTIGT: Brug ALTID en off-screen PDF device for measurements
-  # Dette forhindrer synlig rendering når scripts kører med aktiv device
-  #
-  # Gem den nuværende device
-  current_dev <- grDevices::dev.cur()
+  # Hvis device_ready = TRUE, brug allerede-aktiv device (caller har åbnet den)
+  # Ellers åbn en off-screen Cairo PDF device for measurements
+  if (!device_ready) {
+    # Gem den nuværende device
+    current_dev <- grDevices::dev.cur()
 
-  # Open temporary Cairo PDF device for measurement (off-screen)
-  # NOTE: Vi bruger Cairo PDF fordi det understøtter OTF/TTF fonts og er deterministisk
-  temp_file <- tempfile(fileext = ".pdf")
-  grDevices::cairo_pdf(filename = temp_file, width = device_width, height = device_height)
-  temp_dev <- grDevices::dev.cur()
+    temp_file <- tempfile(fileext = ".pdf")
+    grDevices::cairo_pdf(filename = temp_file, width = device_width, height = device_height)
+    temp_dev <- grDevices::dev.cur()
 
-  on.exit(
-    {
-      # Luk vores temp device hvis den stadig er aktiv
-      if (grDevices::dev.cur() == temp_dev) {
-        grDevices::dev.off()
-      }
-
-      # Vend tilbage til oprindelig device hvis den var reel (ikke null og ikke vores temp)
-      # Vi ignorerer device 2 hvis current_dev var 1, da ggplot_build() ofte åbner en temp device
-      if (current_dev > 1 && current_dev != temp_dev) {
-        if (current_dev %in% grDevices::dev.list()) {
-          tryCatch(
-            {
-              grDevices::dev.set(current_dev)
-            },
-            error = function(e) {
-              # Ignorer hvis device ikke findes
-            }
-          )
+    on.exit(
+      {
+        # Luk vores temp device hvis den stadig er aktiv
+        if (grDevices::dev.cur() == temp_dev) {
+          grDevices::dev.off()
         }
-      }
 
-      # Slet temp fil
-      unlink(temp_file, force = TRUE)
-    },
-    add = TRUE
-  )
+        # Vend tilbage til oprindelig device hvis den var reel
+        if (current_dev > 1 && current_dev != temp_dev) {
+          if (current_dev %in% grDevices::dev.list()) {
+            tryCatch(
+              {
+                grDevices::dev.set(current_dev)
+              },
+              error = function(e) {
+                # Ignorer hvis device ikke findes
+              }
+            )
+          }
+        }
+
+        # Slet temp fil
+        unlink(temp_file, force = TRUE)
+      },
+      add = TRUE
+    )
+  }
 
   # Render plot til device
   grid::grid.newpage()
@@ -630,16 +629,10 @@ measure_panel_height_inches <- function(p, panel = 1, device_width = 7, device_h
     # message(sprintf(
   }
 
-  # Safety margin fra config (direkte kald - altid tilgængelig i pakken)
-  safety_margin <- if (exists("get_label_placement_config", mode = "function")) {
-    cfg <- get_label_placement_config()
-    value <- cfg[["height_safety_margin"]]
-    if (is.null(value)) 1.05 else value
-  } else if (exists("get_label_placement_param", mode = "function")) {
-    get_label_placement_param("height_safety_margin")
-  } else {
-    1.05
-  }
+  # Safety margin fra config (altid tilgængelig i pakken)
+  cfg <- get_label_placement_config()
+  value <- cfg[["height_safety_margin"]]
+  safety_margin <- if (is.null(value)) 1.05 else value
   h_npc <- h_npc * safety_margin
   h_inches_with_margin <- h_inches * safety_margin
 
@@ -710,7 +703,8 @@ estimate_label_heights_npc <- function(
     device_height = NULL,
     marquee_size = NULL,
     fallback_npc = 0.13,
-    return_details = FALSE) {
+    return_details = FALSE,
+    device_ready = FALSE) {
   # Default style hvis ikke angivet
   if (is.null(style)) {
     style <- marquee::modify_style(
@@ -721,56 +715,49 @@ estimate_label_heights_npc <- function(
     )
   }
 
-  # VIGTIGT: Brug ALTID en off-screen device for measurements
-  # Dette forhindrer synlig rendering når scripts kører med aktiv device
-  #
-  # FIX: Brug faktisk device størrelse til målinger for korrekt scaling
-  # Hvis device_width/height er angivet, brug dem. Ellers fallback til 16:9 format (8×4.5")
-  #
-  # Gem reference til nuværende device
-  current_dev <- grDevices::dev.cur()
+  # Hvis device_ready = TRUE, brug allerede-aktiv device (caller har åbnet den)
+  # Ellers åbn en off-screen Cairo PDF device for measurements
+  if (!device_ready) {
+    # Gem reference til nuværende device
+    current_dev <- grDevices::dev.cur()
 
-  # Bestem device størrelse til målinger
-  # VIGTIGT: Fallback til 8×4.5 inches burde IKKE ske i production (viewport guard sikrer device)
-  using_fallback <- is.null(device_width) || is.null(device_height)
+    # Bestem device størrelse til målinger
+    using_fallback <- is.null(device_width) || is.null(device_height)
 
-  if (using_fallback && getOption("spc.debug.label_placement", FALSE)) {
-    message(
-      "[LABEL_HEIGHT_ESTIMATE] WARNING: No actual device dimensions provided - ",
-      "using fallback 8×4.5\" (this should not happen in production with viewport guard)"
+    if (using_fallback && getOption("spc.debug.label_placement", FALSE)) {
+      message(
+        "[LABEL_HEIGHT_ESTIMATE] WARNING: No actual device dimensions provided - ",
+        "using fallback 8x4.5\" (this should not happen in production with viewport guard)"
+      )
+    }
+
+    meas_width <- if (!is.null(device_width)) device_width else 8
+    meas_height <- if (!is.null(device_height)) device_height else 4.5
+
+    # Open ONE off-screen Cairo PDF device for all measurements
+    temp_pdf <- tempfile(fileext = ".pdf")
+    grDevices::cairo_pdf(filename = temp_pdf, width = meas_width, height = meas_height)
+    temp_dev <- grDevices::dev.cur()
+
+    # CRITICAL: on.exit for device cleanup + file removal + device restore
+    on.exit(
+      {
+        # Luk temp device hvis den stadig er aktiv
+        if (grDevices::dev.cur() == temp_dev) {
+          tryCatch(grDevices::dev.off(), error = function(e) NULL)
+        }
+        # Restore original device
+        if (current_dev > 1 && current_dev != temp_dev &&
+          current_dev %in% grDevices::dev.list()) {
+          tryCatch(grDevices::dev.set(current_dev), error = function(e) NULL)
+        }
+        # Slet temp fil
+        unlink(temp_pdf, force = TRUE)
+      },
+      add = TRUE,
+      after = FALSE
     )
   }
-
-  meas_width <- if (!is.null(device_width)) device_width else 8
-  meas_height <- if (!is.null(device_height)) device_height else 4.5
-
-  # Open ONE off-screen Cairo PDF device for all measurements
-  # NOTE: Cairo PDF for konsistens med measure_panel_height_from_gtable() og
-  # add_right_labels_marquee() - alle målinger bruger samme backend for at undgå
-  # metriske forskelle mellem rendering-kontekster (SVG vs PDF).
-  temp_pdf <- tempfile(fileext = ".pdf")
-  grDevices::cairo_pdf(filename = temp_pdf, width = meas_width, height = meas_height)
-  temp_dev <- grDevices::dev.cur()
-
-  # CRITICAL: on.exit for device cleanup + file removal + device restore
-  # Håndterer både normal exit og fejl i purrr::map
-  on.exit(
-    {
-      # Luk temp device hvis den stadig er aktiv
-      if (grDevices::dev.cur() == temp_dev) {
-        tryCatch(grDevices::dev.off(), error = function(e) NULL)
-      }
-      # Restore original device
-      if (current_dev > 1 && current_dev != temp_dev &&
-        current_dev %in% grDevices::dev.list()) {
-        tryCatch(grDevices::dev.set(current_dev), error = function(e) NULL)
-      }
-      # Slet temp fil
-      unlink(temp_pdf, force = TRUE)
-    },
-    add = TRUE,
-    after = FALSE
-  )
 
   # Measure all texts with shared device
   results <- purrr::map(texts, ~ {
@@ -1055,25 +1042,9 @@ place_two_labels_npc <- function(
   cfg <- default_cfg
   config_available <- FALSE
 
-  # Source config hvis tilgængelig (standalone compatibility)
-  if (exists("get_label_placement_config", mode = "function")) {
-    config_available <- TRUE
-    loaded_cfg <- get_label_placement_config()
-  } else if (exists("get_label_placement_param", mode = "function")) {
-    config_available <- TRUE
-    loaded_cfg <- list(
-      relative_gap_line = get_label_placement_param("relative_gap_line"),
-      relative_gap_labels = get_label_placement_param("relative_gap_labels"),
-      pad_top = get_label_placement_param("pad_top"),
-      pad_bot = get_label_placement_param("pad_bot"),
-      tight_lines_threshold_factor = get_label_placement_param("tight_lines_threshold_factor"),
-      coincident_threshold_factor = get_label_placement_param("coincident_threshold_factor"),
-      gap_reduction_factors = get_label_placement_param("gap_reduction_factors"),
-      shelf_center_threshold = get_label_placement_param("shelf_center_threshold")
-    )
-  } else {
-    loaded_cfg <- NULL
-  }
+  # Hent config (altid tilgængelig i pakken)
+  config_available <- TRUE
+  loaded_cfg <- get_label_placement_config()
 
   if (!is.null(loaded_cfg)) {
     for (name in names(default_cfg)) {

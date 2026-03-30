@@ -62,21 +62,7 @@ place_note_labels <- function(comment_data,
 
   # Hent config
   if (is.null(config)) {
-    if (exists("get_label_placement_config", mode = "function")) {
-      config <- get_label_placement_config()
-    } else {
-      config <- list(
-        note_label_offset_factor = 0.15,
-        note_line_buffer_factor = 0.06,
-        note_max_label_width = 25,
-        note_line_penalty_weight = 100,
-        note_label_overlap_weight = 80,
-        note_distance_weight = 1,
-        note_bounds_penalty = 1000,
-        note_char_width_factor = 0.008,
-        note_line_height_factor = 0.04
-      )
-    }
+    config <- get_label_placement_config()
   }
 
   # Normaliserings-funktioner: data coords -> [0,1]

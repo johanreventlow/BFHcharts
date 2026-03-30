@@ -33,11 +33,8 @@
 bfh_interpret_spc_signals <- function(spc_stats) {
   interpretations <- character(0)
 
-  # Helper: sikker mod NULL, NA og length-0
-  ok <- function(x) !is.null(x) && length(x) > 0 && !is.na(x)
-
 # Serielængde-signal (runs)
-  if (ok(spc_stats$runs_actual) && ok(spc_stats$runs_expected)) {
+  if (is_valid_scalar(spc_stats$runs_actual) && is_valid_scalar(spc_stats$runs_expected)) {
     if (spc_stats$runs_actual > spc_stats$runs_expected) {
       interpretations <- c(
         interpretations,
@@ -63,7 +60,7 @@ bfh_interpret_spc_signals <- function(spc_stats) {
   }
 
   # Krydsnings-signal (crossings)
-  if (ok(spc_stats$crossings_actual) && ok(spc_stats$crossings_expected)) {
+  if (is_valid_scalar(spc_stats$crossings_actual) && is_valid_scalar(spc_stats$crossings_expected)) {
     if (spc_stats$crossings_actual < spc_stats$crossings_expected) {
       interpretations <- c(
         interpretations,
@@ -89,7 +86,7 @@ bfh_interpret_spc_signals <- function(spc_stats) {
   }
 
   # Outliers
-  if (ok(spc_stats$outliers_actual) && spc_stats$outliers_actual > 0) {
+  if (is_valid_scalar(spc_stats$outliers_actual) && spc_stats$outliers_actual > 0) {
     interpretations <- c(
       interpretations,
       sprintf(
@@ -156,20 +153,18 @@ if (!inherits(x, "bfh_qic_result")) {
   signal_interpretations <- bfh_interpret_spc_signals(spc_stats)
 
   # Detect om der er signaler (sikker mod NULL og NA)
-  safe_val <- function(x) !is.null(x) && length(x) > 0 && !is.na(x)
-
   has_signals <- FALSE
-  if (safe_val(spc_stats$runs_actual) && safe_val(spc_stats$runs_expected)) {
+  if (is_valid_scalar(spc_stats$runs_actual) && is_valid_scalar(spc_stats$runs_expected)) {
     if (spc_stats$runs_actual > spc_stats$runs_expected) {
       has_signals <- TRUE
     }
   }
-  if (safe_val(spc_stats$crossings_actual) && safe_val(spc_stats$crossings_expected)) {
+  if (is_valid_scalar(spc_stats$crossings_actual) && is_valid_scalar(spc_stats$crossings_expected)) {
     if (spc_stats$crossings_actual < spc_stats$crossings_expected) {
       has_signals <- TRUE
     }
   }
-  if (safe_val(spc_stats$outliers_actual) && spc_stats$outliers_actual > 0) {
+  if (is_valid_scalar(spc_stats$outliers_actual) && spc_stats$outliers_actual > 0) {
     has_signals <- TRUE
   }
 
@@ -376,17 +371,15 @@ build_fallback_analysis <- function(context,
   n_points <- context$n_points
 
   # --- Detect signaler (sikker mod NULL og NA) ---
-  safe_check <- function(x) !is.null(x) && length(x) > 0 && !is.na(x)
-
-  has_runs <- safe_check(spc_stats$runs_actual) &&
-    safe_check(spc_stats$runs_expected) &&
+  has_runs <- is_valid_scalar(spc_stats$runs_actual) &&
+    is_valid_scalar(spc_stats$runs_expected) &&
     spc_stats$runs_actual > spc_stats$runs_expected
 
-  has_crossings <- safe_check(spc_stats$crossings_actual) &&
-    safe_check(spc_stats$crossings_expected) &&
+  has_crossings <- is_valid_scalar(spc_stats$crossings_actual) &&
+    is_valid_scalar(spc_stats$crossings_expected) &&
     spc_stats$crossings_actual < spc_stats$crossings_expected
 
-  has_outliers <- safe_check(spc_stats$outliers_actual) &&
+  has_outliers <- is_valid_scalar(spc_stats$outliers_actual) &&
     spc_stats$outliers_actual > 0
 
   is_stable <- !has_runs && !has_crossings && !has_outliers

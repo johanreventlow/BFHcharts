@@ -61,7 +61,7 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   # Use split + per-part aggregation for correct Anhøj statistics
   if ("part" %in% names(qic_data)) {
     parts <- split(qic_data[, available_cols, drop = FALSE], qic_data$part)
-    raw_summary <- do.call(rbind, lapply(parts, function(x) {
+    raw_summary <- dplyr::bind_rows(lapply(parts, function(x) {
       row <- x[1, , drop = FALSE]
       # Genberegn Anh\u00f8j-stats per part (qicharts2 beregner globalt)
       safe_max <- function(v) {
@@ -86,7 +86,6 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
         row$runs.signal <- any(x$runs.signal, na.rm = TRUE)
       row
     }))
-    row.names(raw_summary) <- NULL
   } else {
     # No parts - take first row only
     raw_summary <- qic_data[1, available_cols, drop = FALSE]

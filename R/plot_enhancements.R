@@ -35,6 +35,13 @@ add_plot_enhancements <- function(plot,
                                   comment_size = 6,
                                   suppress_targetline = FALSE,
                                   line_positions = NULL) {
+  # Cache BFHtheme farver (undgår gentagne opslag)
+  cols <- list(
+    blue = BFHtheme::bfh_cols("hospital_blue"),
+    grey = BFHtheme::bfh_cols("hospital_grey"),
+    dark_grey = BFHtheme::bfh_cols("hospital_dark_grey")
+  )
+
   # Calculate extended x position (20% beyond last data point)
   last_x <- max(qic_data$x, na.rm = TRUE)
   first_x <- min(qic_data$x, na.rm = TRUE)
@@ -108,7 +115,7 @@ add_plot_enhancements <- function(plot,
         ggplot2::geom_line(
           data = cl_ext,
           ggplot2::aes(x = x, y = y),
-          color = BFHtheme::bfh_cols("hospital_blue"),
+          color = cols$blue,
           linewidth = cl_linewidth,
           linetype = cl_ext$linetype[1],
           inherit.aes = FALSE
@@ -122,7 +129,7 @@ add_plot_enhancements <- function(plot,
         ggplot2::geom_line(
           data = target_ext,
           ggplot2::aes(x = x, y = y),
-          color = BFHtheme::bfh_cols("hospital_dark_grey"),
+          color = cols$dark_grey,
           linewidth = target_linewidth,
           linetype = "42",
           inherit.aes = FALSE
@@ -220,7 +227,7 @@ add_plot_enhancements <- function(plot,
             ggplot2::geom_segment(
               data = straight,
               ggplot2::aes(x = arrow_x, y = arrow_y, xend = end_x, yend = end_y),
-              colour = BFHtheme::bfh_cols("hospital_grey"),
+              colour = cols$grey,
               linewidth = 0.3,
               arrow = grid::arrow(length = grid::unit(1.5, "mm"), type = "closed"),
               inherit.aes = FALSE
@@ -234,7 +241,7 @@ add_plot_enhancements <- function(plot,
             ggplot2::geom_curve(
               data = curved[cr, ],
               ggplot2::aes(x = arrow_x, y = arrow_y, xend = end_x, yend = end_y),
-              colour = BFHtheme::bfh_cols("hospital_grey"),
+              colour = cols$grey,
               linewidth = 0.3,
               curvature = curved$curvature[cr],
               arrow = grid::arrow(length = grid::unit(1.5, "mm"), type = "closed"),
@@ -249,7 +256,7 @@ add_plot_enhancements <- function(plot,
           data = label_data,
           ggplot2::aes(x = label_x, y = label_y, label = label_text),
           size = comment_size,
-          colour = BFHtheme::bfh_cols("hospital_dark_grey"),
+          colour = cols$dark_grey,
           lineheight = 0.9,
           inherit.aes = FALSE
         )
