@@ -156,7 +156,7 @@ bfh_export_pdf <- function(x,
 
   # Security: Prevent shell metacharacter injection
   shell_metachars <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
-  if (any(sapply(shell_metachars, function(char) grepl(char, output, fixed = TRUE)))) {
+  if (any(vapply(shell_metachars, function(char) grepl(char, output, fixed = TRUE), logical(1)))) {
     stop(
       "output path contains potentially unsafe characters\n",
       "  Path: ", basename(output),
@@ -258,7 +258,7 @@ bfh_export_pdf <- function(x,
     }
 
     # Security: Prevent shell metacharacters in template path
-    if (any(sapply(shell_metachars, function(char) grepl(char, template_path, fixed = TRUE)))) {
+    if (any(vapply(shell_metachars, function(char) grepl(char, template_path, fixed = TRUE), logical(1)))) {
       stop(
         "template_path contains potentially unsafe characters",
         call. = FALSE
@@ -338,7 +338,7 @@ bfh_export_pdf <- function(x,
   # Prevents TOCTOU attacks where attacker replaces our temp dir
   if (.Platform$OS.type == "unix") {
     dir_info <- file.info(temp_dir)
-    current_uid <- as.integer(Sys.getenv("UID"))
+    current_uid <- suppressWarnings(as.integer(Sys.getenv("UID")))
     # Only verify if UID is available and valid (not NA or 0)
     if (length(current_uid) > 0 && !is.na(current_uid) && current_uid > 0) {
       if (dir_info$uid != current_uid) {
@@ -774,7 +774,7 @@ bfh_compile_typst <- function(typst_file, output) {
   # Security: Validate paths before passing to system2()
   shell_metachars <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
 
-  if (any(sapply(shell_metachars, function(char) grepl(char, typst_file, fixed = TRUE)))) {
+  if (any(vapply(shell_metachars, function(char) grepl(char, typst_file, fixed = TRUE), logical(1)))) {
     stop(
       "typst_file path contains potentially unsafe characters\n",
       "  Path: ", basename(typst_file),
@@ -782,7 +782,7 @@ bfh_compile_typst <- function(typst_file, output) {
     )
   }
 
-  if (any(sapply(shell_metachars, function(char) grepl(char, output, fixed = TRUE)))) {
+  if (any(vapply(shell_metachars, function(char) grepl(char, output, fixed = TRUE), logical(1)))) {
     stop(
       "output path contains potentially unsafe characters\n",
       "  Path: ", basename(output),
@@ -1239,19 +1239,17 @@ markdown_to_typst <- function(text) {
 
   result <- text
 
-  # Escape Typst special characters in content (but not our formatting markers)
-  # Escape < and > (used for labels in Typst, e.g. <label>)
+  # Escape Typst special characters i bruger-content FØR markdown-konvertering.
+  # Rækkefølge er vigtig: brackets escapes først, derefter konverterer vi
+  # markdown til Typst-markup (som indsætter sine egne uescapede brackets).
   result <- gsub("<", "\\\\<", result)
   result <- gsub(">", "\\\\>", result)
-
-  # Escape @ (used for references/citations in Typst)
   result <- gsub("@", "\\\\@", result)
-
-  # Escape hash (#) that's not part of our conversion
-  # Don't escape [ ] as we need them for content blocks
+  result <- gsub("\\[", "\\\\[", result)  # Bracket injection prevention
+  result <- gsub("\\]", "\\\\]", result)
   result <- gsub("(?<!\\*)#", "\\\\#", result, perl = TRUE)
 
-  # Convert **bold** to #strong[bold] (must do before single *)
+  # Convert **bold** to #strong[bold] (EFTER escaping - vores brackets er uescaped)
   result <- gsub("\\*\\*([^*]+)\\*\\*", "#strong[\\1]", result)
 
   # Convert *italic* to #emph[italic] (single asterisks)

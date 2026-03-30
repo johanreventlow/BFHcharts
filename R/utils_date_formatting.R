@@ -65,9 +65,20 @@ detect_date_interval <- function(dates, debug = FALSE) {
   }
 
   median_interval <- median(intervals, na.rm = TRUE)
-  interval_variance <- var(intervals, na.rm = TRUE)
-  consistency <- 1 - (sqrt(interval_variance) / median_interval) # Høj værdi = konsistent
-  consistency <- max(0, min(1, consistency)) # Klamp til 0-1
+
+  # Guard: identiske datoer (median=0) → insufficient data
+  if (median_interval == 0) {
+    return(insufficient_response(length(sorted_dates)))
+  }
+
+  # Guard: kun ét interval (2 datapunkter) → var() giver NA, antag perfekt konsistens
+  if (length(intervals) < 2) {
+    consistency <- 1
+  } else {
+    interval_variance <- var(intervals, na.rm = TRUE)
+    consistency <- 1 - (sqrt(interval_variance) / median_interval)
+    consistency <- max(0, min(1, consistency))
+  }
 
   timespan_days <- as.numeric(max(sorted_dates) - min(sorted_dates))
 

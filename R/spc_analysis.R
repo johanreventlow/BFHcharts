@@ -524,11 +524,13 @@ format_target_value <- function(x, y_axis_unit = NULL) {
   if (is.null(x) || is.na(x)) return("")
 
   # Konverter proportion til procent hvis relevant
-  if (!is.null(y_axis_unit) && y_axis_unit == "percent" && x <= 1 && x > 0) {
-    return(paste0(round(x * 100), "%"))
-  }
-  if (!is.null(y_axis_unit) && y_axis_unit == "percent" && x > 1) {
-    return(paste0(round(x), "%"))
+  # x i [0, 1] → proportion, multiplicer med 100. x > 1 → allerede procent.
+  if (!is.null(y_axis_unit) && y_axis_unit == "percent") {
+    if (x >= 0 && x <= 1) {
+      return(paste0(round(x * 100), "%"))
+    } else if (x > 1) {
+      return(paste0(round(x), "%"))
+    }
   }
 
   if (x == round(x)) {
@@ -591,11 +593,12 @@ load_spc_texts <- function() {
 }
 
 
-# Vælg tilfældig variant og erstat {placeholders} med værdier
+# Vælg variant og erstat {placeholders} med værdier.
+# Deterministisk: vælger altid første variant for reproducerbare rapporter.
 pick_text <- function(variants, data = list()) {
   if (length(variants) == 0) return("")
 
-  text <- variants[[sample.int(length(variants), 1)]]
+  text <- variants[[1]]
 
   for (key in names(data)) {
     text <- gsub(

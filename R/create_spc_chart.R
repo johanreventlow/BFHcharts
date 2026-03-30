@@ -760,15 +760,20 @@ bfh_qic <- function(data,
   viewport <- viewport_dims(base_size = base_size)
 
   # Generate plot using bfh_spc_plot()
-  # Suppress ggplot2 warning about numeric values passed to datetime scale
-  # This occurs when target_value is used with datetime x-axis and is harmless
-  plot <- suppressWarnings(
+  # Kun undertryk den specifikke ggplot2 datetime-scale warning (harmløs).
+  # Andre warnings propageres til brugeren.
+  plot <- withCallingHandlers(
     bfh_spc_plot(
       qic_data = qic_data,
       plot_config = plot_config,
       viewport = viewport,
       plot_margin = plot_margin
-    )
+    ),
+    warning = function(w) {
+      if (grepl("numeric|datetime|scale_[xy]_date", conditionMessage(w), ignore.case = TRUE)) {
+        invokeRestart("muffleWarning")
+      }
+    }
   )
 
   # Use converted dimensions for viewport

@@ -95,6 +95,26 @@ bfh_export_png <- function(x,
     )
   }
 
+  # Security: Prevent path traversal attacks (matcher bfh_export_pdf)
+  if (grepl("..", output, fixed = TRUE)) {
+    stop(
+      "output path cannot contain '..' (path traversal attempt detected)\n",
+      "  Provided path: ", basename(output),
+      call. = FALSE
+    )
+  }
+
+  # Security: Reject shell metacharacters i filnavn
+  shell_metachars <- c(";", "|", "&", "$", "`", "(", ")", "{", "}")
+  if (any(vapply(shell_metachars, function(ch) grepl(ch, output, fixed = TRUE), logical(1)))) {
+    stop("output path contains disallowed characters", call. = FALSE)
+  }
+
+  # Validate file extension
+  if (!grepl("\\.png$", output, ignore.case = TRUE)) {
+    warning("output file does not have .png extension: ", basename(output), call. = FALSE)
+  }
+
   # Validate dimensions
   if (!is.numeric(width_mm) || length(width_mm) != 1 || width_mm <= 0) {
     stop("width_mm must be a positive number", call. = FALSE)

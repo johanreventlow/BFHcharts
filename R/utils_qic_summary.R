@@ -130,12 +130,12 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   if ("lcl" %in% names(raw_summary) && "ucl" %in% names(raw_summary)) {
     # Check if control limits are constant by comparing unique values
     # within each part (phase)
-    lcl_constant <- all(sapply(split(qic_data$lcl, qic_data$part), function(x) {
+    lcl_constant <- all(vapply(split(qic_data$lcl, qic_data$part), function(x) {
       length(unique(round(x, decimal_places + 2))) <= 1
-    }))
-    ucl_constant <- all(sapply(split(qic_data$ucl, qic_data$part), function(x) {
+    }, logical(1)))
+    ucl_constant <- all(vapply(split(qic_data$ucl, qic_data$part), function(x) {
       length(unique(round(x, decimal_places + 2))) <= 1
-    }))
+    }, logical(1)))
 
     if (lcl_constant && ucl_constant) {
       formatted$nedre_kontrolgrænse <- round(raw_summary$lcl, decimal_places)
