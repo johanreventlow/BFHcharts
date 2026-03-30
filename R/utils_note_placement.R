@@ -32,6 +32,7 @@
 #' @param y_range numeric(2) plot y-range
 #' @param x_range numeric(2) plot x-range
 #' @param data_points data.frame med x, y for alle datapunkter
+#' @param text_size numeric geom_text size i mm (til viewport-responsiv bbox skalering)
 #' @param config list med placement parametre (fra get_label_placement_config())
 #' @return data.frame med label_x, label_y, point_x, point_y, label_text, draw_arrow
 #'
@@ -42,6 +43,7 @@ place_note_labels <- function(comment_data,
                               y_range,
                               x_range,
                               data_points = NULL,
+                              text_size = NULL,
                               config = NULL) {
   empty_result <- data.frame(
     label_x = numeric(0),
@@ -52,6 +54,7 @@ place_note_labels <- function(comment_data,
     point_y = numeric(0),
     label_text = character(0),
     draw_arrow = logical(0),
+    curvature = numeric(0),
     stringsAsFactors = FALSE
   )
 
@@ -112,8 +115,19 @@ place_note_labels <- function(comment_data,
     }
   }
 
-  offset <- config$note_label_offset_factor
-  buffer <- config$note_line_buffer_factor
+  # Skalér bbox-faktorer baseret på text_size relativt til reference (base_size=14)
+  # Større tekst (lille viewport) → større bbox → mere plads mellem labels
+  reference_text_size <- (14 * 0.8) / 2.845276  # ≈ 3.94 mm
+  size_scale <- if (!is.null(text_size) && text_size > 0) {
+    text_size / reference_text_size
+  } else {
+    1
+  }
+
+  offset <- config$note_label_offset_factor * size_scale
+  buffer <- config$note_line_buffer_factor * size_scale
+  char_width_scaled <- config$note_char_width_factor * size_scale
+  line_height_scaled <- config$note_line_height_factor * size_scale
 
   placed_labels <- list()
   results <- vector("list", nrow(comment_data))
@@ -128,8 +142,8 @@ place_note_labels <- function(comment_data,
     wrapped_text <- stringr::str_wrap(row$comment, width = config$note_max_label_width)
     bbox <- estimate_label_bbox_norm(
       wrapped_text,
-      config$note_char_width_factor,
-      config$note_line_height_factor
+      char_width_scaled,
+      line_height_scaled
     )
 
     candidates <- generate_candidates_norm(px, py, offset)
@@ -173,6 +187,22 @@ place_note_labels <- function(comment_data,
     arrow_x_data <- denorm_x(arrow_start$x)
     arrow_y_data <- denorm_y(arrow_start$y)
 
+    # Buet pil hvis label er forskudt horisontalt (ikke direkte over/under)
+    dx_norm <- best_candidate$x - px
+    dy_norm <- best_candidate$y - py
+    is_diagonal <- abs(dx_norm) > 0.01
+    if (is_diagonal) {
+      # Buen skal bue væk fra datapunktet:
+      # - Label over+højre: bue nedad (positiv curvature)
+      # - Label over+venstre: bue nedad (negativ curvature)
+      # - Label under+højre: bue opad (negativ curvature)
+      # - Label under+venstre: bue opad (positiv curvature)
+      # geom_curve: positiv curvature buer til højre set fra start→end
+      curvature <- if ((dx_norm > 0) == (dy_norm > 0)) -0.25 else 0.25
+    } else {
+      curvature <- 0
+    }
+
     placed_labels[[i]] <- list(x = best_candidate$x, y = best_candidate$y, bbox = bbox)
 
     results[[i]] <- data.frame(
@@ -184,6 +214,7 @@ place_note_labels <- function(comment_data,
       point_y = py_data,
       label_text = wrapped_text,
       draw_arrow = draw_arrow,
+      curvature = curvature,
       stringsAsFactors = FALSE
     )
   }
@@ -198,19 +229,20 @@ place_note_labels <- function(comment_data,
 #' @noRd
 generate_candidates_norm <- function(px, py, offset) {
   x_off <- offset * 0.5
-  off2 <- offset * 1.6  # Større offset for ekstra kandidater
+  off2 <- offset * 1.6
 
+  # Alle kandidater har vertikal komponent - undgår at pilen krydser teksten
   list(
-    # Primære (1x offset)
     list(x = px, y = py + offset),                  # 1. Over
     list(x = px, y = py - offset),                  # 2. Under
     list(x = px + x_off, y = py + offset),          # 3. Over-højre
     list(x = px + x_off, y = py - offset),          # 4. Under-højre
     list(x = px - x_off, y = py + offset),          # 5. Over-venstre
     list(x = px - x_off, y = py - offset),          # 6. Under-venstre
-    list(x = px + x_off * 1.5, y = py),             # 7. Højre
-    list(x = px - x_off * 1.5, y = py),             # 8. Venstre
-    # Sekundære (1.6x offset - længere væk)
+    list(x = px + x_off, y = py + offset * 0.7),    # 7. Skråt højre-op
+    list(x = px - x_off, y = py - offset * 0.7),    # 8. Skråt venstre-ned
+    list(x = px + x_off * 1.3, y = py + offset * 0.7),  # 7b. Skråt højre-op (længere)
+    list(x = px - x_off * 1.3, y = py - offset * 0.7),  # 8b. Skråt venstre-ned (længere)
     list(x = px, y = py + off2),                    # 9. Langt over
     list(x = px, y = py - off2),                    # 10. Langt under
     list(x = px + x_off, y = py + off2),            # 11. Langt over-højre

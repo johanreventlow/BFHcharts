@@ -166,7 +166,8 @@ add_plot_enhancements <- function(plot,
       line_positions = if (!is.null(line_positions)) line_positions else numeric(0),
       y_range = y_range,
       x_range = x_range_num,
-      data_points = data_points_num
+      data_points = data_points_num,
+      text_size = comment_size
     )
 
     if (nrow(label_data) > 0) {
@@ -209,18 +210,34 @@ add_plot_enhancements <- function(plot,
 
         arrow_data$end_x <- restore_x(arrow_data$end_x)
 
-        plot <- plot +
-          ggplot2::geom_segment(
-            data = arrow_data,
-            ggplot2::aes(
-              x = arrow_x, y = arrow_y,
-              xend = end_x, yend = end_y
-            ),
-            colour = BFHtheme::bfh_cols("hospital_grey"),
-            linewidth = 0.3,
-            arrow = grid::arrow(length = grid::unit(1.5, "mm"), type = "closed"),
-            inherit.aes = FALSE
-          )
+        # Lige pile (direkte over/under)
+        straight <- arrow_data[arrow_data$curvature == 0, ]
+        if (nrow(straight) > 0) {
+          plot <- plot +
+            ggplot2::geom_segment(
+              data = straight,
+              ggplot2::aes(x = arrow_x, y = arrow_y, xend = end_x, yend = end_y),
+              colour = BFHtheme::bfh_cols("hospital_grey"),
+              linewidth = 0.3,
+              arrow = grid::arrow(length = grid::unit(1.5, "mm"), type = "closed"),
+              inherit.aes = FALSE
+            )
+        }
+
+        # Buede pile (diagonale labels) - geom_curve kræver én curvature per lag
+        curved <- arrow_data[arrow_data$curvature != 0, ]
+        for (cr in seq_len(nrow(curved))) {
+          plot <- plot +
+            ggplot2::geom_curve(
+              data = curved[cr, ],
+              ggplot2::aes(x = arrow_x, y = arrow_y, xend = end_x, yend = end_y),
+              colour = BFHtheme::bfh_cols("hospital_grey"),
+              linewidth = 0.3,
+              curvature = curved$curvature[cr],
+              arrow = grid::arrow(length = grid::unit(1.5, "mm"), type = "closed"),
+              inherit.aes = FALSE
+            )
+        }
       }
 
       # Tegn labels
