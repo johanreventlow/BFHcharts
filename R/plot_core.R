@@ -154,21 +154,21 @@ bfh_spc_plot <- function(qic_data,
     !is.null(qic_data$lcl) && !all(is.na(qic_data$lcl))) {
     plot_layers <- c(plot_layers, list(
       ggplot2::geom_ribbon(
-        ggplot2::aes(ymin = lcl, ymax = ucl),
+        ggplot2::aes(ymin = lcl, ymax = ucl, group = part),
         fill = cols$very_light_blue,
         alpha = 0.5
       ),
       # TODO: Genaktiver geom_textline når geomtextpath cold-start (~3s) er løst
       # Se BFHcharts #88
       ggplot2::geom_line(
-        ggplot2::aes(y = ucl, x = x),
+        ggplot2::aes(y = ucl, x = x, group = part),
         inherit.aes = FALSE,
         linewidth = ucl_linewidth,
         colour = cols$light_blue,
         na.rm = TRUE
       ),
       ggplot2::geom_line(
-        ggplot2::aes(y = lcl, x = x),
+        ggplot2::aes(y = lcl, x = x, group = part),
         inherit.aes = FALSE,
         linewidth = ucl_linewidth,
         colour = cols$light_blue,
