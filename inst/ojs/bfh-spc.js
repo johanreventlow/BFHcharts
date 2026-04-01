@@ -8,7 +8,12 @@ import { createYAxisFormatter } from "./bfh-spc-scales.js";
  * Opret et BFH-styled SPC chart med Observable Plot
  *
  * @param {object} spcData - Data fra bfh_ojs_define() (via ojs_define)
- * @param {object} options - Valgfrie indstillinger: width, height
+ * @param {object} options - Valgfrie indstillinger:
+ *   width: fast bredde i px, eller "auto" for container-bredde (default "auto")
+ *   height: fast højde i px, eller "auto" for beregnet fra aspect ratio (default "auto")
+ *   aspectRatio: bredde/højde ratio til auto-height (default 2, dvs. 2:1)
+ *   maxWidth: max bredde i px for responsiv (default 960)
+ *   minWidth: min bredde i px for responsiv (default 300)
  * @returns {HTMLElement} Container med Observable Plot SVG + footer
  */
 export function bfhSpcChart(spcData, options = {}) {
@@ -23,14 +28,22 @@ export function bfhSpcChart(spcData, options = {}) {
     return div;
   }
 
-  const width = options.width || 800;
-  const height = options.height || 400;
+  // Responsiv sizing
+  const aspectRatio = options.aspectRatio || 2;
+  const maxWidth = options.maxWidth || 960;
+  const minWidth = options.minWidth || 300;
+
+  const width = resolveWidth(options.width, minWidth, maxWidth);
+  const height = resolveHeight(options.height, width, aspectRatio);
 
   // Tjek om data har kontrolgrænser
   const hasLimits = points.some(d => d.ucl !== null && d.lcl !== null);
 
   // Beregn extended x-position (20% ud over sidste datapunkt)
   const extended = computeExtendedLines(points, config, hasLimits, colors);
+
+  // Y-akse formatter baseret på enhedstype (deklareret tidligt til brug i tooltips)
+  const yFormatter = createYAxisFormatter(config.y_axis_unit, points);
 
   // Byg marks i samme rækkefølge som R/plot_core.R linje 146-213
   const marks = [];
@@ -105,6 +118,15 @@ export function bfhSpcChart(spcData, options = {}) {
       stroke: "white",
       strokeWidth: 0.5
     })
+  );
+
+  // 6b. Tooltip ved hover over datapunkter
+  marks.push(
+    Plot.tip(points, Plot.pointer({
+      x: "x",
+      y: "y",
+      title: d => formatTooltip(d, config, yFormatter, hasLimits)
+    }))
   );
 
   // 7. Centrallinje per fase med Anhøj signal visning
@@ -194,9 +216,6 @@ export function bfhSpcChart(spcData, options = {}) {
       })
     );
   }
-
-  // Y-akse formatter baseret på enhedstype
-  const yFormatter = createYAxisFormatter(config.y_axis_unit, points);
 
   // Beregn x-domæne med extension
   const xExtent = [
@@ -337,4 +356,81 @@ function buildRightLabels(points, config, colors, extended) {
   }
 
   return labels;
+}
+
+
+// ============================================================================
+// TOOLTIPS - Dansk formateret tooltip ved hover
+// ============================================================================
+
+/**
+ * Formatér tooltip-tekst for et datapunkt
+ */
+function formatTooltip(d, config, yFormatter, hasLimits) {
+  const lines = [];
+
+  // Dato (dansk format: DD-MM-YYYY)
+  if (d.x instanceof Date) {
+    const dd = String(d.x.getUTCDate()).padStart(2, "0");
+    const mm = String(d.x.getUTCMonth() + 1).padStart(2, "0");
+    const yyyy = d.x.getUTCFullYear();
+    lines.push(`Dato: ${dd}-${mm}-${yyyy}`);
+  }
+
+  // Værdi
+  lines.push(`Værdi: ${yFormatter(d.y)}`);
+
+  // Centerlinje
+  if (d.cl !== null) {
+    lines.push(`CL: ${yFormatter(d.cl)}`);
+  }
+
+  // Kontrolgrænser
+  if (hasLimits && d.ucl !== null && d.lcl !== null) {
+    lines.push(`UCL: ${yFormatter(d.ucl)}`);
+    lines.push(`LCL: ${yFormatter(d.lcl)}`);
+  }
+
+  // Signalstatus
+  if (d.sigma_signal) {
+    lines.push("⚠ Outlier (uden for kontrolgrænser)");
+  }
+  if (d.anhoej_signal) {
+    lines.push("⚠ Anhøj-signal");
+  }
+
+  // Note
+  if (d.notes) {
+    lines.push(`Note: ${d.notes}`);
+  }
+
+  return lines.join("\n");
+}
+
+
+// ============================================================================
+// RESPONSIV SIZING - Auto-tilpas til container
+// ============================================================================
+
+/**
+ * Beregn bredde: fast værdi, eller "auto" for container-tilpasning
+ */
+function resolveWidth(widthOption, minWidth, maxWidth) {
+  if (typeof widthOption === "number" && widthOption > 0) {
+    return widthOption;
+  }
+  // "auto" eller undefined: brug maxWidth som default
+  // Observable Plot håndterer resize automatisk i Quarto
+  return Math.max(minWidth, Math.min(maxWidth, maxWidth));
+}
+
+/**
+ * Beregn højde fra bredde og aspect ratio
+ */
+function resolveHeight(heightOption, width, aspectRatio) {
+  if (typeof heightOption === "number" && heightOption > 0) {
+    return heightOption;
+  }
+  // Auto: beregn fra bredde og aspect ratio
+  return Math.round(width / aspectRatio);
 }
