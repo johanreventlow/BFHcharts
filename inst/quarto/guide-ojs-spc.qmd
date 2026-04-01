@@ -1,0 +1,498 @@
+---
+title: "Interaktive SPC-diagrammer med BFHcharts og Observable JS"
+subtitle: "Vejledning til brug i Quarto HTML-dokumenter"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    code-fold: false
+    self-contained: true
+---
+
+## Introduktion
+
+BFHcharts kan producere interaktive SPC-diagrammer (Statistical Process Control)
+til brug i Quarto HTML-dokumenter. Diagrammerne bygger pa Observable Plot og
+matcher visuelt de statiske ggplot2-diagrammer fra pakken, men tilfojer
+interaktivitet som tooltips ved hover.
+
+Der er **to** maader at bruge systemet paa:
+
+1. **R + OJS hybrid** (anbefalet): R beregner statistikken via `bfh_qic()`,
+   og Observable JS renderer diagrammet interaktivt.
+2. **Standalone JS**: Al beregning sker i JavaScript via `computeSpc()` ---
+   ingen R-backend paakraevet.
+
+## Opsaetning
+
+### Trin 1: Installer BFHcharts
+
+```r
+# Fra GitHub (kraever devtools)
+devtools::install_github("johanreventlow/BFHcharts")
+```
+
+### Trin 2: Kopier OJS-filer til dit projekt
+
+I starten af dit Quarto-dokument, kopier de noedvendige JavaScript-filer
+fra pakken til projektmappen:
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library(BFHcharts)
+
+# Kopier alle OJS-moduler til projektmappen
+ojs_files <- c("bfh-spc.js", "bfh-spc-utils.js",
+               "bfh-spc-scales.js", "bfh-spc-stats.js")
+for (f in ojs_files) {
+  file.copy(bfh_ojs_path(f), f, overwrite = TRUE)
+}
+```
+
+### Trin 3: Importer i OJS
+
+```{ojs}
+//| label: import-module
+bfhSpc = await import("./bfh-spc.js")
+```
+
+Nu er `bfhSpc.bfhSpcChart()` og `bfhSpc.computeSpc()` tilgaengelige i alle
+efterfoelgende OJS-blokke.
+
+---
+
+## Metode 1: R beregner, OJS renderer
+
+Dette er den anbefalede metode. Du bruger `bfh_qic()` til at beregne
+kontrolgraenser og Anhoej-signaler i R, og sender resultatet til OJS
+via `bfh_ojs_define()`.
+
+### Grundlaeggende workflow
+
+```r
+# 1. Beregn SPC i R
+result <- bfh_qic(data, x = dato, y = vaerdi, chart_type = "i")
+
+# 2. Send til OJS
+bfh_ojs_define(result, name = "mit_diagram")
+```
+
+```ojs
+// 3. Render i OJS
+bfhSpc.bfhSpcChart(mit_diagram)
+```
+
+### Eksempel: Run chart
+
+Et run chart viser data med en centerlinje (median), men uden kontrolgraenser.
+Velegnet til tidlig dataindsamling eller naar kontrolgraenser ikke er relevante.
+
+```{r}
+#| label: run-chart-data
+
+set.seed(42)
+run_data <- data.frame(
+  maaned = seq(as.Date("2023-01-01"), by = "month", length.out = 24),
+  infektioner = rpois(24, lambda = 12)
+)
+
+run_result <- suppressWarnings(
+  bfh_qic(
+    data = run_data,
+    x = maaned,
+    y = infektioner,
+    chart_type = "run",
+    y_axis_unit = "count",
+    chart_title = "Hospitalserhvervede infektioner"
+  )
+)
+
+bfh_ojs_define(run_result, name = "run_chart",
+               footer = create_plot_footer("BFH", "Infektionshygiejne"))
+```
+
+```{ojs}
+//| label: run-chart-render
+bfhSpc.bfhSpcChart(run_chart)
+```
+
+::: {.callout-tip}
+**Hoer over datapunkterne** for at se dato, vaerdi og centerlinje.
+:::
+
+### Eksempel: P-chart med target og noter
+
+P-charts bruges til andele (proportioner) og kraever en naevner (`n`).
+Her tilfojer vi ogsaa en target-linje og annotationer.
+
+```{r}
+#| label: p-chart-data
+
+set.seed(123)
+p_data <- data.frame(
+  maaned = seq(as.Date("2023-01-01"), by = "month", length.out = 24),
+  haendelser = rbinom(24, size = 200, prob = 0.08),
+  antal = rep(200, 24),
+  kommentarer = c(rep(NA, 5), "Ny procedure indfoert",
+                  rep(NA, 11), "Ekstern audit",
+                  rep(NA, 5))
+)
+
+p_result <- suppressWarnings(
+  bfh_qic(
+    data = p_data,
+    x = maaned,
+    y = haendelser,
+    n = antal,
+    chart_type = "p",
+    y_axis_unit = "percent",
+    chart_title = "Komplikationsrate",
+    target_value = 0.06,
+    target_text = "Maal: <6%",
+    notes = kommentarer
+  )
+)
+
+bfh_ojs_define(p_result, name = "p_chart",
+               footer = create_plot_footer("BFH", "Kirurgisk afdeling",
+                                           data_source = "EPJ"))
+```
+
+```{ojs}
+//| label: p-chart-render
+bfhSpc.bfhSpcChart(p_chart)
+```
+
+**Hvad du ser:**
+
+- **Blaat baand**: Kontrolgraenser (UCL/LCL) --- 3-sigma graenser
+- **Blaa linje**: Centerlinje (gennemsnitlig andel)
+- **Stiplet graa linje**: Target-vaerdi
+- **Blaa prikker**: Outliers (uden for kontrolgraenser)
+- **Graa prikker**: Normale observationer
+- **Annotationer**: Noter ved relevante datapunkter
+
+### Eksempel: I-chart med faser
+
+I-charts bruges til individuelle maalevaerdier. Fase-splits giver separate
+kontrolgraenser foer og efter en intervention.
+
+```{r}
+#| label: i-chart-data
+
+set.seed(456)
+i_data <- data.frame(
+  maaned = seq(as.Date("2023-01-01"), by = "month", length.out = 24),
+  ventetid = c(
+    rnorm(12, mean = 52, sd = 6),   # Foer intervention
+    rnorm(12, mean = 43, sd = 5)    # Efter intervention
+  )
+)
+
+i_result <- suppressWarnings(
+  bfh_qic(
+    data = i_data,
+    x = maaned,
+    y = ventetid,
+    part = c(12),
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "Ventetid i minutter (foer/efter intervention)"
+  )
+)
+
+bfh_ojs_define(i_result, name = "i_chart",
+               footer = create_plot_footer("BFH", "Akutmodtagelsen"))
+```
+
+```{ojs}
+//| label: i-chart-render
+bfhSpc.bfhSpcChart(i_chart)
+```
+
+Bemerkning: Hver fase har sine egne kontrolgraenser og centerlinje.
+En stiplet centerlinje indikerer et Anhoej-signal (ustabil proces).
+
+### Eksempel: U-chart (rater)
+
+U-charts bruges til rater (haendelser per enhed), f.eks. fald per 1000
+sengedage.
+
+```{r}
+#| label: u-chart-data
+
+set.seed(789)
+u_data <- data.frame(
+  maaned = seq(as.Date("2023-01-01"), by = "month", length.out = 24),
+  fald = rpois(24, lambda = 5),
+  sengedage = rpois(24, lambda = 800)
+)
+
+u_result <- suppressWarnings(
+  bfh_qic(
+    data = u_data,
+    x = maaned,
+    y = fald,
+    n = sengedage,
+    chart_type = "u",
+    y_axis_unit = "rate",
+    chart_title = "Fald per 1000 sengedage",
+    multiply = 1000
+  )
+)
+
+bfh_ojs_define(u_result, name = "u_chart",
+               footer = create_plot_footer("BFH", "Geriatrisk afdeling"))
+```
+
+```{ojs}
+//| label: u-chart-render
+bfhSpc.bfhSpcChart(u_chart)
+```
+
+### Eksempel: C-chart (taellinger)
+
+C-charts bruges til rene taelledata, f.eks. antal klager per maaned.
+
+```{r}
+#| label: c-chart-data
+
+set.seed(321)
+c_data <- data.frame(
+  maaned = seq(as.Date("2023-01-01"), by = "month", length.out = 18),
+  klager = rpois(18, lambda = 8)
+)
+
+c_result <- suppressWarnings(
+  bfh_qic(
+    data = c_data,
+    x = maaned,
+    y = klager,
+    chart_type = "c",
+    y_axis_unit = "count",
+    chart_title = "Patientklager per maaned"
+  )
+)
+
+bfh_ojs_define(c_result, name = "c_chart")
+```
+
+```{ojs}
+//| label: c-chart-render
+bfhSpc.bfhSpcChart(c_chart)
+```
+
+---
+
+## Metode 2: Standalone JavaScript
+
+Hvis du ikke har adgang til R, kan du beregne SPC-statistik direkte i JavaScript
+med `computeSpc()`. Denne funktion implementerer de samme formler som
+qicharts2.
+
+### Grundlaeggende standalone workflow
+
+```ojs
+// Definer data direkte i OJS
+data = [
+  {dato: "2023-01-01", vaerdi: 18, total: 100},
+  {dato: "2023-02-01", vaerdi: 22, total: 98},
+  // ...
+]
+
+// Beregn SPC i JavaScript
+result = bfhSpc.computeSpc(data, {
+  chartType: "p",
+  x: "dato",
+  y: "vaerdi",
+  n: "total"
+})
+
+// Render
+bfhSpc.bfhSpcChart(result)
+```
+
+### Eksempel: P-chart beregnet i JavaScript
+
+```{ojs}
+//| label: standalone-data
+standaloneData = [
+  {dato: "2023-01-01", taeller: 18, naevner: 100},
+  {dato: "2023-02-01", taeller: 22, naevner: 98},
+  {dato: "2023-03-01", taeller: 15, naevner: 105},
+  {dato: "2023-04-01", taeller: 20, naevner: 101},
+  {dato: "2023-05-01", taeller: 17, naevner: 99},
+  {dato: "2023-06-01", taeller: 19, naevner: 103},
+  {dato: "2023-07-01", taeller: 25, naevner: 97},
+  {dato: "2023-08-01", taeller: 16, naevner: 102},
+  {dato: "2023-09-01", taeller: 21, naevner: 100},
+  {dato: "2023-10-01", taeller: 18, naevner: 104},
+  {dato: "2023-11-01", taeller: 14, naevner: 98},
+  {dato: "2023-12-01", taeller: 23, naevner: 101}
+]
+```
+
+```{ojs}
+//| label: standalone-p-chart
+standaloneResult = bfhSpc.computeSpc(standaloneData, {
+  chartType: "p",
+  x: "dato",
+  y: "taeller",
+  n: "naevner",
+  yAxisUnit: "percent",
+  chartTitle: "Komplikationsrate (beregnet i JS)"
+})
+
+bfhSpc.bfhSpcChart(standaloneResult)
+```
+
+### Eksempel: I-chart med target
+
+```{ojs}
+//| label: standalone-i-data
+iChartData = Array.from({length: 20}, (_, i) => ({
+  dato: new Date(2023, i % 12, 1).toISOString().slice(0, 10),
+  vaerdi: 50 + Math.sin(i * 0.5) * 8 + (Math.random() - 0.5) * 10
+}))
+```
+
+```{ojs}
+//| label: standalone-i-chart
+iChartResult = bfhSpc.computeSpc(iChartData, {
+  chartType: "i",
+  x: "dato",
+  y: "vaerdi",
+  yAxisUnit: "count",
+  chartTitle: "Procestid (I-chart)",
+  target: 45,
+  targetText: "Maal: 45 min"
+})
+
+bfhSpc.bfhSpcChart(iChartResult)
+```
+
+---
+
+## Tilpasning
+
+### Stoerrelse og aspect ratio
+
+`bfhSpcChart()` accepterer et `options`-objekt til at styre udseendet:
+
+```{ojs}
+//| label: sizing-demo
+bfhSpc.bfhSpcChart(run_chart, {
+  width: 600,
+  height: 250
+})
+```
+
+Tilgaengelige options:
+
+| Option | Type | Default | Beskrivelse |
+|--------|------|---------|-------------|
+| `width` | number | 960 | Fast bredde i pixels |
+| `height` | number | auto | Fast hoejde (eller beregnet fra aspectRatio) |
+| `aspectRatio` | number | 2 | Bredde/hoejde ratio naar height er auto |
+| `maxWidth` | number | 960 | Maksimal bredde for responsiv sizing |
+| `minWidth` | number | 300 | Minimal bredde for responsiv sizing |
+
+### Footer
+
+Footeren tilfojes via `bfh_ojs_define()` i R:
+
+```r
+bfh_ojs_define(result, name = "data",
+               footer = create_plot_footer(
+                 hospital_name = "Bispebjerg og Frederiksberg Hospital",
+                 department = "Akutafdelingen",
+                 data_source = "EPJ data"
+               ))
+```
+
+Footeren viser: Hospital - Afdeling | Datakilde: X | Genereret: DD-MM-YYYY | SPC analyse med Anhoej-regler
+
+---
+
+## computeSpc() reference
+
+### Parametre
+
+```js
+computeSpc(data, {
+  chartType: "i",        // "run"|"i"|"mr"|"p"|"u"|"c"|"g"
+  x: "dato",            // Kolonne-navn for x-akse
+  y: "vaerdi",          // Kolonne-navn for y/taeller
+  n: "naevner",         // Kolonne-navn for naevner (p/u charts)
+  target: 45,           // Target-vaerdi (valgfri)
+  targetText: "Maal",   // Target-label (valgfri)
+  freeze: 12,           // Antal baseline-observationer (valgfri)
+  part: [12, 24],       // Fase-split positioner (valgfri)
+  cl: 50,               // Fast centerlinje (overrider beregning)
+  multiply: 1000,       // Multiplikator for y-vaerdier
+  excludeIndices: [3],  // Indekser at ekskludere fra beregning
+  yAxisUnit: "count",   // "count"|"percent"|"rate"|"time"
+  chartTitle: "Titel"   // Diagram-titel
+})
+```
+
+### Understottede diagramtyper
+
+| Type | Navn | CL | Kontrolgraenser | Kraever n |
+|------|------|-----|-----------------|-----------|
+| `run` | Seriediagram | Median | Ingen | Nej |
+| `i` | I-kort | Gennemsnit | MR-baseret (d2=1.128) | Nej |
+| `mr` | MR-kort | Gennemsnit MR | D3/D4-baseret | Nej |
+| `p` | P-kort | Gennemsnit andel | Binomial (varierer med n) | Ja |
+| `u` | U-kort | Gennemsnit rate | Poisson (varierer med n) | Ja |
+| `c` | C-kort | Gennemsnit antal | Poisson (fast) | Nej |
+| `g` | G-kort | Gennemsnit | Geometrisk | Nej |
+
+### Anhoej-regler
+
+Diagrammerne anvender Anhoej-reglerne til at detektere specielle aarsager:
+
+- **Serielaengde-signal**: Laengste serie af consecutive punkter paa samme side
+  af centerlinjen overstiger `log2(n) + 3`
+- **Krydsnings-signal**: Antal krydsninger af centerlinjen er under
+  `(n-1)/2 - 3*sqrt((n-1)/4)`
+- **Sigma-signal**: Punkter uden for kontrolgraenserne (UCL/LCL)
+
+Naar et Anhoej-signal detekteres, vises centerlinjen som **stiplet**.
+Outlier-punkter farves **blaa**.
+
+---
+
+## Tips og bedste praksis
+
+1. **Brug R-metoden naar muligt** --- qicharts2 har velvaliderede
+   statistiske beregninger og haandterer edge cases.
+
+2. **Vaelg den rigtige diagramtype:**
+   - Individuelle maalinger → I-chart
+   - Andele (ja/nej) → P-chart
+   - Rater (haendelser/eksponering) → U-chart
+   - Taelledata → C-chart
+   - Foerste udforskning → Run chart
+
+3. **Brug faser** (`part`) naar der er en kendt intervention.
+   Separate kontrolgraenser viser om interventionen havde effekt.
+
+4. **Tilfoej noter** til vigtige datapunkter (procedureaendringer,
+   interventioner, audit) for kontekst.
+
+5. **Target-linjer** er nyttige til at vise organisatoriske maal,
+   men husk at SPC-diagrammer primaert handler om procesvariation.
+
+```{r}
+#| label: cleanup
+#| include: false
+
+# Fjern kopierede OJS-filer efter rendering
+file.remove(c("bfh-spc.js", "bfh-spc-utils.js",
+               "bfh-spc-scales.js", "bfh-spc-stats.js"))
+```
