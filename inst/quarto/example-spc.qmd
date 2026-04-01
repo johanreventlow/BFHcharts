@@ -22,6 +22,7 @@ library(BFHcharts)
 file.copy(bfh_ojs_path("bfh-spc.js"), "bfh-spc.js", overwrite = TRUE)
 file.copy(bfh_ojs_path("bfh-spc-utils.js"), "bfh-spc-utils.js", overwrite = TRUE)
 file.copy(bfh_ojs_path("bfh-spc-scales.js"), "bfh-spc-scales.js", overwrite = TRUE)
+file.copy(bfh_ojs_path("bfh-spc-stats.js"), "bfh-spc-stats.js", overwrite = TRUE)
 ```
 
 ### Eksempel 1: Run Chart
@@ -126,6 +127,43 @@ bfh_ojs_define(i_result, name = "i_chart_data",
 bfhSpc.bfhSpcChart(i_chart_data, {width: 700, height: 350})
 ```
 
+### Eksempel 4: Standalone JS (ingen R beregning)
+
+Dette eksempel bruger `computeSpc()` til at beregne kontrolgrænser direkte i JavaScript,
+uden R-backend:
+
+```{ojs}
+//| label: standalone-data
+standaloneData = [
+  {date: "2023-01-01", count: 18, total: 100},
+  {date: "2023-02-01", count: 22, total: 98},
+  {date: "2023-03-01", count: 15, total: 105},
+  {date: "2023-04-01", count: 20, total: 101},
+  {date: "2023-05-01", count: 17, total: 99},
+  {date: "2023-06-01", count: 19, total: 103},
+  {date: "2023-07-01", count: 25, total: 97},
+  {date: "2023-08-01", count: 16, total: 102},
+  {date: "2023-09-01", count: 21, total: 100},
+  {date: "2023-10-01", count: 18, total: 104},
+  {date: "2023-11-01", count: 14, total: 98},
+  {date: "2023-12-01", count: 23, total: 101}
+]
+```
+
+```{ojs}
+//| label: standalone-chart
+spcResult = bfhSpc.computeSpc(standaloneData, {
+  chartType: "p",
+  x: "date",
+  y: "count",
+  n: "total",
+  yAxisUnit: "percent",
+  chartTitle: "Standalone P-Chart (beregnet i JS)"
+})
+
+bfhSpc.bfhSpcChart(spcResult, {width: 700, height: 350})
+```
+
 ### Oprydning
 
 ```{r}
@@ -133,5 +171,6 @@ bfhSpc.bfhSpcChart(i_chart_data, {width: 700, height: 350})
 #| include: false
 
 # Fjern kopierede OJS-filer efter rendering
-file.remove(c("bfh-spc.js", "bfh-spc-utils.js", "bfh-spc-scales.js"))
+file.remove(c("bfh-spc.js", "bfh-spc-utils.js", "bfh-spc-scales.js",
+               "bfh-spc-stats.js"))
 ```

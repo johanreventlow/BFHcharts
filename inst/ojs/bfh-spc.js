@@ -4,6 +4,9 @@
 import { prepareData } from "./bfh-spc-utils.js";
 import { createYAxisFormatter } from "./bfh-spc-scales.js";
 
+// Re-eksportér standalone beregnings-API fra stats-modulet
+export { computeSpc, computeAnhoejRules } from "./bfh-spc-stats.js";
+
 /**
  * Opret et BFH-styled SPC chart med Observable Plot
  *

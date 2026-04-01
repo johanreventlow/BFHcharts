@@ -163,6 +163,24 @@ test_that("bfh_prepare_ojs_data() part column is integer", {
   expect_type(ojs$data$part, "integer")
 })
 
+test_that("bfh_prepare_ojs_data() includes footer when provided", {
+  skip_on_ci()
+
+  result <- make_test_result()
+  ojs <- bfh_prepare_ojs_data(result, footer = "BFH | Test footer")
+
+  expect_equal(ojs$footer, "BFH | Test footer")
+})
+
+test_that("bfh_prepare_ojs_data() omits footer when NULL", {
+  skip_on_ci()
+
+  result <- make_test_result()
+  ojs <- bfh_prepare_ojs_data(result, footer = NULL)
+
+  expect_null(ojs$footer)
+})
+
 # ============================================================================
 # bfh_ojs_path() tests
 # ============================================================================
@@ -184,6 +202,13 @@ test_that("bfh_ojs_path() returns valid path for bfh-spc-scales.js", {
 
 test_that("bfh_ojs_path() returns valid path for bfh-spc.js", {
   path <- bfh_ojs_path("bfh-spc.js")
+
+  expect_type(path, "character")
+  expect_true(file.exists(path))
+})
+
+test_that("bfh_ojs_path() returns valid path for bfh-spc-stats.js", {
+  path <- bfh_ojs_path("bfh-spc-stats.js")
 
   expect_type(path, "character")
   expect_true(file.exists(path))
