@@ -43,6 +43,7 @@ Suggests:
     testthat (>= 3.0.0),
     vdiffr,
     covr,
+    knitr,
     pdftools (>= 3.3.0),
     withr,
     BFHllm

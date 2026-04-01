@@ -1,0 +1,130 @@
+---
+title: "BFHcharts - Observable JS SPC Charts"
+format: html
+---
+
+## Observable JS SPC Diagrammer
+
+Denne Quarto-dokument demonstrerer, hvordan man bruger BFHcharts' Observable JS
+integration til at rendere interaktive SPC-diagrammer i browseren.
+
+### Opsætning
+
+Først kopierer vi OJS-filerne fra pakken til projektmappen og genererer data:
+
+```{r}
+#| label: setup
+#| message: false
+
+library(BFHcharts)
+
+# Kopiér OJS filer til projektmappen
+file.copy(bfh_ojs_path("bfh-spc.js"), "bfh-spc.js", overwrite = TRUE)
+file.copy(bfh_ojs_path("bfh-spc-utils.js"), "bfh-spc-utils.js", overwrite = TRUE)
+file.copy(bfh_ojs_path("bfh-spc-scales.js"), "bfh-spc-scales.js", overwrite = TRUE)
+```
+
+### Eksempel 1: Run Chart
+
+```{r}
+#| label: run-chart-data
+
+set.seed(42)
+run_data <- data.frame(
+  month = seq(as.Date("2023-01-01"), by = "month", length.out = 24),
+  infections = rpois(24, lambda = 12)
+)
+
+run_result <- suppressWarnings(
+  bfh_qic(
+    data = run_data,
+    x = month,
+    y = infections,
+    chart_type = "run",
+    y_axis_unit = "count",
+    chart_title = "Infektioner per maaned (Run Chart)"
+  )
+)
+
+bfh_ojs_define(run_result, name = "run_data")
+```
+
+```{ojs}
+//| label: run-chart-render
+bfhSpc = await import("./bfh-spc.js")
+bfhSpc.bfhSpcChart(run_data, {width: 700, height: 350})
+```
+
+### Eksempel 2: P-Chart (Andele)
+
+```{r}
+#| label: p-chart-data
+
+set.seed(123)
+p_data <- data.frame(
+  month = seq(as.Date("2023-01-01"), by = "month", length.out = 24),
+  events = rbinom(24, size = 200, prob = 0.08),
+  n = rep(200, 24)
+)
+
+p_result <- suppressWarnings(
+  bfh_qic(
+    data = p_data,
+    x = month,
+    y = events,
+    n = n,
+    chart_type = "p",
+    y_axis_unit = "percent",
+    chart_title = "Haendelsesrate (P-Chart)"
+  )
+)
+
+bfh_ojs_define(p_result, name = "p_chart_data")
+```
+
+```{ojs}
+//| label: p-chart-render
+bfhSpc.bfhSpcChart(p_chart_data, {width: 700, height: 350})
+```
+
+### Eksempel 3: I-Chart med Faseopdeling
+
+```{r}
+#| label: i-chart-data
+
+set.seed(456)
+i_data <- data.frame(
+  month = seq(as.Date("2023-01-01"), by = "month", length.out = 24),
+  value = c(rnorm(12, mean = 50, sd = 5), rnorm(12, mean = 45, sd = 5)),
+  phase = c(rep(1L, 12), rep(2L, 12))
+)
+
+i_result <- suppressWarnings(
+  bfh_qic(
+    data = i_data,
+    x = month,
+    y = value,
+    part = phase,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "Ventetid (I-Chart med fase-split)"
+  )
+)
+
+bfh_ojs_define(i_result, name = "i_chart_data")
+```
+
+```{ojs}
+//| label: i-chart-render
+bfhSpc.bfhSpcChart(i_chart_data, {width: 700, height: 350})
+```
+
+### Oprydning
+
+```{r}
+#| label: cleanup
+#| include: false
+
+# Fjern kopierede OJS-filer efter rendering
+file.remove(c("bfh-spc.js", "bfh-spc-utils.js", "bfh-spc-scales.js"))
+```
