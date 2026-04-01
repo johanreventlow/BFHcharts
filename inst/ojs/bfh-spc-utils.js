@@ -72,6 +72,26 @@ function toRowArray(data) {
   return rows;
 }
 
+/**
+ * Convert annotation data fra ojs_define (kan være column- eller row-orienteret)
+ */
+export function prepareAnnotations(annotations) {
+  if (!annotations || !Array.isArray(annotations) || annotations.length === 0) {
+    return [];
+  }
+  return annotations.map(a => ({
+    label_x: a.label_x,
+    label_y: a.label_y,
+    arrow_x: a.arrow_x,
+    arrow_y: a.arrow_y,
+    point_x: a.point_x,
+    point_y: a.point_y,
+    label_text: a.label_text || "",
+    draw_arrow: Boolean(a.draw_arrow),
+    curvature: a.curvature || 0
+  }));
+}
+
 function isNullish(val) {
   return val === null || val === undefined || val === "NA" || val === "NULL" ||
     (typeof val === "number" && isNaN(val));

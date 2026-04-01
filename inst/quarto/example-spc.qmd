@@ -46,7 +46,8 @@ run_result <- suppressWarnings(
   )
 )
 
-bfh_ojs_define(run_result, name = "run_data")
+bfh_ojs_define(run_result, name = "run_data",
+               footer = create_plot_footer("BFH", "Kvalitet"))
 ```
 
 ```{ojs}
@@ -55,7 +56,7 @@ bfhSpc = await import("./bfh-spc.js")
 bfhSpc.bfhSpcChart(run_data, {width: 700, height: 350})
 ```
 
-### Eksempel 2: P-Chart (Andele)
+### Eksempel 2: P-Chart med target og noter
 
 ```{r}
 #| label: p-chart-data
@@ -64,7 +65,8 @@ set.seed(123)
 p_data <- data.frame(
   month = seq(as.Date("2023-01-01"), by = "month", length.out = 24),
   events = rbinom(24, size = 200, prob = 0.08),
-  n = rep(200, 24)
+  n = rep(200, 24),
+  notes = c(rep(NA, 5), "Ny procedure", rep(NA, 11), "Audit", rep(NA, 5))
 )
 
 p_result <- suppressWarnings(
@@ -75,11 +77,16 @@ p_result <- suppressWarnings(
     n = n,
     chart_type = "p",
     y_axis_unit = "percent",
-    chart_title = "Haendelsesrate (P-Chart)"
+    chart_title = "Haendelsesrate (P-Chart)",
+    target_value = 0.06,
+    target_text = "Maal: <6%",
+    notes = notes
   )
 )
 
-bfh_ojs_define(p_result, name = "p_chart_data")
+bfh_ojs_define(p_result, name = "p_chart_data",
+               footer = create_plot_footer("BFH", "Kirurgi",
+                                           data_source = "EPJ"))
 ```
 
 ```{ojs}
@@ -95,8 +102,7 @@ bfhSpc.bfhSpcChart(p_chart_data, {width: 700, height: 350})
 set.seed(456)
 i_data <- data.frame(
   month = seq(as.Date("2023-01-01"), by = "month", length.out = 24),
-  value = c(rnorm(12, mean = 50, sd = 5), rnorm(12, mean = 45, sd = 5)),
-  phase = c(rep(1L, 12), rep(2L, 12))
+  value = c(rnorm(12, mean = 50, sd = 5), rnorm(12, mean = 45, sd = 5))
 )
 
 i_result <- suppressWarnings(
@@ -104,14 +110,15 @@ i_result <- suppressWarnings(
     data = i_data,
     x = month,
     y = value,
-    part = phase,
+    part = c(12),
     chart_type = "i",
     y_axis_unit = "count",
     chart_title = "Ventetid (I-Chart med fase-split)"
   )
 )
 
-bfh_ojs_define(i_result, name = "i_chart_data")
+bfh_ojs_define(i_result, name = "i_chart_data",
+               footer = create_plot_footer("BFH"))
 ```
 
 ```{ojs}

@@ -4,6 +4,8 @@
 #' list suitable for passing to Observable JS via \code{ojs_define()}.
 #'
 #' @param result A \code{bfh_qic_result} object from \code{create_spc_chart()}
+#' @param footer Character string for chart footer. If \code{NULL} (default),
+#'   no footer is added. Use \code{create_plot_footer()} to generate one.
 #'
 #' @return A list with components:
 #'   \item{data}{data.frame with columns: x, y, cl, ucl, lcl, target, part,
@@ -12,9 +14,11 @@
 #'     target_value, target_text}
 #'   \item{colors}{named list of hex color strings}
 #'   \item{summary}{summary tibble from the result object}
+#'   \item{annotations}{list of pre-computed label placements (if notes exist)}
+#'   \item{footer}{character footer text (if provided)}
 #'
 #' @keywords internal
-bfh_prepare_ojs_data <- function(result) {
+bfh_prepare_ojs_data <- function(result, footer = NULL) {
   # Validér input
 
   if (!is_bfh_qic_result(result)) {
@@ -84,12 +88,96 @@ cfg <- result$config
     }
   )
 
-  list(
+  # Beregn annotationer via collision avoidance (hvis noter findes)
+  annotations <- list()
+  qic_data <- result$qic_data
+  comment_data <- tryCatch(
+    extract_comment_data(qic_data),
+    error = function(e) NULL
+  )
+
+  if (!is.null(comment_data) && nrow(comment_data) > 0) {
+    # Beregn y_range inkl. expansion (25% mult, matcher ggplot2)
+    y_vals <- qic_data$y[!is.na(qic_data$y)]
+    all_y <- c(y_vals, qic_data$ucl, qic_data$lcl)
+    all_y <- all_y[!is.na(all_y)]
+    y_data_range <- range(all_y)
+    y_expand <- diff(y_data_range) * 0.25
+    y_range <- c(y_data_range[1] - y_expand, y_data_range[2] + y_expand)
+
+    x_range <- range(as.numeric(qic_data$x), na.rm = TRUE)
+
+    comment_data_num <- comment_data
+    comment_data_num$x <- as.numeric(comment_data$x)
+
+    data_points_num <- data.frame(
+      x = as.numeric(qic_data$x),
+      y = qic_data$y,
+      stringsAsFactors = FALSE
+    )
+
+    # Linje-positioner for collision avoidance
+    line_positions <- c(
+      cl = if (!is.null(qic_data$cl)) {
+        stats::median(qic_data$cl, na.rm = TRUE)
+      } else {
+        NA_real_
+      }
+    )
+    if (!is.null(qic_data$ucl) && any(!is.na(qic_data$ucl))) {
+      line_positions["ucl"] <- stats::median(qic_data$ucl, na.rm = TRUE)
+    }
+    if (!is.null(qic_data$lcl) && any(!is.na(qic_data$lcl))) {
+      line_positions["lcl"] <- stats::median(qic_data$lcl, na.rm = TRUE)
+    }
+
+    label_data <- tryCatch(
+      place_note_labels(
+        comment_data = comment_data_num,
+        line_positions = line_positions,
+        y_range = y_range,
+        x_range = x_range,
+        data_points = data_points_num
+      ),
+      error = function(e) NULL
+    )
+
+    if (!is.null(label_data) && nrow(label_data) > 0) {
+      # Konverter x-koordinater til ISO-datostrenge
+      origin <- as.Date("1970-01-01")
+      annotations <- lapply(seq_len(nrow(label_data)), function(i) {
+        row <- label_data[i, ]
+        list(
+          label_x = format(as.Date(row$label_x, origin = origin), "%Y-%m-%d"),
+          label_y = row$label_y,
+          arrow_x = format(as.Date(row$arrow_x, origin = origin), "%Y-%m-%d"),
+          arrow_y = row$arrow_y,
+          point_x = format(as.Date(row$point_x, origin = origin), "%Y-%m-%d"),
+          point_y = row$point_y,
+          label_text = row$label_text,
+          draw_arrow = row$draw_arrow,
+          curvature = row$curvature
+        )
+      })
+    }
+  }
+
+  out <- list(
     data = ojs_data,
     config = ojs_config,
     colors = colors,
     summary = result$summary
   )
+
+  if (length(annotations) > 0) {
+    out$annotations <- annotations
+  }
+
+  if (!is.null(footer) && nzchar(footer)) {
+    out$footer <- footer
+  }
+
+  out
 }
 
 
@@ -102,6 +190,8 @@ cfg <- result$config
 #' @param result A \code{bfh_qic_result} object from \code{create_spc_chart()}
 #' @param name Character string. The variable name to use in OJS cells.
 #'   Defaults to \code{"spc_data"}.
+#' @param footer Character string for chart footer. Use
+#'   \code{create_plot_footer()} or supply a custom string. Default \code{NULL}.
 #'
 #' @return The prepared data list (invisibly), useful for testing.
 #'
@@ -112,13 +202,14 @@ cfg <- result$config
 #' @examples
 #' \dontrun{
 #' # In a Quarto document (.qmd):
-#' result <- create_spc_chart(data, x = month, y = infections,
-#'                            chart_type = "run", y_axis_unit = "count")
-#' bfh_ojs_define(result, name = "spc_data")
+#' result <- bfh_qic(data, x = month, y = infections,
+#'                    chart_type = "run", y_axis_unit = "count")
+#' bfh_ojs_define(result, name = "spc_data",
+#'                footer = create_plot_footer("BFH", "Kirurgi"))
 #' }
 #'
 #' @export
-bfh_ojs_define <- function(result, name = "spc_data") {
+bfh_ojs_define <- function(result, name = "spc_data", footer = NULL) {
   if (!requireNamespace("knitr", quietly = TRUE)) {
     stop(
       "Package 'knitr' is required for bfh_ojs_define().\n",
@@ -127,7 +218,7 @@ bfh_ojs_define <- function(result, name = "spc_data") {
     )
   }
 
-  ojs_data <- bfh_prepare_ojs_data(result)
+  ojs_data <- bfh_prepare_ojs_data(result, footer = footer)
 
   # ojs_define() er tilgængelig i Quarto rendering-kontekst
   # Byg kald dynamisk for at tillade vilkårligt variabelnavn
