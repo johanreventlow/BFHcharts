@@ -56,7 +56,7 @@ test_that("spc_plot_config warns on invalid chart_type", {
 })
 
 test_that("spc_plot_config accepts all valid chart types", {
-  valid_types <- c("run", "i", "mr", "xbar", "s", "t", "p", "pp", "c", "u", "up", "g")
+  valid_types <- CHART_TYPES_EN
 
   for (type in valid_types) {
     expect_no_warning(
