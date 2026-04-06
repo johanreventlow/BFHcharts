@@ -391,3 +391,61 @@ test_that("Chart type utilities work in bfh_qic", {
   expect_s3_class(plot2, "bfh_qic_result")
   expect_s3_class(plot2$plot, "ggplot")
 })
+
+test_that("bfh_qic accepts all CHART_TYPES_EN chart types", {
+  skip_on_ci()
+
+  set.seed(42)
+
+  # Basis testdata
+  base_data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+    value = rnorm(24, 50, 10),
+    count = rpois(24, 15),
+    total = rpois(24, 100)
+  )
+
+  # Typer der ikke kræver nævner
+  simple_types <- c("run", "i", "mr", "c", "g", "t")
+  for (ct in simple_types) {
+    result <- suppressWarnings(
+      bfh_qic(data = base_data, x = month, y = value,
+              chart_type = ct, y_axis_unit = "count")
+    )
+    expect_s3_class(result, "bfh_qic_result",
+                    info = sprintf("chart_type '%s' should produce bfh_qic_result", ct))
+  }
+
+  # Typer der kræver nævner
+  denom_types <- c("p", "pp", "u", "up")
+  for (ct in denom_types) {
+    result <- suppressWarnings(
+      bfh_qic(data = base_data, x = month, y = count, n = total,
+              chart_type = ct, y_axis_unit = "percent")
+    )
+    expect_s3_class(result, "bfh_qic_result",
+                    info = sprintf("chart_type '%s' should produce bfh_qic_result", ct))
+  }
+
+  # xbar og s kræver subgrupperet data
+  subgroup_data <- data.frame(
+    group = rep(1:12, each = 5),
+    value = rnorm(60, 50, 10)
+  )
+  for (ct in c("xbar", "s")) {
+    result <- suppressWarnings(
+      bfh_qic(data = subgroup_data, x = group, y = value,
+              chart_type = ct, y_axis_unit = "count")
+    )
+    expect_s3_class(result, "bfh_qic_result",
+                    info = sprintf("chart_type '%s' should produce bfh_qic_result", ct))
+  }
+})
+
+test_that("bfh_qic rejects invalid chart types", {
+  data <- data.frame(month = Sys.Date(), value = 1)
+  expect_error(
+    bfh_qic(data = data, x = month, y = value, chart_type = "invalid"),
+    "chart_type must be one of"
+  )
+})

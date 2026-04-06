@@ -97,12 +97,12 @@ spc_plot_config <- function(
     subtitle = NULL,
     caption = NULL) {
   # Validation
-  valid_chart_types <- c("run", "i", "mr", "xbar", "s", "t", "p", "pp", "c", "u", "up", "g")
-  if (!chart_type %in% valid_chart_types) {
+  # Validate chart type (CHART_TYPES_EN er single source of truth)
+  if (!chart_type %in% CHART_TYPES_EN) {
     warning(sprintf(
       "Invalid chart_type: '%s'. Valid types are: %s",
       chart_type,
-      paste(valid_chart_types, collapse = ", ")
+      paste(CHART_TYPES_EN, collapse = ", ")
     ))
   }
 
