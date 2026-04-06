@@ -12,6 +12,9 @@ test_that("CHART_TYPES_DA contains expected Danish labels", {
   expect_true("P-kort (Andele)" %in% names(CHART_TYPES_DA))
   expect_true("U-kort (Rater)" %in% names(CHART_TYPES_DA))
   expect_true("C-kort (Tællinger)" %in% names(CHART_TYPES_DA))
+  expect_true("Xbar-kort (Subgruppegennemsnit)" %in% names(CHART_TYPES_DA))
+  expect_true("S-kort (Subgruppespredning)" %in% names(CHART_TYPES_DA))
+  expect_true("T-kort (Tid mellem hændelser)" %in% names(CHART_TYPES_DA))
 })
 
 test_that("CHART_TYPES_DA maps Danish to English codes correctly", {
@@ -20,7 +23,10 @@ test_that("CHART_TYPES_DA maps Danish to English codes correctly", {
   expect_equal(unname(CHART_TYPES_DA["P-kort (Andele)"]), "p")
   expect_equal(unname(CHART_TYPES_DA["U-kort (Rater)"]), "u")
   expect_equal(unname(CHART_TYPES_DA["C-kort (Tællinger)"]), "c")
-  expect_equal(unname(CHART_TYPES_DA["G-kort (Tid mellem hændelser)"]), "g")
+  expect_equal(unname(CHART_TYPES_DA["G-kort (Tid mellem sjældne hændelser)"]), "g")
+  expect_equal(unname(CHART_TYPES_DA["Xbar-kort (Subgruppegennemsnit)"]), "xbar")
+  expect_equal(unname(CHART_TYPES_DA["S-kort (Subgruppespredning)"]), "s")
+  expect_equal(unname(CHART_TYPES_DA["T-kort (Tid mellem hændelser)"]), "t")
 })
 
 test_that("CHART_TYPES_EN contains all valid English codes", {
@@ -40,6 +46,9 @@ test_that("CHART_TYPE_DESCRIPTIONS contains Danish descriptions", {
   expect_true("run" %in% names(CHART_TYPE_DESCRIPTIONS))
   expect_true("i" %in% names(CHART_TYPE_DESCRIPTIONS))
   expect_true("p" %in% names(CHART_TYPE_DESCRIPTIONS))
+  expect_true("xbar" %in% names(CHART_TYPE_DESCRIPTIONS))
+  expect_true("s" %in% names(CHART_TYPE_DESCRIPTIONS))
+  expect_true("t" %in% names(CHART_TYPE_DESCRIPTIONS))
 })
 
 test_that("CHART_TYPE_DESCRIPTIONS values are non-empty strings", {
@@ -81,7 +90,10 @@ test_that("get_qic_chart_type converts Danish labels to English codes", {
   expect_equal(get_qic_chart_type("U-kort (Rater)"), "u")
   expect_equal(get_qic_chart_type("U'-kort (Rater, standardiseret)"), "up")
   expect_equal(get_qic_chart_type("C-kort (Tællinger)"), "c")
-  expect_equal(get_qic_chart_type("G-kort (Tid mellem hændelser)"), "g")
+  expect_equal(get_qic_chart_type("G-kort (Tid mellem sjældne hændelser)"), "g")
+  expect_equal(get_qic_chart_type("Xbar-kort (Subgruppegennemsnit)"), "xbar")
+  expect_equal(get_qic_chart_type("S-kort (Subgruppespredning)"), "s")
+  expect_equal(get_qic_chart_type("T-kort (Tid mellem hændelser)"), "t")
 })
 
 test_that("get_qic_chart_type returns English codes unchanged", {
@@ -171,7 +183,7 @@ test_that("chart_type_requires_denominator returns FALSE for non-ratio charts", 
 
   # G-chart
   expect_false(chart_type_requires_denominator("g"))
-  expect_false(chart_type_requires_denominator("G-kort (Tid mellem hændelser)"))
+  expect_false(chart_type_requires_denominator("G-kort (Tid mellem sjældne hændelser)"))
 
   # Other types
   expect_false(chart_type_requires_denominator("xbar"))
@@ -255,6 +267,23 @@ test_that("get_chart_description returns unname'd strings", {
 
   desc <- get_chart_description("i")
   expect_null(names(desc))
+})
+
+test_that("get_chart_description returns descriptions for xbar, s, t", {
+  desc_xbar <- get_chart_description("xbar")
+  expect_true(is.character(desc_xbar))
+  expect_true(nchar(desc_xbar) > 0)
+  expect_true(grepl("Xbar", desc_xbar))
+
+  desc_s <- get_chart_description("s")
+  expect_true(is.character(desc_s))
+  expect_true(nchar(desc_s) > 0)
+  expect_true(grepl("S-kort", desc_s))
+
+  desc_t <- get_chart_description("t")
+  expect_true(is.character(desc_t))
+  expect_true(nchar(desc_t) > 0)
+  expect_true(grepl("T-kort", desc_t))
 })
 
 # ============================================================================
