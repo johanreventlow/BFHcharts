@@ -266,10 +266,55 @@ add_spc_labels <- function(
   }
 
   # Placer labels med advanced placement system ----
+
+  # Boundary-aware pref_pos: Når begge linjer er nær bund/top af plottet,
+  # spred labels ved at placere den nederste "under" og den øverste "over".
+  # Når kun én linje er nær kanten, foretruk den side med mest plads.
+  boundary_threshold <- 0.30
+  pref_A <- "under"
+  pref_B <- "under"
+
+  if (!is.na(yA) && !is.na(yB)) {
+    npc_A <- shared_mapper$y_to_npc(yA)
+    npc_B <- shared_mapper$y_to_npc(yB)
+
+    if (!is.null(npc_A) && !is.na(npc_A) &&
+        !is.null(npc_B) && !is.na(npc_B)) {
+      both_near_bottom <- npc_A < boundary_threshold && npc_B < boundary_threshold
+      both_near_top <- npc_A > (1 - boundary_threshold) && npc_B > (1 - boundary_threshold)
+
+      if (both_near_bottom) {
+        # Spred: nederste label under sin linje, øverste over sin linje
+        if (npc_A <= npc_B) {
+          pref_A <- "under"
+          pref_B <- "over"
+        } else {
+          pref_A <- "over"
+          pref_B <- "under"
+        }
+      } else if (both_near_top) {
+        # Spred: øverste label over sin linje, nederste under sin linje
+        if (npc_A >= npc_B) {
+          pref_A <- "over"
+          pref_B <- "under"
+        } else {
+          pref_A <- "under"
+          pref_B <- "over"
+        }
+      } else {
+        # Kun én nær kanten: foretruk den side med mest plads
+        if (npc_A < boundary_threshold) pref_A <- "over"
+        if (npc_B < boundary_threshold) pref_B <- "over"
+        if (npc_A > (1 - boundary_threshold)) pref_A <- "under"
+        if (npc_B > (1 - boundary_threshold)) pref_B <- "under"
+      }
+    }
+  }
+
   label_params <- list(
     pad_top = 0.01,
     pad_bot = 0.01,
-    pref_pos = c("under", "under"),
+    pref_pos = c(pref_A, pref_B),
     priority = "A"
   )
   if (has_arrow) label_params$gap_labels <- 0

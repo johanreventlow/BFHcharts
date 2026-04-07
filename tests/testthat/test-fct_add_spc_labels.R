@@ -203,3 +203,35 @@ test_that("CL value extracted from latest part when part column exists", {
   )
   expect_true(inherits(result, "gg"))
 })
+
+# Boundary-aware label placement ----
+
+test_that("CL at zero with target above does not crash and returns ggplot", {
+  # Reproducer HOFTER-scenariet: CL=0%, target=1%, data 0-8%
+  qic_data <- data.frame(
+    x = as.Date("2024-01-01") + 0:11 * 30,
+    y = c(0, 0, 0, 0.06, 0, 0.04, 0, 0, 0, 0, 0, 0),
+    cl = rep(0, 12),
+    target = rep(0.01, 12)
+  )
+  p <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_line()
+
+  result <- add_spc_labels(p, qic_data, y_axis_unit = "percent")
+  expect_true(inherits(result, "gg"))
+})
+
+test_that("CL at data maximum with target below does not crash", {
+  # Spejlvendt scenarie: CL nær toppen
+  qic_data <- data.frame(
+    x = as.Date("2024-01-01") + 0:11 * 30,
+    y = c(95, 98, 97, 100, 96, 99, 98, 97, 100, 99, 98, 97) / 100,
+    cl = rep(0.98, 12),
+    target = rep(0.95, 12)
+  )
+  p <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_line()
+
+  result <- add_spc_labels(p, qic_data, y_axis_unit = "percent")
+  expect_true(inherits(result, "gg"))
+})

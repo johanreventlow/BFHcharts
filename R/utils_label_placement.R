@@ -826,7 +826,13 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
     if (y >= low_bound) {
       return(list(center = y, side = "under"))
     }
-    # Flip til over - NU MED BOUNDS-AWARE CLAMPING
+    # Label passer ikke helt inden for standard bounds, men hvis centeret
+    # stadig er over pad_bot, tillad placering i expansion-zonen.
+    # Kun en lille del af label-bunden kan blive clippet.
+    if (y >= pad_bot) {
+      return(list(center = y, side = "under"))
+    }
+    # Flip til over - label ville være overvejende uden for panel
     y <- y_line_npc + gap + half
     return(list(center = clamp_to_bounds(y, low_bound, high_bound), side = "over"))
   } else {
@@ -834,7 +840,11 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
     if (y <= high_bound) {
       return(list(center = y, side = "over"))
     }
-    # Flip til under - NU MED BOUNDS-AWARE CLAMPING
+    # Symmetrisk: tillad placering i øvre expansion-zone
+    if (y <= 1 - pad_top) {
+      return(list(center = y, side = "over"))
+    }
+    # Flip til under - label ville være overvejende uden for panel
     y <- y_line_npc - gap - half
     return(list(center = clamp_to_bounds(y, low_bound, high_bound), side = "under"))
   }
