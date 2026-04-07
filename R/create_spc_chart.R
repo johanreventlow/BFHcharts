@@ -482,12 +482,11 @@ bfh_qic <- function(data,
     stop("data must be a data frame")
   }
 
-  # Validate chart type
-  valid_chart_types <- c("run", "i", "p", "c", "u", "xbar", "s", "t", "g")
-  if (!chart_type %in% valid_chart_types) {
+  # Validate chart type (CHART_TYPES_EN er single source of truth)
+  if (!chart_type %in% CHART_TYPES_EN) {
     stop(sprintf(
       "chart_type must be one of: %s",
-      paste(valid_chart_types, collapse = ", ")
+      paste(CHART_TYPES_EN, collapse = ", ")
     ))
   }
 

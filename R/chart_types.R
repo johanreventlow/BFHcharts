@@ -25,12 +25,15 @@ CHART_TYPES_DA <- c(
   "Seriediagram med SPC (Run Chart)" = "run",
   "I-kort (Individuelle værdier)" = "i",
   "MR-kort (Moving Range)" = "mr",
+  "Xbar-kort (Subgruppegennemsnit)" = "xbar",
+  "S-kort (Subgruppespredning)" = "s",
   "P-kort (Andele)" = "p",
   "P'-kort (Andele, standardiseret)" = "pp",
   "U-kort (Rater)" = "u",
   "U'-kort (Rater, standardiseret)" = "up",
   "C-kort (Tællinger)" = "c",
-  "G-kort (Tid mellem hændelser)" = "g"
+  "T-kort (Tid mellem hændelser)" = "t",
+  "G-kort (Tid mellem sjældne hændelser)" = "g"
 )
 
 #' English Chart Type Codes
@@ -57,11 +60,14 @@ CHART_TYPE_DESCRIPTIONS <- c(
   run = "Seriediagram der viser data over tid med median centerlinje",
   i = "I-kort til individuelle målinger",
   mr = "Moving Range kort til variabilitet mellem på hinanden følgende målinger",
+  xbar = "Xbar-kort til gennemsnit af subgrupperede målinger",
+  s = "S-kort til standardafvigelse indenfor subgrupper",
   p = "P-kort til andele og procenter",
   pp = "P'-kort til standardiserede andele",
   u = "U-kort til rater og hændelser per enhed",
   up = "U'-kort til standardiserede rater",
   c = "C-kort til tællinger af defekter eller hændelser",
+  t = "T-kort til tid mellem hændelser (kumulativ)",
   g = "G-kort til tid mellem sjældne hændelser"
 )
 
