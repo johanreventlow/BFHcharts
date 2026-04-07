@@ -302,11 +302,22 @@ add_spc_labels <- function(
           pref_B <- "over"
         }
       } else {
-        # Kun én nær kanten: foretruk den side med mest plads
-        if (npc_A < boundary_threshold) pref_A <- "over"
-        if (npc_B < boundary_threshold) pref_B <- "over"
-        if (npc_A > (1 - boundary_threshold)) pref_A <- "under"
-        if (npc_B > (1 - boundary_threshold)) pref_B <- "under"
+        # Én linje nær kanten: send den mod kanten (ind i expansion-zonen),
+        # og den anden linje den modsatte vej — det spreder labels maksimalt.
+        if (npc_A < boundary_threshold) {
+          pref_A <- "under"  # CL nær bund → under (ind i expansion)
+          pref_B <- "over"   # Target → over (væk fra CL)
+        } else if (npc_B < boundary_threshold) {
+          pref_B <- "under"
+          pref_A <- "over"
+        }
+        if (npc_A > (1 - boundary_threshold)) {
+          pref_A <- "over"   # CL nær top → over (ind i expansion)
+          pref_B <- "under"  # Target → under (væk fra CL)
+        } else if (npc_B > (1 - boundary_threshold)) {
+          pref_B <- "over"
+          pref_A <- "under"
+        }
       }
     }
   }

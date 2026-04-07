@@ -144,7 +144,7 @@ format_y_axis_percent <- function(y_range = NULL) {
   }
 
   BFHtheme::scale_y_continuous_bfh(
-    expand = ggplot2::expansion(mult = c(.25, .25)),
+    expand = ggplot2::expansion(mult = c(.20, .20)),
     breaks = percent_breaks,
     labels = percent_labels
   )
@@ -163,7 +163,7 @@ format_y_axis_percent <- function(y_range = NULL) {
 #' @noRd
 format_y_axis_count <- function() {
   BFHtheme::scale_y_continuous_bfh(
-    expand = ggplot2::expansion(mult = c(.25, .25)),
+    expand = ggplot2::expansion(mult = c(.20, .20)),
     labels = function(x, ...) {
       # Uses canonical format_count_danish() from utils_number_formatting.R
       purrr::map_chr(x, format_count_danish)
@@ -178,7 +178,7 @@ format_y_axis_count <- function() {
 #' @noRd
 format_y_axis_rate <- function() {
   BFHtheme::scale_y_continuous_bfh(
-    expand = ggplot2::expansion(mult = c(.25, .25)),
+    expand = ggplot2::expansion(mult = c(.20, .20)),
     labels = function(x, ...) {
       # Uses canonical format_rate_danish() from utils_number_formatting.R
       purrr::map_chr(x, format_rate_danish)
@@ -199,7 +199,7 @@ format_y_axis_rate <- function() {
 format_y_axis_time <- function(qic_data) {
   if (is.null(qic_data) || !"y" %in% names(qic_data)) {
     warning("format_y_axis_time: missing qic_data or y column, using default")
-    return(BFHtheme::scale_y_continuous_bfh(expand = ggplot2::expansion(mult = c(.25, .25))))
+    return(BFHtheme::scale_y_continuous_bfh(expand = ggplot2::expansion(mult = c(.20, .20))))
   }
 
   y_range <- range(qic_data$y, na.rm = TRUE)
@@ -209,7 +209,7 @@ format_y_axis_time <- function(qic_data) {
   time_unit <- determine_time_unit(max_minutes)
 
   BFHtheme::scale_y_continuous_bfh(
-    expand = ggplot2::expansion(mult = c(.25, .25)),
+    expand = ggplot2::expansion(mult = c(.20, .20)),
     labels = function(x, ...) {
       # Uses canonical format_time_danish() from utils_time_formatting.R
       purrr::map_chr(x, ~ format_time_danish(.x, time_unit))
