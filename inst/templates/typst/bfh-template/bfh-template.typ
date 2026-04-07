@@ -260,19 +260,27 @@ grid.cell(
              )},
            )
          }
-         // Data definition section - only show if provided
+         // Data definition - clip til max højde, "..." ved overflow
          #if data_definition != none {
            text(fill: rgb("888888"),
                     weight: "bold",
                     size: 9pt,
                     upper([Datadefinition]))
            linebreak()
-           par(justify: true,
-           text(fill: rgb("888888"),
-           //font: ("Mari Book", "Roboto", "Arial", "Helvetica", "sans-serif"),
-                    size: 9pt,
-                    data_definition)
-                  )
+           block(
+             height: 52.8mm,
+             width: 100%,
+             clip: true,
+             {
+               par(justify: true,
+                 text(fill: rgb("888888"), size: 9pt, data_definition)
+               )
+               place(bottom + left,
+                 block(width: 100%, fill: white,
+                   text(fill: rgb("888888"), size: 9pt, "..."))
+               )
+             }
+           )
          }
        ]
 

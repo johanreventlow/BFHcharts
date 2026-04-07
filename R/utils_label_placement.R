@@ -118,8 +118,9 @@ clamp_to_bounds <- function(x, low_bound, high_bound) {
     stop("clamp_to_bounds: Alle parametre skal være numeriske")
   }
 
+  # Når labels er større end panelet kan bounds invertere - returner midtpunktet
   if (low_bound >= high_bound) {
-    stop("clamp_to_bounds: low_bound skal være mindre end high_bound")
+    return(rep((low_bound + high_bound) / 2, length(x)))
   }
 
   pmax(low_bound, pmin(high_bound, x))
