@@ -686,9 +686,9 @@ bfh_qic <- function(data,
   # Post-process: Add combined anhoej.signal column
   # This combines runs.signal and crossings.signal per part
   if (!is.null(qic_data)) {
-    # Use runs.signal directly from qicharts2
+    # Use runs.signal directly from qicharts2 (replace NA med FALSE)
     runs_sig_col <- if ("runs.signal" %in% names(qic_data)) {
-      qic_data$runs.signal
+      ifelse(is.na(qic_data$runs.signal), FALSE, qic_data$runs.signal)
     } else {
       rep(FALSE, nrow(qic_data))
     }
@@ -697,11 +697,18 @@ bfh_qic <- function(data,
     if ("n.crossings" %in% names(qic_data) &&
       "n.crossings.min" %in% names(qic_data) &&
       "part" %in% names(qic_data)) {
+      # safe_max: returnerer NA_real_ i stedet for -Inf når alle værdier er NA
+      safe_max <- function(v) {
+        v <- v[!is.na(v)]
+        if (length(v) == 0) return(NA_real_)
+        max(v)
+      }
+
       qic_data <- qic_data |>
         dplyr::group_by(part) |>
         dplyr::mutate(
-          part_n_cross = max(n.crossings, na.rm = TRUE),
-          part_n_cross_min = max(n.crossings.min, na.rm = TRUE),
+          part_n_cross = safe_max(n.crossings),
+          part_n_cross_min = safe_max(n.crossings.min),
           crossings_signal = !is.na(part_n_cross) & !is.na(part_n_cross_min) &
             part_n_cross < part_n_cross_min
         ) |>
@@ -718,6 +725,11 @@ bfh_qic <- function(data,
       # No crossings data - use runs.signal only
       qic_data$anhoej.signal <- runs_sig_col
     }
+
+    # Sikr at anhoej.signal aldrig indeholder NA (downstream kræver TRUE/FALSE)
+    qic_data$anhoej.signal <- ifelse(
+      is.na(qic_data$anhoej.signal), FALSE, qic_data$anhoej.signal
+    )
   }
 
   # Convert width/height to inches using unit conversion
