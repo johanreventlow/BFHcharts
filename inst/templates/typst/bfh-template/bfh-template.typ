@@ -106,10 +106,41 @@ show table.cell: it => {
                 )]        )
             ) +
           align(bottom,
-            par(leading: 0.15em, {
-              set text(rgb("fff"), size: 38pt)
-              title
-            })
+            context {
+              // Auto-skalér titel-font så hver linje passer på én linje
+              // Titlen har typisk 2 linjer (datasæt + indikator) adskilt af linebreak
+              // Strategi: mål en reference med præcis 2 linjer ved samme font-størrelse
+              // og sammenlign med titlens faktiske højde
+              let max-width = 264mm  // A4 landscape minus insets
+              let max-size = 38pt
+              let min-size = 24pt
+              let step = 2pt
+              let leading = 0.15em
+              let final-size = max-size
+
+              while final-size >= min-size {
+                // Mål titlens faktiske højde ved denne bredde
+                let actual = measure(block(width: max-width, par(leading: leading, {
+                  set text(size: final-size)
+                  title
+                })))
+                // Mål reference: præcis 2 korte linjer ved samme font
+                let ref = measure(block(width: max-width, par(leading: leading, {
+                  set text(size: final-size)
+                  [X\ X]
+                })))
+                // Hvis titlen er højere end 2 linjer, reducer font
+                if actual.height <= ref.height * 1.05 {
+                  break
+                }
+                final-size -= step
+              }
+
+              par(leading: leading, {
+                set text(rgb("fff"), size: final-size)
+                title
+              })
+            }
           ) 
         
       ),
