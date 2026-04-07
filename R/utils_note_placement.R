@@ -259,6 +259,8 @@ score_candidate_norm <- function(cx, cy, bbox,
   }
 
   # --- 2. Horisontale referencelinjer ---
+  # Filtrér NaN/NA (kan opstå hvis y_span ≈ 0 under normalisering)
+  line_y_norm <- line_y_norm[is.finite(line_y_norm)]
   if (length(line_y_norm) > 0) {
     for (ly in line_y_norm) {
       if (ly >= label_bot && ly <= label_top) {
