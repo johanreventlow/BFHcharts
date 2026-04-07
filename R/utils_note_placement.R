@@ -66,8 +66,11 @@ place_note_labels <- function(comment_data,
   }
 
   # Normaliserings-funktioner: data coords -> [0,1]
+  # Guard: y_span/x_span kan være 0 hvis alle værdier er ens → undgå division med nul
   y_span <- diff(y_range)
   x_span <- diff(x_range)
+  if (!is.finite(y_span) || y_span == 0) return(empty_result)
+  if (!is.finite(x_span) || x_span == 0) return(empty_result)
   norm_x <- function(x) (x - x_range[1]) / x_span
   norm_y <- function(y) (y - y_range[1]) / y_span
   denorm_x <- function(nx) nx * x_span + x_range[1]
