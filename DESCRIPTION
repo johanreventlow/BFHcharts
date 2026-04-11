@@ -1,6 +1,6 @@
 Package: BFHcharts
 Title: SPC Visualization for Healthcare Quality Improvement
-Version: 0.6.0
+Version: 0.6.1
 Authors@R: c(
     person(
       "Johan", "Reventlow",
@@ -38,6 +38,7 @@ Imports:
     yaml,
     lemon,
     marquee (>= 0.1.0),
+    svglite (>= 2.1.0),
     grid
 Suggests:
     testthat (>= 3.0.0),
