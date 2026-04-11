@@ -111,26 +111,28 @@ show table.cell: it => {
               // Titlen har typisk 2 linjer (datasæt + indikator) adskilt af linebreak
               // Strategi: mål en reference med præcis 2 linjer ved samme font-størrelse
               // og sammenlign med titlens faktiske højde
-              let max-width = 264mm  // A4 landscape minus insets
+              let title-area-width = 264mm  // A4 landscape (297mm) minus venstre/højre insets (33mm i alt)
               let max-size = 38pt
               let min-size = 24pt
               let step = 2pt
               let leading = 0.15em
+              // 1.05 giver 5% tolerance for Typst-målestøj (sub-pixel afrunding)
+              let height-tolerance = 1.05
               let final-size = max-size
 
-              while final-size >= min-size {
+              while final-size > min-size {
                 // Mål titlens faktiske højde ved denne bredde
-                let actual = measure(block(width: max-width, par(leading: leading, {
+                let actual = measure(block(width: title-area-width, par(leading: leading, {
                   set text(size: final-size)
                   title
                 })))
                 // Mål reference: præcis 2 korte linjer ved samme font
-                let ref = measure(block(width: max-width, par(leading: leading, {
+                let ref = measure(block(width: title-area-width, par(leading: leading, {
                   set text(size: final-size)
                   [X\ X]
                 })))
-                // Hvis titlen er højere end 2 linjer, reducer font
-                if actual.height <= ref.height * 1.05 {
+                // Hvis titlen passer inden for 2 linjer, brug denne størrelse
+                if actual.height <= ref.height * height-tolerance {
                   break
                 }
                 final-size -= step
