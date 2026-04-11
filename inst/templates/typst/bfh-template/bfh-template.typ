@@ -106,11 +106,50 @@ show table.cell: it => {
                 )]        )
             ) +
           align(bottom,
-            par(leading: 0.15em, {
-              set text(rgb("fff"), size: 38pt)
-              title
-            })
-          ) 
+            context {
+              // Tilgængelig bredde: A4 landscape (297mm) - left inset (26.4mm) - right inset (6.6mm)
+              let available-width = 264mm
+              let max-size = 38pt
+              let min-size = 24pt
+              let step = 2pt
+              // 1.05 tolerance absorberer Typst-målestøj og giver lidt slack
+              let tolerance = 1.05
+              let leading = 0.15em
+
+              let final-size = max-size
+
+              while final-size > min-size {
+                let title-height = measure(
+                  block(width: available-width,
+                    par(leading: leading, {
+                      set text(size: final-size)
+                      title
+                    }))
+                ).height
+
+                // Reference: to linjer (matchende den tilsigtede struktur: datasæt-titel \ indikator-titel)
+                let ref-height = measure(
+                  block(width: available-width,
+                    par(leading: leading, {
+                      set text(size: final-size)
+                      [X\ X]
+                    }))
+                ).height * tolerance
+
+                if title-height <= ref-height { break }
+                final-size = final-size - step
+              }
+
+              // Clamp: final-size må aldrig gå under min-size
+              // (løkkens while-betingelse ville ellers lade os lande på 22pt)
+              final-size = calc.max(final-size, min-size)
+
+              par(leading: leading, {
+                set text(rgb("fff"), size: final-size)
+                title
+              })
+            }
+          )
         
       ),
 
