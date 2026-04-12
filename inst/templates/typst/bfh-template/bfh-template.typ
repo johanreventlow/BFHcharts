@@ -118,25 +118,25 @@ show table.cell: it => {
               let leading = 0.15em
               // 1.05 giver 5% tolerance for Typst-målestøj (sub-pixel afrunding)
               let height-tolerance = 1.05
-              let final-size = max-size
 
-              while final-size > min-size {
-                // Mål titlens faktiske højde ved denne bredde
+              // Brug find() i stedet for while-løkke med mutablevariabel —
+              // while+mutation er upålidelig inde i context{}-blokke i Typst
+              let n-steps = int((max-size - min-size) / step)
+              let sizes = range(0, n-steps + 1).map(i => max-size - i * step)
+              let fits = sizes.find(s => {
                 let actual = measure(block(width: title-area-width, par(leading: leading, {
-                  set text(size: final-size)
+                  set text(size: s)
                   title
                 })))
-                // Mål reference: præcis 2 korte linjer ved samme font
+                // Reference: 2 linjer hvor første er fed (matcher titelstruktur:
+                // linje 1 = #strong[register-navn], linje 2 = indikator-navn)
                 let ref = measure(block(width: title-area-width, par(leading: leading, {
-                  set text(size: final-size)
-                  [X\ X]
+                  set text(size: s)
+                  [#strong[X]\ X]
                 })))
-                // Hvis titlen passer inden for 2 linjer, brug denne størrelse
-                if actual.height <= ref.height * height-tolerance {
-                  break
-                }
-                final-size -= step
-              }
+                actual.height <= ref.height * height-tolerance
+              })
+              let final-size = if fits == none { min-size } else { fits }
 
               par(leading: leading, {
                 set text(rgb("fff"), size: final-size)
