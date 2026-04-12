@@ -8,6 +8,32 @@
 NULL
 
 # ============================================================================
+# SAFE AGGREGATION
+# ============================================================================
+
+#' Safe Max — returnerer NA_real_ i stedet for -Inf når alle værdier er NA
+#' @param v Numerisk vektor
+#' @return Numerisk skalar
+#' @keywords internal
+#' @noRd
+safe_max <- function(v) {
+  v <- v[!is.na(v)]
+  if (length(v) == 0) return(NA_real_)
+  max(v)
+}
+
+#' Safe Min — returnerer NA_real_ i stedet for Inf når alle værdier er NA
+#' @param v Numerisk vektor
+#' @return Numerisk skalar
+#' @keywords internal
+#' @noRd
+safe_min <- function(v) {
+  v <- v[!is.na(v)]
+  if (length(v) == 0) return(NA_real_)
+  min(v)
+}
+
+# ============================================================================
 # ARROW SYMBOL DETECTION
 # ============================================================================
 # has_arrow_symbol() og parse_target_input() er defineret i utils_label_helpers.R

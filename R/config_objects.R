@@ -235,9 +235,15 @@ print.viewport_dims <- function(x, ...) {
 # PHASE CONFIGURATION
 # ============================================================================
 
+# NOTE: phase_config er reserveret til biSPCharts integration.
+# Bruges ikke i BFHcharts pipeline endnu — bfh_qic() passer part/freeze
+# direkte til qicharts2. Beholdt som fremtidig abstraktion.
+
 #' Create Phase Configuration
 #'
 #' Creates a configuration object for phase/shift handling in SPC charts.
+#' Currently reserved for biSPCharts integration — not used in the
+#' BFHcharts pipeline.
 #'
 #' @param part_positions Integer vector of row positions where phase changes occur (optional)
 #' @param freeze_position Integer row position where baseline should be frozen (optional)

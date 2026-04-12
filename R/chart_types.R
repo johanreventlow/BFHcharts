@@ -12,6 +12,11 @@ NULL
 # CHART TYPE MAPPINGS
 # ============================================================================
 
+# NOTE: CHART_TYPES_DA, get_qic_chart_type(), chart_type_requires_denominator(),
+# get_chart_description() og CHART_TYPE_DESCRIPTIONS er reserveret til
+# biSPCharts integration (dansk UI label → kode konvertering).
+# Bruges ikke i BFHcharts pipeline — bfh_qic() bruger CHART_TYPES_EN direkte.
+
 #' Danish Chart Type Names
 #'
 #' Mapping mellem danske UI labels og engelske qicharts2 koder.

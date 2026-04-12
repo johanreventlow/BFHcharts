@@ -697,13 +697,6 @@ bfh_qic <- function(data,
     if ("n.crossings" %in% names(qic_data) &&
       "n.crossings.min" %in% names(qic_data) &&
       "part" %in% names(qic_data)) {
-      # safe_max: returnerer NA_real_ i stedet for -Inf når alle værdier er NA
-      safe_max <- function(v) {
-        v <- v[!is.na(v)]
-        if (length(v) == 0) return(NA_real_)
-        max(v)
-      }
-
       qic_data <- qic_data |>
         dplyr::group_by(part) |>
         dplyr::mutate(

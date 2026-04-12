@@ -63,17 +63,7 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     parts <- split(qic_data[, available_cols, drop = FALSE], qic_data$part)
     raw_summary <- dplyr::bind_rows(lapply(parts, function(x) {
       row <- x[1, , drop = FALSE]
-      # Genberegn Anh\u00f8j-stats per part (qicharts2 beregner globalt)
-      safe_max <- function(v) {
-        v <- v[!is.na(v)]
-        if (length(v) == 0) return(NA_real_)
-        max(v)
-      }
-      safe_min <- function(v) {
-        v <- v[!is.na(v)]
-        if (length(v) == 0) return(NA_real_)
-        min(v)
-      }
+      # Genberegn Anhøj-stats per part (qicharts2 beregner globalt)
       if ("longest.run" %in% names(x))
         row$longest.run <- safe_max(x$longest.run)
       if ("longest.run.max" %in% names(x))
