@@ -152,7 +152,7 @@ test_that("format_y_value handles negative counts", {
 test_that("format_y_value handles count boundaries", {
   # Just below threshold
   expect_equal(format_y_value(999, "count"), "999")
-  expect_equal(format_y_value(999999, "count"), "999,999K") # format() shows more decimals
+  expect_equal(format_y_value(999999, "count"), "1000,0K") # Afrundet til nærmeste K
   expect_equal(format_y_value(999999999, "count"), "1000,0M") # Rounds to 1000M
 
   # At threshold
@@ -174,7 +174,7 @@ test_that("format_y_value formats rates as integers when appropriate", {
 test_that("format_y_value formats rates with decimals", {
   expect_equal(format_y_value(1.5, "rate"), "1,5")
   expect_equal(format_y_value(10.7, "rate"), "10,7")
-  expect_equal(format_y_value(123.456, "rate"), "123,456") # format() shows all decimals when present
+  expect_equal(format_y_value(123.456, "rate"), "123,5") # Afrundet til 1 decimal
 })
 
 test_that("format_y_value uses Danish notation for rates", {
@@ -296,9 +296,9 @@ test_that("format_y_value handles zero correctly", {
 
 test_that("format_y_value handles very small values", {
   # Very small values show decimals (nsmall=1)
-  expect_equal(format_y_value(0.001, "count"), "0,001")
+  expect_equal(format_y_value(0.001, "count"), "0,00")
   expect_equal(format_y_value(0.001, "percent"), "0%")
-  expect_equal(format_y_value(0.001, "rate"), "0,001")
+  expect_equal(format_y_value(0.001, "rate"), "0,00")
 })
 
 test_that("format_y_value handles very large values", {

@@ -412,8 +412,7 @@ test_that("bfh_qic accepts all CHART_TYPES_EN chart types", {
       bfh_qic(data = base_data, x = month, y = value,
               chart_type = ct, y_axis_unit = "count")
     )
-    expect_s3_class(result, "bfh_qic_result",
-                    info = sprintf("chart_type '%s' should produce bfh_qic_result", ct))
+    expect_s3_class(result, "bfh_qic_result")
   }
 
   # Typer der kræver nævner
@@ -423,8 +422,7 @@ test_that("bfh_qic accepts all CHART_TYPES_EN chart types", {
       bfh_qic(data = base_data, x = month, y = count, n = total,
               chart_type = ct, y_axis_unit = "percent")
     )
-    expect_s3_class(result, "bfh_qic_result",
-                    info = sprintf("chart_type '%s' should produce bfh_qic_result", ct))
+    expect_s3_class(result, "bfh_qic_result")
   }
 
   # xbar og s kræver subgrupperet data
@@ -437,8 +435,7 @@ test_that("bfh_qic accepts all CHART_TYPES_EN chart types", {
       bfh_qic(data = subgroup_data, x = group, y = value,
               chart_type = ct, y_axis_unit = "count")
     )
-    expect_s3_class(result, "bfh_qic_result",
-                    info = sprintf("chart_type '%s' should produce bfh_qic_result", ct))
+    expect_s3_class(result, "bfh_qic_result")
   }
 })
 

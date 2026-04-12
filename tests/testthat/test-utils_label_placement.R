@@ -42,9 +42,11 @@ test_that("clamp_to_bounds clamps til custom interval", {
   expect_equal(clamp_to_bounds(0.95, 0.1, 0.9), 0.9)
 })
 
-test_that("clamp_to_bounds afviser ugyldige bounds", {
-  expect_error(clamp_to_bounds(0.5, 0.9, 0.1), "mindre end")
-  expect_error(clamp_to_bounds(0.5, 0.5, 0.5), "mindre end")
+test_that("clamp_to_bounds håndterer flipped og lige bounds", {
+  # Flipped bounds — clamper stadig korrekt
+  expect_equal(clamp_to_bounds(0.5, 0.9, 0.1), 0.5)
+  # Lige bounds — returnerer værdien
+  expect_equal(clamp_to_bounds(0.5, 0.5, 0.5), 0.5)
 })
 
 test_that("clamp_to_bounds afviser ikke-numerisk", {

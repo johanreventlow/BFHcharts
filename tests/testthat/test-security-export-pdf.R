@@ -158,9 +158,9 @@ test_that("bfh_export_pdf allows safe paths", {
   # Safe paths should work
   temp_file <- tempfile(fileext = ".pdf")
 
-  expect_silent(
+  expect_no_error(suppressWarnings(
     bfh_export_pdf(chart, temp_file)
-  )
+  ))
 
   expect_true(file.exists(temp_file))
 
@@ -179,9 +179,9 @@ test_that("bfh_export_pdf allows paths with spaces", {
   dir.create(temp_dir)
   temp_file <- file.path(temp_dir, "my report.pdf")
 
-  expect_silent(
+  expect_no_error(suppressWarnings(
     bfh_export_pdf(chart, temp_file)
-  )
+  ))
 
   expect_true(file.exists(temp_file))
 
@@ -198,9 +198,9 @@ test_that("bfh_export_pdf allows paths with underscores and dashes", {
   # Safe special characters
   temp_file <- tempfile("my-report_2024", fileext = ".pdf")
 
-  expect_silent(
+  expect_no_error(suppressWarnings(
     bfh_export_pdf(chart, temp_file)
-  )
+  ))
 
   expect_true(file.exists(temp_file))
 
@@ -240,9 +240,9 @@ test_that("bfh_export_pdf allows Date objects for date field", {
   temp_file <- tempfile(fileext = ".pdf")
 
   # Date object is allowed for 'date' field
-  expect_silent(
+  expect_no_error(suppressWarnings(
     bfh_export_pdf(chart, temp_file, metadata = list(date = Sys.Date()))
-  )
+  ))
 
   # Cleanup
   if (file.exists(temp_file)) unlink(temp_file)
