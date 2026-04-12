@@ -55,10 +55,10 @@ add_plot_enhancements <- function(plot,
   # Calculate 20% extension
   if (inherits(last_x, c("POSIXct", "POSIXt"))) {
     range_secs <- as.numeric(difftime(last_x, first_x, units = "secs"))
-    extended_x <- last_x + range_secs * 0.20
+    extended_x <- last_x + range_secs * LINE_EXTENSION_FACTOR
   } else {
     x_range <- last_x - first_x
-    extended_x <- last_x + (x_range * 0.20)
+    extended_x <- last_x + (x_range * LINE_EXTENSION_FACTOR)
   }
 
   # Build extended line data using list then single bind
@@ -145,7 +145,7 @@ add_plot_enhancements <- function(plot,
     all_y <- c(y_vals, qic_data$ucl, qic_data$lcl)
     all_y <- all_y[!is.na(all_y)]
     y_data_range <- range(all_y)
-    y_expand <- diff(y_data_range) * 0.25  # Matcher expansion(mult = 0.25)
+    y_expand <- diff(y_data_range) * Y_AXIS_EXPANSION_MULT
     y_range <- c(y_data_range[1] - y_expand, y_data_range[2] + y_expand)
 
     x_range <- range(qic_data$x, na.rm = TRUE)
@@ -202,7 +202,7 @@ add_plot_enhancements <- function(plot,
         # Forkort pilens endpoint med fast afstand (3% af plottet) fra datapunktet
         x_span <- diff(as.numeric(x_range))
         y_span_arrow <- diff(y_range)
-        pad_norm <- 0.03
+        pad_norm <- ARROW_PADDING_NORM
 
         for (r in seq_len(nrow(arrow_data))) {
           dx_norm <- (as.numeric(arrow_data$point_x[r]) - as.numeric(arrow_data$arrow_x[r])) / x_span

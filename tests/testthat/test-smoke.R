@@ -83,11 +83,3 @@ test_that("detect_date_interval() detects weekly data", {
   expect_equal(result$median_days, 7)
 })
 
-test_that("parse_danish_dates() parses Danish format", {
-  dates <- c("01-01-2024", "15-03-2024", "31-12-2024")
-  result <- parse_danish_dates(dates)
-
-  expect_s3_class(result, "POSIXct")
-  expect_length(result, 3)
-  expect_false(any(is.na(result)))
-})

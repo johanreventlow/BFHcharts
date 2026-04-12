@@ -75,6 +75,17 @@ validate_numeric_parameter <- function(value,
                                        len = NULL,
                                        allow_null = TRUE,
                                        context = NULL) {
+  # Parameter-specifikke fejlbeskeder (DRY — defineret én gang)
+  PARAM_MESSAGES <- list(
+    multiply = "multiply must be a single positive number",
+    cl = "cl must be a single numeric value"
+  )
+
+  # Helper: hent parameter-specifik besked eller generisk
+  param_msg <- function(generic) {
+    PARAM_MESSAGES[[param_name]] %||% generic
+  }
+
   # Check NULL
   if (is.null(value)) {
     if (allow_null) {
@@ -85,94 +96,45 @@ validate_numeric_parameter <- function(value,
 
   # Check type and NA
   if (!is.numeric(value) || any(is.na(value))) {
-    # Generate parameter-specific error messages
-    if (param_name == "multiply") {
-      stop(sprintf(
-        "multiply must be a single positive number"
-      ), call. = FALSE)
-    } else if (param_name == "cl") {
-      stop(sprintf(
-        "cl must be a single numeric value"
-      ), call. = FALSE)
-    } else {
-      stop(sprintf(
-        "%s must be numeric without NAs, got: %s",
-        param_name,
-        paste(value, collapse = ", ")
-      ), call. = FALSE)
-    }
+    stop(param_msg(sprintf(
+      "%s must be numeric without NAs, got: %s",
+      param_name, paste(value, collapse = ", ")
+    )), call. = FALSE)
   }
 
   # Check length
   if (!is.null(len) && length(value) != len) {
-    # Generate parameter-specific error messages
-    if (param_name == "multiply") {
-      stop(sprintf(
-        "multiply must be a single positive number"
-      ), call. = FALSE)
-    } else if (param_name == "cl") {
-      stop(sprintf(
-        "cl must be a single numeric value"
-      ), call. = FALSE)
-    } else {
-      stop(sprintf(
-        "%s must have length %d, got: %d",
-        param_name, len, length(value)
-      ), call. = FALSE)
-    }
+    stop(param_msg(sprintf(
+      "%s must have length %d, got: %d",
+      param_name, len, length(value)
+    )), call. = FALSE)
   }
 
   # Check bounds
   if (any(value < min) || any(value > max)) {
-    # Build error message based on parameter type
     if (!is.null(context)) {
-      # For parameters with context (part, freeze, exclude)
-      # Use appropriate singular/plural form
-      if (param_name == "freeze") {
-        stop(sprintf(
-          "freeze position must be a positive integer within data bounds (%s), got: %s",
-          context, paste(value, collapse = ", ")
-        ), call. = FALSE)
-      } else if (param_name == "part") {
-        stop(sprintf(
-          "part positions must be positive integers within data bounds (%s), got: %s",
-          context, paste(value, collapse = ", ")
-        ), call. = FALSE)
-      } else if (param_name == "exclude") {
-        stop(sprintf(
-          "exclude positions must be positive integers within data bounds (%s), got: %s",
-          context, paste(value, collapse = ", ")
-        ), call. = FALSE)
+      # Kontekst-baserede fejlbeskeder (part, freeze, exclude)
+      ctx_msgs <- list(
+        freeze = "freeze position must be a positive integer within data bounds (%s), got: %s",
+        part = "part positions must be positive integers within data bounds (%s), got: %s",
+        exclude = "exclude positions must be positive integers within data bounds (%s), got: %s"
+      )
+      fmt <- ctx_msgs[[param_name]] %||%
+        "%s must be within data bounds (%s), got: %s"
+
+      if (param_name %in% names(ctx_msgs)) {
+        stop(sprintf(fmt, context, paste(value, collapse = ", ")), call. = FALSE)
       } else {
-        stop(sprintf(
-          "%s must be within data bounds (%s), got: %s",
-          param_name, context, paste(value, collapse = ", ")
-        ), call. = FALSE)
+        stop(sprintf(fmt, param_name, context, paste(value, collapse = ", ")), call. = FALSE)
       }
     } else {
-      # For parameters without context (base_size, width, height, multiply, cl, etc.)
-      # Use parameter-specific error messages where applicable
-      if (param_name == "multiply") {
-        stop(sprintf(
-          "multiply must be a single positive number"
-        ), call. = FALSE)
-      } else if (param_name == "cl") {
-        stop(sprintf(
-          "cl must be a single numeric value"
-        ), call. = FALSE)
-      } else if (param_name %in% c("width", "height")) {
+      # Bounds-fejl uden kontekst
+      if (param_name %in% c("width", "height")) {
         range_str <- sprintf("between 0 and 1000 inches")
-        stop(sprintf(
-          "%s must be %s",
-          param_name, range_str
-        ), call. = FALSE)
-      } else {
-        range_str <- sprintf("between %s and %s", min, max)
-        stop(sprintf(
-          "%s must be %s",
-          param_name, range_str
-        ), call. = FALSE)
+        stop(sprintf("%s must be %s", param_name, range_str), call. = FALSE)
       }
+      stop(param_msg(sprintf("%s must be between %s and %s", param_name, min, max)),
+           call. = FALSE)
     }
   }
 

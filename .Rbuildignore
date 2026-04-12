@@ -12,9 +12,13 @@
 ^CLAUDE\.md$
 ^PRIORITY_ISSUES\.md$
 ^demo_output$
-^demo_performance_test\.R$
-^demo_test\.R$
-^test_labels\.R$
+^demo_.*\.R$
+^test_.*\.R$
+^pdf_export_forsoeg\.R$
+^09_medicinsikker_.*\.R$
+^check_refactor_output\.log$
+^full_test_output\.log$
+^BISPCHARTS\.png$
 ^Rplots\.pdf$
 ^tests/testthat/Rplots\.pdf$
 ^\.claude$

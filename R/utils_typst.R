@@ -220,9 +220,11 @@ bfh_compile_typst <- function(typst_file, output) {
   # Check exit status
   exit_status <- attr(result, "status")
   if (!is.null(exit_status) && exit_status != 0) {
+    # Begræns output for at undgå lækage af filsystem-stier i fejlbeskeder
+    safe_output <- substr(paste(result, collapse = "\n"), 1, 500)
     stop(
       "Quarto compilation failed with exit code ", exit_status, "\n",
-      "  Output: ", paste(result, collapse = "\n"),
+      "  Output: ", safe_output,
       call. = FALSE
     )
   }

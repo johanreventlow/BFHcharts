@@ -163,8 +163,8 @@ print.spc_plot_config <- function(x, ...) {
 #'
 #' Creates a configuration object for plot viewport dimensions.
 #'
-#' @param width Viewport width in pixels (default: NULL for auto)
-#' @param height Viewport height in pixels (default: NULL for auto)
+#' @param width Viewport width in inches (default: NULL for auto)
+#' @param height Viewport height in inches (default: NULL for auto)
 #' @param base_size Base font size for scaling (default: 14)
 #'
 #' @return List with class "viewport_dims"

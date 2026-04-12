@@ -337,33 +337,3 @@ get_danish_interval_label <- function(interval_type) {
 )
 }
 
-# ============================================================================
-# DATE PARSING
-# ============================================================================
-
-#' Parse Danish Date Formats
-#'
-#' Attempts to parse dates in common Danish formats (dd-mm-yyyy).
-#'
-#' @param date_strings Character vector of date strings
-#'
-#' @return POSIXct vector of parsed dates (NA for failed parses)
-#'
-#' @keywords internal
-#' @noRd
-#' @examples
-#' \dontrun{
-#' parse_danish_dates(c("01-01-2024", "15-03-2024", "31-12-2024"))
-#' }
-parse_danish_dates <- function(date_strings) {
-  # Try Danish format first (dd-mm-yyyy)
-  parsed <- suppressWarnings(lubridate::dmy(date_strings))
-
-  # If that fails, try ISO format (yyyy-mm-dd)
-  if (all(is.na(parsed))) {
-    parsed <- suppressWarnings(lubridate::ymd(date_strings))
-  }
-
-  # Convert to POSIXct for consistency with qicharts2
-  as.POSIXct(parsed)
-}

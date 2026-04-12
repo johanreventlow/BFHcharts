@@ -28,6 +28,23 @@ REFERENCE_BASE_SIZE <- 14
 DEFAULT_LABEL_SIZE_MULTIPLIER <- 6
 
 # ============================================================================
+# LABEL SIZING CONSTANTS
+# ============================================================================
+
+# Reference device height for label auto-scaling (inches)
+# Baseret på 751px @ 96dpi ≈ 7.82", afrundet til 7.8
+DEVICE_HEIGHT_BASELINE_INCHES <- 7.8
+
+# Line extension factor — hvor langt CL/target forlænges forbi sidste datapunkt
+LINE_EXTENSION_FACTOR <- 0.20
+
+# Y-axis expansion multiplier — matcher ggplot2 expansion(mult = ...)
+Y_AXIS_EXPANSION_MULT <- 0.25
+
+# Arrow endpoint padding — afstand fra datapunkt i normaliserede koordinater
+ARROW_PADDING_NORM <- 0.03
+
+# ============================================================================
 # PDF EXPORT DIMENSIONS
 # ============================================================================
 

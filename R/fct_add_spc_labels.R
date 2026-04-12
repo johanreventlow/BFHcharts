@@ -115,7 +115,7 @@ add_spc_labels <- function(
   # FIX (#90): Kun auto-scale når viewport IKKE er givet.
   # Viewport-dimensioner er den autoritative kilde til sizing.
   # Uden dette fix er label_size ikke-deterministisk (afhænger af åben device).
-  device_height_baseline <- 7.8 # inches (reference: 751px @ 96dpi)
+  device_height_baseline <- DEVICE_HEIGHT_BASELINE_INCHES
 
   if (!is.null(viewport_height)) {
     # Viewport er givet - brug den som autoritativ kilde (deterministisk)
