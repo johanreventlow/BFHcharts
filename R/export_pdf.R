@@ -1081,6 +1081,13 @@ merge_metadata <- function(metadata, chart_title) {
 #' @return Character vector with Typst content
 #' @keywords internal
 build_typst_content <- function(chart_image, metadata, spc_stats, template, template_file) {
+  # Validér template-identifier mod injection
+
+  if (!grepl("^[a-zA-Z][a-zA-Z0-9_-]*$", template)) {
+    stop("template must be a valid Typst identifier (letters, numbers, hyphens, underscores)",
+         call. = FALSE)
+  }
+
   # Build import statement with relative path
   # Template file is now relative (e.g., "bfh-template/bfh-template.typ")
   # Apply escaping for special characters (quotes, spaces in filenames)

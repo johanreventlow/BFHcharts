@@ -58,7 +58,7 @@ BFHcharts/
 │   ├── spc_*.R                # Chart type implementations
 │   ├── anhoej_*.R             # Anhøj rules
 │   ├── utils_*.R              # Utilities
-│   └── zzz.R                  # Package startup
+│   └── globals.R               # Global variables & constants
 ├── inst/examples/             # Example data/scripts
 ├── tests/testthat/            # Unit tests
 ├── vignettes/                 # Long-form docs
@@ -68,7 +68,7 @@ BFHcharts/
 ### Core Components
 
 **Public API (1 funktion):**
-- `create_spc_chart()` ⭐ - **DEN ENESTE funktion brugere skal kende**
+- `bfh_qic()` ⭐ - **DEN ENESTE funktion brugere skal kende**
 
 **Internal API (Advanced/Power Users):**
 Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `:::`:
@@ -78,15 +78,13 @@ Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `
 - `add_spc_labels()` - Advanced label placement system
 - `apply_y_axis_formatting()` - Y-axis formatting utilities
 - `calculate_base_size()` - Responsive font size calculation
-- `create_plot_footer()` - Footer generation
 
 *Configuration objects:*
 - `spc_plot_config()`, `viewport_dims()`, `phase_config()` - Config abstractions
-- Kun brugt internt af `create_spc_chart()`
+- Kun brugt internt af `bfh_qic()`
 
 *Constants:*
 - `CHART_TYPES_DA`, `CHART_TYPES_EN` - Chart type mappings
-- `Y_AXIS_UNITS_DA` - Y-axis unit labels
 - Brugere passer strings direkte: `chart_type = "p"`, ikke konstant-opslag
 
 **Rationale:** **Ultra-simpelt API** - brugere lærer kun 1 funktion. Alt kompleksitet er skjult under motorhjelmen. Advanced users kan tilgå internals med `BFHcharts:::function_name()`.
@@ -360,7 +358,7 @@ test_that("Anhøj rules detect runs correctly", {
 * Error messages: Engelsk (standard for R packages)
 
 **Exports:**
-- `create_spc_chart()` ikke `lav_spc_diagram()`
+- `bfh_qic()` ikke `lav_spc_diagram()`
 - `add_control_limits()` ikke `tilfoej_kontrolgraenser()`
 
 **Internal terminology (comments):**

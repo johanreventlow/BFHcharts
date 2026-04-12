@@ -144,8 +144,7 @@ spc_plot_config <- function(
 #'
 #' @return Invisibly returns x
 #' @export
-#' @keywords internal
-#' @noRd
+#' @method print spc_plot_config
 print.spc_plot_config <- function(x, ...) {
   cat("SPC Plot Configuration:\n")
   cat("  Chart Type:", x$chart_type, "\n")
@@ -223,8 +222,7 @@ viewport_dims <- function(
 #'
 #' @return Invisibly returns x
 #' @export
-#' @keywords internal
-#' @noRd
+#' @method print viewport_dims
 print.viewport_dims <- function(x, ...) {
   cat("Viewport Dimensions:\n")
   cat("  Width:", if (is.null(x$width)) "Auto" else paste(x$width, "px"), "\n")
@@ -298,8 +296,7 @@ phase_config <- function(
 #'
 #' @return Invisibly returns x
 #' @export
-#' @keywords internal
-#' @noRd
+#' @method print phase_config
 print.phase_config <- function(x, ...) {
   cat("Phase Configuration:\n")
   cat("  Part Positions:", if (is.null(x$part_positions)) "NULL" else paste(x$part_positions, collapse = ", "), "\n")

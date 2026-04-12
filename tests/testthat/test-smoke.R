@@ -56,13 +56,6 @@ test_that("chart_type_requires_denominator() works correctly", {
   expect_false(chart_type_requires_denominator("i"))
 })
 
-test_that("Y_AXIS_UNITS_DA constants exist", {
-  expect_type(Y_AXIS_UNITS_DA, "character")
-  expect_true("count" %in% names(Y_AXIS_UNITS_DA))
-  expect_true("percent" %in% names(Y_AXIS_UNITS_DA))
-  expect_equal(Y_AXIS_UNITS_DA[["count"]], "Antal")
-})
-
 test_that("BFHtheme theme works with BFHcharts", {
   library(ggplot2)
 

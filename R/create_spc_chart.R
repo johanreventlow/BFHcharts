@@ -593,7 +593,7 @@ bfh_qic <- function(data,
   # Validate plot_margin parameter
   if (!is.null(plot_margin)) {
     # Check if it's a margin object (from ggplot2::margin())
-    if (inherits(plot_margin, "ggplot2::margin")) {
+    if (inherits(plot_margin, "ggplot2::margin") || inherits(plot_margin, "margin")) {
       # margin() object - trust that user used it correctly
       # Note: margin objects are grid::unit objects, cannot be compared with > or <
     } else if (is.numeric(plot_margin)) {
@@ -738,7 +738,6 @@ bfh_qic <- function(data,
     conversion_result <- convert_to_inches(width, height, units, dpi)
     width_inches <- conversion_result$width_inches
     height_inches <- conversion_result$height_inches
-    # detected_unit <- conversion_result$detected_unit  # For potential logging
   } else {
     width_inches <- NULL
     height_inches <- NULL
