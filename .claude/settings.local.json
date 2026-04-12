@@ -28,7 +28,8 @@
       "Bash(ls:*)",
       "Bash(xargs:*)",
       "Bash(git fetch:*)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "Bash(R --slave)"
     ],
     "deny": [],
     "ask": []

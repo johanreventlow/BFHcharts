@@ -14,7 +14,7 @@ bfh_create_typst_document(
 )
 }
 \arguments{
-\item{chart_image}{Path to chart PNG image}
+\item{chart_image}{Path to chart image (SVG or PNG)}
 
 \item{output}{Path for output .typ file}
 

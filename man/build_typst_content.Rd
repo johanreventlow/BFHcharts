@@ -7,7 +7,7 @@
 build_typst_content(chart_image, metadata, spc_stats, template, template_file)
 }
 \arguments{
-\item{chart_image}{Filename of chart PNG (relative to document location, already copied)}
+\item{chart_image}{Filename of chart image (relative to document location, already copied)}
 
 \item{metadata}{Metadata list}
 
