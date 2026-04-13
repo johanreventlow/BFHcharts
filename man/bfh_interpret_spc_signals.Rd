@@ -35,3 +35,4 @@ stats <- list(runs_actual = 5, runs_expected = 7,
 bfh_interpret_spc_signals(stats)
 
 }
+\keyword{internal}
