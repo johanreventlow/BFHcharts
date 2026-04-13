@@ -3,6 +3,28 @@
 #
 # Simplified interface til add_right_labels_marquee() med reasonable defaults
 
+
+#' Beregn viewport-skaleret label_size forankret til PDF golden standard
+#'
+#' Returnerer label_size proportionelt skaleret fra PDF-referencen
+#' (label_size=6 ved 191.4×109mm). Bruger geometric mean for
+#' aspect-ratio-uafhængig skalering.
+#'
+#' @param viewport_width_inches Viewport bredde i inches
+#' @param viewport_height_inches Viewport højde i inches
+#' @return Numerisk label_size
+#'
+#' @keywords internal
+#' @noRd
+compute_label_size_for_viewport <- function(viewport_width_inches,
+                                            viewport_height_inches) {
+  target_geo_mean <- sqrt(viewport_width_inches * viewport_height_inches)
+  label_size <- PDF_LABEL_SIZE * target_geo_mean / PDF_REFERENCE_GEO_MEAN_INCHES
+  # Cap: max label_size = 20 (sikrer value_size ≤ 100pt ved default value_pt=30)
+  min(label_size, 20)
+}
+
+
 #' Add SPC labels to plot using advanced placement system
 #'
 #' Wrapper funktion der tilføjer CL og Target labels til SPC plot
@@ -111,21 +133,16 @@ add_spc_labels <- function(
     }
   )
 
-  # Auto-scale label_size baseret på viewport/device height
-  # FIX (#90): Kun auto-scale når viewport IKKE er givet.
-  # Viewport-dimensioner er den autoritative kilde til sizing.
-  # Uden dette fix er label_size ikke-deterministisk (afhænger af åben device).
-  device_height_baseline <- DEVICE_HEIGHT_BASELINE_INCHES
-
-  if (!is.null(viewport_height)) {
-    # Viewport er givet - brug den som autoritativ kilde (deterministisk)
-    scale_factor <- pmax(1.0, viewport_height / device_height_baseline)
-    label_size <- label_size * scale_factor
-  } else if (device_info$open && !is.na(device_info$height)) {
-    # Legacy path: ingen viewport, brug åben device (ikke-deterministisk men nødvendigt)
-    dev_height <- device_info$height
-    scale_factor <- pmax(1.0, dev_height / device_height_baseline)
-    label_size <- label_size * scale_factor
+  # Label_size auto-scaling: Legacy fallback for callers der ikke angiver viewport
+  # Primær sti (bfh_qic, export): label_size er allerede korrekt beregnet via
+  # compute_label_size_for_viewport(), så ingen skalering nødvendig.
+  # Legacy sti: Hvis kun device er tilgængelig, skalér baseret på device height.
+  if (is.null(viewport_width) && is.null(viewport_height)) {
+    if (device_info$open && !is.na(device_info$height)) {
+      dev_height <- device_info$height
+      scale_factor <- pmax(1.0, dev_height / DEVICE_HEIGHT_BASELINE_INCHES)
+      label_size <- label_size * scale_factor
+    }
   }
 
   # Beregn y_range for time formatting context

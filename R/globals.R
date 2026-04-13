@@ -19,20 +19,12 @@ utils::globalVariables(c(
 # SIZING CONSTANTS
 # ============================================================================
 
-# Reference base_size for label sizing calculations
-# Used to scale labels responsively based on viewport
-REFERENCE_BASE_SIZE <- 14
-
-# Default label size multiplier at reference base_size
-# Produces optimal label sizing across different viewport sizes
-DEFAULT_LABEL_SIZE_MULTIPLIER <- 6
-
 # ============================================================================
 # LABEL SIZING CONSTANTS
 # ============================================================================
 
-# Reference device height for label auto-scaling (inches)
-# Baseret på 751px @ 96dpi ≈ 7.82", afrundet til 7.8
+# Reference device height for label auto-scaling (inches) — legacy fallback
+# Bruges kun når viewport_width ikke er tilgængelig
 DEVICE_HEIGHT_BASELINE_INCHES <- 7.8
 
 # Line extension factor — hvor langt CL/target forlænges forbi sidste datapunkt
@@ -80,3 +72,11 @@ PDF_CHART_HEIGHT_MM <- 109
 # This ensures consistent, readable labels regardless of how the chart was created
 # Value of 6 is calibrated for the PDF template dimensions
 PDF_LABEL_SIZE <- 6
+
+# Reference geometric mean for label_size skalering (inches)
+# Forankret til PDF golden standard: label_size=6 ved 191.4×109mm viewport
+# = sqrt(7.535 × 4.291) ≈ 5.687 inches
+# Alle andre viewports skaleres proportionelt herfra.
+PDF_REFERENCE_GEO_MEAN_INCHES <- sqrt(
+  (PDF_CHART_WIDTH_MM / 25.4) * (PDF_CHART_HEIGHT_MM / 25.4)
+)

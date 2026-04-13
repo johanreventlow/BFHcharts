@@ -369,7 +369,8 @@ bfh_export_pdf <- function(x,
   plot_for_export <- recalculate_labels_for_export(
     x = x_for_export,
     target_width_mm = PDF_CHART_WIDTH_MM,
-    target_height_mm = PDF_CHART_HEIGHT_MM
+    target_height_mm = PDF_CHART_HEIGHT_MM,
+    label_size = PDF_LABEL_SIZE
   )
 
   # Apply PDF-specific theme adjustments (zero margins)
@@ -708,6 +709,8 @@ strip_label_layers <- function(plot) {
 #' @param x A bfh_qic_result object
 #' @param target_width_mm Target width in mm for label POSITIONING (visible chart area)
 #' @param target_height_mm Target height in mm for label POSITIONING
+#' @param label_size Optional fixed label_size. Hvis NULL, beregnes automatisk
+#'   fra target-dimensionerne via compute_label_size_for_viewport().
 #'
 #' @return ggplot object with recalculated label positions
 #'
@@ -720,7 +723,8 @@ strip_label_layers <- function(plot) {
 #'
 #' @keywords internal
 #' @noRd
-recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm) {
+recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
+                                          label_size = NULL) {
   # Validate input
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object", call. = FALSE)
@@ -737,10 +741,10 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm) 
   config <- x$config
   label_config <- config$label_config
 
-  # Use fixed PDF_LABEL_SIZE for consistent sizing regardless of how the
-  # chart was created (interactive RStudio window, batch script, etc.)
-  # This value is calibrated for the PDF template dimensions (250x140mm)
-  new_label_size <- PDF_LABEL_SIZE
+  # Beregn label_size: brug eksplicit værdi eller beregn fra target-dimensioner
+  new_label_size <- label_size %||% compute_label_size_for_viewport(
+    target_width_inches, target_height_inches
+  )
 
   # Re-add labels with TARGET dimensions for positioning
   # and fixed PDF_LABEL_SIZE for font sizing

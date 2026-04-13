@@ -150,10 +150,25 @@ bfh_export_png <- function(x,
   width_inches <- width_mm / 25.4
   height_inches <- height_mm / 25.4
 
-  # Extract plot from bfh_qic_result object
-  # Note: Plot already has 5mm margins and blank axis titles removed
-  # via apply_spc_theme() in bfh_qic()
-  plot <- x$plot
+  # Tidlig guard: ggplot2 afviser dimensioner > 50 inches
+  if (width_inches > 50 || height_inches > 50) {
+    stop(
+      "Dimensions exceed 50 inches (",
+      round(width_inches, 1), " x ", round(height_inches, 1), " in). ",
+      "Reduce width_mm/height_mm.",
+      call. = FALSE
+    )
+  }
+
+  # Genberegn labels for PNG target-dimensioner
+  # Labels fra bfh_qic() var positioneret for dens viewport — ikke nødvendigvis
+  # de samme dimensioner som PNG-eksporten. Ligesom PDF-eksporten stripper og
+  # genanvender vi labels med de korrekte target-dimensioner.
+  plot <- recalculate_labels_for_export(
+    x = x,
+    target_width_mm = width_mm,
+    target_height_mm = height_mm
+  )
 
   # Create output directory if it doesn't exist
   output_dir <- dirname(output)

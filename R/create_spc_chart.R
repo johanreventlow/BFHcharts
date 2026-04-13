@@ -784,9 +784,14 @@ bfh_qic <- function(data,
   viewport_width_inches <- width_inches
   viewport_height_inches <- height_inches
 
-  # Add SPC labels automatically
-  # Responsive label sizing: scales based on viewport base_size
-  label_size <- viewport$base_size / REFERENCE_BASE_SIZE * DEFAULT_LABEL_SIZE_MULTIPLIER
+  # Responsive label sizing forankret til PDF golden standard
+  if (!is.null(viewport_width_inches) && !is.null(viewport_height_inches)) {
+    label_size <- compute_label_size_for_viewport(
+      viewport_width_inches, viewport_height_inches
+    )
+  } else {
+    label_size <- PDF_LABEL_SIZE
+  }
 
   plot <- add_spc_labels(
     plot = plot,
