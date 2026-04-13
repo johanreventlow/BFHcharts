@@ -360,8 +360,8 @@ bfh_generate_analysis <- function(x,
 
 
 # Intern funktion: Byg komplet fallback-analysetekst
-# Kombinerer stabilitetsvurdering + målvurdering + handlingsforslag
-# og justerer til min_chars-max_chars intervallet.
+# Allokerer tegnbudget til stability/target/action dele
+# og vælger passende variant for hver del.
 build_fallback_analysis <- function(context,
                                     min_chars = 300,
                                     max_chars = 375) {
@@ -393,28 +393,57 @@ build_fallback_analysis <- function(context,
     is.na(spc_stats$crossings_actual)
   no_variation <- runs_missing && crossings_missing
 
+  # --- Budget-allokering ---
+  # stability: ~50%, target: ~25%, action: ~25%
+  stability_budget <- floor(max_chars * 0.50)
+  target_budget <- floor(max_chars * 0.25)
+  action_budget <- max_chars - stability_budget - target_budget
+
+  texts <- load_spc_texts()
+  placeholder_data <- list(
+    runs_actual = spc_stats$runs_actual,
+    runs_expected = spc_stats$runs_expected,
+    crossings_actual = spc_stats$crossings_actual,
+    crossings_expected = spc_stats$crossings_expected,
+    outliers_actual = spc_stats$outliers_actual
+  )
+
+  # --- 1. Stabilitetstekst ---
   if (no_variation) {
     cl_fmt <- if (!is.null(centerline) && !is.na(centerline)) {
       format_target_value(centerline, y_axis_unit = context$y_axis_unit)
     } else {
       "ukendt"
     }
-
-    texts <- load_spc_texts()
     stability <- pick_text(
       texts$stability$no_variation,
-      data = list(centerline = cl_fmt)
+      data = list(centerline = cl_fmt),
+      budget = stability_budget
     )
+  } else {
+    key <- if (!has_runs && !has_crossings && !has_outliers) {
+      "no_signals"
+    } else if (has_runs && !has_crossings && !has_outliers) {
+      "runs_only"
+    } else if (!has_runs && has_crossings && !has_outliers) {
+      "crossings_only"
+    } else if (!has_runs && !has_crossings && has_outliers) {
+      "outliers_only"
+    } else if (has_runs && has_crossings && !has_outliers) {
+      "runs_crossings"
+    } else if (has_runs && !has_crossings && has_outliers) {
+      "runs_outliers"
+    } else if (!has_runs && has_crossings && has_outliers) {
+      "crossings_outliers"
+    } else {
+      "all_signals"
+    }
+    stability <- pick_text(texts$stability[[key]],
+                           data = placeholder_data,
+                           budget = stability_budget)
   }
 
-  # --- 1. Stabilitetstekst (kun hvis ikke ingen-variation) ---
-  if (!no_variation) {
-    stability <- fallback_stability_text(
-      spc_stats, has_runs, has_crossings, has_outliers
-    )
-  }
-
-  # --- 2. M\u00e5lvurdering ---
+  # --- 2. Målvurdering ---
   has_target <- !is.null(target_value) && !is.na(target_value) &&
     is.numeric(target_value) &&
     !is.null(centerline) && !is.na(centerline)
@@ -425,75 +454,25 @@ build_fallback_analysis <- function(context,
   if (has_target) {
     fmt <- format_target_value(target_value, y_axis_unit = context$y_axis_unit)
     tolerance <- max(abs(target_value) * 0.05, 0.01)
-    texts <- load_spc_texts()
 
     if (abs(centerline - target_value) <= tolerance) {
-      target_text <- pick_text(texts$target$at_target, data = list(target = fmt))
+      target_text <- pick_text(texts$target$at_target,
+                               data = list(target = fmt),
+                               budget = target_budget)
       at_target <- TRUE
     } else if (centerline > target_value) {
-      target_text <- pick_text(texts$target$over_target, data = list(target = fmt))
+      target_text <- pick_text(texts$target$over_target,
+                               data = list(target = fmt),
+                               budget = target_budget)
     } else {
-      target_text <- pick_text(texts$target$under_target, data = list(target = fmt))
+      target_text <- pick_text(texts$target$under_target,
+                               data = list(target = fmt),
+                               budget = target_budget)
     }
   }
 
   # --- 3. Handlingsforslag ---
-  action <- fallback_action_text(is_stable, has_target, at_target)
-
-  # --- Kombinér ---
-  parts <- c(stability, target_text, action)
-  parts <- parts[nchar(parts) > 0]
-  text <- paste(parts, collapse = " ")
-
-  # --- Justér længde ---
-  text <- adjust_fallback_length(text, min_chars, max_chars, n_points)
-
-  return(text)
-}
-
-
-# Stabilitetstekst baseret på signalkombination (fra YAML)
-fallback_stability_text <- function(spc_stats,
-                                    has_runs,
-                                    has_crossings,
-                                    has_outliers) {
-  texts <- load_spc_texts()
-  if (length(texts) == 0) return("Processen er under vurdering.")
-
-  key <- if (!has_runs && !has_crossings && !has_outliers) {
-    "no_signals"
-  } else if (has_runs && !has_crossings && !has_outliers) {
-    "runs_only"
-  } else if (!has_runs && has_crossings && !has_outliers) {
-    "crossings_only"
-  } else if (!has_runs && !has_crossings && has_outliers) {
-    "outliers_only"
-  } else if (has_runs && has_crossings && !has_outliers) {
-    "runs_crossings"
-  } else if (has_runs && !has_crossings && has_outliers) {
-    "runs_outliers"
-  } else if (!has_runs && has_crossings && has_outliers) {
-    "crossings_outliers"
-  } else {
-    "all_signals"
-  }
-
-  pick_text(texts$stability[[key]], data = list(
-    runs_actual = spc_stats$runs_actual,
-    runs_expected = spc_stats$runs_expected,
-    crossings_actual = spc_stats$crossings_actual,
-    crossings_expected = spc_stats$crossings_expected,
-    outliers_actual = spc_stats$outliers_actual
-  ))
-}
-
-
-# Handlingsforslag baseret på stabilitet og mål (fra YAML)
-fallback_action_text <- function(is_stable, has_target, at_target) {
-  texts <- load_spc_texts()
-  if (length(texts) == 0) return("")
-
-  key <- if (is_stable && has_target && at_target) {
+  action_key <- if (is_stable && has_target && at_target) {
     "stable_at_target"
   } else if (is_stable && has_target && !at_target) {
     "stable_not_at_target"
@@ -506,8 +485,17 @@ fallback_action_text <- function(is_stable, has_target, at_target) {
   } else {
     "unstable_no_target"
   }
+  action <- pick_text(texts$action[[action_key]], budget = action_budget)
 
-  pick_text(texts$action[[key]])
+  # --- Kombinér ---
+  parts <- c(stability, target_text, action)
+  parts <- parts[nchar(parts) > 0]
+  text <- paste(parts, collapse = " ")
+
+  # --- Padding hvis under minimum ---
+  text <- pad_to_minimum(text, min_chars, n_points, texts)
+
+  return(text)
 }
 
 
@@ -534,33 +522,25 @@ format_target_value <- function(x, y_axis_unit = NULL) {
 }
 
 
-# Justér tekst til min/max længde
-adjust_fallback_length <- function(text, min_chars, max_chars, n_points) {
-  current <- nchar(text)
-  texts <- load_spc_texts()
+# Tilføj padding-tekst hvis teksten er under minimumlængde.
+# Trimning er ikke nødvendig — budget-allokering sikrer max_chars.
+pad_to_minimum <- function(text, min_chars, n_points, texts) {
+  if (nchar(text) >= min_chars) return(text)
 
-  if (current < min_chars && !is.null(n_points) && !is.na(n_points)) {
+  if (!is.null(n_points) && !is.na(n_points)) {
     padding <- pick_text(texts$padding$data_points,
-                         data = list(n_points = n_points))
+                         data = list(n_points = n_points),
+                         budget = min_chars - nchar(text))
     text <- paste(text, padding)
-    current <- nchar(text)
   }
 
-  if (current < min_chars) {
-    text <- paste(text, pick_text(texts$padding$generic))
-    current <- nchar(text)
+  if (nchar(text) < min_chars) {
+    padding <- pick_text(texts$padding$generic,
+                         budget = min_chars - nchar(text))
+    text <- paste(text, padding)
   }
 
-  # Trim hvis for lang: find sidste punktum inden for max_chars
-  if (current > max_chars) {
-    truncated <- substr(text, 1, max_chars)
-    last_period <- max(gregexpr("\\.", truncated)[[1]])
-    if (last_period > min_chars) {
-      text <- substr(text, 1, last_period)
-    }
-  }
-
-  return(text)
+  text
 }
 
 
@@ -586,13 +566,40 @@ load_spc_texts <- function() {
 }
 
 
-# Vælg variant og erstat {placeholders} med værdier.
-# Deterministisk: vælger altid første variant for reproducerbare rapporter.
-pick_text <- function(variants, data = list()) {
+# Vælg tekstvariant baseret på pladsbudget og erstat {placeholders}.
+# Named variants (short/standard/detailed): vælg længste der passer.
+# Bagudkompatibel med gammelt format (liste af strenge).
+pick_text <- function(variants, data = list(), budget = Inf) {
   if (length(variants) == 0) return("")
 
-  text <- variants[[1]]
+  # Bagudkompatibilitet: gammelt format er en unamed liste af strenge
+  if (is.null(names(variants)) && is.character(variants[[1]])) {
+    text <- variants[[1]]
+    return(substitute_placeholders(text, data))
+  }
 
+  # Nyt format: named list (short, standard, detailed)
+  # Prøv fra længst til kortest, vælg den længste der passer i budgettet
+  candidates <- c("detailed", "standard", "short")
+  for (candidate in candidates) {
+    if (!is.null(variants[[candidate]])) {
+      text <- substitute_placeholders(variants[[candidate]], data)
+      if (nchar(text) <= budget) return(text)
+    }
+  }
+
+  # Fallback: korteste tilgængelige variant (selv hvis den overstiger budget)
+  available <- intersect(rev(candidates), names(variants))
+  if (length(available) > 0) {
+    return(substitute_placeholders(variants[[available[1]]], data))
+  }
+
+  return("")
+}
+
+
+# Erstat {placeholders} med faktiske værdier i en tekststreng
+substitute_placeholders <- function(text, data = list()) {
   for (key in names(data)) {
     text <- gsub(
       paste0("\\{", key, "\\}"),
@@ -600,6 +607,5 @@ pick_text <- function(variants, data = list()) {
       text
     )
   }
-
-  return(text)
+  text
 }
