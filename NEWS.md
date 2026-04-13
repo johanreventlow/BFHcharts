@@ -1,3 +1,18 @@
+# BFHcharts 0.6.2
+
+## Forbedringer
+
+* `spc_analysis.yml` har nu short/standard/detailed varianter for alle tekster,
+  hvilket giver bedre kontrol over analysetekst-længde (#115)
+* `pick_text()` vælger nu automatisk den længste variant der passer inden for
+  tegnbudgettet — erstatter trimning med naturligt variantvalg
+
+## Breaking changes
+
+* `bfh_interpret_spc_signals()` er ikke længere eksporteret. Brug
+  `BFHcharts:::` for direkte adgang. Funktionen bruges kun internt af
+  `bfh_generate_analysis()` (#115)
+
 # BFHcharts 0.6.0
 
 ## Package Size Reduction

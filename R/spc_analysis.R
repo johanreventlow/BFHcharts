@@ -29,7 +29,7 @@
 #'               crossings_actual = 8, crossings_expected = 5)
 #' bfh_interpret_spc_signals(stats)
 #'
-#' @export
+#' @keywords internal
 bfh_interpret_spc_signals <- function(spc_stats) {
   interpretations <- character(0)
 
