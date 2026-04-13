@@ -324,3 +324,88 @@ test_that("bfh_generate_analysis validates min_chars < max_chars", {
     "min_chars must be less than max_chars"
   )
 })
+
+# ==============================================================================
+# pick_text() tests (intern funktion)
+# ==============================================================================
+
+test_that("pick_text vælger detailed variant når budget tillader det", {
+  variants <- list(
+    short = "Kort tekst.",
+    standard = "Standard tekst med lidt mere.",
+    detailed = "Detaljeret tekst med meget mere indhold og forklaring."
+  )
+  result <- BFHcharts:::pick_text(variants, budget = 200)
+  expect_equal(result, "Detaljeret tekst med meget mere indhold og forklaring.")
+})
+
+test_that("pick_text vælger standard variant ved mellemstort budget", {
+  variants <- list(
+    short = "Kort tekst.",
+    standard = "Standard tekst med lidt mere.",
+    detailed = "Detaljeret tekst med meget mere indhold og forklaring."
+  )
+  budget <- nchar("Standard tekst med lidt mere.") + 1
+  result <- BFHcharts:::pick_text(variants, budget = budget)
+  expect_equal(result, "Standard tekst med lidt mere.")
+})
+
+test_that("pick_text vælger short variant ved lille budget", {
+  variants <- list(
+    short = "Kort tekst.",
+    standard = "Standard tekst med lidt mere.",
+    detailed = "Detaljeret tekst med meget mere indhold og forklaring."
+  )
+  result <- BFHcharts:::pick_text(variants, budget = 15)
+  expect_equal(result, "Kort tekst.")
+})
+
+test_that("pick_text returnerer short selv når budget er for lille", {
+  variants <- list(
+    short = "Kort tekst.",
+    standard = "Standard tekst med lidt mere."
+  )
+  result <- BFHcharts:::pick_text(variants, budget = 3)
+  expect_equal(result, "Kort tekst.")
+})
+
+test_that("pick_text erstatter placeholders i valgt variant", {
+  variants <- list(
+    short = "Serie: {runs_actual}.",
+    standard = "Serie ({runs_actual}) over forventet ({runs_expected}).",
+    detailed = "Længste serie ({runs_actual}) overstiger forventet maksimum ({runs_expected}). Skift."
+  )
+  result <- BFHcharts:::pick_text(
+    variants,
+    data = list(runs_actual = 9, runs_expected = 7),
+    budget = 200
+  )
+  expect_true(grepl("9", result))
+  expect_true(grepl("7", result))
+  expect_false(grepl("\\{runs_actual\\}", result))
+})
+
+test_that("pick_text håndterer varianter med kun short og standard", {
+  variants <- list(
+    short = "Kort.",
+    standard = "Standard tekst."
+  )
+  result <- BFHcharts:::pick_text(variants, budget = 200)
+  expect_equal(result, "Standard tekst.")
+})
+
+test_that("pick_text håndterer gammel YAML-format (bagudkompatibilitet)", {
+  variants <- list("Processen er stabil.")
+  result <- BFHcharts:::pick_text(variants, budget = 200)
+  expect_equal(result, "Processen er stabil.")
+})
+
+test_that("pick_text med budget = Inf vælger detailed", {
+  variants <- list(
+    short = "Kort.",
+    standard = "Standard.",
+    detailed = "Detaljeret."
+  )
+  result <- BFHcharts:::pick_text(variants)
+  expect_equal(result, "Detaljeret.")
+})
