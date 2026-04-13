@@ -1,5 +1,8 @@
 # SPC Analysetekster - fallback når AI ikke er tilgængelig
 #
+# Hver nøgle indeholder named variants: short, standard, detailed.
+# pick_text() vælger den længste variant der passer inden for budgettet.
+#
 # Placeholders (erstattes med faktiske værdier):
 #   {runs_actual}        - Faktisk længste serie
 #   {runs_expected}      - Forventet maksimum for serie
@@ -9,62 +12,94 @@
 #   {centerline}         - Centerlinjens værdi
 #   {target}             - Målværdi (formateret)
 #   {n_points}           - Antal datapunkter
-#
-# Hver nøgle indeholder en liste af varianter.
-# Systemet vælger tilfældigt blandt varianter af passende længde.
 
 stability:
   no_variation:
-    - "Niveauet er konstant på {centerline}. Da alle datapunkter er identiske, kan processen ikke vurderes med statistisk proceskontrol."
+    short: "Niveauet er konstant på {centerline}."
+    standard: "Niveauet er konstant på {centerline}. Processen kan ikke vurderes med statistisk proceskontrol."
+    detailed: "Niveauet er konstant på {centerline}. Da alle datapunkter er identiske, kan processen ikke vurderes med statistisk proceskontrol."
 
   no_signals:
-    - "Processen er stabil og forudsigelig. Variationen er naturlig og uden tegn på systematiske ændringer."
+    short: "Processen er stabil og forudsigelig."
+    standard: "Processen er stabil og forudsigelig. Variationen er naturlig og uden systematiske ændringer."
+    detailed: "Processen er stabil og forudsigelig. Variationen er naturlig og uden tegn på systematiske ændringer."
 
   runs_only:
-    - "Der er tegn på et skift i procesniveauet. Længste serie ({runs_actual}) overstiger det forventede maksimum ({runs_expected}). Dette indikerer, at processen har ændret sig."
+    short: "Der er tegn på et skift i procesniveauet."
+    standard: "Der er tegn på et skift i procesniveauet. Længste serie ({runs_actual}) overstiger forventet ({runs_expected})."
+    detailed: "Der er tegn på et skift i procesniveauet. Længste serie ({runs_actual}) overstiger det forventede maksimum ({runs_expected}). Dette indikerer, at processen har ændret sig."
 
   crossings_only:
-    - "Der er tegn på gruppering i data. Antallet af krydsninger ({crossings_actual}) er under forventet minimum ({crossings_expected}). Datapunkterne varierer ikke tilfældigt omkring centrallinjen."
+    short: "Der er tegn på gruppering i data."
+    standard: "Der er tegn på gruppering i data. Antallet af krydsninger ({crossings_actual}) er under forventet minimum ({crossings_expected})."
+    detailed: "Der er tegn på gruppering i data. Antallet af krydsninger ({crossings_actual}) er under forventet minimum ({crossings_expected}). Datapunkterne varierer ikke tilfældigt omkring centrallinjen."
 
   outliers_only:
-    - "Der er fundet {outliers_actual} observation(er) uden for kontrolgrænserne. Disse afvigelser bør undersøges for særlige årsager, da de kan skyldes usædvanlige hændelser eller målefejl."
+    short: "Der er fundet {outliers_actual} observation(er) uden for kontrolgrænserne."
+    standard: "Der er fundet {outliers_actual} observation(er) uden for kontrolgrænserne. Disse bør undersøges for særlige årsager."
+    detailed: "Der er fundet {outliers_actual} observation(er) uden for kontrolgrænserne. Disse afvigelser bør undersøges for særlige årsager, da de kan skyldes usædvanlige hændelser eller målefejl."
 
   runs_crossings:
-    - "Processen viser systematisk ustabilitet. Både serielængde ({runs_actual} > {runs_expected}) og antal krydsninger ({crossings_actual} < {crossings_expected}) afviger fra det forventede. Dette peger på en grundlæggende procesændring."
+    short: "Processen viser systematisk ustabilitet."
+    standard: "Processen viser systematisk ustabilitet. Både serielængde ({runs_actual} > {runs_expected}) og krydsninger ({crossings_actual} < {crossings_expected}) afviger."
+    detailed: "Processen viser systematisk ustabilitet. Både serielængde ({runs_actual} > {runs_expected}) og antal krydsninger ({crossings_actual} < {crossings_expected}) afviger fra det forventede. Dette peger på en grundlæggende procesændring."
 
   runs_outliers:
-    - "Processen viser et niveauskift (serielængde {runs_actual} > {runs_expected}) og {outliers_actual} observation(er) uden for kontrolgrænserne. Undersøg, om niveauskiftet og de ekstreme værdier har samme underliggende årsag."
+    short: "Processen viser niveauskift og ekstreme værdier."
+    standard: "Processen viser et niveauskift (serielængde {runs_actual} > {runs_expected}) og {outliers_actual} observation(er) uden for kontrolgrænserne."
+    detailed: "Processen viser et niveauskift (serielængde {runs_actual} > {runs_expected}) og {outliers_actual} observation(er) uden for kontrolgrænserne. Undersøg, om niveauskiftet og de ekstreme værdier har samme underliggende årsag."
 
   crossings_outliers:
-    - "Processen viser gruppering (krydsninger {crossings_actual} < {crossings_expected}) og {outliers_actual} observation(er) uden for kontrolgrænserne. Dette mønster kan indikere, at processen påvirkes af skiftende betingelser."
+    short: "Processen viser gruppering og ekstreme værdier."
+    standard: "Processen viser gruppering (krydsninger {crossings_actual} < {crossings_expected}) og {outliers_actual} observation(er) uden for kontrolgrænserne."
+    detailed: "Processen viser gruppering (krydsninger {crossings_actual} < {crossings_expected}) og {outliers_actual} observation(er) uden for kontrolgrænserne. Dette mønster kan indikere, at processen påvirkes af skiftende betingelser."
 
   all_signals:
-    - "Processen er ustabil med flere samtidige signaler: niveauskift (serielængde {runs_actual} > {runs_expected}), gruppering (krydsninger {crossings_actual} < {crossings_expected}) og {outliers_actual} observation(er) uden for kontrolgrænserne. En grundig analyse anbefales."
+    short: "Processen er ustabil med flere samtidige signaler."
+    standard: "Processen er ustabil med flere samtidige signaler: niveauskift, gruppering og {outliers_actual} observation(er) uden for kontrolgrænserne."
+    detailed: "Processen er ustabil med flere samtidige signaler: niveauskift (serielængde {runs_actual} > {runs_expected}), gruppering (krydsninger {crossings_actual} < {crossings_expected}) og {outliers_actual} observation(er) uden for kontrolgrænserne. En grundig analyse anbefales."
 
 target:
   at_target:
-    - "Niveauet ligger tæt på målet ({target})."
+    short: "Niveauet ligger tæt på målet ({target})."
+    standard: "Niveauet ligger tæt på målet ({target})."
   over_target:
-    - "Niveauet ligger over målet ({target})."
+    short: "Niveauet ligger over målet ({target})."
+    standard: "Niveauet ligger over målet ({target})."
   under_target:
-    - "Niveauet ligger under målet ({target})."
+    short: "Niveauet ligger under målet ({target})."
+    standard: "Niveauet ligger under målet ({target})."
 
 action:
   stable_at_target:
-    - "Fortsæt den nuværende praksis og overvåg processen løbende for at fastholde det aktuelle niveau."
+    short: "Fortsæt nuværende praksis."
+    standard: "Fortsæt den nuværende praksis og overvåg processen løbende."
+    detailed: "Fortsæt den nuværende praksis og overvåg processen løbende for at fastholde det aktuelle niveau."
   stable_not_at_target:
-    - "Processen er stabil, men når ikke målet. En målrettet procesændring er nødvendig. Den nuværende praksis vil fortsætte med at levere de samme resultater."
+    short: "En målrettet procesændring er nødvendig."
+    standard: "Processen er stabil, men når ikke målet. En målrettet procesændring er nødvendig."
+    detailed: "Processen er stabil, men når ikke målet. En målrettet procesændring er nødvendig. Den nuværende praksis vil fortsætte med at levere de samme resultater."
   stable_no_target:
-    - "Overvej at fastsætte et mål for indikatoren for at kunne vurdere, om det aktuelle niveau er tilfredsstillende, og om der er behov for forbedring."
+    short: "Overvej at fastsætte et mål for indikatoren."
+    standard: "Overvej at fastsætte et mål for indikatoren for at vurdere, om niveauet er tilfredsstillende."
+    detailed: "Overvej at fastsætte et mål for indikatoren for at kunne vurdere, om det aktuelle niveau er tilfredsstillende, og om der er behov for forbedring."
   unstable_at_target:
-    - "Selvom målet aktuelt er opfyldt, er processen ustabil. Identificér årsagerne til variationen for at sikre, at niveauet kan fastholdes."
+    short: "Processen er ustabil — identificér årsagerne til variationen."
+    standard: "Selvom målet aktuelt er opfyldt, er processen ustabil. Identificér årsagerne til variationen."
+    detailed: "Selvom målet aktuelt er opfyldt, er processen ustabil. Identificér årsagerne til variationen for at sikre, at niveauet kan fastholdes."
   unstable_not_at_target:
-    - "Prioritér at identificere og fjerne de særlige årsager til variationen, før yderligere forbedringstiltag iværksættes."
+    short: "Identificér og fjern de særlige årsager til variationen."
+    standard: "Prioritér at identificere og fjerne de særlige årsager til variationen."
+    detailed: "Prioritér at identificere og fjerne de særlige årsager til variationen, før yderligere forbedringstiltag iværksættes."
   unstable_no_target:
-    - "Identificér og undersøg årsagerne til den usædvanlige variation. Når processen er under kontrol, kan der fastsættes et realistisk mål."
+    short: "Undersøg årsagerne til den usædvanlige variation."
+    standard: "Identificér og undersøg årsagerne til den usædvanlige variation."
+    detailed: "Identificér og undersøg årsagerne til den usædvanlige variation. Når processen er under kontrol, kan der fastsættes et realistisk mål."
 
 padding:
   data_points:
-    - "Analysen er baseret på {n_points} datapunkter."
+    short: "Baseret på {n_points} datapunkter."
+    standard: "Analysen er baseret på {n_points} datapunkter."
   generic:
-    - "Nye datapunkter kan ændre billedet, så løbende opfølgning anbefales."
+    short: "Løbende opfølgning anbefales."
+    standard: "Nye datapunkter kan ændre billedet, så løbende opfølgning anbefales."
