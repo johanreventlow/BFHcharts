@@ -18,8 +18,11 @@
 #' @noRd
 compute_label_size_for_viewport <- function(viewport_width_inches,
                                             viewport_height_inches) {
-  target_geo_mean <- sqrt(viewport_width_inches * viewport_height_inches)
-  label_size <- PDF_LABEL_SIZE * target_geo_mean / PDF_REFERENCE_GEO_MEAN_INCHES
+  # Bredde-baseret skalering: labels er horisontal tekst — deres læsbarhed
+  # afhænger af tilgængelig bredde, ikke højde. At gøre et chart højere
+  # bør give mere plads til data, ikke større labels/gaps.
+  pdf_width_inches <- PDF_CHART_WIDTH_MM / 25.4
+  label_size <- PDF_LABEL_SIZE * viewport_width_inches / pdf_width_inches
   # Cap: max label_size = 20 (sikrer value_size ≤ 100pt ved default value_pt=30)
   min(label_size, 20)
 }
@@ -133,15 +136,15 @@ add_spc_labels <- function(
     }
   )
 
-  # Label_size auto-scaling: Legacy fallback for callers der ikke angiver viewport
-  # Primær sti (bfh_qic, export): label_size er allerede korrekt beregnet via
-  # compute_label_size_for_viewport(), så ingen skalering nødvendig.
-  # Legacy sti: Hvis kun device er tilgængelig, skalér baseret på device height.
+  # Label_size auto-scaling:
+  # Primær sti (bfh_qic med dimensioner, export): label_size er allerede korrekt
+  # beregnet via compute_label_size_for_viewport() — ingen skalering nødvendig.
+  # Legacy sti (Shiny preview, ingen viewport): beregn fra åben device.
   if (is.null(viewport_width) && is.null(viewport_height)) {
-    if (device_info$open && !is.na(device_info$height)) {
-      dev_height <- device_info$height
-      scale_factor <- pmax(1.0, dev_height / DEVICE_HEIGHT_BASELINE_INCHES)
-      label_size <- label_size * scale_factor
+    if (device_info$open && !is.na(device_info$width) && !is.na(device_info$height)) {
+      label_size <- compute_label_size_for_viewport(
+        device_info$width, device_info$height
+      )
     }
   }
 

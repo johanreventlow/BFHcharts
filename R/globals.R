@@ -23,10 +23,6 @@ utils::globalVariables(c(
 # LABEL SIZING CONSTANTS
 # ============================================================================
 
-# Reference device height for label auto-scaling (inches) — legacy fallback
-# Bruges kun når viewport_width ikke er tilgængelig
-DEVICE_HEIGHT_BASELINE_INCHES <- 7.8
-
 # Line extension factor — hvor langt CL/target forlænges forbi sidste datapunkt
 LINE_EXTENSION_FACTOR <- 0.20
 
@@ -72,11 +68,3 @@ PDF_CHART_HEIGHT_MM <- 109
 # This ensures consistent, readable labels regardless of how the chart was created
 # Value of 6 is calibrated for the PDF template dimensions
 PDF_LABEL_SIZE <- 6
-
-# Reference geometric mean for label_size skalering (inches)
-# Forankret til PDF golden standard: label_size=6 ved 191.4×109mm viewport
-# = sqrt(7.535 × 4.291) ≈ 5.687 inches
-# Alle andre viewports skaleres proportionelt herfra.
-PDF_REFERENCE_GEO_MEAN_INCHES <- sqrt(
-  (PDF_CHART_WIDTH_MM / 25.4) * (PDF_CHART_HEIGHT_MM / 25.4)
-)
