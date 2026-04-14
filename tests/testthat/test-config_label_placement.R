@@ -112,34 +112,6 @@ test_that("get_label_placement_config returns full configuration", {
   )
 })
 
-test_that("override_label_placement_config errors when config is locked", {
-  # NOTE: LABEL_PLACEMENT_CONFIG is locked in the package namespace,
-  # so override_label_placement_config() cannot actually modify it.
-  # This is GOOD for security - config should be immutable at runtime.
-  # The function exists for documentation purposes but cannot be used.
-
-  # Should error when trying to modify locked binding
-  expect_error(
-    override_label_placement_config(relative_gap_line = 0.10),
-    "cannot change value of locked binding"
-  )
-})
-
-test_that("override_label_placement_config handles both valid and invalid keys", {
-  # NOTE: Since LABEL_PLACEMENT_CONFIG is locked, we can't fully test
-  # the override functionality. But we can verify the function exists
-  # and has the expected signature.
-
-  # Function should exist and be callable
-  expect_true(exists("override_label_placement_config"))
-  expect_true(is.function(override_label_placement_config))
-
-  # Any attempt to modify should error due to locked binding
-  expect_error(
-    override_label_placement_config(relative_gap_line = 0.10),
-    "cannot change value of locked binding"
-  )
-})
 
 test_that("Configuration values follow documented relationships", {
   config <- LABEL_PLACEMENT_CONFIG

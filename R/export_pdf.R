@@ -745,10 +745,10 @@ strip_label_layers <- function(plot) {
 #'
 #' @details
 #' Label positioning uses target dimensions (the visible chart area in the template).
-#' Font sizing uses the fixed PDF_LABEL_SIZE constant (6pt), which is calibrated
-#' for the PDF template dimensions (250x140mm). This ensures consistent label
-#' appearance regardless of how the chart was created (interactive RStudio,
-#' batch script, etc.).
+#' Font sizing is recalculated via `compute_label_size_for_viewport()` from the
+#' target dimensions, unless an explicit `label_size` is provided.
+#' PDF_LABEL_SIZE (6pt) is the reference value calibrated to the PDF template
+#' dimensions (250x140mm).
 #'
 #' @keywords internal
 #' @noRd

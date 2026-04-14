@@ -51,8 +51,7 @@ LABEL_PLACEMENT_CONFIG <- list(
   # Rationale: Gap beregnes nu fra kun synlige (non-empty) labels.
   #            5% giver optimal visuel separation mellem label og linje.
   #            Skalerer automatisk proportionelt med device størrelse da label_size
-  #            auto-scales baseret på device height (se fct_add_spc_labels.R).
-  #            Tidligere problem: Inkluderede empty textB fallback (0.13 NPC), nu fikseret.
+  #            auto-scales baseret på viewport-bredde (se fct_add_spc_labels.R).
 
   relative_gap_labels = 0.30,
   # 30% af label højde
@@ -225,51 +224,3 @@ get_label_placement_config <- function() {
   as.list(LABEL_PLACEMENT_CONFIG)
 }
 
-#' Overskrive label placement configuration (for testing)
-#'
-#' VIGTIGT: Denne funktion er kun til test-formål.
-#' Den modificerer den globale konfiguration og skal kun bruges i tests.
-#'
-#' @param ... Named arguments med værdier at overskrive
-#' @return Invisible: Den gamle konfiguration (for restore)
-#'
-#' @examples
-#' \dontrun{
-#' # I test:
-#' old_config <- override_label_placement_config(
-#'   relative_gap_line = 0.10,
-#'   pad_top = 0.02
-#' )
-#'
-#' # ... run tests ...
-#'
-#' # Restore:
-#' LABEL_PLACEMENT_CONFIG <<- old_config
-#' }
-#'
-#' @keywords internal
-#' @noRd
-override_label_placement_config <- function(...) {
-  overrides <- list(...)
-
-  # Gem gamle værdier
-  old_config <- LABEL_PLACEMENT_CONFIG
-
-  # Valider at alle keys findes
-  invalid_keys <- setdiff(names(overrides), names(LABEL_PLACEMENT_CONFIG))
-  if (length(invalid_keys) > 0) {
-    warning(
-      "Ukendte konfigurationsnøgler: ", paste(invalid_keys, collapse = ", "),
-      ". Disse ignoreres."
-    )
-  }
-
-  # Opdater konfiguration
-  valid_overrides <- overrides[names(overrides) %in% names(LABEL_PLACEMENT_CONFIG)]
-  for (key in names(valid_overrides)) {
-    LABEL_PLACEMENT_CONFIG[[key]] <<- valid_overrides[[key]]
-  }
-
-  # Returner gamle værdier for restore
-  invisible(old_config)
-}

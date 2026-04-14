@@ -354,73 +354,10 @@ npc_mapper_from_plot <- function(p, panel = 1) {
 # ==============================================================================
 
 
-#' Mål faktisk panel højde fra ggplot
+#' Mål panel højde fra gtable
 #'
-#' Ekstraherer den faktiske panel viewport højde fra et ggplot object.
-#' Dette sikrer at NPC-normalisering sker mod korrekt reference (panel, ikke device).
-#'
-#' @param p ggplot object
-#' @param panel Panel index (default 1)
-#' @param device_width Device width i inches (default 7, bruges kun hvis ingen device er åben)
-#' @param device_height Device height i inches (default 7, bruges kun hvis ingen device er åben)
-#'
-#' @return Panel højde i inches, eller NULL hvis måling fejler
-#'
-#' @details
-#' Denne funktion løser problemet hvor ROOT viewport er hele device-fladen
-#' (inkl. margener), mens labels skal normaliseres mod panel-området.
-#'
-#' Strategien er:
-#' 1. Build ggplot → gtable
-#' 2. Find panel viewport navn fra layout
-#' 3. Render på current device (eller temp device hvis ingen er åben)
-#' 4. Navigate til panel viewport
-#' 5. Mål højde i inches
-#' 6. Clean up temp device (hvis oprettet)
-#'
-#' VIGTIGT: Fra 2025-01-05 er funktionen device-aware:
-#' - Hvis en device er åben: Brug den (respekter caller's viewport)
-#' - Hvis ingen device: Åbn temp device med device_width x device_height
-#'
-#' Mål panel højde fra pre-built ggplot (PERFORMANCE OPTIMIZED)
-#'
-#' Denne funktion accepterer et pre-built plot og gtable og måler panel højden
-#' uden at bygge plottet igen.
-#'
-#' @param built_plot ggplot_built object fra ggplot2::ggplot_build()
-#' @param gtable gtable object fra ggplot2::ggplot_gtable() (optional, genereres hvis NULL)
-#' @param panel Panel index (default 1)
-#' @param device_width Device width i inches (kun hvis ingen device er åben)
-#' @param device_height Device height i inches (kun hvis ingen device er åben)
-#'
-#' @return Panel højde i inches, eller NULL hvis måling fejler
-#'
-#' @keywords internal
-#' @noRd
-measure_panel_height_from_built <- function(built_plot, gtable = NULL, panel = 1, device_width = 7, device_height = 7) {
-  tryCatch(
-    {
-      # Validate input
-      if (!inherits(built_plot, "ggplot_built")) {
-        stop("built_plot skal være et ggplot_built object")
-      }
-
-      # Build gtable hvis ikke allerede gjort
-      if (is.null(gtable)) {
-        gtable <- ggplot2::ggplot_gtable(built_plot)
-      }
-
-      # Delegate til shared implementation
-      measure_panel_height_from_gtable(gtable, panel, device_width, device_height)
-    },
-    error = function(e) {
-      warning("Kunne ikke måle panel højde: ", e$message)
-      return(NULL)
-    }
-  )
-}
-
-#' Mål panel højde fra gtable (SHARED IMPLEMENTATION)
+#' Kernefunktion der måler panel højde fra en pre-built gtable.
+#' Bruges direkte af add_right_labels_marquee() med en allerede bygget gtable.
 #'
 #' @keywords internal
 #' @noRd
@@ -513,53 +450,6 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
   grid::upViewport(0)
 
   return(panel_height)
-}
-
-#' Mål panelhøjden i inches for et givet ggplot objekt.
-#'
-#' @param p ggplot objekt
-#' @param panel Panel index (1-baseret)
-#' @param device_width,device_height Device dimensioner i inches (bruges hvis ingen device åben)
-#'
-#' @return Numerisk værdi (panelhøjde i inches) eller NULL ved fejl
-#' @keywords internal
-#' @noRd
-#' @examples
-#' \dontrun{
-#' p <- ggplot(mtcars, aes(wt, mpg)) +
-#'   geom_point()
-#' panel_h <- measure_panel_height_inches(p)
-#' # Returns ca. 6.48 inches for standard 7x7 device (minus margener)
-#'
-#' # Med custom device size
-#' pdf("test.pdf", width = 12, height = 4)
-#' panel_h <- measure_panel_height_inches(p) # Uses current 12x4 device
-#' # Returns ca. 3.6 inches (4 inches minus margener)
-#' dev.off()
-#' }
-measure_panel_height_inches <- function(p, panel = 1, device_width = 7, device_height = 7) {
-  tryCatch(
-    {
-      # Validate input
-      if (!inherits(p, "ggplot")) {
-        stop("p skal være et ggplot object")
-      }
-
-      # Build plot structure
-      b <- ggplot2::ggplot_build(p)
-      gt <- ggplot2::ggplot_gtable(b)
-
-      # Delegate til shared implementation
-      measure_panel_height_from_gtable(gt, panel, device_width, device_height)
-    },
-    error = function(e) {
-      warning(
-        "measure_panel_height_inches fejlede: ", e$message,
-        " - returnerer NULL"
-      )
-      return(NULL)
-    }
-  )
 }
 
 #' INTERN: Mål label højde med aktiv device (ingen device management)
