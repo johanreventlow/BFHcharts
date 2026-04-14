@@ -443,6 +443,14 @@ bfh_export_pdf <- function(x,
   # Inject external assets (fonts, images) if callback provided
   if (is.function(inject_assets)) {
     inject_assets(file.path(temp_dir, "bfh-template"))
+
+    # Auto-detect font path fra injicerede assets hvis ikke eksplicit angivet
+    if (is.null(font_path)) {
+      injected_fonts <- file.path(temp_dir, "bfh-template", "fonts")
+      if (dir.exists(injected_fonts)) {
+        font_path <- injected_fonts
+      }
+    }
   }
 
   # Compile to PDF via Quarto (with optional font path)
