@@ -256,6 +256,7 @@ add_plot_enhancements <- function(plot,
           data = label_data,
           ggplot2::aes(x = label_x, y = label_y, label = label_text),
           size = comment_size,
+          family = .resolve_font_family(),
           colour = cols$dark_grey,
           lineheight = 0.9,
           inherit.aes = FALSE
