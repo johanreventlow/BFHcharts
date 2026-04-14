@@ -578,8 +578,15 @@ add_right_labels_marquee <- function(
         lineheight = marquee_lineheight,
         family = font_family,
         inherit.aes = FALSE
-      ) +
-      ggplot2::scale_color_identity()
+      )
+
+    # marquee geom bruger color aesthetic — undgå duplicate scale warning
+    has_colour_scale <- any(vapply(result$scales$scales, function(s) {
+      "colour" %in% s$aesthetics
+    }, logical(1)))
+    if (!has_colour_scale) {
+      result <- result + ggplot2::scale_color_identity()
+    }
   }
 
   # Normal-path cleanup: luk specifik device og markér som lukket

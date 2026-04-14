@@ -7,11 +7,11 @@
 #' Beregn viewport-skaleret label_size forankret til PDF golden standard
 #'
 #' Returnerer label_size proportionelt skaleret fra PDF-referencen
-#' (label_size=6 ved 191.4×109mm). Bruger geometric mean for
-#' aspect-ratio-uafhængig skalering.
+#' (label_size=6 ved 191.4mm bredde). Bruger bredde-baseret skalering,
+#' da labels er horisontal tekst og læsbarhed afhænger af tilgængelig bredde.
 #'
 #' @param viewport_width_inches Viewport bredde i inches
-#' @param viewport_height_inches Viewport højde i inches
+#' @param viewport_height_inches Viewport højde i inches (ubrugt, bevaret for API-kompatibilitet)
 #' @return Numerisk label_size
 #'
 #' @keywords internal
