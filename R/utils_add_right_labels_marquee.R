@@ -48,7 +48,10 @@
           f
         }
       } else if (requireNamespace("systemfonts", quietly = TRUE)) {
-        available <- systemfonts::system_fonts()$family
+        available <- unique(c(
+          systemfonts::system_fonts()$family,
+          systemfonts::registry_fonts()$family
+        ))
         if (!f %in% available) {
           warning(sprintf(
             "[FONT_FALLBACK] Font '%s' ikke registreret på systemet - bruger 'sans'",
