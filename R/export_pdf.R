@@ -38,6 +38,15 @@
 #'   Only used when \code{auto_analysis = TRUE}.
 #' @param analysis_max_chars Maximum characters for AI-generated analysis. Default 375.
 #'   Only used when \code{auto_analysis = TRUE}.
+#' @param font_path Optional path to directory containing additional fonts.
+#'   Passed as \code{--font-path} to the Typst compiler. Useful when fonts
+#'   (e.g., Mari) are bundled in a downstream package and not installed
+#'   system-wide on the deployment platform.
+#' @param inject_assets Optional callback function called after Typst template
+#'   structure is created but before compilation. Receives one argument: the path
+#'   to the template directory (e.g., \code{<temp_dir>/bfh-template}). Use this
+#'   to copy fonts, images, or other assets into the template directory when they
+#'   are not bundled in BFHcharts (e.g., proprietary fonts in a private package).
 #'
 #' @return The input object \code{x} invisibly, enabling pipe chaining
 #'
@@ -129,7 +138,9 @@ bfh_export_pdf <- function(x,
                            auto_analysis = FALSE,
                            use_ai = NULL,
                            analysis_min_chars = 300,
-                           analysis_max_chars = 375) {
+                           analysis_max_chars = 375,
+                           font_path = NULL,
+                           inject_assets = NULL) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop(
@@ -217,6 +228,19 @@ bfh_export_pdf <- function(x,
           call. = FALSE
         )
       }
+    }
+  }
+
+  # ============================================================================
+  # VALIDATE OPTIONAL PARAMETERS - font_path, inject_assets
+  # ============================================================================
+  if (!is.null(inject_assets) && !is.function(inject_assets)) {
+    stop("inject_assets must be a function or NULL", call. = FALSE)
+  }
+
+  if (!is.null(font_path)) {
+    if (!is.character(font_path) || length(font_path) != 1) {
+      stop("font_path must be a single character string or NULL", call. = FALSE)
     }
   }
 
@@ -416,8 +440,13 @@ bfh_export_pdf <- function(x,
     template_path = template_path
   )
 
-  # Compile to PDF via Quarto
-  bfh_compile_typst(typst_file, output)
+  # Inject external assets (fonts, images) if callback provided
+  if (is.function(inject_assets)) {
+    inject_assets(file.path(temp_dir, "bfh-template"))
+  }
+
+  # Compile to PDF via Quarto (with optional font path)
+  bfh_compile_typst(typst_file, output, font_path = font_path)
 
   # Return input object invisibly for pipe chaining
   invisible(x)

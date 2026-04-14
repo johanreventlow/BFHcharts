@@ -166,11 +166,14 @@ bfh_create_typst_document <- function(chart_image,
 #'
 #' @param typst_file Path to .typ file
 #' @param output Path for output PDF file
+#' @param font_path Optional path to directory containing additional fonts.
+#'   Passed as \code{--font-path} to the Typst compiler. Useful when fonts
+#'   are not installed system-wide (e.g., on cloud deployment platforms).
 #'
 #' @return Path to created PDF file (invisibly)
 #'
 #' @keywords internal
-bfh_compile_typst <- function(typst_file, output) {
+bfh_compile_typst <- function(typst_file, output, font_path = NULL) {
   if (!file.exists(typst_file)) {
     stop("Typst file not found: ", typst_file, call. = FALSE)
   }
@@ -194,17 +197,40 @@ bfh_compile_typst <- function(typst_file, output) {
     )
   }
 
+  # Validér font_path hvis angivet
+  if (!is.null(font_path)) {
+    if (!is.character(font_path) || length(font_path) != 1) {
+      stop("font_path must be a single character string", call. = FALSE)
+    }
+    if (grepl("..", font_path, fixed = TRUE)) {
+      stop("font_path cannot contain '..' (path traversal attempt detected)", call. = FALSE)
+    }
+    if (any(vapply(shell_metachars, function(char) grepl(char, font_path, fixed = TRUE), logical(1)))) {
+      stop("font_path contains potentially unsafe characters", call. = FALSE)
+    }
+    if (!dir.exists(font_path)) {
+      warning("font_path directory does not exist: ", font_path, call. = FALSE)
+      font_path <- NULL
+    }
+  }
+
   # Create output directory if needed
   output_dir <- dirname(output)
   if (!dir.exists(output_dir) && output_dir != ".") {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
+  # Build compilation args
+  compile_args <- c("typst", "compile", shQuote(typst_file), shQuote(output))
+  if (!is.null(font_path)) {
+    compile_args <- c(compile_args, "--font-path", shQuote(font_path))
+  }
+
   # Use quarto typst compile (not quarto render which expects .qmd files)
   result <- tryCatch(
     system2(
       get_quarto_path(),
-      args = c("typst", "compile", shQuote(typst_file), shQuote(output)),
+      args = compile_args,
       stdout = TRUE,
       stderr = TRUE
     ),
