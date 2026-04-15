@@ -117,7 +117,7 @@ add_right_labels_marquee <- function(
       priority = "A"
     ),
     gpA = grid::gpar(col = BFHtheme::bfh_cols("hospital_blue")),
-    gpB = grid::gpar(col = BFHtheme::bfh_cols("hospital_dark_grey")),
+    gpB = grid::gpar(col = BFHtheme::bfh_cols("regionh_dark")),
     label_size = 6,
     viewport_width = NULL,
     viewport_height = NULL,

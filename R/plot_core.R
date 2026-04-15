@@ -101,8 +101,8 @@ bfh_spc_plot <- function(qic_data,
   # Cache BFHtheme farver (undgår gentagne opslag)
   cols <- list(
     blue = BFHtheme::bfh_cols("hospital_blue"),
-    grey = BFHtheme::bfh_cols("hospital_grey"),
-    dark_grey = BFHtheme::bfh_cols("hospital_dark_grey"),
+    grey = BFHtheme::bfh_cols("regionh_grey"),
+    dark_grey = BFHtheme::bfh_cols("regionh_dark"),
     light_blue = BFHtheme::bfh_cols("light_blue"),
     very_light_blue = BFHtheme::bfh_cols("very_light_blue")
   )

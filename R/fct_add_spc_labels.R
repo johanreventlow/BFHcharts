@@ -358,7 +358,7 @@ add_spc_labels <- function(
     textB = textB,
     params = label_params,
     gpA = grid::gpar(col = BFHtheme::bfh_cols("hospital_blue")),
-    gpB = grid::gpar(col = BFHtheme::bfh_cols("hospital_dark_grey")),
+    gpB = grid::gpar(col = BFHtheme::bfh_cols("regionh_dark")),
     label_size = label_size,
     viewport_width = viewport_width,
     viewport_height = viewport_height,
