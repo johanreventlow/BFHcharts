@@ -12,7 +12,7 @@ test_that("bfh_generate_details genererer korrekt formateret tekst", {
   result <- bfh_qic(data, x = date, y = value, chart_type = "i",
                      y_axis_unit = "count")
 
-  details <- BFHcharts:::bfh_generate_details(result)
+  details <- bfh_generate_details(result)
 
   expect_type(details, "character")
   expect_gt(nchar(details), 0)
@@ -41,14 +41,14 @@ test_that("bfh_generate_details viser numerator/denominator for p-chart", {
   result <- bfh_qic(data, x = date, y = events, n = total,
                      chart_type = "p", y_axis_unit = "percent")
 
-  details <- BFHcharts:::bfh_generate_details(result)
+  details <- bfh_generate_details(result)
 
   # P-chart skal vise numerator/denominator (fx "10/100")
   expect_true(grepl("/", details))
 })
 
 test_that("bfh_generate_details afviser ikke-bfh_qic_result input", {
-  expect_error(BFHcharts:::bfh_generate_details("not a result"),
+  expect_error(bfh_generate_details("not a result"),
                "must be a bfh_qic_result")
 })
 
@@ -63,7 +63,7 @@ test_that("bfh_generate_details bruger dansk datoformatering", {
 
   result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 
-  details <- BFHcharts:::bfh_generate_details(result)
+  details <- bfh_generate_details(result)
 
   # Skal indeholde en-dash mellem datoer
   expect_true(grepl("\u2013", details))
