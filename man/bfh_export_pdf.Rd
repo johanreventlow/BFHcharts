@@ -13,7 +13,9 @@ bfh_export_pdf(
   auto_analysis = FALSE,
   use_ai = NULL,
   analysis_min_chars = 300,
-  analysis_max_chars = 375
+  analysis_max_chars = 375,
+  font_path = NULL,
+  inject_assets = NULL
 )
 }
 \arguments{
@@ -60,6 +62,17 @@ Only used when \code{auto_analysis = TRUE}.}
 
 \item{analysis_max_chars}{Maximum characters for AI-generated analysis. Default 375.
 Only used when \code{auto_analysis = TRUE}.}
+
+\item{font_path}{Optional path to directory containing additional fonts.
+Passed as \code{--font-path} to the Typst compiler. Useful when fonts
+(e.g., Mari) are bundled in a downstream package and not installed
+system-wide on the deployment platform.}
+
+\item{inject_assets}{Optional callback function called after Typst template
+structure is created but before compilation. Receives one argument: the path
+to the template directory (e.g., \code{<temp_dir>/bfh-template}). Use this
+to copy fonts, images, or other assets into the template directory when they
+are not bundled in BFHcharts (e.g., proprietary fonts in a private package).}
 }
 \value{
 The input object \code{x} invisibly, enabling pipe chaining

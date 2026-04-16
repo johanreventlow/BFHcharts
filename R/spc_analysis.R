@@ -14,7 +14,13 @@
 #'   - `runs_expected`: Expected maximum run length
 #'   - `crossings_actual`: Actual number of crossings of centerline
 #'   - `crossings_expected`: Expected minimum crossings
-#'   - `outliers_actual`: Number of points outside control limits
+#'   - `outliers_recent_count`: Number of points outside control limits within
+#'     the latest 6 observations. Used in preference over `outliers_actual` so
+#'     the text focuses on CURRENT signals. Falls back to `outliers_actual` when
+#'     `outliers_recent_count` is absent (e.g. when the caller built stats from
+#'     a summary data frame instead of a `bfh_qic_result`).
+#'   - `outliers_actual`: Total number of points outside control limits (used
+#'     by the PDF table). Only used by the interpretation text as a fallback.
 #'
 #' @return Character vector with Danish interpretations. Empty vector if no
 #'   signals detected and no stats provided.
@@ -32,6 +38,11 @@
 #' @keywords internal
 bfh_interpret_spc_signals <- function(spc_stats) {
   interpretations <- character(0)
+
+  # Brug outliers_recent_count (seneste 6 obs) til analyseteksten så ældre
+  # outliers ikke beskrives som aktuelle problemer. Fald tilbage til
+  # outliers_actual hvis recent_count mangler (f.eks. data.frame-input).
+  outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
 
 # Serielængde-signal (runs)
   if (is_valid_scalar(spc_stats$runs_actual) && is_valid_scalar(spc_stats$runs_expected)) {
@@ -85,8 +96,8 @@ bfh_interpret_spc_signals <- function(spc_stats) {
     }
   }
 
-  # Outliers
-  if (is_valid_scalar(spc_stats$outliers_actual) && spc_stats$outliers_actual > 0) {
+  # Outliers (kun aktuelle — seneste 6 obs)
+  if (is_valid_scalar(outliers_for_text) && outliers_for_text > 0) {
     interpretations <- c(
       interpretations,
       sprintf(
@@ -94,7 +105,7 @@ bfh_interpret_spc_signals <- function(spc_stats) {
           "%d observation(er) ligger uden for kontrolgrænserne. ",
           "Disse bør undersøges for særlige årsager."
         ),
-        spc_stats$outliers_actual
+        outliers_for_text
       )
     )
   }
@@ -147,7 +158,7 @@ if (!inherits(x, "bfh_qic_result")) {
   }
 
   # Udtræk SPC statistikker (inkl. outliers fra qic_data)
-  spc_stats <- extract_spc_stats_extended(x)
+  spc_stats <- bfh_extract_spc_stats(x)
 
   # Generer standardtekster
   signal_interpretations <- bfh_interpret_spc_signals(spc_stats)
@@ -164,7 +175,10 @@ if (!inherits(x, "bfh_qic_result")) {
       has_signals <- TRUE
     }
   }
-  if (is_valid_scalar(spc_stats$outliers_actual) && spc_stats$outliers_actual > 0) {
+  # has_signals skal afspejle om AKTUELLE signaler eksisterer — brug samme
+  # recent-count som analyseteksten (fallback til outliers_actual hvis ukendt).
+  outliers_for_flag <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
+  if (is_valid_scalar(outliers_for_flag) && outliers_for_flag > 0) {
     has_signals <- TRUE
   }
 
@@ -379,8 +393,12 @@ build_fallback_analysis <- function(context,
     is_valid_scalar(spc_stats$crossings_expected) &&
     spc_stats$crossings_actual < spc_stats$crossings_expected
 
-  has_outliers <- is_valid_scalar(spc_stats$outliers_actual) &&
-    spc_stats$outliers_actual > 0
+  # Brug recent_count (seneste 6 obs) så fallback-teksten følger samme regel
+  # som bfh_interpret_spc_signals(). Fald tilbage til outliers_actual når kun
+  # summary-baserede stats er tilgængelige.
+  outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
+  has_outliers <- is_valid_scalar(outliers_for_text) &&
+    outliers_for_text > 0
 
   is_stable <- !has_runs && !has_crossings && !has_outliers
 
@@ -400,12 +418,15 @@ build_fallback_analysis <- function(context,
   action_budget <- max_chars - stability_budget - target_budget
 
   texts <- load_spc_texts()
+  # outliers_actual i placeholder_data bruger recent_count-værdien, så YAML-
+  # skabelonernes {outliers_actual} placeholder også følger "seneste 6 obs"-
+  # reglen. Ren tabel-totaler ligger stadig på spc_stats$outliers_actual.
   placeholder_data <- list(
     runs_actual = spc_stats$runs_actual,
     runs_expected = spc_stats$runs_expected,
     crossings_actual = spc_stats$crossings_actual,
     crossings_expected = spc_stats$crossings_expected,
-    outliers_actual = spc_stats$outliers_actual
+    outliers_actual = outliers_for_text
   )
 
   # --- 1. Stabilitetstekst ---

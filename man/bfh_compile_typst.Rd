@@ -4,12 +4,16 @@
 \alias{bfh_compile_typst}
 \title{Compile Typst Document to PDF}
 \usage{
-bfh_compile_typst(typst_file, output)
+bfh_compile_typst(typst_file, output, font_path = NULL)
 }
 \arguments{
 \item{typst_file}{Path to .typ file}
 
 \item{output}{Path for output PDF file}
+
+\item{font_path}{Optional path to directory containing additional fonts.
+Passed as \code{--font-path} to the Typst compiler. Useful when fonts
+are not installed system-wide (e.g., on cloud deployment platforms).}
 }
 \value{
 Path to created PDF file (invisibly)

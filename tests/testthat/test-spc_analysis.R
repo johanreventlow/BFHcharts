@@ -42,13 +42,26 @@ test_that("bfh_interpret_spc_signals shows normal krydsninger", {
   expect_true(any(grepl("inden for forventet", result)))
 })
 
-test_that("bfh_interpret_spc_signals detects outliers", {
-  stats <- list(outliers_actual = 2)
+test_that("bfh_interpret_spc_signals detects outliers (uses recent count for text)", {
+  # Analyseteksten skal kun tale om AKTUELLE outliers (seneste 6 obs).
+  stats <- list(outliers_actual = 5, outliers_recent_count = 2)
   result <- bfh_interpret_spc_signals(stats)
 
   expect_type(result, "character")
-  expect_true(any(grepl("2", result)))
+  expect_true(any(grepl("\\b2\\b", result)),
+              info = "Teksten skal referere til outliers_recent_count (2), ikke total outliers_actual (5)")
+  expect_false(any(grepl("\\b5\\b", result)),
+               info = "Teksten må ikke bruge total-tallet (outliers_actual=5)")
   expect_true(any(grepl("kontrolgrænserne", result)))
+})
+
+test_that("bfh_interpret_spc_signals ignores old outliers when none are recent", {
+  # Total 3 outliers, men ingen i seneste 6 obs → analyseteksten skal IKKE nævne outliers.
+  stats <- list(outliers_actual = 3, outliers_recent_count = 0)
+  result <- bfh_interpret_spc_signals(stats)
+
+  expect_false(any(grepl("kontrolgrænserne", result)),
+               info = "Ingen aktuelle outliers → ingen outlier-tekst")
 })
 
 test_that("bfh_interpret_spc_signals handles stable process", {

@@ -2,45 +2,73 @@
 % Please edit documentation in R/export_pdf.R
 \name{bfh_extract_spc_stats}
 \alias{bfh_extract_spc_stats}
+\alias{bfh_extract_spc_stats.default}
+\alias{bfh_extract_spc_stats.data.frame}
+\alias{bfh_extract_spc_stats.bfh_qic_result}
 \alias{extract_spc_stats}
-\title{Extract SPC Statistics from QIC Summary}
+\title{Extract SPC Statistics}
 \usage{
-bfh_extract_spc_stats(summary)
+bfh_extract_spc_stats(x)
 
-extract_spc_stats(summary)
+\method{bfh_extract_spc_stats}{default}(x)
+
+\method{bfh_extract_spc_stats}{data.frame}(x)
+
+\method{bfh_extract_spc_stats}{bfh_qic_result}(x)
+
+extract_spc_stats(x)
 }
 \arguments{
-\item{summary}{Data frame with SPC statistics (from \code{bfh_qic_result$summary}),
-or NULL}
+\item{x}{Either a data frame (typically \code{bfh_qic_result$summary}), a
+\code{bfh_qic_result} object from \code{\link[=bfh_qic]{bfh_qic()}}, or \code{NULL}.}
 }
 \value{
 Named list with SPC statistics:
 \describe{
-\item{runs_expected}{Expected maximum run length (længste_løb_max)}
-\item{runs_actual}{Actual longest run length (længste_løb)}
-\item{crossings_expected}{Expected minimum crossings (antal_kryds_min)}
-\item{crossings_actual}{Actual number of crossings (antal_kryds)}
-\item{outliers_expected}{Expected outliers (future)}
-\item{outliers_actual}{Actual outliers (future)}
+\item{runs_expected}{Expected maximum run length (\code{længste_løb_max})}
+\item{runs_actual}{Actual longest run length (\code{længste_løb})}
+\item{crossings_expected}{Expected minimum crossings (\code{antal_kryds_min})}
+\item{crossings_actual}{Actual number of crossings (\code{antal_kryds})}
+\item{outliers_expected}{Expected number of outliers (0 for non-run charts,
+\code{NULL} otherwise)}
+\item{outliers_actual}{Total number of points outside control limits in the
+latest part (used by the PDF table). \code{NULL} for \code{data.frame} input, run
+charts, or when \code{sigma.signal} is unavailable.}
+\item{outliers_recent_count}{Number of outliers within the last 6
+observations of the latest part (used by the analysis text, so stale
+outliers are not discussed as if they were current). Present only for
+\code{bfh_qic_result} input on non-run charts.}
+\item{is_run_chart}{Logical indicating run chart. Present only for
+\code{bfh_qic_result} input.}
 }
-
-If summary is NULL or empty, all values will be NULL.
-If specific columns are missing, corresponding values will be NULL.
 }
 \description{
-Extracts statistical process control metrics from a qic summary data frame.
-This function is useful for downstream packages that need to access SPC
-statistics without depending on BFHcharts internal functions.
+S3 generic that extracts statistical process control metrics. The extraction
+logic depends on the input type:
+}
+\details{
+\itemize{
+\item \code{data.frame} (typically \code{bfh_qic_result$summary}): Returns runs and
+crossings from the summary. \code{outliers_actual} and \code{outliers_recent_count}
+remain \code{NULL} because outlier counts require access to \code{qic_data}.
+\item \code{bfh_qic_result}: Returns runs, crossings, and outlier counts. Outliers are
+split into two fields so that the PDF table and the analysis text can be
+driven from consistent — but distinct — numbers.
+\item \code{NULL}: Returns an empty stats list (backward compatible).
+}
+
+Downstream packages should prefer the \code{bfh_qic_result} method so the PDF
+export and any on-screen preview agree on the outlier count.
 }
 \examples{
 \dontrun{
-# Extract stats from a qic result
 result <- bfh_qic(data, x = date, y = value, chart_type = "i")
-stats <- bfh_extract_spc_stats(result$summary)
 
-# Stats contain runs and crossings
-stats$runs_actual
-stats$crossings_actual
+# Full stats (recommended — populates outliers_actual for the table)
+stats <- bfh_extract_spc_stats(result)
+
+# Backward-compatible summary-only dispatch
+stats_summary_only <- bfh_extract_spc_stats(result$summary)
 }
 
 }

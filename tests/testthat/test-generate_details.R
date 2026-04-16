@@ -1,4 +1,4 @@
-# Tests for bfh_generate_details() og extract_spc_stats_extended()
+# Tests for bfh_generate_details() og bfh_extract_spc_stats.bfh_qic_result()
 
 test_that("bfh_generate_details genererer korrekt formateret tekst", {
   skip_if_not_installed("qicharts2")
@@ -70,10 +70,10 @@ test_that("bfh_generate_details bruger dansk datoformatering", {
 })
 
 # =============================================================================
-# extract_spc_stats_extended
+# bfh_extract_spc_stats.bfh_qic_result (tidligere extract_spc_stats_extended)
 # =============================================================================
 
-test_that("extract_spc_stats_extended returnerer korrekt struktur for i-chart", {
+test_that("bfh_extract_spc_stats(bfh_qic_result) returnerer korrekt struktur for i-chart", {
   skip_if_not_installed("qicharts2")
   set.seed(42)
 
@@ -83,7 +83,7 @@ test_that("extract_spc_stats_extended returnerer korrekt struktur for i-chart", 
   )
 
   result <- bfh_qic(data, x = date, y = value, chart_type = "i")
-  stats <- BFHcharts:::extract_spc_stats_extended(result)
+  stats <- bfh_extract_spc_stats(result)
 
   expect_type(stats, "list")
   expect_true("runs_expected" %in% names(stats))
@@ -92,11 +92,12 @@ test_that("extract_spc_stats_extended returnerer korrekt struktur for i-chart", 
   expect_true("crossings_actual" %in% names(stats))
   expect_true("outliers_expected" %in% names(stats))
   expect_true("outliers_actual" %in% names(stats))
+  expect_true("outliers_recent_count" %in% names(stats))
   expect_true("is_run_chart" %in% names(stats))
   expect_false(stats$is_run_chart)
 })
 
-test_that("extract_spc_stats_extended markerer run chart korrekt", {
+test_that("bfh_extract_spc_stats(bfh_qic_result) markerer run chart korrekt", {
   skip_if_not_installed("qicharts2")
   set.seed(42)
 
@@ -106,15 +107,16 @@ test_that("extract_spc_stats_extended markerer run chart korrekt", {
   )
 
   result <- bfh_qic(data, x = date, y = value, chart_type = "run")
-  stats <- BFHcharts:::extract_spc_stats_extended(result)
+  stats <- bfh_extract_spc_stats(result)
 
   expect_true(stats$is_run_chart)
   # Run charts har ikke outlier-data
   expect_null(stats$outliers_expected)
   expect_null(stats$outliers_actual)
+  expect_null(stats$outliers_recent_count)
 })
 
-test_that("extract_spc_stats_extended håndterer NULL summary", {
+test_that("bfh_extract_spc_stats(bfh_qic_result) håndterer NULL summary", {
   skip_if_not_installed("qicharts2")
   set.seed(42)
 
@@ -127,9 +129,10 @@ test_that("extract_spc_stats_extended håndterer NULL summary", {
   # Simuler manglende summary
   result$summary <- NULL
 
-  stats <- BFHcharts:::extract_spc_stats_extended(result)
+  stats <- bfh_extract_spc_stats(result)
 
-  # Skal stadig returnere en liste
+  # Skal stadig returnere en liste (outliers kan dog stadig udtrækkes fra qic_data)
   expect_type(stats, "list")
   expect_null(stats$runs_expected)
+  expect_false(is.null(stats$outliers_actual))
 })

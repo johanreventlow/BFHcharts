@@ -1,3 +1,42 @@
+# BFHcharts 0.7.0
+
+## Nye features
+
+* `bfh_extract_spc_stats()` er nu en S3-generic med methods for `data.frame`,
+  `bfh_qic_result` og `NULL`. Kald direkte med et `bfh_qic_result`-objekt for
+  at få fyldestgørende outlier-tal — tidligere krævede det den interne funktion
+  `extract_spc_stats_extended()`, som nedarvede problemer mellem forskellige
+  downstream-pakker.
+
+```r
+result <- bfh_qic(data, x = date, y = value, chart_type = "i")
+
+# Nyt (anbefalet): fyldestgørende stats inkl. outliers
+stats <- bfh_extract_spc_stats(result)
+
+# Gammelt: kun runs/crossings fra summary — bevares for bagudkompatibilitet
+stats_summary_only <- bfh_extract_spc_stats(result$summary)
+```
+
+## Bug fixes
+
+* **PDF-tabellen under "OBS. UDEN FOR KONTROLGRÆNSE" viser nu det korrekte
+  antal outliers.** Tidligere blev `outliers_actual` begrænset til de seneste
+  6 observationer, hvilket medførte uoverensstemmelse mellem diagrammet (alle
+  blå punkter) og tabellen (kun de nyeste outliers). Tabellen viser nu TOTAL
+  antal outliers i seneste part.
+
+* Analyseteksten (`bfh_interpret_spc_signals()`, `bfh_generate_analysis()`)
+  nævner fortsat kun outliers indenfor de seneste 6 observationer, så ældre
+  outliers ikke beskrives som aktuelle problemer. Denne adfærd er nu
+  eksponeret som et separat stats-felt `outliers_recent_count`.
+
+## Interne ændringer
+
+* Den interne funktion `extract_spc_stats_extended()` er fjernet. Al intern
+  brug (`bfh_export_pdf`, `bfh_build_analysis_context`) er skiftet til
+  `bfh_extract_spc_stats(x)` med S3-dispatch på `bfh_qic_result`.
+
 # BFHcharts 0.6.2
 
 ## Forbedringer

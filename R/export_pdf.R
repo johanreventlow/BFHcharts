@@ -424,7 +424,7 @@ bfh_export_pdf <- function(x,
   )
 
   # Extract SPC statistics (including outliers and run chart detection)
-  spc_stats <- extract_spc_stats_extended(x)
+  spc_stats <- bfh_extract_spc_stats(x)
 
   # Merge user metadata with defaults
   metadata_full <- merge_metadata(metadata, chart_title)
@@ -464,50 +464,158 @@ bfh_export_pdf <- function(x,
 # SPC STATISTICS AND METADATA
 # ============================================================================
 
-#' Extract SPC Statistics from QIC Summary
+#' Extract SPC Statistics
 #'
-#' Extracts statistical process control metrics from a qic summary data frame.
-#' This function is useful for downstream packages that need to access SPC
-#' statistics without depending on BFHcharts internal functions.
+#' S3 generic that extracts statistical process control metrics. The extraction
+#' logic depends on the input type:
 #'
-#' @param summary Data frame with SPC statistics (from `bfh_qic_result$summary`),
-#'   or NULL
+#' * `data.frame` (typically `bfh_qic_result$summary`): Returns runs and
+#'   crossings from the summary. `outliers_actual` and `outliers_recent_count`
+#'   remain `NULL` because outlier counts require access to `qic_data`.
+#' * `bfh_qic_result`: Returns runs, crossings, and outlier counts. Outliers are
+#'   split into two fields so that the PDF table and the analysis text can be
+#'   driven from consistent — but distinct — numbers.
+#' * `NULL`: Returns an empty stats list (backward compatible).
+#'
+#' Downstream packages should prefer the `bfh_qic_result` method so the PDF
+#' export and any on-screen preview agree on the outlier count.
+#'
+#' @param x Either a data frame (typically `bfh_qic_result$summary`), a
+#'   `bfh_qic_result` object from [bfh_qic()], or `NULL`.
 #'
 #' @return Named list with SPC statistics:
 #' \describe{
-#'   \item{runs_expected}{Expected maximum run length (længste_løb_max)}
-#'   \item{runs_actual}{Actual longest run length (længste_løb)}
-#'   \item{crossings_expected}{Expected minimum crossings (antal_kryds_min)}
-#'   \item{crossings_actual}{Actual number of crossings (antal_kryds)}
-#'   \item{outliers_expected}{Expected outliers (future)}
-#'   \item{outliers_actual}{Actual outliers (future)}
+#'   \item{runs_expected}{Expected maximum run length (`længste_løb_max`)}
+#'   \item{runs_actual}{Actual longest run length (`længste_løb`)}
+#'   \item{crossings_expected}{Expected minimum crossings (`antal_kryds_min`)}
+#'   \item{crossings_actual}{Actual number of crossings (`antal_kryds`)}
+#'   \item{outliers_expected}{Expected number of outliers (0 for non-run charts,
+#'     `NULL` otherwise)}
+#'   \item{outliers_actual}{Total number of points outside control limits in the
+#'     latest part (used by the PDF table). `NULL` for `data.frame` input, run
+#'     charts, or when `sigma.signal` is unavailable.}
+#'   \item{outliers_recent_count}{Number of outliers within the last 6
+#'     observations of the latest part (used by the analysis text, so stale
+#'     outliers are not discussed as if they were current). Present only for
+#'     `bfh_qic_result` input on non-run charts.}
+#'   \item{is_run_chart}{Logical indicating run chart. Present only for
+#'     `bfh_qic_result` input.}
 #' }
-#'
-#' If summary is NULL or empty, all values will be NULL.
-#' If specific columns are missing, corresponding values will be NULL.
 #'
 #' @export
 #' @examples
 #' \dontrun{
-#' # Extract stats from a qic result
 #' result <- bfh_qic(data, x = date, y = value, chart_type = "i")
-#' stats <- bfh_extract_spc_stats(result$summary)
 #'
-#' # Stats contain runs and crossings
-#' stats$runs_actual
-#' stats$crossings_actual
+#' # Full stats (recommended — populates outliers_actual for the table)
+#' stats <- bfh_extract_spc_stats(result)
+#'
+#' # Backward-compatible summary-only dispatch
+#' stats_summary_only <- bfh_extract_spc_stats(result$summary)
 #' }
 #'
 #' @family utility-functions
 #' @seealso [bfh_qic()] for creating SPC charts
-bfh_extract_spc_stats <- function(summary) {
-  # Parameter validation
-  if (!is.null(summary) && !is.data.frame(summary)) {
-    stop("summary must be a data frame or NULL", call. = FALSE)
+bfh_extract_spc_stats <- function(x) {
+  UseMethod("bfh_extract_spc_stats")
+}
+
+#' @export
+#' @rdname bfh_extract_spc_stats
+bfh_extract_spc_stats.default <- function(x) {
+  if (is.null(x)) return(empty_spc_stats())
+  stop(
+    "bfh_extract_spc_stats(): x must be a data.frame (summary) or a ",
+    "bfh_qic_result object, not a ", paste(class(x), collapse = "/"),
+    call. = FALSE
+  )
+}
+
+#' @export
+#' @rdname bfh_extract_spc_stats
+bfh_extract_spc_stats.data.frame <- function(x) {
+  stats <- empty_spc_stats()
+
+  if (nrow(x) == 0) return(stats)
+
+  # Brug seneste part (sidste række) for aktuel proces-statistik
+  row <- x[nrow(x), ]
+
+  # Runs (serielængde)
+  if ("længste_løb_max" %in% names(row)) {
+    stats$runs_expected <- clean_spc_value(row$længste_løb_max)
+  }
+  if ("længste_løb" %in% names(row)) {
+    stats$runs_actual <- clean_spc_value(row$længste_løb)
   }
 
-  # Initialize with NULLs (will be conditionally included in Typst)
-  stats <- list(
+  # Crossings (antal kryds)
+  if ("antal_kryds_min" %in% names(row)) {
+    stats$crossings_expected <- clean_spc_value(row$antal_kryds_min)
+  }
+  if ("antal_kryds" %in% names(row)) {
+    stats$crossings_actual <- clean_spc_value(row$antal_kryds)
+  }
+
+  # Outliers kan ikke udledes af summary alene (kræver sigma.signal fra qic_data).
+  # Brug bfh_extract_spc_stats(bfh_qic_result) hvis outliers skal udfyldes.
+
+  stats
+}
+
+#' @export
+#' @rdname bfh_extract_spc_stats
+bfh_extract_spc_stats.bfh_qic_result <- function(x) {
+  # Start med runs/crossings fra summary
+  stats <- bfh_extract_spc_stats(x$summary)
+
+  is_run_chart <- identical(x$config$chart_type, "run")
+  stats$is_run_chart <- is_run_chart
+
+  # Run charts har ingen kontrolgrænser → outlier-felter forbliver NULL
+  if (is_run_chart) return(stats)
+
+  if (is.null(x$qic_data) || !"sigma.signal" %in% names(x$qic_data)) {
+    # Uden sigma.signal kan vi ikke tælle outliers; lad felterne forblive NULL
+    # så Typst-templaten skjuler rækken i stedet for at vise "-".
+    return(stats)
+  }
+
+  qd <- x$qic_data
+  if ("part" %in% names(qd)) {
+    latest_part <- max(qd$part, na.rm = TRUE)
+    qd <- qd[qd$part == latest_part, ]
+  }
+
+  stats$outliers_expected <- 0
+
+  # TABEL: total antal outliers i seneste part.
+  stats$outliers_actual <- sum(qd$sigma.signal, na.rm = TRUE)
+
+  # ANALYSETEKST: kun outliers i de seneste 6 obs af seneste part
+  # (ældre outliers vises stadig visuelt i diagrammet, men bør ikke
+  # beskrives som aktuelle i analysen).
+  n_obs <- nrow(qd)
+  recent_start <- max(1, n_obs - 5)
+  stats$outliers_recent_count <- sum(
+    qd$sigma.signal[recent_start:n_obs], na.rm = TRUE
+  )
+
+  stats
+}
+
+#' @keywords internal
+#' @rdname bfh_extract_spc_stats
+extract_spc_stats <- function(x) {
+  bfh_extract_spc_stats(x)
+}
+
+# Internal helpers ============================================================
+
+# Returner tom SPC-stats-liste (alle felter NULL).
+# Bruges af data.frame-methoden og default-methoden (for NULL-input).
+empty_spc_stats <- function() {
+  list(
     runs_expected = NULL,
     runs_actual = NULL,
     crossings_expected = NULL,
@@ -515,100 +623,13 @@ bfh_extract_spc_stats <- function(summary) {
     outliers_expected = NULL,
     outliers_actual = NULL
   )
-
-  if (is.null(summary) || nrow(summary) == 0) {
-    return(stats)
-  }
-
-  # Brug seneste part (sidste raekke) for aktuel proces-statistik
-  row <- summary[nrow(summary), ]
-
-  # Helper: konverter NA, NaN og Inf til NA
-  clean_val <- function(x) {
-    if (is.null(x) || length(x) == 0) return(NULL)
-    if (is.na(x) || is.nan(x) || is.infinite(x)) return(NA_real_)
-    x
-  }
-
-  # Runs (serielængde)
-  if ("længste_løb_max" %in% names(row)) {
-    stats$runs_expected <- clean_val(row$længste_løb_max)
-  }
-  if ("længste_løb" %in% names(row)) {
-    stats$runs_actual <- clean_val(row$længste_løb)
-  }
-
-  # Crossings (antal kryds)
-  if ("antal_kryds_min" %in% names(row)) {
-    stats$crossings_expected <- clean_val(row$antal_kryds_min)
-  }
-  if ("antal_kryds" %in% names(row)) {
-    stats$crossings_actual <- clean_val(row$antal_kryds)
-  }
-
-  # Outliers (would need to be added to summary in future)
-  # For now, leave as NULL
-
-  return(stats)
 }
 
-#' @keywords internal
-#' @rdname bfh_extract_spc_stats
-extract_spc_stats <- function(summary) {
-  bfh_extract_spc_stats(summary)
-}
-
-#' Extract Extended SPC Statistics from QIC Result
-#'
-#' Internal function that extracts SPC statistics including outliers and
-#' run chart detection from a complete bfh_qic_result object.
-#'
-#' @param x A bfh_qic_result object from bfh_qic()
-#'
-#' @return Named list with extended SPC statistics:
-#' \describe{
-#'   \item{runs_expected}{Expected maximum run length}
-#'   \item{runs_actual}{Actual longest run length}
-#'   \item{crossings_expected}{Expected minimum crossings}
-#'   \item{crossings_actual}{Actual number of crossings}
-#'   \item{outliers_expected}{Expected outliers (0 for non-run charts, NULL for run charts)}
-#'   \item{outliers_actual}{Actual outliers count (NULL for run charts)}
-#'   \item{is_run_chart}{Logical indicating if this is a run chart}
-#' }
-#'
-#' @keywords internal
-#' @noRd
-extract_spc_stats_extended <- function(x) {
-
-  # Start with basic stats from summary
-  stats <- bfh_extract_spc_stats(x$summary)
-
-
-  # Determine if this is a run chart
-  chart_type <- x$config$chart_type
-  is_run_chart <- !is.null(chart_type) && chart_type == "run"
-  stats$is_run_chart <- is_run_chart
-
-
-  # Tæl outliers fra qic_data (kun non-run charts, seneste part,
-  # kun de seneste 6 observationer - ældre outliers ignoreres i analysen
-  # men vises stadig visuelt i diagrammet)
-  if (!is_run_chart && !is.null(x$qic_data) && "sigma.signal" %in% names(x$qic_data)) {
-    stats$outliers_expected <- 0
-    qd <- x$qic_data
-    if ("part" %in% names(qd)) {
-      latest_part <- max(qd$part, na.rm = TRUE)
-      qd <- qd[qd$part == latest_part, ]
-    }
-    n_obs <- nrow(qd)
-    recent_start <- max(1, n_obs - 5)
-    recent_signals <- qd$sigma.signal[recent_start:n_obs]
-    stats$outliers_actual <- sum(recent_signals, na.rm = TRUE)
-  }
-  # For run charts, outliers remain NULL (row will be hidden in Typst)
-
-
-  return(stats)
+# Konverter NA, NaN og Inf til NA_real_; returnér NULL for tomme værdier.
+clean_spc_value <- function(x) {
+  if (is.null(x) || length(x) == 0) return(NULL)
+  if (is.na(x) || is.nan(x) || is.infinite(x)) return(NA_real_)
+  x
 }
 
 #' Merge User Metadata with Defaults

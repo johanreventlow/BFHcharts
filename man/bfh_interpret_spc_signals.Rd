@@ -13,7 +13,13 @@ bfh_interpret_spc_signals(spc_stats)
 \item \code{runs_expected}: Expected maximum run length
 \item \code{crossings_actual}: Actual number of crossings of centerline
 \item \code{crossings_expected}: Expected minimum crossings
-\item \code{outliers_actual}: Number of points outside control limits
+\item \code{outliers_recent_count}: Number of points outside control limits within
+the latest 6 observations. Used in preference over \code{outliers_actual} so
+the text focuses on CURRENT signals. Falls back to \code{outliers_actual} when
+\code{outliers_recent_count} is absent (e.g. when the caller built stats from
+a summary data frame instead of a \code{bfh_qic_result}).
+\item \code{outliers_actual}: Total number of points outside control limits (used
+by the PDF table). Only used by the interpretation text as a fallback.
 }}
 }
 \value{

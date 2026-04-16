@@ -1381,11 +1381,12 @@ test_that("bfh_export_pdf preserves user-provided details", {
 })
 
 # ============================================================================
-# TESTS FOR extract_spc_stats_extended() - Issue #74
+# TESTS FOR bfh_extract_spc_stats(bfh_qic_result) - Issue #74
+# Omlagt fra intern extract_spc_stats_extended() til public S3-generic.
 # ============================================================================
 
-test_that("extract_spc_stats_extended calculates outliers for i-chart", {
-  # Outlier i seneste 6 observationer (koden tæller kun recent signals)
+test_that("bfh_extract_spc_stats(bfh_qic_result) calculates outliers for i-chart", {
+  # Outliers i både ældre og seneste del af serien
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
     value = c(50, 52, 48, 51, 49, 53, 47, 52, 50, 48, 51,
@@ -1396,15 +1397,18 @@ test_that("extract_spc_stats_extended calculates outliers for i-chart", {
     bfh_qic(data, month, value, chart_type = "i")
   )
 
-  stats <- BFHcharts:::extract_spc_stats_extended(result)
+  stats <- bfh_extract_spc_stats(result)
 
-  # Should have outliers data (kun seneste 6 obs tælles)
+  # outliers_actual (tabel) = TOTAL outliers i seneste part
   expect_equal(stats$outliers_expected, 0)
-  expect_true(stats$outliers_actual >= 1)  # Mindst 1 outlier i seneste 6
+  expect_true(stats$outliers_actual >= 1)
+  # outliers_recent_count (tekst) = kun seneste 6 obs
+  expect_true("outliers_recent_count" %in% names(stats))
+  expect_true(stats$outliers_actual >= stats$outliers_recent_count)
   expect_false(stats$is_run_chart)
 })
 
-test_that("extract_spc_stats_extended handles run chart correctly", {
+test_that("bfh_extract_spc_stats(bfh_qic_result) handles run chart correctly", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rpois(12, lambda = 50)
@@ -1414,11 +1418,12 @@ test_that("extract_spc_stats_extended handles run chart correctly", {
     bfh_qic(data, month, value, chart_type = "run")
   )
 
-  stats <- BFHcharts:::extract_spc_stats_extended(result)
+  stats <- bfh_extract_spc_stats(result)
 
   # Should NOT have outliers data for run chart
   expect_null(stats$outliers_expected)
   expect_null(stats$outliers_actual)
+  expect_null(stats$outliers_recent_count)
   expect_true(stats$is_run_chart)
 
   # Should still have runs and crossings
@@ -1428,7 +1433,7 @@ test_that("extract_spc_stats_extended handles run chart correctly", {
   expect_false(is.null(stats$crossings_actual))
 })
 
-test_that("extract_spc_stats_extended includes runs and crossings", {
+test_that("bfh_extract_spc_stats(bfh_qic_result) includes runs and crossings", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rpois(12, lambda = 50)
@@ -1438,7 +1443,7 @@ test_that("extract_spc_stats_extended includes runs and crossings", {
     bfh_qic(data, month, value, chart_type = "i")
   )
 
-  stats <- BFHcharts:::extract_spc_stats_extended(result)
+  stats <- bfh_extract_spc_stats(result)
 
   # Should have all expected fields
   expect_true("runs_expected" %in% names(stats))
