@@ -1,3 +1,19 @@
+# BFHcharts 0.7.1
+
+## Bug fixes
+
+* Analyseteksten formulerer nu eksplicit at outlier-tallet kun omfatter
+  **seneste observationer**, f.eks. "2 af de seneste observationer ligger
+  uden for kontrolgrænserne". Tidligere skrev teksten blot "2 observation(er)
+  uden for kontrolgrænserne", hvilket kunne misforstås som totalen i PDF-
+  tabellen (der viser total i seneste part). Nu er det tydeligt at analyse-
+  tallet kun afspejler nylige outliers (`outliers_recent_count`, seneste 6 obs),
+  mens tabellen fortsat viser totalen (`outliers_actual`).
+* Opdatering dækker både fallback-tekster i
+  `inst/texts/spc_analysis.yml` (`outliers_only`, `runs_outliers`,
+  `crossings_outliers`, `all_signals`) og den hardkodede tekst i
+  `bfh_interpret_spc_signals()`.
+
 # BFHcharts 0.7.0
 
 ## Nye features

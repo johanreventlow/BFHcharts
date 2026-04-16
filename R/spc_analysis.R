@@ -96,13 +96,16 @@ bfh_interpret_spc_signals <- function(spc_stats) {
     }
   }
 
-  # Outliers (kun aktuelle — seneste 6 obs)
+  # Outliers (kun aktuelle — seneste 6 obs). Formuleringen "af de seneste
+  # observationer" signalerer eksplicit at tallet kan være mindre end det
+  # totale antal outliers i PDF-tabellen, fordi ældre outliers ikke medregnes
+  # i analyseteksten.
   if (is_valid_scalar(outliers_for_text) && outliers_for_text > 0) {
     interpretations <- c(
       interpretations,
       sprintf(
         paste0(
-          "%d observation(er) ligger uden for kontrolgrænserne. ",
+          "%d af de seneste observationer ligger uden for kontrolgrænserne. ",
           "Disse bør undersøges for særlige årsager."
         ),
         outliers_for_text
