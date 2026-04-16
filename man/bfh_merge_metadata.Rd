@@ -57,7 +57,8 @@ merged <- bfh_merge_metadata(metadata, chart_title = "Infektioner")
 \code{\link[=bfh_export_pdf]{bfh_export_pdf()}} for PDF export functionality
 
 Other utility-functions: 
-\code{\link{bfh_extract_spc_stats}()}
+\code{\link{bfh_extract_spc_stats}()},
+\code{\link{bfh_generate_details}()}
 }
 \concept{utility-functions}
 \keyword{internal}

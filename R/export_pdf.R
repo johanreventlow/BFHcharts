@@ -892,11 +892,18 @@ prepare_plot_for_export <- function(plot, margin_mm = 0) {
 #'
 #' **Interval Detection:**
 #' - Uses detect_date_interval() to determine the interval type
-
 #' - Labels adapt: "måned", "uge", "dag", "kvartal", "år"
 #'
-#' @keywords internal
-#' @noRd
+#' @examples
+#' \dontrun{
+#' result <- bfh_qic(data, x = date, y = value, chart_type = "i")
+#' details <- bfh_generate_details(result)
+#' # "Periode: jan. 2024 – dec. 2024 • Gns. måned: 50 • ..."
+#' }
+#'
+#' @family utility-functions
+#' @seealso [bfh_export_pdf()] for PDF export functionality
+#' @export
 bfh_generate_details <- function(x) {
   # Validate input
 

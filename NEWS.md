@@ -1,3 +1,14 @@
+# BFHcharts 0.7.2
+
+## Nye features
+
+* `bfh_generate_details()` er nu eksporteret. Funktionen genererer den
+  formaterede detail-tekst (periode, gennemsnit, seneste, niveau) som vises
+  over SPC-grafen i PDF-eksporter. Tidligere kun tilgængelig internt — nu
+  kan downstream-pakker (fx biSPCharts) sætte `metadata$details` selv,
+  så preview-veje (via `bfh_create_typst_document()`) matcher
+  `bfh_export_pdf()`-vejen.
+
 # BFHcharts 0.7.1
 
 ## Bug fixes
