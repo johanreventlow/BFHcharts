@@ -1,114 +1,5 @@
 # Tests for SPC Analysis Functions
 
-# ==============================================================================
-# bfh_interpret_spc_signals() tests
-# ==============================================================================
-
-test_that("bfh_interpret_spc_signals detects serielængde signal", {
-  stats <- list(runs_actual = 9, runs_expected = 7)
-  result <- bfh_interpret_spc_signals(stats)
-
-  expect_type(result, "character")
-  expect_true(any(grepl("Serielængde-signal", result)))
-  expect_true(any(grepl("9", result)))
-  expect_true(any(grepl("7", result)))
-})
-
-test_that("bfh_interpret_spc_signals shows normal serielængde", {
-  stats <- list(runs_actual = 5, runs_expected = 7)
-  result <- bfh_interpret_spc_signals(stats)
-
-  expect_type(result, "character")
-  expect_false(any(grepl("Serielængde-signal", result)))
-  expect_true(any(grepl("inden for forventet", result)))
-})
-
-test_that("bfh_interpret_spc_signals detects krydsnings signal", {
-  stats <- list(crossings_actual = 3, crossings_expected = 5)
-  result <- bfh_interpret_spc_signals(stats)
-
-  expect_type(result, "character")
-  expect_true(any(grepl("Krydsnings-signal", result)))
-  expect_true(any(grepl("3", result)))
-  expect_true(any(grepl("5", result)))
-})
-
-test_that("bfh_interpret_spc_signals shows normal krydsninger", {
-  stats <- list(crossings_actual = 8, crossings_expected = 5)
-  result <- bfh_interpret_spc_signals(stats)
-
-  expect_type(result, "character")
-  expect_false(any(grepl("Krydsnings-signal", result)))
-  expect_true(any(grepl("inden for forventet", result)))
-})
-
-test_that("bfh_interpret_spc_signals detects outliers (uses recent count for text)", {
-  # Analyseteksten skal kun tale om AKTUELLE outliers (seneste 6 obs)
-  # og signalere at det er nylige observationer, ikke totalen.
-  stats <- list(outliers_actual = 5, outliers_recent_count = 2)
-  result <- bfh_interpret_spc_signals(stats)
-
-  expect_type(result, "character")
-  expect_true(any(grepl("\\b2\\b", result)),
-              info = "Teksten skal referere til outliers_recent_count (2), ikke total outliers_actual (5)")
-  expect_false(any(grepl("\\b5\\b", result)),
-               info = "Teksten må ikke bruge total-tallet (outliers_actual=5)")
-  expect_true(any(grepl("kontrolgrænserne", result)))
-  expect_true(any(grepl("seneste observationer", result)),
-              info = "Teksten skal signalere at outliers er nylige (\"af de seneste observationer\")")
-})
-
-test_that("bfh_interpret_spc_signals ignores old outliers when none are recent", {
-  # Total 3 outliers, men ingen i seneste 6 obs → analyseteksten skal IKKE nævne outliers.
-  stats <- list(outliers_actual = 3, outliers_recent_count = 0)
-  result <- bfh_interpret_spc_signals(stats)
-
-  expect_false(any(grepl("kontrolgrænserne", result)),
-               info = "Ingen aktuelle outliers → ingen outlier-tekst")
-})
-
-test_that("bfh_interpret_spc_signals handles stable process", {
-  stats <- list(
-    runs_actual = 5,
-    runs_expected = 7,
-    crossings_actual = 8,
-    crossings_expected = 5,
-    outliers_actual = 0
-  )
-  result <- bfh_interpret_spc_signals(stats)
-
-  expect_type(result, "character")
-  # Should NOT contain "signal" (case insensitive) for normal process
-  expect_false(any(grepl("Serielængde-signal", result)))
-  expect_false(any(grepl("Krydsnings-signal", result)))
-})
-
-test_that("bfh_interpret_spc_signals handles empty stats", {
-  stats <- list()
-  result <- bfh_interpret_spc_signals(stats)
-
-  expect_type(result, "character")
-  expect_true(length(result) > 0)
-  expect_true(any(grepl("stabil", result)))
-})
-
-test_that("bfh_interpret_spc_signals handles combined signals", {
-  stats <- list(
-    runs_actual = 9,
-    runs_expected = 7,
-    crossings_actual = 3,
-    crossings_expected = 5,
-    outliers_actual = 1
-  )
-  result <- bfh_interpret_spc_signals(stats)
-
-  expect_type(result, "character")
-  expect_true(length(result) >= 3)  # At least 3 interpretations
-  expect_true(any(grepl("Serielængde-signal", result)))
-  expect_true(any(grepl("Krydsnings-signal", result)))
-  expect_true(any(grepl("kontrolgrænserne", result)))
-})
-
 
 # ==============================================================================
 # bfh_build_analysis_context() tests
@@ -151,14 +42,13 @@ test_that("bfh_build_analysis_context extracts context from bfh_qic_result", {
   expect_true("chart_type" %in% names(ctx))
   expect_true("n_points" %in% names(ctx))
   expect_true("spc_stats" %in% names(ctx))
-  expect_true("signal_interpretations" %in% names(ctx))
   expect_true("has_signals" %in% names(ctx))
+  expect_false("signal_interpretations" %in% names(ctx))
 
   # Check values
   expect_equal(ctx$chart_title, "Test Chart")
   expect_equal(ctx$chart_type, "i")
   expect_equal(ctx$n_points, 24)
-  expect_type(ctx$signal_interpretations, "character")
   expect_type(ctx$has_signals, "logical")
 })
 

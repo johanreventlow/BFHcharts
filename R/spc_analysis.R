@@ -4,124 +4,6 @@
 # Disse funktioner bruges til at generere analysetekster til PDF-eksport.
 
 
-#' Interpret SPC Signals (Anhøj Rules)
-#'
-#' Generates Danish standard text interpretations based on Anhøj SPC analysis.
-#' Used as fallback when AI is not available.
-#'
-#' @param spc_stats Named list from `bfh_extract_spc_stats()` containing:
-#'   - `runs_actual`: Actual longest run (consecutive points on same side of CL)
-#'   - `runs_expected`: Expected maximum run length
-#'   - `crossings_actual`: Actual number of crossings of centerline
-#'   - `crossings_expected`: Expected minimum crossings
-#'   - `outliers_recent_count`: Number of points outside control limits within
-#'     the latest 6 observations. Used in preference over `outliers_actual` so
-#'     the text focuses on CURRENT signals. Falls back to `outliers_actual` when
-#'     `outliers_recent_count` is absent (e.g. when the caller built stats from
-#'     a summary data frame instead of a `bfh_qic_result`).
-#'   - `outliers_actual`: Total number of points outside control limits (used
-#'     by the PDF table). Only used by the interpretation text as a fallback.
-#'
-#' @return Character vector with Danish interpretations. Empty vector if no
-#'   signals detected and no stats provided.
-#'
-#' @examples
-#' # Signal detected
-#' stats <- list(runs_actual = 9, runs_expected = 7)
-#' bfh_interpret_spc_signals(stats)
-#'
-#' # Normal process
-#' stats <- list(runs_actual = 5, runs_expected = 7,
-#'               crossings_actual = 8, crossings_expected = 5)
-#' bfh_interpret_spc_signals(stats)
-#'
-#' @keywords internal
-bfh_interpret_spc_signals <- function(spc_stats) {
-  interpretations <- character(0)
-
-  # Brug outliers_recent_count (seneste 6 obs) til analyseteksten så ældre
-  # outliers ikke beskrives som aktuelle problemer. Fald tilbage til
-  # outliers_actual hvis recent_count mangler (f.eks. data.frame-input).
-  outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
-
-# Serielængde-signal (runs)
-  if (is_valid_scalar(spc_stats$runs_actual) && is_valid_scalar(spc_stats$runs_expected)) {
-    if (spc_stats$runs_actual > spc_stats$runs_expected) {
-      interpretations <- c(
-        interpretations,
-        sprintf(
-          paste0(
-            "Serielængde-signal: Længste serie (%d) overstiger forventet ",
-            "maksimum (%d). Dette indikerer et skift i procesniveauet."
-          ),
-          spc_stats$runs_actual,
-          spc_stats$runs_expected
-        )
-      )
-    } else {
-      interpretations <- c(
-        interpretations,
-        sprintf(
-          "Serielængde inden for forventet variation (%d ≤ %d).",
-          spc_stats$runs_actual,
-          spc_stats$runs_expected
-        )
-      )
-    }
-  }
-
-  # Krydsnings-signal (crossings)
-  if (is_valid_scalar(spc_stats$crossings_actual) && is_valid_scalar(spc_stats$crossings_expected)) {
-    if (spc_stats$crossings_actual < spc_stats$crossings_expected) {
-      interpretations <- c(
-        interpretations,
-        sprintf(
-          paste0(
-            "Krydsnings-signal: Kun %d krydsninger af centerlinjen, under ",
-            "forventet minimum (%d). Dette indikerer gruppering i data."
-          ),
-          spc_stats$crossings_actual,
-          spc_stats$crossings_expected
-        )
-      )
-    } else {
-      interpretations <- c(
-        interpretations,
-        sprintf(
-          "Antal krydsninger inden for forventet variation (%d ≥ %d).",
-          spc_stats$crossings_actual,
-          spc_stats$crossings_expected
-        )
-      )
-    }
-  }
-
-  # Outliers (kun aktuelle — seneste 6 obs). Formuleringen "af de seneste
-  # observationer" signalerer eksplicit at tallet kan være mindre end det
-  # totale antal outliers i PDF-tabellen, fordi ældre outliers ikke medregnes
-  # i analyseteksten.
-  if (is_valid_scalar(outliers_for_text) && outliers_for_text > 0) {
-    interpretations <- c(
-      interpretations,
-      sprintf(
-        paste0(
-          "%d af de seneste observationer ligger uden for kontrolgrænserne. ",
-          "Disse bør undersøges for særlige årsager."
-        ),
-        outliers_for_text
-      )
-    )
-  }
-
-  # Hvis ingen signaler og ingen fortolkninger
-  if (length(interpretations) == 0) {
-    interpretations <- "Processen er stabil uden s\u00e6rlige signaler."
-  }
-
-  return(interpretations)
-}
-
-
 #' Build Analysis Context from bfh_qic_result
 #'
 #' Collects all relevant context from a `bfh_qic_result` object for analysis
@@ -141,8 +23,6 @@ bfh_interpret_spc_signals <- function(spc_stats) {
 #'   - `n_points`: Number of data points
 #'   - `centerline`: Centerline value
 #'   - `spc_stats`: SPC statistics from `bfh_extract_spc_stats()`
-#'   - `signal_interpretations`: Danish interpretations from
-#'     `bfh_interpret_spc_signals()`
 #'   - `has_signals`: Logical indicating if signals were detected
 #'   - User-provided metadata fields
 #'
@@ -162,9 +42,6 @@ if (!inherits(x, "bfh_qic_result")) {
 
   # Udtræk SPC statistikker (inkl. outliers fra qic_data)
   spc_stats <- bfh_extract_spc_stats(x)
-
-  # Generer standardtekster
-  signal_interpretations <- bfh_interpret_spc_signals(spc_stats)
 
   # Detect om der er signaler (sikker mod NULL og NA)
   has_signals <- FALSE
@@ -216,8 +93,6 @@ if (!inherits(x, "bfh_qic_result")) {
     # Anhøj statistikker
     spc_stats = spc_stats,
 
-    # Signal-fortolkninger (standardtekster)
-    signal_interpretations = signal_interpretations,
     has_signals = has_signals,
 
     # Bruger-metadata

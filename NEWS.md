@@ -1,3 +1,15 @@
+# BFHcharts (development)
+
+## Breaking changes
+
+* `bfh_interpret_spc_signals()` er fjernet. Funktionen producerede parallel
+  Anhøj-tekst via hardcoded `sprintf()`-kald, men dens output
+  (`context$signal_interpretations`) blev aldrig læst af
+  `build_fallback_analysis()` i praksis. Al analysetekst genereres nu via
+  YAML-skabeloner i `inst/texts/spc_analysis.yml`. `bfh_build_analysis_context()`
+  returnerer ikke længere `signal_interpretations`-feltet. Downstream-kaldere
+  bør bruge `bfh_generate_analysis()` for den samlede analysetekst.
+
 # BFHcharts 0.7.2
 
 ## Nye features

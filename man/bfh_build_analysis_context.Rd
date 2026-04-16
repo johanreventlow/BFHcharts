@@ -26,8 +26,6 @@ Named list with complete context including:
 \item \code{n_points}: Number of data points
 \item \code{centerline}: Centerline value
 \item \code{spc_stats}: SPC statistics from \code{bfh_extract_spc_stats()}
-\item \code{signal_interpretations}: Danish interpretations from
-\code{bfh_interpret_spc_signals()}
 \item \code{has_signals}: Logical indicating if signals were detected
 \item User-provided metadata fields
 }
