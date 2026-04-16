@@ -12,8 +12,12 @@
 #                          Bemærk: denne placeholder fyldes med
 #                          outliers_recent_count (ikke totalen i tabellen), så
 #                          analyseteksten kun beskriver AKTUELLE outliers.
+#   {outliers_word}      - Dansk ental/flertal for outliers ("observation" ved
+#                          n == 1, ellers "observationer"). Bruges sammen med
+#                          {outliers_actual} for grammatisk korrekt tekst.
 #   {centerline}         - Centerlinjens værdi
-#   {target}             - Målværdi (formateret)
+#   {target}             - Målværdi (formateret) eller original streng
+#                          inkl. operator (fx "≤ 2,5") hvis angivet.
 #   {n_points}           - Antal datapunkter
 
 stability:
@@ -63,6 +67,7 @@ stability:
     detailed: "Processen er ustabil med flere samtidige signaler: niveauskift (serielængde {runs_actual} > {runs_expected}), gruppering (krydsninger {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste observationer uden for kontrolgrænserne. En grundig analyse anbefales."
 
 target:
+  # --- Værdineutrale varianter (bagudkompatible, bruges når target_direction er NULL) ---
   at_target:
     short: "Niveauet ligger tæt på målet ({target})."
     standard: "Niveauet ligger tæt på målet ({target})."
@@ -73,7 +78,18 @@ target:
     short: "Niveauet ligger under målet ({target})."
     standard: "Niveauet ligger under målet ({target})."
 
+  # --- Retningsbevidste varianter (bruges når target_direction er "higher" eller "lower") ---
+  goal_met:
+    short: "Målet ({target}) er nået."
+    standard: "Niveauet opfylder målet ({target})."
+    detailed: "Niveauet opfylder målet ({target}) og ligger på den ønskede side af målværdien."
+  goal_not_met:
+    short: "Målet ({target}) er endnu ikke nået."
+    standard: "Niveauet opfylder endnu ikke målet ({target})."
+    detailed: "Niveauet opfylder endnu ikke målet ({target}). Den nuværende praksis når det ikke."
+
 action:
+  # --- Værdineutrale handlinger (bagudkompatible) ---
   stable_at_target:
     short: "Fortsæt nuværende praksis."
     standard: "Fortsæt den nuværende praksis og overvåg processen løbende."
@@ -98,6 +114,24 @@ action:
     short: "Undersøg årsagerne til den usædvanlige variation."
     standard: "Identificér og undersøg årsagerne til den usædvanlige variation."
     detailed: "Identificér og undersøg årsagerne til den usædvanlige variation. Når processen er under kontrol, kan der fastsættes et realistisk mål."
+
+  # --- Retningsbevidste handlinger (bruges når target_direction er kendt) ---
+  stable_goal_met:
+    short: "Fortsæt den nuværende praksis."
+    standard: "Processen er stabil og opfylder målet. Fortsæt den nuværende praksis og overvåg løbende."
+    detailed: "Processen er stabil og opfylder målet. Fortsæt den nuværende praksis og overvåg løbende, så niveauet kan fastholdes."
+  stable_goal_not_met:
+    short: "En målrettet indsats er nødvendig."
+    standard: "Processen er stabil, men når ikke målet. Der kræves en målrettet indsats for at flytte niveauet i den ønskede retning."
+    detailed: "Processen er stabil, men når ikke målet. Uden en målrettet indsats vil den nuværende praksis fortsætte med at levere samme niveau og dermed ikke opfylde målet."
+  unstable_goal_met:
+    short: "Stabilisér processen for at fastholde målopfyldelsen."
+    standard: "Selvom målet aktuelt er opfyldt, er processen ustabil. Undersøg årsagerne til variationen, så målopfyldelsen kan fastholdes."
+    detailed: "Selvom målet aktuelt er opfyldt, er processen ustabil. Undersøg årsagerne til variationen, så det nuværende niveau kan fastholdes, og målopfyldelsen ikke går tabt."
+  unstable_goal_not_met:
+    short: "Stabilisér processen først, og arbejd derefter mod målet."
+    standard: "Processen er ustabil og opfylder ikke målet. Identificér først de særlige årsager til variationen, før målrettede tiltag iværksættes."
+    detailed: "Processen er ustabil og opfylder ikke målet. Identificér først de særlige årsager til variationen — først når processen er stabil, kan effekten af nye forbedringstiltag mod målet vurderes pålideligt."
 
 padding:
   data_points:

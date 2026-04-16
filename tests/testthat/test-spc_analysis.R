@@ -1,6 +1,5 @@
 # Tests for SPC Analysis Functions
 
-
 # ==============================================================================
 # bfh_build_analysis_context() tests
 # ==============================================================================
@@ -314,4 +313,285 @@ test_that("pick_text med budget = Inf vælger detailed", {
   )
   result <- BFHcharts:::pick_text(variants)
   expect_equal(result, "Detaljeret.")
+})
+
+
+# ==============================================================================
+# resolve_target() tests (E: retningsfølsomhed)
+# ==============================================================================
+
+test_that("resolve_target returnerer tom liste for NULL input", {
+  r <- BFHcharts:::resolve_target(NULL)
+  expect_true(is.na(r$value))
+  expect_null(r$direction)
+  expect_equal(r$display, "")
+})
+
+test_that("resolve_target bevarer numerisk input uændret (bagudkompatibelt)", {
+  r <- BFHcharts:::resolve_target(2.5)
+  expect_equal(r$value, 2.5)
+  expect_null(r$direction)
+})
+
+test_that("resolve_target parser <= til 'lower' direction", {
+  r <- BFHcharts:::resolve_target("<= 2,5")
+  expect_equal(r$value, 2.5)
+  expect_equal(r$direction, "lower")
+  expect_equal(r$display, "<= 2,5")
+})
+
+test_that("resolve_target parser >= til 'higher' direction", {
+  r <- BFHcharts:::resolve_target(">= 90")
+  expect_equal(r$value, 90)
+  expect_equal(r$direction, "higher")
+})
+
+test_that("resolve_target parser Unicode ≤ til 'lower'", {
+  r <- BFHcharts:::resolve_target("\U2264 5")
+  expect_equal(r$value, 5)
+  expect_equal(r$direction, "lower")
+})
+
+test_that("resolve_target parser Unicode ≥ til 'higher'", {
+  r <- BFHcharts:::resolve_target("\U2265 90%")
+  expect_equal(r$value, 90)
+  expect_equal(r$direction, "higher")
+})
+
+test_that("resolve_target parser < med tal til 'lower'", {
+  r <- BFHcharts:::resolve_target("< 3")
+  expect_equal(r$value, 3)
+  expect_equal(r$direction, "lower")
+})
+
+test_that("resolve_target parser > med tal til 'higher'", {
+  r <- BFHcharts:::resolve_target("> 80")
+  expect_equal(r$value, 80)
+  expect_equal(r$direction, "higher")
+})
+
+test_that("resolve_target uden operator har ingen retning", {
+  r <- BFHcharts:::resolve_target("2,5")
+  expect_equal(r$value, 2.5)
+  expect_null(r$direction)
+})
+
+test_that("resolve_target håndterer dansk decimalkomma og engelsk punktum", {
+  r1 <- BFHcharts:::resolve_target("<= 2,5")
+  r2 <- BFHcharts:::resolve_target("<= 2.5")
+  expect_equal(r1$value, r2$value)
+  expect_equal(r1$direction, r2$direction)
+})
+
+test_that("resolve_target returnerer NA_real_ for ikke-numerisk streng", {
+  r <- BFHcharts:::resolve_target("ikke et tal")
+  expect_true(is.na(r$value))
+})
+
+
+# ==============================================================================
+# pluralize_da() tests (B: ental/flertal)
+# ==============================================================================
+
+test_that("pluralize_da returnerer ental når n == 1", {
+  expect_equal(BFHcharts:::pluralize_da(1, "observation", "observationer"), "observation")
+})
+
+test_that("pluralize_da returnerer flertal når n != 1", {
+  expect_equal(BFHcharts:::pluralize_da(0, "observation", "observationer"), "observationer")
+  expect_equal(BFHcharts:::pluralize_da(2, "observation", "observationer"), "observationer")
+  expect_equal(BFHcharts:::pluralize_da(5, "observation", "observationer"), "observationer")
+})
+
+test_that("pluralize_da håndterer NA og NULL gracefult", {
+  expect_equal(BFHcharts:::pluralize_da(NA, "observation", "observationer"), "observationer")
+  expect_equal(BFHcharts:::pluralize_da(NULL, "observation", "observationer"), "observationer")
+})
+
+
+# ==============================================================================
+# ensure_within_max() tests (B: trim)
+# ==============================================================================
+
+test_that("ensure_within_max returnerer tekst uændret under grænsen", {
+  text <- "Kort tekst."
+  expect_equal(BFHcharts:::ensure_within_max(text, 100), text)
+})
+
+test_that("ensure_within_max trimmer ved sidste punktum", {
+  text <- "Første sætning. Anden sætning. Tredje sætning der er meget lang."
+  result <- BFHcharts:::ensure_within_max(text, 30)
+  expect_lte(nchar(result), 30)
+  expect_match(result, "\\.$")  # ender på punktum
+})
+
+test_that("ensure_within_max trimmer ved komma hvis intet punktum findes", {
+  text <- "Første del, anden del, tredje del der fortsætter og fortsætter"
+  result <- BFHcharts:::ensure_within_max(text, 20)
+  expect_lte(nchar(result), 20)
+})
+
+test_that("ensure_within_max aldrig klipper midt i et ord", {
+  text <- "første sætning her. Anden sætning er også lang nok til at mærke klippet"
+  result <- BFHcharts:::ensure_within_max(text, 25)
+  expect_lte(nchar(result), 25)
+  # Resultat skal være enten tom, slutte på punktuation/space, eller være et
+  # helt ord-præfiks fra originalen — aldrig en afbrudt halv-stavelse.
+  trimmed <- trimws(result)
+  if (nchar(trimmed) > 0) {
+    ends_on_punct <- grepl("[.!?,]$", trimmed)
+    # Tjek at resultatet findes som prefix i originalen ved et ordskel
+    orig_words <- strsplit(text, "\\s+")[[1]]
+    valid_prefixes <- sapply(seq_along(orig_words), function(i) {
+      paste(orig_words[seq_len(i)], collapse = " ")
+    })
+    # Fjern trailing punktuation for match mod original
+    clean_trimmed <- gsub("[.!?,]+$", "", trimmed)
+    is_prefix <- any(sapply(valid_prefixes, function(p) {
+      gsub("[.!?,]+$", "", p) == clean_trimmed
+    }))
+    expect_true(ends_on_punct || is_prefix,
+                label = sprintf("Resultat '%s' bør slutte på punktuation eller være et ord-præfiks",
+                                trimmed))
+  }
+})
+
+
+# ==============================================================================
+# bfh_build_analysis_context() — target_direction (E)
+# ==============================================================================
+
+test_that("bfh_build_analysis_context afleder target_direction fra operator-streng", {
+  skip_if_not_installed("qicharts2")
+  set.seed(42)
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
+
+  ctx <- bfh_build_analysis_context(result, metadata = list(target = "<= 45"))
+
+  expect_equal(ctx$target_value, 45)
+  expect_equal(ctx$target_direction, "lower")
+  expect_equal(ctx$target_display, "<= 45")
+})
+
+test_that("bfh_build_analysis_context bevarer numerisk target uden retning", {
+  skip_if_not_installed("qicharts2")
+  set.seed(42)
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
+
+  ctx <- bfh_build_analysis_context(result, metadata = list(target = 45))
+
+  expect_equal(ctx$target_value, 45)
+  expect_null(ctx$target_direction)
+})
+
+
+# ==============================================================================
+# build_fallback_analysis() — goal_met/goal_not_met + constraints
+# ==============================================================================
+
+# Hjælpefunktion: byg minimal context
+make_ctx <- function(..., spc_stats = list(runs_actual = 5, runs_expected = 7,
+                                           crossings_actual = 8, crossings_expected = 5,
+                                           outliers_recent_count = 0)) {
+  defaults <- list(
+    chart_title = "Test",
+    chart_type = "i",
+    y_axis_unit = NULL,
+    n_points = 20,
+    centerline = 50,
+    spc_stats = spc_stats,
+    has_signals = FALSE,
+    data_definition = NULL,
+    target_value = NA_real_,
+    target_direction = NULL,
+    target_display = "",
+    hospital = NULL,
+    department = NULL
+  )
+  modifyList(defaults, list(...))
+}
+
+test_that("build_fallback_analysis overstiger aldrig max_chars", {
+  for (mx in c(200L, 275L, 375L, 500L)) {
+    ctx <- make_ctx(target_value = 50, target_direction = "lower", centerline = 45)
+    txt <- BFHcharts:::build_fallback_analysis(ctx, min_chars = 50, max_chars = mx)
+    expect_lte(nchar(txt), mx,
+               label = sprintf("max_chars=%d giver %d tegn", mx, nchar(txt)))
+  }
+})
+
+test_that("build_fallback_analysis bruger goal_met-tekst når target_direction er 'lower' og CL <= target", {
+  ctx <- make_ctx(target_value = 2.5, target_direction = "lower", centerline = 2.0,
+                  target_display = "<= 2,5")
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  # Skal INDEHOLDE "opfylder målet" eller "målet ... nået"
+  expect_true(grepl("opfylder målet|målet.*nået", txt),
+              info = paste("Forventede goal_met-sprog, fik:", txt))
+  # Må IKKE indeholde den værdineutrale "ligger under målet"
+  expect_false(grepl("ligger under målet", txt))
+})
+
+test_that("build_fallback_analysis bruger goal_not_met når CL overstiger 'lower'-target", {
+  ctx <- make_ctx(target_value = 2.5, target_direction = "lower", centerline = 4.0,
+                  target_display = "<= 2,5")
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("opfylder (endnu )?ikke målet|endnu ikke nået", txt),
+              info = paste("Forventede goal_not_met-sprog, fik:", txt))
+})
+
+test_that("build_fallback_analysis bruger goal_met for 'higher'-target når CL >= target", {
+  ctx <- make_ctx(target_value = 90, target_direction = "higher", centerline = 95,
+                  target_display = ">= 90")
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("opfylder målet|målet.*nået", txt),
+              info = paste("Forventede goal_met, fik:", txt))
+})
+
+test_that("build_fallback_analysis bruger værdineutral tekst når target_direction er NULL", {
+  ctx <- make_ctx(target_value = 2.5, target_direction = NULL, centerline = 3.0)
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  # Den værdineutrale sti bruger "over" / "under" / "tæt på"
+  expect_true(grepl("over|under|tæt på", txt))
+})
+
+test_that("build_fallback_analysis reallokerer budget når target mangler", {
+  ctx_no_target <- make_ctx(target_value = NA_real_, target_direction = NULL)
+  txt <- BFHcharts:::build_fallback_analysis(ctx_no_target, min_chars = 300, max_chars = 400)
+  # Uden target skal stability+action fylde meste af max_chars
+  expect_gte(nchar(txt), 250)
+  expect_lte(nchar(txt), 400)
+})
+
+test_that("build_fallback_analysis bruger ental ved 1 outlier", {
+  stats <- list(runs_actual = 5, runs_expected = 7,
+                crossings_actual = 8, crossings_expected = 5,
+                outliers_recent_count = 1)
+  ctx <- make_ctx(spc_stats = stats)
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  # Grammatisk korrekt dansk: enten "1 observation ligger" (direkte) eller
+  # "1 af de seneste observationer ligger" (flertal i "af de seneste"-konstruktion).
+  expect_match(txt, "1 observation\\b|1 af de seneste observationer")
+  # Må ikke indeholde "1 observationer" som direkte konstruktion
+  expect_false(grepl("\\b1 observationer\\b", txt))
+})
+
+test_that("build_fallback_analysis bruger flertal ved 3 outliers", {
+  stats <- list(runs_actual = 5, runs_expected = 7,
+                crossings_actual = 8, crossings_expected = 5,
+                outliers_recent_count = 3)
+  ctx <- make_ctx(spc_stats = stats)
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  # Grammatisk korrekt dansk: enten "3 observationer" (direkte) eller
+  # "3 af de seneste observationer" (flertal i "af de seneste"-konstruktion).
+  expect_match(txt, "3 observationer|3 af de seneste observationer")
+  # Må aldrig bruge ental efter tal > 1
+  expect_false(grepl("\\b3 observation\\b", txt))
 })

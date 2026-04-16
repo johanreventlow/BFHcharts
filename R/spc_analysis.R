@@ -4,6 +4,112 @@
 # Disse funktioner bruges til at generere analysetekster til PDF-eksport.
 
 
+# ---------------------------------------------------------------------------
+# Interne helpers (resolve_target, pluralize_da, ensure_within_max)
+# ---------------------------------------------------------------------------
+
+# Parse metadata$target til numerisk værdi + optional retning.
+# Genbruger parse_target_input() fra utils_label_helpers.R for at undgå
+# duplikeret parser-logik. Returnerer altid en liste med value/direction/display.
+#
+# Direction-mapping:
+#   >=, ≥, ↑  → "higher" (higher is better)
+#   <=, ≤, ↓  → "lower"  (lower is better)
+#   >, <      → "higher" / "lower" (når efterfulgt af tal)
+#   ingen op. → NULL (værdineutral)
+resolve_target <- function(target_input) {
+  empty <- list(value = NA_real_, direction = NULL, display = "")
+  if (is.null(target_input)) return(empty)
+
+  # Numerisk input: bagudkompatibelt — ingen retning
+  if (is.numeric(target_input)) {
+    return(list(value = as.numeric(target_input), direction = NULL, display = ""))
+  }
+
+  if (!is.character(target_input) || length(target_input) == 0 ||
+      nchar(trimws(target_input)) == 0) {
+    return(empty)
+  }
+
+  # Normalisér Unicode-operatorer til ASCII før parsing, så parse_target_input()
+  # (der er testet mod ASCII-input fra chart-labels) kan genbruges uændret.
+  # ≤ → <=, ≥ → >=, ↑ → >, ↓ → <
+  normalized <- target_input
+  normalized <- gsub("\U2264", "<=", normalized)
+  normalized <- gsub("\U2265", ">=", normalized)
+  normalized <- gsub("\U2191", ">", normalized)
+  normalized <- gsub("\U2193", "<", normalized)
+
+  parsed <- parse_target_input(normalized)
+
+  direction <- switch(parsed$operator,
+    "\U2265" = "higher",
+    "\U2191" = "higher",
+    ">"      = "higher",
+    "\U2264" = "lower",
+    "\U2193" = "lower",
+    "<"      = "lower",
+    NULL
+  )
+
+  # Ekstraher numerisk værdi fra value-delen.
+  # Accepterer både dansk komma og engelsk punktum som decimaltegn.
+  raw_value <- parsed$value
+  clean <- gsub(",", ".", raw_value)
+  clean <- gsub("[^0-9.\\-]", "", clean)
+  val <- suppressWarnings(as.numeric(clean))
+  if (length(val) == 0) val <- NA_real_
+
+  list(value = val, direction = direction, display = target_input)
+}
+
+
+# Vælg ental eller flertal ud fra n. n == 1 → singular, alt andet → plural.
+# NA og NULL behandles som flertal (neutral default).
+pluralize_da <- function(n, singular, plural) {
+  if (is.null(n) || length(n) == 0 || is.na(n)) return(plural)
+  if (n == 1) singular else plural
+}
+
+
+# Garantér at tekst ikke overskrider max_chars. Trim ved sidste sætnings- eller
+# klausulgrænse (punktum, komma) før grænsen. Undgå at klippe midt i et ord.
+ensure_within_max <- function(text, max_chars) {
+  if (is.null(text) || is.na(text)) return("")
+  if (nchar(text) <= max_chars) return(text)
+
+  cut <- substr(text, 1, max_chars)
+
+  # Prøv først at trimme ved sidste punktum-grænse
+  last_period <- max(
+    gregexpr("\\.\\s", cut, perl = TRUE)[[1]],
+    gregexpr("\\.$", cut, perl = TRUE)[[1]]
+  )
+  if (is.finite(last_period) && last_period > 0) {
+    return(trimws(substr(text, 1, last_period)))
+  }
+
+  # Ellers trim ved sidste komma
+  last_comma <- max(gregexpr(",\\s", cut, perl = TRUE)[[1]])
+  if (is.finite(last_comma) && last_comma > 0) {
+    trimmed <- trimws(substr(text, 1, last_comma - 1))
+    if (!grepl("[.!?]$", trimmed)) trimmed <- paste0(trimmed, ".")
+    return(trimmed)
+  }
+
+  # Sidste udvej: trim ved sidste space
+  last_space <- max(gregexpr("\\s", cut, perl = TRUE)[[1]])
+  if (is.finite(last_space) && last_space > 0) {
+    trimmed <- trimws(substr(text, 1, last_space - 1))
+    if (!grepl("[.!?]$", trimmed)) trimmed <- paste0(trimmed, ".")
+    return(trimmed)
+  }
+
+  # Fallback (ord uden spaces): hård trim
+  substr(text, 1, max_chars)
+}
+
+
 #' Build Analysis Context from bfh_qic_result
 #'
 #' Collects all relevant context from a `bfh_qic_result` object for analysis
@@ -12,7 +118,9 @@
 #' @param x A `bfh_qic_result` object from `bfh_qic()`
 #' @param metadata Optional list with additional context:
 #'   - `data_definition`: Description of what the data represents
-#'   - `target`: Target value for the metric
+#'   - `target`: Target value for the metric. Accepts either numeric (backward
+#'     compatible) or character with optional operator prefix (`"<= 2,5"`,
+#'     `">= 90%"`). Operators are parsed to derive `target_direction`.
 #'   - `hospital`: Hospital name
 #'   - `department`: Department name
 #'
@@ -24,6 +132,10 @@
 #'   - `centerline`: Centerline value
 #'   - `spc_stats`: SPC statistics from `bfh_extract_spc_stats()`
 #'   - `has_signals`: Logical indicating if signals were detected
+#'   - `target_value`: Numeric target value (NA if absent)
+#'   - `target_direction`: `"higher"`, `"lower"`, or `NULL` derived from
+#'     operator in `metadata$target` (NULL for numeric input)
+#'   - `target_display`: Original target string for display purposes
 #'   - User-provided metadata fields
 #'
 #' @examples
@@ -39,6 +151,9 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()")
   }
+
+  # Resolve target-input til value + retning (genbruger parse_target_input)
+  target_info <- resolve_target(metadata$target)
 
   # Udtræk SPC statistikker (inkl. outliers fra qic_data)
   spc_stats <- bfh_extract_spc_stats(x)
@@ -97,7 +212,9 @@ if (!inherits(x, "bfh_qic_result")) {
 
     # Bruger-metadata
     data_definition = metadata$data_definition,
-    target_value = metadata$target,
+    target_value = target_info$value,
+    target_direction = target_info$direction,
+    target_display = target_info$display,
     hospital = metadata$hospital,
     department = metadata$department
   )
@@ -125,6 +242,9 @@ if (!inherits(x, "bfh_qic_result")) {
 #'   - `FALSE`: Use standard texts only
 #' @param min_chars Minimum characters in AI-generated output. Default 300.
 #' @param max_chars Maximum characters in AI-generated output. Default 375.
+#' @param target_tolerance Fractional tolerance for `at_target` classification
+#'   when `target_direction` is unknown (default 0.05 = 5%). Ignored when the
+#'   user provides `metadata$target` with an operator (retning er da kendt).
 #'
 #' @return Character string with analysis text suitable for PDF export.
 #'
@@ -159,7 +279,8 @@ bfh_generate_analysis <- function(x,
                                    metadata = list(),
                                    use_ai = NULL,
                                    min_chars = 300,
-                                   max_chars = 375) {
+                                   max_chars = 375,
+                                   target_tolerance = 0.05) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()")
@@ -201,7 +322,8 @@ bfh_generate_analysis <- function(x,
     # Byg fallback-analyse som baseline for AI
     baseline_analysis <- build_fallback_analysis(context,
                                                  min_chars = min_chars,
-                                                 max_chars = max_chars)
+                                                 max_chars = max_chars,
+                                                 target_tolerance = target_tolerance)
 
     # Byg kontekst til BFHllm
     llm_context <- list(
@@ -246,19 +368,25 @@ bfh_generate_analysis <- function(x,
   # === FALLBACK: STANDARDTEKSTER ===
   analysis <- build_fallback_analysis(context,
                                       min_chars = min_chars,
-                                      max_chars = max_chars)
+                                      max_chars = max_chars,
+                                      target_tolerance = target_tolerance)
   return(analysis)
 }
 
 
 # Intern funktion: Byg komplet fallback-analysetekst
 # Allokerer tegnbudget til stability/target/action dele
-# og vælger passende variant for hver del.
+# og vælger passende variant for hver del. Når context$target_direction
+# er non-NULL (udledt fra fx "<= 2,5"), bruges retningsbevidst mål-
+# vurdering (goal_met/goal_not_met) i stedet for værdineutral
+# at/over/under. ensure_within_max garanterer max_chars-grænsen.
 build_fallback_analysis <- function(context,
                                     min_chars = 300,
-                                    max_chars = 375) {
+                                    max_chars = 375,
+                                    target_tolerance = 0.05) {
   spc_stats <- context$spc_stats
   target_value <- context$target_value
+  target_direction <- context$target_direction
   centerline <- context$centerline
   n_points <- context$n_points
 
@@ -271,9 +399,9 @@ build_fallback_analysis <- function(context,
     is_valid_scalar(spc_stats$crossings_expected) &&
     spc_stats$crossings_actual < spc_stats$crossings_expected
 
-  # Brug recent_count (seneste 6 obs) så fallback-teksten følger samme regel
-  # som bfh_interpret_spc_signals(). Fald tilbage til outliers_actual når kun
-  # summary-baserede stats er tilgængelige.
+  # Brug recent_count (seneste 6 obs) så analyseteksten kun beskriver AKTUELLE
+  # outliers. Fald tilbage til outliers_actual når kun summary-baserede stats
+  # er tilgængelige.
   outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
   has_outliers <- is_valid_scalar(outliers_for_text) &&
     outliers_for_text > 0
@@ -289,22 +417,36 @@ build_fallback_analysis <- function(context,
     is.na(spc_stats$crossings_actual)
   no_variation <- runs_missing && crossings_missing
 
+  # --- Target-tilstand (afgør budget-fordelingen) ---
+  has_target <- !is.null(target_value) && !is.na(target_value) &&
+    is.numeric(target_value) &&
+    !is.null(centerline) && !is.na(centerline)
+
   # --- Budget-allokering ---
-  # stability: ~50%, target: ~25%, action: ~25%
-  stability_budget <- floor(max_chars * 0.50)
-  target_budget <- floor(max_chars * 0.25)
-  action_budget <- max_chars - stability_budget - target_budget
+  # Med target: stability ~50%, target ~25%, action ~25%.
+  # Uden target: target-budget realloceres til stability (65%) + action (35%).
+  if (has_target) {
+    stability_budget <- floor(max_chars * 0.50)
+    target_budget <- floor(max_chars * 0.25)
+    action_budget <- max_chars - stability_budget - target_budget
+  } else {
+    stability_budget <- floor(max_chars * 0.65)
+    target_budget <- 0L
+    action_budget <- max_chars - stability_budget
+  }
 
   texts <- load_spc_texts()
   # outliers_actual i placeholder_data bruger recent_count-værdien, så YAML-
   # skabelonernes {outliers_actual} placeholder også følger "seneste 6 obs"-
-  # reglen. Ren tabel-totaler ligger stadig på spc_stats$outliers_actual.
+  # reglen. outliers_word giver korrekt dansk ental/flertal for 1 vs n.
+  outliers_n <- if (is_valid_scalar(outliers_for_text)) outliers_for_text else 0L
   placeholder_data <- list(
     runs_actual = spc_stats$runs_actual,
     runs_expected = spc_stats$runs_expected,
     crossings_actual = spc_stats$crossings_actual,
     crossings_expected = spc_stats$crossings_expected,
-    outliers_actual = outliers_for_text
+    outliers_actual = outliers_for_text,
+    outliers_word = pluralize_da(outliers_n, "observation", "observationer")
   )
 
   # --- 1. Stabilitetstekst ---
@@ -343,46 +485,77 @@ build_fallback_analysis <- function(context,
   }
 
   # --- 2. Målvurdering ---
-  has_target <- !is.null(target_value) && !is.na(target_value) &&
-    is.numeric(target_value) &&
-    !is.null(centerline) && !is.na(centerline)
-
   target_text <- ""
-  at_target <- FALSE
+  at_target <- FALSE   # bruges af værdineutral action-sti
+  goal_met <- FALSE    # bruges af retningsbevidst action-sti
 
   if (has_target) {
-    fmt <- format_target_value(target_value, y_axis_unit = context$y_axis_unit)
-    tolerance <- max(abs(target_value) * 0.05, 0.01)
+    # Foretræk display-streng fra input (fx "<= 2,5"), ellers format numerisk
+    display_target <- if (!is.null(context$target_display) &&
+                          nzchar(context$target_display)) {
+      context$target_display
+    } else {
+      format_target_value(target_value, y_axis_unit = context$y_axis_unit)
+    }
 
-    if (abs(centerline - target_value) <= tolerance) {
-      target_text <- pick_text(texts$target$at_target,
-                               data = list(target = fmt),
-                               budget = target_budget)
-      at_target <- TRUE
-    } else if (centerline > target_value) {
-      target_text <- pick_text(texts$target$over_target,
-                               data = list(target = fmt),
+    if (!is.null(target_direction)) {
+      # === RETNINGSBEVIDST LOGIK ===
+      # "higher" → CL skal være >= target for at opfylde målet.
+      # "lower"  → CL skal være <= target.
+      goal_met <- switch(target_direction,
+        "higher" = centerline >= target_value,
+        "lower"  = centerline <= target_value,
+        FALSE
+      )
+      key <- if (goal_met) "goal_met" else "goal_not_met"
+      target_text <- pick_text(texts$target[[key]],
+                               data = list(target = display_target),
                                budget = target_budget)
     } else {
-      target_text <- pick_text(texts$target$under_target,
-                               data = list(target = fmt),
-                               budget = target_budget)
+      # === VÆRDINEUTRAL LOGIK (bagudkompatibel) ===
+      tolerance <- max(abs(target_value) * target_tolerance, 0.01)
+      if (abs(centerline - target_value) <= tolerance) {
+        target_text <- pick_text(texts$target$at_target,
+                                 data = list(target = display_target),
+                                 budget = target_budget)
+        at_target <- TRUE
+      } else if (centerline > target_value) {
+        target_text <- pick_text(texts$target$over_target,
+                                 data = list(target = display_target),
+                                 budget = target_budget)
+      } else {
+        target_text <- pick_text(texts$target$under_target,
+                                 data = list(target = display_target),
+                                 budget = target_budget)
+      }
     }
   }
 
   # --- 3. Handlingsforslag ---
-  action_key <- if (is_stable && has_target && at_target) {
-    "stable_at_target"
-  } else if (is_stable && has_target && !at_target) {
-    "stable_not_at_target"
-  } else if (is_stable && !has_target) {
-    "stable_no_target"
-  } else if (!is_stable && has_target && at_target) {
-    "unstable_at_target"
-  } else if (!is_stable && has_target && !at_target) {
-    "unstable_not_at_target"
+  if (has_target && !is.null(target_direction)) {
+    # Retningsbevidste action-keys
+    action_key <- if (is_stable && goal_met) {
+      "stable_goal_met"
+    } else if (is_stable && !goal_met) {
+      "stable_goal_not_met"
+    } else if (!is_stable && goal_met) {
+      "unstable_goal_met"
+    } else {
+      "unstable_goal_not_met"
+    }
+  } else if (has_target) {
+    # Værdineutrale action-keys (bagudkompatible)
+    action_key <- if (is_stable && at_target) {
+      "stable_at_target"
+    } else if (is_stable && !at_target) {
+      "stable_not_at_target"
+    } else if (!is_stable && at_target) {
+      "unstable_at_target"
+    } else {
+      "unstable_not_at_target"
+    }
   } else {
-    "unstable_no_target"
+    action_key <- if (is_stable) "stable_no_target" else "unstable_no_target"
   }
   action <- pick_text(texts$action[[action_key]], budget = action_budget)
 
@@ -391,8 +564,11 @@ build_fallback_analysis <- function(context,
   parts <- parts[nchar(parts) > 0]
   text <- paste(parts, collapse = " ")
 
+  # --- Garantér max_chars-grænsen (trim ved sætnings-/klausulgrænse) ---
+  text <- ensure_within_max(text, max_chars)
+
   # --- Padding hvis under minimum ---
-  text <- pad_to_minimum(text, min_chars, n_points, texts)
+  text <- pad_to_minimum(text, min_chars, n_points, texts, max_chars)
 
   return(text)
 }
@@ -422,21 +598,29 @@ format_target_value <- function(x, y_axis_unit = NULL) {
 
 
 # Tilføj padding-tekst hvis teksten er under minimumlængde.
-# Trimning er ikke nødvendig — budget-allokering sikrer max_chars.
-pad_to_minimum <- function(text, min_chars, n_points, texts) {
+# max_chars sikrer at padding ikke sprænger det absolutte loft.
+pad_to_minimum <- function(text, min_chars, n_points, texts, max_chars = Inf) {
   if (nchar(text) >= min_chars) return(text)
 
-  if (!is.null(n_points) && !is.na(n_points)) {
+  # Plads til padding: respektér både min og max
+  available <- max_chars - nchar(text) - 1L  # -1 for space-separator
+
+  if (!is.null(n_points) && !is.na(n_points) && available > 0) {
     padding <- pick_text(texts$padding$data_points,
                          data = list(n_points = n_points),
-                         budget = min_chars - nchar(text))
-    text <- paste(text, padding)
+                         budget = min(min_chars - nchar(text), available))
+    if (nchar(padding) > 0 && nchar(text) + nchar(padding) + 1L <= max_chars) {
+      text <- paste(text, padding)
+    }
   }
 
-  if (nchar(text) < min_chars) {
+  available <- max_chars - nchar(text) - 1L
+  if (nchar(text) < min_chars && available > 0) {
     padding <- pick_text(texts$padding$generic,
-                         budget = min_chars - nchar(text))
-    text <- paste(text, padding)
+                         budget = min(min_chars - nchar(text), available))
+    if (nchar(padding) > 0 && nchar(text) + nchar(padding) + 1L <= max_chars) {
+      text <- paste(text, padding)
+    }
   }
 
   text
