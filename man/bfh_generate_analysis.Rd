@@ -9,7 +9,8 @@ bfh_generate_analysis(
   metadata = list(),
   use_ai = NULL,
   min_chars = 300,
-  max_chars = 375
+  max_chars = 375,
+  target_tolerance = 0.05
 )
 }
 \arguments{
@@ -35,6 +36,10 @@ bfh_generate_analysis(
 \item{min_chars}{Minimum characters in AI-generated output. Default 300.}
 
 \item{max_chars}{Maximum characters in AI-generated output. Default 375.}
+
+\item{target_tolerance}{Fractional tolerance for \code{at_target} classification
+when \code{target_direction} is unknown (default 0.05 = 5\%). Ignored when the
+user provides \code{metadata$target} with an operator (retning er da kendt).}
 }
 \value{
 Character string with analysis text suitable for PDF export.

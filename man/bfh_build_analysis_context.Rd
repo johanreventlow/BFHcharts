@@ -12,7 +12,9 @@ bfh_build_analysis_context(x, metadata = list())
 \item{metadata}{Optional list with additional context:
 \itemize{
 \item \code{data_definition}: Description of what the data represents
-\item \code{target}: Target value for the metric
+\item \code{target}: Target value for the metric. Accepts either numeric (backward
+compatible) or character with optional operator prefix (\code{"<= 2,5"},
+\code{">= 90\%"}). Operators are parsed to derive \code{target_direction}.
 \item \code{hospital}: Hospital name
 \item \code{department}: Department name
 }}
@@ -26,9 +28,11 @@ Named list with complete context including:
 \item \code{n_points}: Number of data points
 \item \code{centerline}: Centerline value
 \item \code{spc_stats}: SPC statistics from \code{bfh_extract_spc_stats()}
-\item \code{signal_interpretations}: Danish interpretations from
-\code{bfh_interpret_spc_signals()}
 \item \code{has_signals}: Logical indicating if signals were detected
+\item \code{target_value}: Numeric target value (NA if absent)
+\item \code{target_direction}: \code{"higher"}, \code{"lower"}, or \code{NULL} derived from
+operator in \code{metadata$target} (NULL for numeric input)
+\item \code{target_display}: Original target string for display purposes
 \item User-provided metadata fields
 }
 }
