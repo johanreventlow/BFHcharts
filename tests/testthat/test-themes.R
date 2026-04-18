@@ -53,7 +53,7 @@ test_that("apply_spc_theme uses coord_capped_cart with correct parameters", {
 
 
 test_that("apply_spc_theme can be used in bfh_qic workflow", {
-  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+  skip_if_fonts_unavailable()
 
   # Integration test: verify theme application works in real workflow
   data <- data.frame(

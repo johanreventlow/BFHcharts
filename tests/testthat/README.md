@@ -64,16 +64,11 @@ Workflows:
 | `skip_if_not(quarto_available())` | Test kræver Quarto CLI lokalt | PDF-compile tests |
 | `skip_if(!file.exists(...))` | Fixture afhængighed | Template-parsing tests |
 
-### Nuværende `skip_on_ci()`-kald (revisit-liste)
+### Font-afhængige tests (`skip_if_fonts_unavailable()`)
 
-Pr. 2026-04-18 findes 18 `skip_on_ci()`-kald begrundet med *"Requires BFHtheme fonts not available on CI"*. CI-workflows installerer nu åbne fallback-fonts (DejaVu/Liberation/Noto), men det er ikke verificeret om BFHtheme kan bootstrappe uden de specifikke Mari-fonts.
+Alle 18 tidligere `skip_on_ci()`-kald er migreret til `skip_if_fonts_unavailable()` — en beskrivende wrapper der tydeliggør hvorfor testen skippes (BFHtheme's proprietære Mari-fonts mangler på CI).
 
-**Strategi:**
-1. Første CI-baseline køres med eksisterende `skip_on_ci()` i kraft
-2. Hvis baseline er grøn og font-dependent tests ikke er blokker: aktivér gradvist ved at fjerne `skip_on_ci()` fil-for-fil og verificere
-3. Hvis BFHtheme kræver Mari-fonts specifikt: vurder encrypted distribution via GitHub Secrets vs. upstream fallback-patch i BFHtheme
-
-**Filer med `skip_on_ci()` (skal revisitees):**
+**Filer med font-afhængige skips:**
 - `test-arrow-symbols.R` (2 kald) — fontbaseret arrow-rendering
 - `test-bfh_qic_result.R` (6 kald) — S3-klasse tests der triggerer rendering
 - `test-chart_types.R` (2 kald) — chart-type-baseret rendering
@@ -83,6 +78,8 @@ Pr. 2026-04-18 findes 18 `skip_on_ci()`-kald begrundet med *"Requires BFHtheme f
 - `test-plot_margin.R` (file-level) — margin-konfig tests
 - `test-themes.R` (1 kald) — theme-rendering
 - `test-y_axis_formatting.R` (3 kald) — y-akse rendering
+
+**Fremtidig forbedring:** Helperen kan udvides til faktisk at detektere Mari-fonts via `systemfonts::system_fonts()` i stedet for at antage CI = ingen fonts. Dette ville tillade font-dependent tests at køre lokalt på udviklere der har Mari installeret.
 
 ### Anti-mønstre der IKKE accepteres
 

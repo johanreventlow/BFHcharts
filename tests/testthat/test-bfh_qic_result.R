@@ -3,7 +3,7 @@
 # ============================================================================
 
 test_that("new_bfh_qic_result creates valid S3 object", {
-  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+  skip_if_fonts_unavailable()
 
   # Create mock components
   data <- data.frame(
@@ -71,7 +71,7 @@ test_that("new_bfh_qic_result creates valid S3 object", {
 })
 
 test_that("new_bfh_qic_result validates inputs", {
-  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+  skip_if_fonts_unavailable()
 
   # Create valid components
   data <- data.frame(
@@ -141,7 +141,7 @@ test_that("new_bfh_qic_result validates inputs", {
 })
 
 test_that("print.bfh_qic_result displays plot", {
-  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+  skip_if_fonts_unavailable()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -174,7 +174,7 @@ test_that("print.bfh_qic_result displays plot", {
 })
 
 test_that("plot.bfh_qic_result displays plot", {
-  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+  skip_if_fonts_unavailable()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -207,7 +207,7 @@ test_that("plot.bfh_qic_result displays plot", {
 })
 
 test_that("accessor functions work", {
-  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+  skip_if_fonts_unavailable()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -246,7 +246,7 @@ test_that("accessor functions work", {
 })
 
 test_that("is_bfh_qic_result identifies objects correctly", {
-  skip_on_ci()  # Requires BFHtheme fonts not available on CI
+  skip_if_fonts_unavailable()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
