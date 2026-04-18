@@ -23,7 +23,7 @@ test_that("plot_margin NULL uses default behavior", {
   expect_s3_class(plot$plot, "ggplot")
 })
 
-test_that("plot_margin with numeric vector works", {
+test_that("plot_margin with numeric vector sets exact values", {
   df <- fixture_numeric_data()
 
   plot <- bfh_qic(
@@ -35,12 +35,9 @@ test_that("plot_margin with numeric vector works", {
     plot_margin = c(10, 10, 10, 10)
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
-
-  # Verify margin was applied
-  margin_obj <- plot$plot$theme$plot.margin
-  expect_s3_class(margin_obj, "ggplot2::margin")
+  expect_valid_bfh_qic_result(plot)
+  # Margin SKAL være exact c(10, 10, 10, 10) — ikke bare af rigtig type
+  expect_plot_margin(plot$plot, c(10, 10, 10, 10))
 })
 
 test_that("plot_margin with margin() object works (mm)", {
@@ -103,7 +100,7 @@ test_that("plot_margin with margin() object works (lines)", {
   expect_s3_class(margin_obj, "ggplot2::margin")
 })
 
-test_that("asymmetric margins work correctly", {
+test_that("asymmetric margins bevares præcist (t/r/b/l adskilt)", {
   df <- fixture_numeric_data()
 
   plot <- bfh_qic(
@@ -115,27 +112,25 @@ test_that("asymmetric margins work correctly", {
     plot_margin = c(2, 20, 5, 10)
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
-
-  # Verify margin was applied
-  margin_obj <- plot$plot$theme$plot.margin
-  expect_s3_class(margin_obj, "ggplot2::margin")
+  expect_valid_bfh_qic_result(plot)
+  # Verificér at hver position er bevaret — fanger potentielle swap-bugs
+  expect_plot_margin(plot$plot, c(2, 20, 5, 10))
 })
 
 # ============================================================================
 # Chart Type Compatibility Tests
 # ============================================================================
 
-test_that("plot_margin works with all chart types", {
+test_that("plot_margin fungerer med alle chart-typer (deterministisk data)", {
   df <- fixture_numeric_data()
-  df$n <- rpois(24, 100)  # Add denominator for p/u charts
+  # Deterministisk denominator (ingen RNG) for p/u-chart cases
+  df$n <- rep(100L, nrow(df))
 
   chart_types <- c("run", "i", "p", "c", "u")
 
   for (chart_type in chart_types) {
     if (chart_type %in% c("p", "u")) {
-      plot <- bfh_qic(
+      plot <- suppressWarnings(bfh_qic(
         data = df,
         x = x,
         y = y,
@@ -143,24 +138,22 @@ test_that("plot_margin works with all chart types", {
         chart_type = chart_type,
         y_axis_unit = "count",
         plot_margin = c(5, 5, 5, 5)
-      )
+      ))
     } else {
-      plot <- bfh_qic(
+      plot <- suppressWarnings(bfh_qic(
         data = df,
         x = x,
         y = y,
         chart_type = chart_type,
         y_axis_unit = "count",
         plot_margin = c(5, 5, 5, 5)
-      )
+      ))
     }
 
-    expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
-
-    # Verify margin was applied
-    margin_obj <- plot$plot$theme$plot.margin
-    expect_s3_class(margin_obj, "ggplot2::margin")
+    expect_valid_bfh_qic_result(plot)
+    # Margin skal være exact c(5,5,5,5) for hver chart-type
+    expect_plot_margin(plot$plot, c(5, 5, 5, 5),
+                       tolerance = 0.01)
   }
 })
 

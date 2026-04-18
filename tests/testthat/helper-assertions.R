@@ -94,3 +94,31 @@ expect_summary_value <- function(summary, column, expected, row = 1, tolerance =
     label = paste0("summary$", column, "[", row, "]")
   )
 }
+
+#' Verificér at plot-margin er sat med specifikke numeriske værdier
+#'
+#' Ekstraherer margin-værdier fra ggplot-objekt og sammenligner med forventet
+#' c(top, right, bottom, left)-vektor.
+#'
+#' @param plot ggplot2 plot-objekt (typisk `bfh_qic_result$plot`)
+#' @param expected Numerisk vektor af længde 4: c(t, r, b, l)
+#' @param tolerance Tolerance for numerisk sammenligning (default 0.01)
+#' @keywords internal
+expect_plot_margin <- function(plot, expected, tolerance = 0.01) {
+  stopifnot(inherits(plot, "ggplot"))
+  stopifnot(length(expected) == 4)
+
+  margin_obj <- plot$theme$plot.margin
+  testthat::expect_s3_class(margin_obj, "ggplot2::margin")
+
+  margin_values <- as.numeric(margin_obj)
+  testthat::expect_equal(length(margin_values), 4,
+                         info = "Plot margin skal have 4 værdier")
+
+  testthat::expect_equal(
+    margin_values,
+    expected,
+    tolerance = tolerance,
+    label = "plot$theme$plot.margin values (t, r, b, l)"
+  )
+}

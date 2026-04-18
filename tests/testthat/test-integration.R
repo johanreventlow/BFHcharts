@@ -6,13 +6,11 @@ skip_on_ci()
 test_that("bfh_qic() generates valid run chart", {
   library(ggplot2)
 
-  # Create test data
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = c(15, 18, 12, 20, 16, 14, 19, 17, 13, 21, 18, 16)
   )
 
-  # Generate plot
   plot <- bfh_qic(
     data = data,
     x = month,
@@ -22,24 +20,27 @@ test_that("bfh_qic() generates valid run chart", {
     chart_title = "Test Run Chart"
   )
 
-  # Validate plot structure
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_valid_bfh_qic_result(plot)
   expect_equal(plot$plot$labels$title, "Test Run Chart")
+
+  # Numerisk verifikation — fanger regressioner i beregning
+  # Run-chart CL = median (ikke mean)
+  expect_equal(plot$qic_data$cl[1], median(data$value), tolerance = 1e-6,
+               label = "run-chart centerlinje = median(value)")
+  expect_equal(nrow(plot$qic_data), 12,
+               label = "qic_data har række pr. input-punkt")
 })
 
 test_that("bfh_qic() generates valid p-chart with denominator", {
   library(ggplot2)
-  set.seed(42)
 
-  # Create test data
+  # Deterministisk data (ingen RNG) — infections/surgeries giver præcis p̄ = 0.05
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
-    infections = rpois(12, lambda = 5),
-    surgeries = rpois(12, lambda = 100)
+    infections = rep(5L, 12),
+    surgeries = rep(100L, 12)
   )
 
-  # Generate plot
   plot <- bfh_qic(
     data = data,
     x = month,
@@ -50,26 +51,28 @@ test_that("bfh_qic() generates valid p-chart with denominator", {
     chart_title = "Infection Rate"
   )
 
-  # Validate plot structure
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_valid_bfh_qic_result(plot)
   expect_equal(plot$plot$labels$title, "Infection Rate")
+
+  # Numerisk: pooled proportion = 60/1200 = 0.05
+  p_bar <- sum(data$infections) / sum(data$surgeries)
+  expect_equal(plot$qic_data$cl[1], p_bar, tolerance = 1e-6,
+               label = "p-chart centerlinje = pooled proportion")
 })
 
 test_that("bfh_qic() handles phase splits correctly", {
   library(ggplot2)
-  set.seed(42)
 
-  # Create test data with intervention
+  # Deterministisk data med tydelig level-shift:
+  # Baseline 20, post-intervention 15
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
     value = c(
-      rnorm(12, mean = 20, sd = 3), # Before intervention
-      rnorm(12, mean = 15, sd = 2) # After intervention
+      rep(c(19, 20, 21), 4),       # Baseline: mean exakt 20
+      rep(c(14, 15, 16), 4)        # Post: mean exakt 15
     )
   )
 
-  # Generate plot with phase split
   plot <- bfh_qic(
     data = data,
     x = month,
@@ -80,9 +83,17 @@ test_that("bfh_qic() handles phase splits correctly", {
     part = c(12)
   )
 
-  # Validate plot structure
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_valid_bfh_qic_result(plot)
+
+  # Numerisk: to faser, hver med specifik CL
+  expect_equal(nrow(plot$summary), 2,
+               label = "Summary har række pr. fase")
+  cl_phase_1 <- unique(plot$qic_data$cl[1:12])
+  cl_phase_2 <- unique(plot$qic_data$cl[13:24])
+  expect_equal(cl_phase_1, 20, tolerance = 0.01,
+               label = "Phase 1 CL = baseline mean (20)")
+  expect_equal(cl_phase_2, 15, tolerance = 0.01,
+               label = "Phase 2 CL = post-intervention mean (15)")
 })
 
 test_that("bfh_spc_plot() works with pre-calculated qic data", {
@@ -133,11 +144,11 @@ test_that("bfh_spc_plot() works with pre-calculated qic data", {
 
 test_that("bfh_qic() handles target values correctly", {
   library(ggplot2)
-  set.seed(42)
 
+  # Deterministisk data hvor median er præcis 100
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
-    value = rnorm(12, 100, 10)
+    value = c(95, 98, 100, 105, 97, 103, 100, 102, 96, 104, 99, 101)
   )
 
   plot <- bfh_qic(
@@ -151,8 +162,15 @@ test_that("bfh_qic() handles target values correctly", {
     target_text = "Target: 95"
   )
 
-  expect_s3_class(plot, "bfh_qic_result")
-  expect_s3_class(plot$plot, "ggplot")
+  expect_valid_bfh_qic_result(plot)
+  # target_value skal bevares i config
+  expect_equal(plot$config$target_value, 95,
+               label = "target_value propageret til config")
+  # Target-kolonne i qic_data skal have den angivne værdi
+  if ("target" %in% names(plot$qic_data)) {
+    expect_true(any(plot$qic_data$target == 95, na.rm = TRUE),
+                info = "qic_data$target indeholder target_value=95")
+  }
 })
 
 test_that("bfh_qic() validates input correctly", {
