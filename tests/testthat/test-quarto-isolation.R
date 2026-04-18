@@ -135,9 +135,15 @@ test_that("get_quarto_path returnerer cached sti", {
 # ============================================================================
 
 test_that("find_quarto respekterer QUARTO_PATH environment-variabel", {
+  # Dette test er miljø-afhængigt: Sys.which() har højere prioritet end
+  # QUARTO_PATH. Hvis et system-Quarto findes i PATH, returneres det først.
+  # Testen skip'er i så fald for at undgå false positive.
+  skip_if(nchar(Sys.which("quarto")) > 0 &&
+          file.exists(as.character(Sys.which("quarto"))),
+          "System Quarto present in PATH; cannot test QUARTO_PATH fallback")
+
   local_clean_quarto_cache()
 
-  # Brug en sti der faktisk eksisterer (vi tester opslag, ikke execution)
   fake_path <- tempfile(fileext = ".fake-quarto")
   file.create(fake_path)
   withr::defer(unlink(fake_path))
@@ -149,6 +155,8 @@ test_that("find_quarto respekterer QUARTO_PATH environment-variabel", {
 })
 
 test_that("find_quarto respekterer bfhcharts.quarto_path option", {
+  # Ligesom ovenfor: option-opslag er efter Sys.which i prioritet.
+  # Testen verificerer blot at funktionen returnerer en gyldig string.
   local_clean_quarto_cache()
 
   fake_path <- tempfile(fileext = ".fake-quarto-opt")
@@ -158,10 +166,6 @@ test_that("find_quarto respekterer bfhcharts.quarto_path option", {
   withr::local_envvar(QUARTO_PATH = "")  # Ryd environment først
   withr::local_options(bfhcharts.quarto_path = fake_path)
 
-  # Bemærk: Sys.which kan finde system-Quarto først — testen verificerer bare
-  # at option-værdien er en gyldig kandidat hvis system-Quarto ikke findes.
-  # For at teste deterministisk, tjek at funktionen ikke fejler og returnerer
-  # en string.
   result <- BFHcharts:::find_quarto()
   expect_type(result, "character")
   expect_length(result, 1)
