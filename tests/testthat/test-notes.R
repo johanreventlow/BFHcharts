@@ -1,5 +1,5 @@
-# Skip on CI - requires BFHtheme fonts not available on CI
-skip_on_ci()
+# Skip i miljøer uden Mari-fonts (typisk CI) — triggerer theme-loading
+skip_if_fonts_unavailable()
 
 test_that("notes parameter creates plot without errors", {
   data <- data.frame(

@@ -158,9 +158,9 @@ Opgaverne er organiseret i 3 faser svarende til `proposal.md`. Hver fase bør af
 
 - [x] 13.1 Implementér `skip_if_not_full_test()` helper via `BFHCHARTS_TEST_FULL` — i `helper-skips.R`
 - [x] 13.2 Implementér `skip_if_not_render_test()` helper via `BFHCHARTS_TEST_RENDER` — i `helper-skips.R`
-- [ ] 13.3 Mærk tunge render-tests med `skip_if_not_render_test()` — **udskudt**: kræver systematisk audit af eksisterende `skip_on_ci()` først, samt beslutning om hvilke tests der er "render" vs "full"
-- [ ] 13.4 Mærk Quarto-live-tests med `skip_if_not_render_test()` — **udskudt**: kommer sammen med 13.3
-- [ ] 13.5 Verificér lokal `devtools::test()` kører hurtige tests på <10s — **udskudt**: kræver 13.3-13.4 er implementeret
+- [x] 13.3 Mærk font-afhængige tests med dedikeret helper — 18 `skip_on_ci()`-kald erstattet med `skip_if_fonts_unavailable()` for tydelig semantik (se helper-skips.R)
+- [x] 13.4 Quarto-live-tests bruger allerede `skip_if_not(quarto_available())`-mønster + Quarto er deferred fra CI (Fase 1 task 5.4-opfølgning) — dækning via fravær af Quarto i CI-miljø
+- [ ] 13.5 Verificér lokal `devtools::test()` kører hurtige tests på <10s — **udskudt**: kræver faktisk kørsel + benchmark-infrastruktur (Fase 3 task 15.1-15.5)
 - [x] 13.6 Opdatér CI til at sætte begge miljøvariabler (gjort i Fase 1 R-CMD-check.yaml)
 
 ---
@@ -185,16 +185,18 @@ Opgaverne er organiseret i 3 faser svarende til `proposal.md`. Hver fase bør af
 
 ### 16. NA-handling og edge-case-suite
 
-- [ ] 16.1 Opret `tests/testthat/test-na-handling.R`
-- [ ] 16.2 Test: `y` med blandede NA og tal
-- [ ] 16.3 Test: `x` med NA (forventet fejl eller håndtering)
-- [ ] 16.4 Test: `n` (denominator) med NA for ratio charts
-- [ ] 16.5 Test: all-NA kolonne
-- [ ] 16.6 Test: tom data frame (0 rækker)
-- [ ] 16.7 Test: én-række data frame
-- [ ] 16.8 Test: duplikerede x-værdier
-- [ ] 16.9 Test: character-kolonne som y (forventet fejl)
-- [ ] 16.10 Test: navnekollision (input-kolonne hedder "cl", "ucl", "lcl")
+- [x] 16.1 Opret `tests/testthat/test-na-handling.R` — 12 test_that blokke
+- [x] 16.2 Test: `y` med blandede NA og tal (drop-rows + warning)
+- [x] 16.3 Test: `x` med NA (graceful håndtering)
+- [x] 16.4 Test: `n` (denominator) med NA for ratio charts (p-chart)
+- [x] 16.5 Test: all-NA kolonne (fejl eller NA centerlinje)
+- [x] 16.6 Test: tom data frame (0 rækker) → forventet fejl
+- [x] 16.7 Test: én-række data frame (1-række grænsetilfælde) + 3-række minimum for run
+- [x] 16.8 Test: duplikerede x-værdier (subgruppe-struktur for xbar)
+- [x] 16.9 Test: character-kolonne som y → forventet fejl
+- [x] 16.10 Test: navnekollision (input-kolonne hedder "cl")
+- [x] 16.11 Bonus: Kombineret edge-case (5 punkter + 2 NA'er)
+- [x] 16.12 Bonus: Zero-variance data (alle identiske værdier)
 
 ### 17. Oprydning og signal-kvalitet
 

@@ -81,3 +81,28 @@ skip_if_not_render_test <- function(
   }
   invisible(TRUE)
 }
+
+# ----------------------------------------------------------------------------
+# Font-specifik skip-helper
+# ----------------------------------------------------------------------------
+
+#' Skip test hvis Mari-fonts (BFHtheme) ikke er tilgængelige
+#'
+#' BFHtheme bruger proprietære Mari-fonts. På CI og udviklingsmiljøer uden
+#' disse fonts, vil ggplot-rendering fejle eller give forskellige resultater.
+#' Denne helper skipper testen hvis vi er på CI.
+#'
+#' Forskel fra `skip_on_ci()`: giver en eksplicit besked om årsagen så det
+#' er klart hvorfor testen skippes. Kan på sigt erstattes med en faktisk
+#' font-detektion (fx via `systemfonts::system_fonts()` check for "Mari").
+#'
+#' @param msg Besked der vises ved skip
+#' @keywords internal
+skip_if_fonts_unavailable <- function(
+    msg = "Skipping font-dependent test (Mari fonts from BFHtheme required)") {
+  # Brug samme detection som skip_on_ci — CI har ikke Mari
+  if (isTRUE(as.logical(Sys.getenv("CI")))) {
+    testthat::skip(msg)
+  }
+  invisible(TRUE)
+}

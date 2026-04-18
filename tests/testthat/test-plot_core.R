@@ -2,7 +2,8 @@
 # Tests the low-level plot generation function in R/plot_core.R
 #
 # Fixture: fixture_plot_qic_data() er tilgængelig via helper-fixtures.R.
-skip_on_ci()
+# Skip på CI: BFHtheme bruger proprietære Mari-fonts som ikke findes i CI-miljøet.
+skip_if_fonts_unavailable()
 
 # ============================================================================
 # 1. BASIC RENDERING

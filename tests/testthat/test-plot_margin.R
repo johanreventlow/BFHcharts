@@ -1,6 +1,6 @@
 # Test plot_margin parameter functionality
-# Skip entire file on CI - requires BFHtheme fonts not available on CI
-skip_on_ci()
+# Skip i miljøer uden Mari-fonts (typisk CI) — bfh_qic triggerer theme-loading
+skip_if_fonts_unavailable()
 
 # Setup: fixture_numeric_data() er tilgængelig via helper-fixtures.R.
 
