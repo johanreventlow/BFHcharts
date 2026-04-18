@@ -47,6 +47,7 @@ jobs:
             fonts-liberation2 \
             fonts-noto \
             fonts-noto-core \
+            fonts-roboto \
             fontconfig
           fc-cache -f -v
         shell: bash
