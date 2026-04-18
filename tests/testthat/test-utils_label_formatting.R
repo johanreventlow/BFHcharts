@@ -192,75 +192,45 @@ test_that("format_y_value handles negative rates", {
 # TIME FORMATTING TESTS
 # ============================================================================
 
-test_that("format_y_value formats time in minutes for small ranges", {
-  y_range <- c(0, 50) # < 60 minutes
-
-  # Danish pluralization: 1 minut, 2+ minutter
-  expect_equal(format_y_value(1, "time", y_range), "1 minut")
-  expect_equal(format_y_value(30, "time", y_range), "30 minutter")
-  expect_equal(format_y_value(45.5, "time", y_range), "45,5 minutter")
-  expect_equal(format_y_value(10, "time", y_range), "10 minutter")
+test_that("format_y_value bruger komposit-format for time-enhed (minutter)", {
+  # Komposit-format: "30m" i stedet for "30 minutter"
+  expect_equal(format_y_value(1, "time"), "1m")
+  expect_equal(format_y_value(30, "time"), "30m")
+  expect_equal(format_y_value(10, "time"), "10m")
+  # Decimaler rundes til hele minutter (45,5 -> 46m)
+  expect_equal(format_y_value(45.5, "time"), "46m")
 })
 
-test_that("format_y_value formats time in hours for medium ranges", {
-  y_range <- c(0, 500) # 60-1440 minutes
-
-  # Danish pluralization: 1 time, 2+ timer, decimals always plural
-  expect_equal(format_y_value(60, "time", y_range), "1 time")
-  expect_equal(format_y_value(90, "time", y_range), "1,5 timer") # Decimal = plural
-  expect_equal(format_y_value(180, "time", y_range), "3 timer")
-  expect_equal(format_y_value(300, "time", y_range), "5 timer")
+test_that("format_y_value bruger komposit-format for time-enhed (timer)", {
+  expect_equal(format_y_value(60, "time"), "1t")
+  expect_equal(format_y_value(90, "time"), "1t 30m")
+  expect_equal(format_y_value(180, "time"), "3t")
+  expect_equal(format_y_value(300, "time"), "5t")
 })
 
-test_that("format_y_value formats time in days for large ranges", {
-  y_range <- c(0, 5000) # > 1440 minutes
-
-  # Danish pluralization: 1 dag, 2+ dage, decimals always plural
-  expect_equal(format_y_value(1440, "time", y_range), "1 dag")
-  expect_equal(format_y_value(2880, "time", y_range), "2 dage")
-  expect_equal(format_y_value(2160, "time", y_range), "1,5 dage") # Decimal = plural
+test_that("format_y_value bruger komposit-format for time-enhed (dage)", {
+  expect_equal(format_y_value(1440, "time"), "1d")
+  expect_equal(format_y_value(2880, "time"), "2d")
+  # Max 2 komponenter — dage+timer udelader minutter
+  expect_equal(format_y_value(3660, "time"), "2d 13t")
 })
 
-test_that("format_y_value warns when y_range missing for time", {
-  expect_warning(
-    result <- format_y_value(120, "time", y_range = NULL),
-    "y_range mangler for 'time' unit"
-  )
-  # Without range, defaults to minutes formatting
-  expect_equal(result, "120 minutter")
+test_that("format_y_value ignorerer y_range for time (irrelevant i komposit)", {
+  # y_range-parameteren er legacy — komposit-format håndterer
+  # minutter/timer/dage automatisk uden behov for range-kontekst.
+  expect_equal(format_y_value(60, "time", y_range = c(0, 120)), "1t")
+  expect_equal(format_y_value(60, "time", y_range = c(0, 10000)), "1t")
+  expect_equal(format_y_value(60, "time", y_range = NULL), "1t")
 })
 
-test_that("format_y_value warns when y_range incomplete for time", {
-  expect_warning(
-    result <- format_y_value(120, "time", y_range = c(50)),
-    "y_range mangler for 'time' unit"
-  )
+test_that("format_y_value håndterer overflow-rounding i komposit-format", {
+  # Regression: 59,7 min skal rundes til "1t", ikke "60m"
+  expect_equal(format_y_value(59.7, "time"), "1t")
+  expect_equal(format_y_value(1439.7, "time"), "1d")
 })
 
-test_that("format_y_value uses Danish labels for time", {
-  # Danish time labels: minutter, timer, dage
-  expect_true(grepl("minut", format_y_value(30, "time", c(0, 50))))
-  expect_true(grepl("time", format_y_value(90, "time", c(0, 500))))
-  expect_true(grepl("dag", format_y_value(1440, "time", c(0, 5000))))
-})
-
-test_that("format_y_value uses Danish decimal notation for time", {
-  result <- format_y_value(90, "time", c(0, 500)) # 1.5 hours
-  expect_true(grepl("1,5", result)) # Comma separator
-})
-
-test_that("format_y_value handles time threshold boundaries", {
-  # Just below 60 minutes - still minutes unit
-  expect_true(grepl("minut", format_y_value(50, "time", c(0, 59))))
-
-  # At 60 minutes threshold - becomes hours
-  expect_true(grepl("time", format_y_value(60, "time", c(0, 60))))
-
-  # Just below 1440 minutes (24 hours) - still hours
-  expect_true(grepl("time", format_y_value(1400, "time", c(0, 1439))))
-
-  # At 1440 minutes threshold - becomes days
-  expect_true(grepl("dag", format_y_value(1440, "time", c(0, 1440))))
+test_that("format_y_value håndterer NA for time", {
+  expect_true(is.na(format_y_value(NA_real_, "time")))
 })
 
 # ============================================================================
@@ -290,8 +260,8 @@ test_that("format_y_value handles zero correctly", {
   expect_equal(format_y_value(0, "count"), "0")
   expect_equal(format_y_value(0, "percent"), "0%")
   expect_equal(format_y_value(0, "rate"), "0")
-  # Zero with range > 60 becomes hours (0 is plural in Danish)
-  expect_equal(format_y_value(0, "time", c(0, 100)), "0 timer")
+  # Zero i komposit-format: "0m" uanset range
+  expect_equal(format_y_value(0, "time", c(0, 100)), "0m")
 })
 
 test_that("format_y_value handles very small values", {

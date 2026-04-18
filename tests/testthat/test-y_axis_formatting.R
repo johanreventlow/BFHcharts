@@ -275,7 +275,7 @@ test_that("format_y_axis_time handles missing y column", {
   expect_s3_class(scale, "ScaleContinuousPosition")
 })
 
-test_that("format_y_axis_time selects minutes for small values", {
+test_that("format_y_axis_time producerer komposit-labels for minutter", {
   qic_data <- data.frame(x = 1:10, y = runif(10, 5, 50))  # < 60 minutes
 
   scale <- format_y_axis_time(qic_data)
@@ -283,28 +283,49 @@ test_that("format_y_axis_time selects minutes for small values", {
   expect_s3_class(scale, "ScaleContinuousPosition")
   expect_true(is.function(scale$labels))
 
-  # Test label generation
+  # Komposit-labels: "10m", "30m", "50m"
   labels <- scale$labels(c(10, 30, 50))
-  expect_true(all(grepl("min", labels)))
+  expect_equal(labels, c("10m", "30m", "50m"))
 })
 
-test_that("format_y_axis_time selects hours for medium values", {
+test_that("format_y_axis_time producerer komposit-labels for timer", {
   qic_data <- data.frame(x = 1:10, y = runif(10, 100, 500))  # 60-1440 minutes
 
   scale <- format_y_axis_time(qic_data)
 
-  labels <- scale$labels(c(120, 300, 600))  # 2h, 5h, 10h
-  expect_true(all(grepl("timer", labels)))
+  # Komposit-labels: "2t", "5t", "10t"
+  labels <- scale$labels(c(120, 300, 600))
+  expect_equal(labels, c("2t", "5t", "10t"))
 })
 
-test_that("format_y_axis_time selects days for large values", {
+test_that("format_y_axis_time producerer komposit-labels for dage", {
   qic_data <- data.frame(x = 1:10, y = runif(10, 2000, 5000))  # > 1440 minutes
 
   scale <- format_y_axis_time(qic_data)
 
-  labels <- scale$labels(c(2880, 4320))  # 2 days, 3 days
-  # Both should contain dag/dage in the plural form (since 2 and 3 are plural)
-  expect_true(all(grepl("dage", labels)))
+  # Komposit-labels: "2d", "3d"
+  labels <- scale$labels(c(2880, 4320))
+  expect_equal(labels, c("2d", "3d"))
+})
+
+test_that("format_y_axis_time producerer kombinerede labels (1t 30m)", {
+  qic_data <- data.frame(x = 1:10, y = runif(10, 60, 200))
+
+  scale <- format_y_axis_time(qic_data)
+
+  # Komposit: 90 min -> "1t 30m", 125 min -> "2t 5m"
+  labels <- scale$labels(c(60, 90, 125))
+  expect_equal(labels, c("1t", "1t 30m", "2t 5m"))
+})
+
+test_that("format_y_axis_time bruger tids-naturlige breaks", {
+  qic_data <- data.frame(x = 1:10, y = seq(0, 120, length.out = 10))
+
+  scale <- format_y_axis_time(qic_data)
+
+  # Breaks skal være konfigureret (ikke waiver) og pege på runde minutter
+  expect_true(!inherits(scale$breaks, "waiver"))
+  expect_equal(scale$breaks, c(0, 30, 60, 90, 120))
 })
 
 # NOTE: Tests updated to use canonical format_time_danish() from utils_time_formatting.R

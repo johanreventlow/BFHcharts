@@ -61,7 +61,10 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
 #'
 #' @param val numeric værdi at formatere
 #' @param y_unit character enhedstype ("count", "percent", "rate", "time", eller andet)
-#' @param y_range numeric(2) y-akse range (kun brugt for "time" unit context)
+#' @param y_range numeric(2) y-akse range. Legacy-parameter bibeholdt for
+#'   bagudkompatibilitet; ignoreres for `"time"` (komposit-format
+#'   auto-detekterer minutter/timer/dage) og bruges kun som signatur-
+#'   placeholder for andre enheder.
 #' @param target numeric target værdi for kontekstuel præcision (kun for "percent")
 #' @return character formateret string
 #'
@@ -70,13 +73,15 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
 #' - **count**: K/M/mia notation for store tal, dansk decimal/tusind separator
 #' - **percent**: scales::label_percent() formatering
 #' - **rate**: dansk decimal notation, decimaler kun hvis nødvendigt
-#' - **time**: kontekst-aware formatering (min/timer/dage baseret på range)
+#' - **time**: komposit-format (`"30m"`, `"1t 30m"`, `"2d 13t"`) — samme
+#'   format som y-aksen, så pile fra CL/target til akse-labels rammer
+#'   præcis samme tekst.
 #' - **default**: dansk decimal notation
 #'
 #' This function delegates to canonical implementations in:
 #' - `format_count_danish()` for count formatting
 #' - `format_rate_danish()` for rate formatting
-#' - `format_time_auto()` for time formatting
+#' - `format_time_composite()` for time formatting
 #'
 #' @examples
 #' \dontrun{
@@ -86,8 +91,8 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
 #' format_y_value(0.456, "percent")
 #' # Returns: "46%"
 #'
-#' format_y_value(120, "time", y_range = c(0, 200))
-#' # Returns: "2 timer"
+#' format_y_value(120, "time")
+#' # Returns: "2t"
 #' }
 #'
 #' @keywords internal
@@ -118,12 +123,11 @@ format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
     return(format_rate_danish(val))
   }
 
-  # Time formatting - delegates to canonical format_time_auto()
+  # Time formatting - komposit-format ("30m", "1t 30m", "2d 13t")
+  # y_range ignoreres bevidst: komposit-formatet håndterer selv
+  # minutter/timer/dage via componentopdeling.
   if (y_unit == "time") {
-    if (is.null(y_range) || length(y_range) < 2) {
-      warning("format_y_value: y_range mangler for 'time' unit, bruger default formatering")
-    }
-    return(format_time_auto(val, y_range))
+    return(format_time_composite(val))
   }
 
   # Default formatting - kontekstuel dansk notation

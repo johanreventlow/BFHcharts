@@ -1,7 +1,22 @@
-# BFHcharts (development)
+# BFHcharts 0.8.0
 
 ## Breaking changes
 
+* Y-akse-formatet for `y_axis_unit = "time"` er skiftet fra enkelt-enhed
+  (`"30 minutter"`, `"1,5 timer"`, `"2 dage"`) til **komposit-format**
+  (`"30m"`, `"1t 30m"`, `"2d 13t"`). Ændringen løser to konkrete problemer:
+  (1) Tidligere kunne y-aksen vise 7-cifrede kommatal som `"0,6666667 timer"`
+  når brudværdier ikke var hele enheder (issue #138). (2) Det nye format
+  er mere kompakt og matcher nu data-punkt labels (centrallinje, target)
+  — pilene fra CL/target rammer præcis samme tekst som y-aksen. Samtidig
+  placeres ticks på **tids-naturlige intervaller** (1m, 5m, 15m, 30m, 1t,
+  2t, 6t, 12t, 1d, 2d, 7d, 30d) via den nye interne `time_breaks()`,
+  så ggplot2's default-breaks ikke længere producerer fraktionelle timer
+  (#138). Downstream-pakker (biSPCharts m.fl.) kan fjerne workarounds der
+  overlay'er deres eget tidsformat oven på plottet.
+* `format_y_value()` ignorerer nu `y_range`-parameteren for `time`-enhed;
+  komposit-formatet håndterer selv unit-valg via komponentopdeling.
+  Parameteren er bibeholdt for bagudkompatibilitet men har ingen effekt.
 * `bfh_interpret_spc_signals()` er fjernet. Funktionen producerede parallel
   Anhøj-tekst via hardcoded `sprintf()`-kald, men dens output
   (`context$signal_interpretations`) blev aldrig læst af
@@ -9,6 +24,17 @@
   YAML-skabeloner i `inst/texts/spc_analysis.yml`. `bfh_build_analysis_context()`
   returnerer ikke længere `signal_interpretations`-feltet. Downstream-kaldere
   bør bruge `bfh_generate_analysis()` for den samlede analysetekst.
+
+## Bug fixes
+
+* Fiks `0,8541667 timer`-bug på y-aksen ved tids-data: `51 min` formateres
+  nu korrekt som `"51m"` i stedet for det 7-cifrede kommatal som
+  ggplot2's default `scale_y_continuous` producerede ved fractional-hour-
+  værdier (#138).
+* Overflow-rounding: værdier lige under en unit-grænse rundes nu til
+  næste unit i stedet for at producere komponent-overflow. Eksempelvis
+  kollapser `59,7 min` til `"1t"` (ikke `"60m"`), og `1439,7 min` til
+  `"1d"` (ikke `"23t 60m"`).
 
 # BFHcharts 0.7.2
 
