@@ -1,7 +1,6 @@
 # Tests for bfh_generate_details() og bfh_extract_spc_stats.bfh_qic_result()
 
 test_that("bfh_generate_details genererer korrekt formateret tekst", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -29,7 +28,6 @@ test_that("bfh_generate_details genererer korrekt formateret tekst", {
 })
 
 test_that("bfh_generate_details viser numerator/denominator for p-chart", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -53,7 +51,6 @@ test_that("bfh_generate_details afviser ikke-bfh_qic_result input", {
 })
 
 test_that("bfh_generate_details bruger dansk datoformatering", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -74,7 +71,6 @@ test_that("bfh_generate_details bruger dansk datoformatering", {
 # =============================================================================
 
 test_that("bfh_extract_spc_stats(bfh_qic_result) returnerer korrekt struktur for i-chart", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -98,7 +94,6 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) returnerer korrekt struktur for
 })
 
 test_that("bfh_extract_spc_stats(bfh_qic_result) markerer run chart korrekt", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -117,7 +112,6 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) markerer run chart korrekt", {
 })
 
 test_that("bfh_extract_spc_stats(bfh_qic_result) håndterer NULL summary", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
