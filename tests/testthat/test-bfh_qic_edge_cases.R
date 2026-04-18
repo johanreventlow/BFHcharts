@@ -2,7 +2,6 @@
 # Verificerer at pipelinen håndterer grænsetilfælde korrekt
 
 test_that("bfh_qic håndterer minimum data (3 punkter)", {
-  skip_if_not_installed("qicharts2")
 
   data <- data.frame(
     date = as.Date(c("2024-01-01", "2024-02-01", "2024-03-01")),
@@ -18,7 +17,6 @@ test_that("bfh_qic håndterer minimum data (3 punkter)", {
 })
 
 test_that("bfh_qic håndterer alle identiske værdier (zero variance)", {
-  skip_if_not_installed("qicharts2")
 
   data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -36,7 +34,6 @@ test_that("bfh_qic håndterer alle identiske værdier (zero variance)", {
 })
 
 test_that("bfh_qic håndterer data med alle nul-værdier", {
-  skip_if_not_installed("qicharts2")
 
   data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -51,7 +48,6 @@ test_that("bfh_qic håndterer data med alle nul-værdier", {
 })
 
 test_that("bfh_qic håndterer negative værdier", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -69,7 +65,6 @@ test_that("bfh_qic håndterer negative værdier", {
 })
 
 test_that("bfh_qic håndterer stor dataset (200 punkter)", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -86,7 +81,6 @@ test_that("bfh_qic håndterer stor dataset (200 punkter)", {
 })
 
 test_that("bfh_qic returnerer summary med korrekte danske kolonner", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -103,7 +97,6 @@ test_that("bfh_qic returnerer summary med korrekte danske kolonner", {
 })
 
 test_that("bfh_qic med multiply parameter skalerer korrekt", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -119,7 +112,6 @@ test_that("bfh_qic med multiply parameter skalerer korrekt", {
 })
 
 test_that("bfh_qic med cl parameter sætter custom centerlinje", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -135,7 +127,6 @@ test_that("bfh_qic med cl parameter sætter custom centerlinje", {
 })
 
 test_that("bfh_qic med part parameter opretter faser", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -151,7 +142,6 @@ test_that("bfh_qic med part parameter opretter faser", {
 })
 
 test_that("bfh_qic med freeze parameter fryser baseline", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(

@@ -419,8 +419,9 @@ test_that("bfh_extract_spc_stats handles missing columns gracefully", {
 })
 
 test_that("bfh_extract_spc_stats validates input type", {
-  # Should error for input that is not data.frame or bfh_qic_result
-  # (S3 dispatch via bfh_extract_spc_stats.default)
+  # Dækker S3 dispatch default-method for input der ikke er data.frame
+  # eller bfh_qic_result. Bredere scenarie-dækning (inkl. specifikke klasser)
+  # findes i test-extract-spc-stats-dispatch.R.
   expect_error(
     bfh_extract_spc_stats("not a data frame"),
     "must be a data\\.frame.*or a bfh_qic_result"

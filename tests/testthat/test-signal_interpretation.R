@@ -2,7 +2,6 @@
 # Verificerer at anhoej.signal, crossings_signal etc. beregnes korrekt
 
 test_that("anhoej.signal kombinerer runs og crossings korrekt", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   # Stabil data — bør ikke have signals
@@ -23,7 +22,6 @@ test_that("anhoej.signal kombinerer runs og crossings korrekt", {
 })
 
 test_that("runs.signal fra qicharts2 videregives korrekt (NA → FALSE)", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -38,7 +36,6 @@ test_that("runs.signal fra qicharts2 videregives korrekt (NA → FALSE)", {
 })
 
 test_that("crossings signal beregnes per part", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   # Data med to faser
@@ -60,7 +57,6 @@ test_that("crossings signal beregnes per part", {
 })
 
 test_that("signal-kolonner er tilgængelige i summary", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -79,7 +75,6 @@ test_that("signal-kolonner er tilgængelige i summary", {
 })
 
 test_that("run chart har anhoej.signal uden lcl/ucl", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   data <- data.frame(
@@ -96,7 +91,6 @@ test_that("run chart har anhoej.signal uden lcl/ucl", {
 })
 
 test_that("data med konstrueret runs-signal detekteres", {
-  skip_if_not_installed("qicharts2")
 
   # Konstruer data med lang run: 10 punkter over median efterfulgt af 14 under
   # Dette bør trigger runs.signal i qicharts2
@@ -117,7 +111,6 @@ test_that("data med konstrueret runs-signal detekteres", {
 })
 
 test_that("stabil data giver FALSE for alle signals", {
-  skip_if_not_installed("qicharts2")
   set.seed(123)
 
   # Uniformt fordelt rundt om medianen — bør give mange crossings og korte runs

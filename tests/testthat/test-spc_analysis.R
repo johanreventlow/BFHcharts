@@ -17,7 +17,6 @@ test_that("bfh_build_analysis_context rejects invalid input", {
 })
 
 test_that("bfh_build_analysis_context extracts context from bfh_qic_result", {
-  skip_if_not_installed("qicharts2")
 
   # Create test data
   set.seed(123)
@@ -52,7 +51,6 @@ test_that("bfh_build_analysis_context extracts context from bfh_qic_result", {
 })
 
 test_that("bfh_build_analysis_context merges user metadata", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   test_data <- data.frame(
@@ -91,7 +89,6 @@ test_that("bfh_generate_analysis rejects invalid input", {
 })
 
 test_that("bfh_generate_analysis returns standard text when use_ai = FALSE", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   test_data <- data.frame(
@@ -107,7 +104,6 @@ test_that("bfh_generate_analysis returns standard text when use_ai = FALSE", {
 })
 
 test_that("bfh_generate_analysis returns valid text with chart title set", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   test_data <- data.frame(
@@ -131,7 +127,6 @@ test_that("bfh_generate_analysis returns valid text with chart title set", {
 })
 
 test_that("bfh_generate_analysis works with metadata", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   test_data <- data.frame(
@@ -155,7 +150,6 @@ test_that("bfh_generate_analysis works with metadata", {
 })
 
 test_that("bfh_generate_analysis falls back gracefully when AI unavailable", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   test_data <- data.frame(
@@ -174,7 +168,6 @@ test_that("bfh_generate_analysis falls back gracefully when AI unavailable", {
 })
 
 test_that("bfh_generate_analysis accepts min_chars and max_chars parameters", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   test_data <- data.frame(
@@ -197,7 +190,6 @@ test_that("bfh_generate_analysis accepts min_chars and max_chars parameters", {
 })
 
 test_that("bfh_generate_analysis has correct default values", {
-  skip_if_not_installed("qicharts2")
 
   # Check function defaults
   fn_args <- formals(bfh_generate_analysis)
@@ -207,7 +199,6 @@ test_that("bfh_generate_analysis has correct default values", {
 })
 
 test_that("bfh_generate_analysis validates min_chars < max_chars", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
 
   test_data <- data.frame(
@@ -462,7 +453,6 @@ test_that("ensure_within_max aldrig klipper midt i et ord", {
 # ==============================================================================
 
 test_that("bfh_build_analysis_context afleder target_direction fra operator-streng", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
   test_data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -478,7 +468,6 @@ test_that("bfh_build_analysis_context afleder target_direction fra operator-stre
 })
 
 test_that("bfh_build_analysis_context bevarer numerisk target uden retning", {
-  skip_if_not_installed("qicharts2")
   set.seed(42)
   test_data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),

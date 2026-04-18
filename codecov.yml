@@ -1,0 +1,33 @@
+# Codecov konfiguration for BFHcharts
+# OpenSpec change: strengthen-test-infrastructure (task 1.6)
+#
+# Strategi (design.md D9):
+# - Første 3 måneder: advisory (informational) — intet fail på PR
+# - Efter baseline etableret: required threshold 85% → 90%
+
+comment: false
+
+coverage:
+  status:
+    project:
+      default:
+        # Informational mode: status rapporteres men blokerer ikke merge.
+        informational: true
+        threshold: 1%
+    patch:
+      default:
+        # Patch coverage: nye linjer skal dækkes, men advisory i første fase.
+        informational: true
+        target: 80%
+
+ignore:
+  - "tests/"
+  - "man/"
+  - "vignettes/"
+  - "inst/"
+  - "R/globals.R"          # Konstant-definitioner uden testbar logik
+
+# Parsers
+parsers:
+  cobertura:
+    partials_as_hits: true
