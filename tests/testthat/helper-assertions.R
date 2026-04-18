@@ -63,18 +63,12 @@ expect_pdf_contains <- function(pdf_path, pattern, ignore_case = TRUE) {
 #' @return Invisible TRUE hvis valid, ellers fejler testthat-expectations
 #' @keywords internal
 expect_valid_bfh_qic_result <- function(object) {
-  act <- testthat::quasi_label(rlang::enquo(object), arg = "object")
-
-  testthat::expect_s3_class(object, "bfh_qic_result",
-                            label = act$lab)
+  testthat::expect_s3_class(object, "bfh_qic_result")
   testthat::expect_true(all(c("plot", "summary", "qic_data", "config") %in% names(object)),
                         info = "bfh_qic_result mangler forventede komponenter")
-  testthat::expect_s3_class(object$plot, "ggplot",
-                            label = paste0(act$lab, "$plot"))
-  testthat::expect_s3_class(object$summary, "data.frame",
-                            label = paste0(act$lab, "$summary"))
-  testthat::expect_s3_class(object$qic_data, "data.frame",
-                            label = paste0(act$lab, "$qic_data"))
+  testthat::expect_s3_class(object$plot, "ggplot")
+  testthat::expect_s3_class(object$summary, "data.frame")
+  testthat::expect_s3_class(object$qic_data, "data.frame")
   testthat::expect_type(object$config, "list")
   invisible(TRUE)
 }
