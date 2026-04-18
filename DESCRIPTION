@@ -1,6 +1,6 @@
 Package: BFHcharts
 Title: SPC Visualization for Healthcare Quality Improvement
-Version: 0.8.0
+Version: 0.8.1
 Authors@R: c(
     person(
       "Johan", "Reventlow",
@@ -46,4 +46,7 @@ Suggests:
     BFHllm,
     digest,
     geomtextpath
+Remotes:
+    johanreventlow/BFHtheme,
+    johanreventlow/BFHllm
 Config/testthat/edition: 3

@@ -1,3 +1,12 @@
+# BFHcharts 0.8.1
+
+## Bug fixes
+
+* Tilføjet `Remotes:` til `DESCRIPTION` for `BFHtheme` og `BFHllm`. Downstream-
+  pakker (fx biSPCharts) kunne tidligere ikke installere `BFHcharts` via pak
+  uden eksplicit workaround, fordi pak ikke transitivt fandt `BFHtheme`.
+  Fra v0.8.1 er transitiv dep-resolution fixet.
+
 # BFHcharts 0.8.0
 
 ## Breaking changes
