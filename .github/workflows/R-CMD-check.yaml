@@ -23,6 +23,9 @@ jobs:
         config:
           - {os: ubuntu-latest,  r: 'release'}
           - {os: windows-latest, r: 'release'}
+          # R-oldrel-1 kører som allowed-to-fail for at detektere forward-
+          # compatibility-issues tidligt. Fejler ikke merge-gate initielt.
+          - {os: ubuntu-latest,  r: 'oldrel-1'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
