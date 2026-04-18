@@ -122,15 +122,16 @@ Opgaverne er organiseret i 3 faser svarende til `proposal.md`. Hver fase bør af
 
 ### 10. Chart-type integration coverage
 
-- [ ] 10.1 Opret `tests/testthat/test-chart_type_integration.R`
-- [ ] 10.2 Integration-test for `chart_type = "mr"` (moving range)
-- [ ] 10.3 Integration-test for `chart_type = "pp"` (P-prime)
-- [ ] 10.4 Integration-test for `chart_type = "up"` (U-prime)
-- [ ] 10.5 Integration-test for `chart_type = "g"` (time-between rare events)
-- [ ] 10.6 Integration-test for `chart_type = "xbar"` (subgroup means)
-- [ ] 10.7 Integration-test for `chart_type = "s"` (subgroup sigma)
-- [ ] 10.8 Integration-test for `chart_type = "t"` (time-between events)
-- [ ] 10.9 Verificér numeriske værdier (centerlinje, UCL, LCL) for hver chart-type
+- [x] 10.1 Opret `tests/testthat/test-chart_type_integration.R`
+- [x] 10.2 Integration-test for `chart_type = "mr"` (moving range) — 2 tests inkl. MR mean + UCL non-negativitet
+- [x] 10.3 Integration-test for `chart_type = "pp"` (P-prime) — pooled proportion centerlinje
+- [x] 10.4 Integration-test for `chart_type = "up"` (U-prime) — pooled rate centerlinje
+- [x] 10.5 Integration-test for `chart_type = "g"` (time-between rare events) — LCL clippet til 0
+- [x] 10.6 Integration-test for `chart_type = "xbar"` (subgroup means) — grand average-verifikation
+- [x] 10.7 Integration-test for `chart_type = "s"` (subgroup sigma) — CL > 0 + LCL non-negativ
+- [x] 10.8 Integration-test for `chart_type = "t"` (time-between events) — mean-based CL + LCL non-negativ
+- [x] 10.9 Verificér numeriske værdier (centerlinje, UCL, LCL) for hver chart-type — via `expect_valid_bfh_qic_result` + konkret numerisk assert pr. chart-type
+- [x] 10.10 Meta-test: coverage-verifikation af CHART_TYPES_EN vs. testede typer
 
 ### 11. Styrk weak integration-assertions
 
