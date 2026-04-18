@@ -100,25 +100,29 @@ Opgaverne er organiseret i 3 faser svarende til `proposal.md`. Hver fase bør af
 
 ### 8. Statistisk accuracy-suite
 
-- [ ] 8.1 Opret `tests/testthat/fixtures/statistical_cases.rds` med kendte cases
-- [ ] 8.2 Dokumentér reference for hver case (Montgomery SPC, Provost & Murray, etc.)
-- [ ] 8.3 Opret `tests/testthat/test-statistical-accuracy.R`
-- [ ] 8.4 Verificér p-chart UCL/LCL for p̄=0.10, n=100 (forventet UCL≈0.190)
-- [ ] 8.5 Verificér p-chart UCL/LCL for p̄=0.05, n=500
-- [ ] 8.6 Verificér u-chart UCL/LCL for kendt u-bar og n
-- [ ] 8.7 Verificér c-chart UCL/LCL for c̄=5 (forventet UCL≈11.71)
-- [ ] 8.8 Verificér i-chart UCL/LCL med moving-range-metode
-- [ ] 8.9 Verificér centerlinje-beregning for alle chart-typer
-- [ ] 8.10 Verificér freeze-parameter giver korrekt baseline CL
+- [x] 8.1 ~~Opret `fixtures/statistical_cases.rds`~~ → **Revideret:** Håndlavede inline-vektorer foretrækkes (bedre læsbarhed + git-diff-venlige end binær RDS)
+- [x] 8.2 Dokumentér reference for hver case (Montgomery 6.4/7.1/7.3/7.4 i docstrings)
+- [x] 8.3 Opret `tests/testthat/test-statistical-accuracy.R` — 11 test_that blokke
+- [x] 8.4 Verificér p-chart UCL/LCL for p̄=0.10, n=100 (UCL=0.190, LCL=0.01)
+- [x] 8.5 Verificér p-chart LCL clippes til 0 ved lille p̄ (bonus over planen)
+- [x] 8.6 Verificér u-chart UCL/LCL for ū=0.05, n=100 (UCL≈0.117, LCL=0)
+- [x] 8.7 Verificér c-chart UCL/LCL for c̄=5 (UCL≈11.71, LCL=0) + c̄=20 case
+- [x] 8.8 Verificér i-chart UCL/LCL med moving-range-metode (2.66 faktor)
+- [x] 8.9 Verificér centerlinje-beregning for alle chart-typer (c, i, run, p, u)
+- [x] 8.10 Verificér freeze-parameter giver korrekt baseline CL
+- [x] 8.11 Bonus: verificér part-parameter giver separate CL'er pr. fase
+- [x] 8.12 Bonus: run-chart CL er median (ikke mean)
 
 ### 9. Anhøj rule-præcision
 
-- [ ] 9.1 Opret `tests/testthat/test-anhoej-rules-precision.R`
-- [ ] 9.2 Verificér run-length signal ved konstrueret 9-punkts serie
-- [ ] 9.3 Verificér crossings signal ved kendt antal crossings
-- [ ] 9.4 Verificér outlier-detection ved sigma.signal-baserede cases
-- [ ] 9.5 Verificér `outliers_recent_count` mod `outliers_actual` for edge cases
-- [ ] 9.6 Verificér signal-disabled ved stabil alternerende data
+- [x] 9.1 Opret `tests/testthat/test-anhoej-precision.R` — 11 test_that blokke
+- [x] 9.2 Verificér run-length signal ved 10-punkts run (for n=24); + negativ case
+- [x] 9.3 Verificér crossings signal ved få crossings (1 crossing i 24 pt); + negativ case
+- [x] 9.4 Verificér sigma.signal detektion ved outlier + negativ case for stabile data
+- [x] 9.5 Verificér `outliers_recent_count` mod `outliers_actual` (3 vs. 2 edge case, konstrueret fixture)
+- [x] 9.6 Verificér signal-disabled ved stabile mønstre
+- [x] 9.7 Bonus: outliers-tælling respekterer part (seneste fase kun)
+- [x] 9.8 Bonus: summary indeholder Anhøj-kolonner + længste_løb_max = round(log2(n))+3 validation
 
 ### 10. Chart-type integration coverage
 
