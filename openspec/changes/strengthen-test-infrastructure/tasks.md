@@ -10,13 +10,13 @@ Opgaverne er organiseret i 3 faser svarende til `proposal.md`. Hver fase bør af
 
 ### 1. CI-etablering
 
-- [x] 1.1 Opret `.github/workflows/R-CMD-check.yml` med R-release på Ubuntu-latest
-- [x] 1.2 Tilføj Quarto-installationsstep (`quarto-dev/quarto-actions/setup@v2`)
-- [x] 1.3 Tilføj font-setup-step (åben fallback-font via `apt install` eller download)
-- [ ] 1.4 Verificér CI kører grønt på en test-PR (allowed-failures acceptabelt i første iteration) — **[MANUELT TRIN]** efter push af denne branch
+- [x] 1.1 Opret `.github/workflows/R-CMD-check.yml` med R-release på Ubuntu-latest — integreret med eksisterende `R-CMD-check.yaml` fra main (commit #140); matrix udvidet til Ubuntu + Windows
+- [x] 1.2 ~~Tilføj Quarto-installationsstep~~ — **deferred**: Typst template hardcoder Mari font (proprietær), og Typst returnerer exit 1 på unknown-font warnings. Aktiveres efter font-placeholder-løsning (Fase 2 task 5.4)
+- [x] 1.3 Tilføj font-setup-step — åbne fonts installeret (DejaVu, Liberation, Noto, Roboto); Mari-specifik strategi kræver follow-up
+- [x] 1.4 Verificér CI kører grønt på en test-PR — iterativt (commits: 633b74b, a10dcce, 8342c19, 1d10407); font-fix + Quarto-deferral + test-fix nødvendige for grøn baseline
 - [x] 1.5 Opret `.github/workflows/test-coverage.yml` med `covr::codecov()`-rapportering
 - [x] 1.6 Tilføj `codecov.yml` med threshold-konfiguration (advisory første 3 mdr)
-- [x] 1.7 Tilføj `.github/workflows/lint.yml` (advisory mode)
+- [x] 1.7 Tilføj `.github/workflows/lint.yml` (advisory mode) — eksisterende main-version bevaret; egen advisory-version fjernet som duplikat
 - [ ] 1.8 Aktivér branch protection på `main` med CI som required status check — **[MANUELT TRIN]** via GitHub Settings UI efter første grønne CI-run
 - [x] 1.9 Tilføj `^openspec$` til `.Rbuildignore` (tilføjet undervejs — ikke oprindeligt i listen, men nødvendig for ren R CMD check)
 
