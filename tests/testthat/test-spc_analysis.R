@@ -486,31 +486,11 @@ test_that("bfh_build_analysis_context bevarer numerisk target uden retning", {
 # build_fallback_analysis() — goal_met/goal_not_met + constraints
 # ==============================================================================
 
-# Hjælpefunktion: byg minimal context
-make_ctx <- function(..., spc_stats = list(runs_actual = 5, runs_expected = 7,
-                                           crossings_actual = 8, crossings_expected = 5,
-                                           outliers_recent_count = 0)) {
-  defaults <- list(
-    chart_title = "Test",
-    chart_type = "i",
-    y_axis_unit = NULL,
-    n_points = 20,
-    centerline = 50,
-    spc_stats = spc_stats,
-    has_signals = FALSE,
-    data_definition = NULL,
-    target_value = NA_real_,
-    target_direction = NULL,
-    target_display = "",
-    hospital = NULL,
-    department = NULL
-  )
-  modifyList(defaults, list(...))
-}
+# Hjælpefunktion: fixture_analysis_context() er tilgængelig via helper-fixtures.R.
 
 test_that("build_fallback_analysis overstiger aldrig max_chars", {
   for (mx in c(200L, 275L, 375L, 500L)) {
-    ctx <- make_ctx(target_value = 50, target_direction = "lower", centerline = 45)
+    ctx <- fixture_analysis_context(target_value = 50, target_direction = "lower", centerline = 45)
     txt <- BFHcharts:::build_fallback_analysis(ctx, min_chars = 50, max_chars = mx)
     expect_lte(nchar(txt), mx,
                label = sprintf("max_chars=%d giver %d tegn", mx, nchar(txt)))
@@ -518,7 +498,7 @@ test_that("build_fallback_analysis overstiger aldrig max_chars", {
 })
 
 test_that("build_fallback_analysis bruger goal_met-tekst når target_direction er 'lower' og CL <= target", {
-  ctx <- make_ctx(target_value = 2.5, target_direction = "lower", centerline = 2.0,
+  ctx <- fixture_analysis_context(target_value = 2.5, target_direction = "lower", centerline = 2.0,
                   target_display = "<= 2,5")
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   # Skal INDEHOLDE "opfylder målet" eller "målet ... nået"
@@ -529,7 +509,7 @@ test_that("build_fallback_analysis bruger goal_met-tekst når target_direction e
 })
 
 test_that("build_fallback_analysis bruger goal_not_met når CL overstiger 'lower'-target", {
-  ctx <- make_ctx(target_value = 2.5, target_direction = "lower", centerline = 4.0,
+  ctx <- fixture_analysis_context(target_value = 2.5, target_direction = "lower", centerline = 4.0,
                   target_display = "<= 2,5")
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   expect_true(grepl("opfylder (endnu )?ikke målet|endnu ikke nået", txt),
@@ -537,7 +517,7 @@ test_that("build_fallback_analysis bruger goal_not_met når CL overstiger 'lower
 })
 
 test_that("build_fallback_analysis bruger goal_met for 'higher'-target når CL >= target", {
-  ctx <- make_ctx(target_value = 90, target_direction = "higher", centerline = 95,
+  ctx <- fixture_analysis_context(target_value = 90, target_direction = "higher", centerline = 95,
                   target_display = ">= 90")
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   expect_true(grepl("opfylder målet|målet.*nået", txt),
@@ -545,14 +525,14 @@ test_that("build_fallback_analysis bruger goal_met for 'higher'-target når CL >
 })
 
 test_that("build_fallback_analysis bruger værdineutral tekst når target_direction er NULL", {
-  ctx <- make_ctx(target_value = 2.5, target_direction = NULL, centerline = 3.0)
+  ctx <- fixture_analysis_context(target_value = 2.5, target_direction = NULL, centerline = 3.0)
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   # Den værdineutrale sti bruger "over" / "under" / "tæt på"
   expect_true(grepl("over|under|tæt på", txt))
 })
 
 test_that("build_fallback_analysis reallokerer budget når target mangler", {
-  ctx_no_target <- make_ctx(target_value = NA_real_, target_direction = NULL)
+  ctx_no_target <- fixture_analysis_context(target_value = NA_real_, target_direction = NULL)
   txt <- BFHcharts:::build_fallback_analysis(ctx_no_target, min_chars = 300, max_chars = 400)
   # Uden target skal stability+action fylde meste af max_chars
   expect_gte(nchar(txt), 250)
@@ -563,7 +543,7 @@ test_that("build_fallback_analysis bruger ental ved 1 outlier", {
   stats <- list(runs_actual = 5, runs_expected = 7,
                 crossings_actual = 8, crossings_expected = 5,
                 outliers_recent_count = 1)
-  ctx <- make_ctx(spc_stats = stats)
+  ctx <- fixture_analysis_context(spc_stats = stats)
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   # Grammatisk korrekt dansk: enten "1 observation ligger" (direkte) eller
   # "1 af de seneste observationer ligger" (flertal i "af de seneste"-konstruktion).
@@ -576,7 +556,7 @@ test_that("build_fallback_analysis bruger flertal ved 3 outliers", {
   stats <- list(runs_actual = 5, runs_expected = 7,
                 crossings_actual = 8, crossings_expected = 5,
                 outliers_recent_count = 3)
-  ctx <- make_ctx(spc_stats = stats)
+  ctx <- fixture_analysis_context(spc_stats = stats)
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   # Grammatisk korrekt dansk: enten "3 observationer" (direkte) eller
   # "3 af de seneste observationer" (flertal i "af de seneste"-konstruktion).

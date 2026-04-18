@@ -10,40 +10,7 @@
 #
 # Issue: #XX (biSPCharts preview viser forkert outlier-antal)
 
-# HELPER: Byg minimal bfh_qic_result med kendt sigma.signal --------------------
-
-make_fixture_result <- function(sigma_signal,
-                                part = NULL,
-                                chart_type = "i",
-                                summary_cols = list()) {
-  n <- length(sigma_signal)
-  qic_data <- data.frame(
-    x = seq_len(n),
-    y = seq_len(n),
-    cl = rep(0, n),
-    sigma.signal = sigma_signal
-  )
-  if (!is.null(part)) qic_data$part <- part
-
-  default_summary <- data.frame(
-    længste_løb = 3L,
-    længste_løb_max = 7L,
-    antal_kryds = 6L,
-    antal_kryds_min = 4L,
-    centerlinje = 0
-  )
-  for (nm in names(summary_cols)) default_summary[[nm]] <- summary_cols[[nm]]
-
-  structure(
-    list(
-      plot = ggplot2::ggplot(),
-      summary = default_summary,
-      qic_data = qic_data,
-      config = list(chart_type = chart_type)
-    ),
-    class = c("bfh_qic_result", "list")
-  )
-}
+# HELPER: fixture_bfh_qic_result() er tilgængelig via helper-fixtures.R.
 
 # S3 DISPATCH =================================================================
 
@@ -93,7 +60,7 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) returns TOTAL outliers in lates
     TRUE, TRUE            # 2 outliers på position 20 og 21 (inden for seneste 6)
   )
   # 21 obs total: seneste 6 = positioner 16-21 => kun 2 outliers i vinduet
-  result <- make_fixture_result(sigma_signal)
+  result <- fixture_bfh_qic_result(sigma_signal)
 
   stats <- bfh_extract_spc_stats(result)
 
@@ -105,7 +72,7 @@ test_that("bfh_extract_spc_stats only counts outliers in latest part when phases
   # Outliers i begge parts; kun seneste part skal tælles i tabellen.
   sigma_signal <- c(TRUE, TRUE, FALSE, FALSE, FALSE, TRUE)
   parts <- c(1, 1, 1, 2, 2, 2)
-  result <- make_fixture_result(sigma_signal, part = parts)
+  result <- fixture_bfh_qic_result(sigma_signal, part = parts)
 
   stats <- bfh_extract_spc_stats(result)
 
@@ -122,7 +89,7 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) exposes outliers_recent_count f
     rep(FALSE, 13),
     TRUE, TRUE            # i vinduet (seneste 6 obs)
   )
-  result <- make_fixture_result(sigma_signal)
+  result <- fixture_bfh_qic_result(sigma_signal)
 
   stats <- bfh_extract_spc_stats(result)
 
@@ -131,7 +98,7 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) exposes outliers_recent_count f
 
 test_that("outliers_recent_count equals outliers_actual when all outliers fall in last 6 obs", {
   sigma_signal <- c(rep(FALSE, 15), TRUE, FALSE, TRUE, FALSE, FALSE)
-  result <- make_fixture_result(sigma_signal)
+  result <- fixture_bfh_qic_result(sigma_signal)
 
   stats <- bfh_extract_spc_stats(result)
 
@@ -143,7 +110,7 @@ test_that("outliers_recent_count filters to latest part AND last 6 obs within it
   # Seneste part starter ved part == 2
   sigma_signal <- c(TRUE, TRUE, rep(FALSE, 20), TRUE)
   parts <- c(rep(1, 10), rep(2, 13))
-  result <- make_fixture_result(sigma_signal, part = parts)
+  result <- fixture_bfh_qic_result(sigma_signal, part = parts)
 
   stats <- bfh_extract_spc_stats(result)
 
@@ -157,7 +124,7 @@ test_that("outliers_recent_count filters to latest part AND last 6 obs within it
 
 test_that("bfh_extract_spc_stats(bfh_qic_result) returns NULL outliers for run charts", {
   sigma_signal <- c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE)
-  result <- make_fixture_result(sigma_signal, chart_type = "run")
+  result <- fixture_bfh_qic_result(sigma_signal, chart_type = "run")
 
   stats <- bfh_extract_spc_stats(result)
 
@@ -171,7 +138,7 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) returns NULL outliers for run c
 
 test_that("bfh_extract_spc_stats returns 0 outliers when no sigma.signal triggers", {
   sigma_signal <- rep(FALSE, 20)
-  result <- make_fixture_result(sigma_signal)
+  result <- fixture_bfh_qic_result(sigma_signal)
 
   stats <- bfh_extract_spc_stats(result)
 
@@ -201,7 +168,7 @@ test_that("bfh_extract_spc_stats handles missing sigma.signal column gracefully"
 
 test_that("bfh_extract_spc_stats preserves runs and crossings from summary", {
   sigma_signal <- c(rep(FALSE, 14), TRUE)
-  result <- make_fixture_result(sigma_signal)
+  result <- fixture_bfh_qic_result(sigma_signal)
 
   stats <- bfh_extract_spc_stats(result)
 

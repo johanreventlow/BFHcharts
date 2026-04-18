@@ -1,45 +1,14 @@
 # Tests for format_qic_summary()
 # Verificerer at BFHcharts korrekt formaterer qicharts2-output til dansk
-
-# Helper: Byg minimal qic-lignende data frame
-make_qic_data <- function(n = 24, chart_type = "i", parts = 1, add_signals = FALSE) {
-  set.seed(42)
-  df <- data.frame(
-    x = seq.Date(as.Date("2024-01-01"), by = "month", length.out = n),
-    y = rnorm(n, mean = 50, sd = 5),
-    cl = rep(50, n),
-    lcl = rep(35, n),
-    ucl = rep(65, n),
-    n.obs = rep(n, n),
-    n.useful = rep(n, n),
-    longest.run = rep(4L, n),
-    longest.run.max = rep(9L, n),
-    n.crossings = rep(8L, n),
-    n.crossings.min = rep(5L, n),
-    runs.signal = rep(FALSE, n),
-    sigma.signal = rep(FALSE, n),
-    part = rep(seq_len(parts), each = n / parts),
-    facet1 = rep(1, n),
-    facet2 = rep(1, n),
-    stringsAsFactors = FALSE
-  )
-
-  if (add_signals) {
-    # Simuler signal i første part
-    half <- n / 2
-    df$longest.run[1:half] <- 12L
-    df$runs.signal[1:half] <- TRUE
-  }
-
-  df
-}
+#
+# Fixture: fixture_qicharts_summary_data() er tilgængelig via helper-fixtures.R.
 
 # =============================================================================
 # BASIC FUNCTIONALITY
 # =============================================================================
 
 test_that("format_qic_summary returnerer data frame med danske kolonnenavne", {
-  qic_data <- make_qic_data()
+  qic_data <- fixture_qicharts_summary_data()
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
   expect_s3_class(result, "data.frame")
@@ -55,7 +24,7 @@ test_that("format_qic_summary returnerer data frame med danske kolonnenavne", {
 })
 
 test_that("format_qic_summary returnerer korrekte typer", {
-  qic_data <- make_qic_data()
+  qic_data <- fixture_qicharts_summary_data()
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
   expect_type(result$fase, "integer")
@@ -75,7 +44,7 @@ test_that("format_qic_summary afviser ikke-data.frame input", {
 # =============================================================================
 
 test_that("format_qic_summary håndterer multi-fase data korrekt", {
-  qic_data <- make_qic_data(n = 24, parts = 2)
+  qic_data <- fixture_qicharts_summary_data(n = 24, parts = 2)
   # Giv del 2 andre værdier
   qic_data$cl[13:24] <- 55
   qic_data$longest.run[13:24] <- 6L
@@ -91,7 +60,7 @@ test_that("format_qic_summary håndterer multi-fase data korrekt", {
 })
 
 test_that("format_qic_summary aggregerer Anhøj-stats per part", {
-  qic_data <- make_qic_data(n = 24, parts = 2)
+  qic_data <- fixture_qicharts_summary_data(n = 24, parts = 2)
   # Sæt forskellige longest.run i de to faser
   qic_data$longest.run[1:12] <- 3L
   qic_data$longest.run[13:24] <- 7L
@@ -104,7 +73,7 @@ test_that("format_qic_summary aggregerer Anhøj-stats per part", {
 })
 
 test_that("format_qic_summary kombinerer signals korrekt med any()", {
-  qic_data <- make_qic_data(n = 24, parts = 2, add_signals = TRUE)
+  qic_data <- fixture_qicharts_summary_data(n = 24, parts = 2, add_signals = TRUE)
 
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
@@ -118,7 +87,7 @@ test_that("format_qic_summary kombinerer signals korrekt med any()", {
 # =============================================================================
 
 test_that("format_qic_summary runder korrekt for percent", {
-  qic_data <- make_qic_data()
+  qic_data <- fixture_qicharts_summary_data()
   qic_data$cl <- rep(0.6789, 24)
   result <- format_qic_summary(qic_data, y_axis_unit = "percent")
 
@@ -127,7 +96,7 @@ test_that("format_qic_summary runder korrekt for percent", {
 })
 
 test_that("format_qic_summary runder korrekt for count", {
-  qic_data <- make_qic_data()
+  qic_data <- fixture_qicharts_summary_data()
   qic_data$cl <- rep(50.456, 24)
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
@@ -136,7 +105,7 @@ test_that("format_qic_summary runder korrekt for count", {
 })
 
 test_that("format_qic_summary runder korrekt for rate", {
-  qic_data <- make_qic_data()
+  qic_data <- fixture_qicharts_summary_data()
   qic_data$cl <- rep(12.345, 24)
   result <- format_qic_summary(qic_data, y_axis_unit = "rate")
 
@@ -149,7 +118,7 @@ test_that("format_qic_summary runder korrekt for rate", {
 # =============================================================================
 
 test_that("format_qic_summary inkluderer kontrolgrænser ved konstante grænser", {
-  qic_data <- make_qic_data()
+  qic_data <- fixture_qicharts_summary_data()
   # Konstante grænser (I-chart)
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
@@ -158,7 +127,7 @@ test_that("format_qic_summary inkluderer kontrolgrænser ved konstante grænser"
 })
 
 test_that("format_qic_summary ekskluderer kontrolgrænser ved variable grænser", {
-  qic_data <- make_qic_data()
+  qic_data <- fixture_qicharts_summary_data()
   # Simuler variable grænser (som p/u-charts har)
   qic_data$lcl <- seq(30, 40, length.out = 24)
   qic_data$ucl <- seq(60, 70, length.out = 24)
@@ -175,7 +144,7 @@ test_that("format_qic_summary ekskluderer kontrolgrænser ved variable grænser"
 # =============================================================================
 
 test_that("format_qic_summary håndterer run chart uden lcl/ucl", {
-  qic_data <- make_qic_data()
+  qic_data <- fixture_qicharts_summary_data()
   qic_data$lcl <- NULL
   qic_data$ucl <- NULL
 
@@ -192,7 +161,7 @@ test_that("format_qic_summary håndterer run chart uden lcl/ucl", {
 # =============================================================================
 
 test_that("format_qic_summary håndterer NA i Anhøj-stats", {
-  qic_data <- make_qic_data()
+  qic_data <- fixture_qicharts_summary_data()
   qic_data$longest.run <- NA_integer_
   qic_data$n.crossings <- NA_integer_
 
@@ -204,7 +173,7 @@ test_that("format_qic_summary håndterer NA i Anhøj-stats", {
 })
 
 test_that("format_qic_summary håndterer single-row data", {
-  qic_data <- make_qic_data(n = 24)
+  qic_data <- fixture_qicharts_summary_data(n = 24)
   # Kun én unik part
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 

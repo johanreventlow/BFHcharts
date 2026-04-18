@@ -10,59 +10,10 @@
 #
 # Reference: openspec/changes/strengthen-test-infrastructure (task 4.1–4.7)
 # Spec: test-infrastructure, "Rendered outputs SHALL have content verification"
-
-# ============================================================================
-# HELPER: expect_pdf_contains()
-# ============================================================================
-
-#' Custom expectation: PDF fil indeholder forventet tekst
-#'
-#' Bruger pdftools::pdf_text() til at ekstrahere al tekst fra PDF og matcher
-#' mod regex-pattern. Ignorerer whitespace-variationer og case-sensitivitet
-#' som default (kan overrides via ignore_case = FALSE).
-#'
-#' @param pdf_path Sti til PDF-fil
-#' @param pattern Regex-pattern forventet i PDF-tekst
-#' @param ignore_case Logical; TRUE = case-insensitiv match (default)
-#' @return Invisible TRUE hvis match, else fejler testthat-expectation
-expect_pdf_contains <- function(pdf_path, pattern, ignore_case = TRUE) {
-  act <- testthat::quasi_label(rlang::enquo(pdf_path), arg = "pdf_path")
-
-  testthat::expect_true(
-    file.exists(pdf_path),
-    info = paste("PDF file does not exist:", pdf_path)
-  )
-
-  text <- pdftools::pdf_text(pdf_path)
-  combined <- paste(text, collapse = "\n")
-
-  # Normalisér whitespace for robust matching
-  normalized <- gsub("[[:space:]]+", " ", combined)
-
-  testthat::expect_match(
-    normalized,
-    pattern,
-    fixed = FALSE,
-    ignore.case = ignore_case,
-    info = paste0(
-      "Pattern not found in PDF content.\n",
-      "Pattern: ", pattern, "\n",
-      "PDF path: ", act$val, "\n",
-      "First 500 chars of content: ", substr(normalized, 1, 500)
-    )
-  )
-}
-
-# ============================================================================
-# FIXTURE: lille canonical dataset
-# ============================================================================
-
-make_content_test_data <- function() {
-  data.frame(
-    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
-    infections = c(14, 16, 13, 15, 18, 12, 17, 14, 19, 13, 15, 16)
-  )
-}
+#
+# Helpers tilgængelige via:
+#   - helper-assertions.R: expect_pdf_contains()
+#   - helper-fixtures.R: fixture_deterministic_chart_data()
 
 # ============================================================================
 # TESTS — Chart titel i output
@@ -77,7 +28,7 @@ test_that("PDF indeholder chart_title fra bfh_qic config", {
 
   result <- suppressWarnings(
     bfh_qic(
-      data = make_content_test_data(),
+      data = fixture_deterministic_chart_data(),
       x = month,
       y = infections,
       chart_type = "i",
@@ -105,7 +56,7 @@ test_that("PDF indeholder hospital-metadata fra bruger", {
 
   result <- suppressWarnings(
     bfh_qic(
-      data = make_content_test_data(),
+      data = fixture_deterministic_chart_data(),
       x = month,
       y = infections,
       chart_type = "i",
@@ -130,7 +81,7 @@ test_that("PDF indeholder department-metadata", {
 
   result <- suppressWarnings(
     bfh_qic(
-      data = make_content_test_data(),
+      data = fixture_deterministic_chart_data(),
       x = month,
       y = infections,
       chart_type = "i",
@@ -157,7 +108,7 @@ test_that("PDF indeholder author-metadata", {
 
   result <- suppressWarnings(
     bfh_qic(
-      data = make_content_test_data(),
+      data = fixture_deterministic_chart_data(),
       x = month,
       y = infections,
       chart_type = "i",
@@ -182,7 +133,7 @@ test_that("PDF indeholder data_definition-metadata", {
 
   result <- suppressWarnings(
     bfh_qic(
-      data = make_content_test_data(),
+      data = fixture_deterministic_chart_data(),
       x = month,
       y = infections,
       chart_type = "i",
@@ -214,7 +165,7 @@ test_that("PDF indeholder SPC centerlinje-værdi fra summary", {
 
   result <- suppressWarnings(
     bfh_qic(
-      data = make_content_test_data(),
+      data = fixture_deterministic_chart_data(),
       x = month,
       y = infections,
       chart_type = "i",
@@ -292,7 +243,7 @@ test_that("PDF bevarer danske tegn (æ, ø, å) i titel", {
 
   result <- suppressWarnings(
     bfh_qic(
-      data = make_content_test_data(),
+      data = fixture_deterministic_chart_data(),
       x = month,
       y = infections,
       chart_type = "i",
@@ -317,7 +268,7 @@ test_that("PDF bevarer danske tegn i metadata-strings", {
 
   result <- suppressWarnings(
     bfh_qic(
-      data = make_content_test_data(),
+      data = fixture_deterministic_chart_data(),
       x = month,
       y = infections,
       chart_type = "i",
@@ -361,7 +312,7 @@ test_that("PDF viser IKKE metadata-felter der ikke er angivet", {
 
   result <- suppressWarnings(
     bfh_qic(
-      data = make_content_test_data(),
+      data = fixture_deterministic_chart_data(),
       x = month,
       y = infections,
       chart_type = "i",

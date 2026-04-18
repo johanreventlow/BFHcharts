@@ -2,24 +2,14 @@
 # SECURITY TESTS FOR PDF EXPORT
 # ============================================================================
 
-# Helper function to create test chart
-create_test_chart <- function() {
-  data <- data.frame(
-    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
-    infections = rpois(12, lambda = 15)
-  )
-
-  suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
-}
+# Helper: fixture_test_chart() er tilgængelig via helper-fixtures.R.
 
 # ============================================================================
 # PATH TRAVERSAL TESTS
 # ============================================================================
 
 test_that("bfh_export_pdf rejects path traversal in output", {
-  chart <- create_test_chart()
+  chart <- fixture_test_chart()
 
   # Path traversal with ..
   expect_error(
@@ -40,7 +30,7 @@ test_that("bfh_export_pdf rejects path traversal in output", {
 })
 
 test_that("bfh_export_pdf rejects path traversal in template_path", {
-  chart <- create_test_chart()
+  chart <- fixture_test_chart()
   temp_file <- tempfile(fileext = ".pdf")
 
   # Path traversal in template_path
@@ -63,7 +53,7 @@ test_that("bfh_export_pdf rejects path traversal in template_path", {
 # ============================================================================
 
 test_that("bfh_export_pdf rejects shell metacharacters in output", {
-  chart <- create_test_chart()
+  chart <- fixture_test_chart()
 
   # Semicolon (command separator)
   expect_error(
@@ -153,7 +143,7 @@ test_that("bfh_export_pdf allows safe paths", {
   skip_if_not(quarto_available(), "Quarto not available")
   skip_on_cran()
 
-  chart <- create_test_chart()
+  chart <- fixture_test_chart()
 
   # Safe paths should work
   temp_file <- tempfile(fileext = ".pdf")
@@ -172,7 +162,7 @@ test_that("bfh_export_pdf allows paths with spaces", {
   skip_if_not(quarto_available(), "Quarto not available")
   skip_on_cran()
 
-  chart <- create_test_chart()
+  chart <- fixture_test_chart()
 
   # Path with spaces (should be allowed - not a security risk)
   temp_dir <- tempfile("test directory ")
@@ -193,7 +183,7 @@ test_that("bfh_export_pdf allows paths with underscores and dashes", {
   skip_if_not(quarto_available(), "Quarto not available")
   skip_on_cran()
 
-  chart <- create_test_chart()
+  chart <- fixture_test_chart()
 
   # Safe special characters
   temp_file <- tempfile("my-report_2024", fileext = ".pdf")
@@ -213,7 +203,7 @@ test_that("bfh_export_pdf allows paths with underscores and dashes", {
 # ============================================================================
 
 test_that("bfh_export_pdf validates metadata field types", {
-  chart <- create_test_chart()
+  chart <- fixture_test_chart()
   temp_file <- tempfile(fileext = ".pdf")
 
   # Numeric value (invalid)
@@ -236,7 +226,7 @@ test_that("bfh_export_pdf allows Date objects for date field", {
   skip_if_not(quarto_available(), "Quarto not available")
   skip_on_cran()
 
-  chart <- create_test_chart()
+  chart <- fixture_test_chart()
   temp_file <- tempfile(fileext = ".pdf")
 
   # Date object is allowed for 'date' field
@@ -249,7 +239,7 @@ test_that("bfh_export_pdf allows Date objects for date field", {
 })
 
 test_that("bfh_export_pdf enforces metadata string length limits", {
-  chart <- create_test_chart()
+  chart <- fixture_test_chart()
   temp_file <- tempfile(fileext = ".pdf")
 
   # String exceeding 10,000 characters
@@ -268,7 +258,7 @@ test_that("bfh_export_pdf warns about unknown metadata fields", {
   skip_if_not(quarto_available(), "Quarto not available")
   skip_on_cran()
 
-  chart <- create_test_chart()
+  chart <- fixture_test_chart()
   temp_file <- tempfile(fileext = ".pdf")
 
   # Unknown field should trigger warning

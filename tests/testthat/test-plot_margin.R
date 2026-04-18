@@ -2,20 +2,14 @@
 # Skip entire file on CI - requires BFHtheme fonts not available on CI
 skip_on_ci()
 
-# Setup test data
-setup_test_data <- function() {
-  data.frame(
-    x = 1:24,
-    y = rnorm(24, 100, 10)
-  )
-}
+# Setup: fixture_numeric_data() er tilgængelig via helper-fixtures.R.
 
 # ============================================================================
 # Basic Functionality Tests
 # ============================================================================
 
 test_that("plot_margin NULL uses default behavior", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   plot <- bfh_qic(
     data = df,
@@ -30,7 +24,7 @@ test_that("plot_margin NULL uses default behavior", {
 })
 
 test_that("plot_margin with numeric vector works", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   plot <- bfh_qic(
     data = df,
@@ -50,7 +44,7 @@ test_that("plot_margin with numeric vector works", {
 })
 
 test_that("plot_margin with margin() object works (mm)", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   plot <- bfh_qic(
     data = df,
@@ -70,7 +64,7 @@ test_that("plot_margin with margin() object works (mm)", {
 })
 
 test_that("plot_margin with margin() object works (pt)", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   plot <- bfh_qic(
     data = df,
@@ -90,7 +84,7 @@ test_that("plot_margin with margin() object works (pt)", {
 })
 
 test_that("plot_margin with margin() object works (lines)", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   plot <- bfh_qic(
     data = df,
@@ -110,7 +104,7 @@ test_that("plot_margin with margin() object works (lines)", {
 })
 
 test_that("asymmetric margins work correctly", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   plot <- bfh_qic(
     data = df,
@@ -134,7 +128,7 @@ test_that("asymmetric margins work correctly", {
 # ============================================================================
 
 test_that("plot_margin works with all chart types", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
   df$n <- rpois(24, 100)  # Add denominator for p/u charts
 
   chart_types <- c("run", "i", "p", "c", "u")
@@ -175,7 +169,7 @@ test_that("plot_margin works with all chart types", {
 # ============================================================================
 
 test_that("plot_margin validation rejects wrong length", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   expect_error(
     bfh_qic(
@@ -190,7 +184,7 @@ test_that("plot_margin validation rejects wrong length", {
 })
 
 test_that("plot_margin validation rejects negative values", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   expect_error(
     bfh_qic(
@@ -205,7 +199,7 @@ test_that("plot_margin validation rejects negative values", {
 })
 
 test_that("plot_margin warns about excessive values", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   # Test that warning is produced for excessive margin values
   # Note: Large margins cause label placement to fail with error, but the warning should still be issued
@@ -238,7 +232,7 @@ test_that("plot_margin warns about excessive values", {
 })
 
 test_that("plot_margin validation rejects wrong type", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   expect_error(
     bfh_qic(
@@ -253,7 +247,7 @@ test_that("plot_margin validation rejects wrong type", {
 })
 
 test_that("plot_margin validation rejects list", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   expect_error(
     bfh_qic(
@@ -272,7 +266,7 @@ test_that("plot_margin validation rejects list", {
 # ============================================================================
 
 test_that("plot_margin works with zero margins", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   plot <- bfh_qic(
     data = df,
@@ -289,7 +283,7 @@ test_that("plot_margin works with zero margins", {
 })
 
 test_that("plot_margin works with very small values", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   plot <- bfh_qic(
     data = df,
@@ -306,7 +300,7 @@ test_that("plot_margin works with very small values", {
 })
 
 test_that("plot_margin works at boundary (100mm)", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   # Should not warn at exactly 100mm (but may have warnings from label placement due to small panel)
   # We suppress warnings since large margins can cause label placement issues, which is expected
@@ -329,7 +323,7 @@ test_that("plot_margin works at boundary (100mm)", {
 # ============================================================================
 
 test_that("plot_margin works with width and height", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   plot <- bfh_qic(
     data = df,
@@ -348,7 +342,7 @@ test_that("plot_margin works with width and height", {
 })
 
 test_that("plot_margin works with base_size", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   plot <- bfh_qic(
     data = df,
@@ -366,7 +360,7 @@ test_that("plot_margin works with base_size", {
 })
 
 test_that("plot_margin with lines scales with base_size", {
-  df <- setup_test_data()
+  df <- fixture_numeric_data()
 
   # Small base_size
   plot_small <- bfh_qic(
