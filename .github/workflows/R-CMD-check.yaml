@@ -45,46 +45,11 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
-      # Pragmatisk konfiguration matcher biSPCharts pilot-pattern:
-      # - --no-tests: 2 kendte pre-existing test-failures (BFHtheme color
-      #   API mismatch + S3 dispatch issue) - haandteres separat
-      # - error-on "error": kun ERRORs blokerer; WARNINGs/NOTEs er synlige
-      #   men non-blocking
-      # CI validerer stadig: NAMESPACE, deps, kompilering, eksempler, vignetter.
+      # Full R CMD check med tests - BFHcharts har ingen kendte test-failures.
+      # error-on "error" lader WARNINGs/NOTEs vaere synlige men non-blocking
+      # (kan strammes til "warning" senere hvis oensket).
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
           error-on: '"error"'
-          args: 'c("--no-manual", "--no-tests")'
-
-  # Separat test-job - synligt men non-blocking indtil 2 test-failures er fixed.
-  testthat:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_KEEP_PKG_SOURCE: yes
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: r-lib/actions/setup-pandoc@v2
-
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: 'release'
-          use-public-rspm: true
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::testthat
-          needs: check
-
-      - name: Install local package
-        run: R CMD INSTALL .
-        shell: bash
-
-      - name: Run testthat
-        run: |
-          testthat::test_dir("tests/testthat", reporter = "summary", stop_on_failure = FALSE)
-        shell: Rscript {0}
+          args: 'c("--no-manual", "--as-cran")'

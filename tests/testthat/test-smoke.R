@@ -7,7 +7,7 @@ test_that("Package loads without errors", {
 
 test_that("BFHtheme colors are accessible", {
   # Test that we can get colors from BFHtheme
-  colors <- BFHtheme::bfh_cols("hospital_blue", "hospital_grey", "hospital_dark_grey")
+  colors <- BFHtheme::bfh_cols("hospital_blue", "grey", "dark_grey")
 
   expect_type(colors, "character")
   expect_length(colors, 3)

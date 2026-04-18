@@ -1,3 +1,15 @@
+# BFHcharts 0.8.2
+
+## Interne ændringer
+
+* **CI: fuld R CMD check med tests.** Fjernede `--no-tests` workaround fra
+  `R-CMD-check.yaml` efter at to pre-existing test-failures blev rettet:
+  `test-smoke.R:10` brugte udfasede BFHtheme farvenavne
+  (`hospital_grey`/`hospital_dark_grey` → `grey`/`dark_grey`);
+  `test-export_pdf.R:423` forventede forældet fejlbesked-regex efter
+  `bfh_extract_spc_stats()` blev konverteret til S3 generic. CI fanger nu
+  nye test-regressioner.
+
 # BFHcharts 0.8.1
 
 ## Bug fixes
