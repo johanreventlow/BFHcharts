@@ -419,20 +419,21 @@ test_that("bfh_extract_spc_stats handles missing columns gracefully", {
 })
 
 test_that("bfh_extract_spc_stats validates input type", {
-  # Should error for non-data frame input
+  # Should error for input that is not data.frame or bfh_qic_result
+  # (S3 dispatch via bfh_extract_spc_stats.default)
   expect_error(
     bfh_extract_spc_stats("not a data frame"),
-    "summary must be a data frame or NULL"
+    "must be a data\\.frame.*or a bfh_qic_result"
   )
 
   expect_error(
     bfh_extract_spc_stats(123),
-    "summary must be a data frame or NULL"
+    "must be a data\\.frame.*or a bfh_qic_result"
   )
 
   expect_error(
     bfh_extract_spc_stats(list(a = 1)),
-    "summary must be a data frame or NULL"
+    "must be a data\\.frame.*or a bfh_qic_result"
   )
 })
 
