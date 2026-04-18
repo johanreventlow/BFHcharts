@@ -186,12 +186,18 @@ format_y_axis_rate <- function() {
   )
 }
 
-#' Format Y-Axis for Time Data
+#' Format Y-Axis for Time Data (Composite Format: "1t 30m", "2d 4t")
 #'
-#' Automatically selects appropriate time unit (minutes, hours, days)
-#' based on data range.
+#' Producerer tids-naturlige tick-breaks via `time_breaks()` og komposit
+#' label-format via `format_time_composite()`. Input antages at være i
+#' minutter (kanonisk intern enhed).
 #'
-#' @param qic_data QIC data frame with y column (time in minutes)
+#' Erstatter tidligere "0,6666667 timer"-style formatering med kompakte
+#' labels som `"45m"`, `"1t 30m"` og `"2d 13t"` — samme format som
+#' data-punkt labels, hvilket sikrer visuel konsistens mellem y-aksen
+#' og pilene fra centrallinje/target til deres værdier.
+#'
+#' @param qic_data QIC data frame with y column (time values in minutes)
 #'
 #' @return ggplot2 scale layer
 #' @keywords internal
@@ -202,17 +208,21 @@ format_y_axis_time <- function(qic_data) {
     return(BFHtheme::scale_y_continuous_bfh(expand = ggplot2::expansion(mult = c(.20, .20))))
   }
 
-  y_range <- range(qic_data$y, na.rm = TRUE)
-  max_minutes <- max(y_range, na.rm = TRUE)
-
-  # Uses canonical determine_time_unit() from utils_time_formatting.R
-  time_unit <- determine_time_unit(max_minutes)
+  # Tids-naturlige tick-breaks baseret på data-range (target_n = 5 som default)
+  breaks <- time_breaks(qic_data$y)
 
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(.20, .20)),
+    breaks = breaks,
     labels = function(x, ...) {
-      # Uses canonical format_time_danish() from utils_time_formatting.R
-      purrr::map_chr(x, ~ format_time_danish(.x, time_unit))
+      # Defensiv: ggplot2 kan passere waiver-objekter under layout
+      if (inherits(x, "waiver")) {
+        return(x)
+      }
+      if (!is.numeric(x)) {
+        x <- suppressWarnings(as.numeric(as.character(x)))
+      }
+      format_time_composite(x)
     }
   )
 }
