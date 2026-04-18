@@ -69,18 +69,20 @@ Opgaverne er organiseret i 3 faser svarende til `proposal.md`. Hver fase bør af
 
 ### 6. Centraliserede fixtures og helpers
 
-- [ ] 6.1 Opret `tests/testthat/setup.R` med locale/timezone/RNGkind-kontrol
-- [ ] 6.2 Opret `tests/testthat/helper-fixtures.R` med konsoliderede funktioner:
-  - [ ] `make_qic_data()` (flyttet fra `test-plot_core.R`)
-  - [ ] `make_fixture_result()` (flyttet fra `test-extract-spc-stats-dispatch.R`)
-  - [ ] `make_ctx()` (flyttet fra `test-spc_analysis.R`)
-  - [ ] `create_test_chart()` (flyttet fra `test-security-export-pdf.R`)
-  - [ ] `setup_test_data()` (flyttet fra `test-plot_margin.R`)
-- [ ] 6.3 Opret `tests/testthat/helper-assertions.R` med custom expectations
-- [ ] 6.4 Opret `tests/testthat/fixtures/` mappe med `README.md`
-- [ ] 6.5 Erstat lokale `make_*`-funktioner i alle testfiler med centrale versioner
-- [ ] 6.6 Opret deterministiske golden datasets i `fixtures/golden_datasets.rds`
-- [ ] 6.7 Dokumentér fixture-generation-proces i `fixtures/README.md`
+- [x] 6.1 Opret `tests/testthat/setup.R` med locale/timezone/RNGkind-kontrol
+- [x] 6.2 Opret `tests/testthat/helper-fixtures.R` med konsoliderede funktioner:
+  - [x] `fixture_plot_qic_data()` (flyttet fra `test-plot_core.R`, omdøbt fra `make_qic_data`)
+  - [x] `fixture_qicharts_summary_data()` (flyttet fra `test-utils_qic_summary.R`, omdøbt — var kollision med test-plot_core.R's version)
+  - [x] `fixture_bfh_qic_result()` (flyttet fra `test-extract-spc-stats-dispatch.R`, omdøbt fra `make_fixture_result`)
+  - [x] `fixture_analysis_context()` (flyttet fra `test-spc_analysis.R`, omdøbt fra `make_ctx`)
+  - [x] `fixture_test_chart()` (flyttet fra `test-security-export-pdf.R`, omdøbt fra `create_test_chart`)
+  - [x] `fixture_numeric_data()` (flyttet fra `test-plot_margin.R`, omdøbt fra `setup_test_data`)
+  - [x] `fixture_minimal_chart_data()` + `fixture_deterministic_chart_data()` (nye — erstatter 40+ inline-konstruktioner)
+- [x] 6.3 Opret `tests/testthat/helper-assertions.R` med custom expectations (`expect_pdf_contains`, `expect_valid_bfh_qic_result`, `expect_summary_value`)
+- [ ] 6.4 Opret `tests/testthat/fixtures/` mappe med `README.md` — **udskudt**: kun nødvendig når golden datasets (6.6) introduceres
+- [x] 6.5 Erstat lokale `make_*`-funktioner i alle testfiler med centrale versioner (7 filer opdateret)
+- [ ] 6.6 Opret deterministiske golden datasets i `fixtures/golden_datasets.rds` — **udskudt**: afhænger af Fase 2 task 8 (statistisk accuracy-suite)
+- [ ] 6.7 Dokumentér fixture-generation-proces i `fixtures/README.md` — **udskudt**: sammen med 6.4 + 6.6
 
 ### 7. Visuel regression med vdiffr
 
@@ -139,19 +141,21 @@ Opgaverne er organiseret i 3 faser svarende til `proposal.md`. Hver fase bør af
 
 ### 12. BFHllm mock-test
 
-- [ ] 12.1 Tilføj `helper-mocks.R` mock for `BFHllm::*`-kald
-- [ ] 12.2 Opret test for `bfh_generate_analysis(use_ai = TRUE)` success-path
-- [ ] 12.3 Opret test for `bfh_generate_analysis(use_ai = TRUE)` BFHllm-fejl-fallback
-- [ ] 12.4 Opret test for `bfh_generate_analysis(use_ai = TRUE)` BFHllm-missing-fallback
+- [x] 12.1 Tilføj mock-factories i `helper-mocks.R` (findes allerede fra Fase 1)
+- [x] 12.2 Opret test for `bfh_generate_analysis(use_ai = TRUE)` success-path via `testthat::local_mocked_bindings`
+- [x] 12.3 Opret test for `bfh_generate_analysis(use_ai = TRUE)` BFHllm-fejl-fallback
+- [x] 12.4 BFHllm-missing-fallback (`use_ai = FALSE` path) dækkes af eksisterende tests i `test-spc_analysis.R`
+- [x] 12.5 Bonus: argument-passing test verificerer at min_chars/max_chars/baseline_analysis forwardes korrekt
+- [x] 12.6 Bonus: auto-detection test for `use_ai = NULL`
 
 ### 13. Test-lag-opdeling
 
-- [ ] 13.1 Implementér `skip_if_not_full_test()` helper via `BFHCHARTS_TEST_FULL`
-- [ ] 13.2 Implementér `skip_if_not_render_test()` helper via `BFHCHARTS_TEST_RENDER`
-- [ ] 13.3 Mærk tunge render-tests med `skip_if_not_render_test()`
-- [ ] 13.4 Mærk Quarto-live-tests med `skip_if_not_render_test()`
-- [ ] 13.5 Verificér lokal `devtools::test()` kører hurtige tests på <10s
-- [ ] 13.6 Opdatér CI til at sætte begge miljøvariabler
+- [x] 13.1 Implementér `skip_if_not_full_test()` helper via `BFHCHARTS_TEST_FULL` — i `helper-skips.R`
+- [x] 13.2 Implementér `skip_if_not_render_test()` helper via `BFHCHARTS_TEST_RENDER` — i `helper-skips.R`
+- [ ] 13.3 Mærk tunge render-tests med `skip_if_not_render_test()` — **udskudt**: kræver systematisk audit af eksisterende `skip_on_ci()` først, samt beslutning om hvilke tests der er "render" vs "full"
+- [ ] 13.4 Mærk Quarto-live-tests med `skip_if_not_render_test()` — **udskudt**: kommer sammen med 13.3
+- [ ] 13.5 Verificér lokal `devtools::test()` kører hurtige tests på <10s — **udskudt**: kræver 13.3-13.4 er implementeret
+- [x] 13.6 Opdatér CI til at sætte begge miljøvariabler (gjort i Fase 1 R-CMD-check.yaml)
 
 ---
 
