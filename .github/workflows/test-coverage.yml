@@ -41,9 +41,8 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
-      - uses: quarto-dev/quarto-actions/setup@v2
-        with:
-          version: 'pre-release'
+      # Quarto deferred (see note in R-CMD-check.yaml). PDF code paths skip
+      # in coverage measurement; baseline coverage reflects non-PDF logic.
 
       - uses: r-lib/actions/setup-r@v2
         with:
