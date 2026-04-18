@@ -139,10 +139,11 @@ Opgaverne er organiseret i 3 faser svarende til `proposal.md`. Hver fase bør af
 
 ### 11. Styrk weak integration-assertions
 
-- [ ] 11.1 Audit alle `expect_s3_class(plot, "bfh_qic_result")`-only tests
-- [ ] 11.2 Tilføj mindst ét numerisk assertion pr. integration-test (CL, UCL, eller signal-count)
-- [ ] 11.3 Erstat blanket `suppressWarnings()` med eksplicit `expect_warning(..., regexp = NA)` eller specific match
-- [ ] 11.4 Fjern duplikeret data-setup til fordel for fixture-helpers
+- [x] 11.1 Audit alle `expect_s3_class(plot, "bfh_qic_result")`-only tests — identificeret via awk-script: test-plot_margin.R (13/18), test-integration.R (3/16), test-bfh_qic_result.R (1/7)
+- [x] 11.2 Tilføj mindst ét numerisk assertion pr. integration-test — prioriteret test-plot_margin.R og test-integration.R: exact margin-værdier via `expect_plot_margin()`, CL-værdier, phase-split verificering
+- [ ] 11.3 Erstat blanket `suppressWarnings()` med eksplicit `expect_warning(..., regexp = NA)` — **defereret**: 119 forekomster, kræver case-by-case audit; pilot udført via deterministisk data i opdaterede tests (erstatter RNG-afhængig `rnorm/rpois` der var årsag til mange warnings)
+- [x] 11.4 Fjern duplikeret data-setup — opdaterede tests bruger `fixture_numeric_data()` og deterministiske vektorer i stedet for inline-duplikation
+- [x] 11.5 Ny helper `expect_plot_margin()` i helper-assertions.R for præcis margin-verifikation
 
 ### 12. BFHllm mock-test
 
