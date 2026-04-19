@@ -659,6 +659,33 @@ test_that("build_typst_content escapes file paths", {
   expect_true(grepl("image\\(", content_str))
 })
 
+test_that("bfh template uses none for optional metadata and SPC defaults", {
+  template_file <- system.file(
+    "templates/typst/bfh-template/bfh-template.typ",
+    package = "BFHcharts"
+  )
+
+  skip_if(!file.exists(template_file), "Template file not found")
+
+  template <- paste(readLines(template_file), collapse = "\n")
+
+  expect_match(template, "data_definition: none", fixed = TRUE)
+  expect_match(template, "runs_expected: none", fixed = TRUE)
+  expect_match(template, "runs_actual: none", fixed = TRUE)
+  expect_match(template, "crossings_expected: none", fixed = TRUE)
+  expect_match(template, "crossings_actual: none", fixed = TRUE)
+  expect_match(template, "outliers_expected: none", fixed = TRUE)
+  expect_match(template, "outliers_actual: none", fixed = TRUE)
+
+  expect_no_match(template, "data_definition: lorem(75)", fixed = TRUE)
+  expect_no_match(template, "runs_expected: 7", fixed = TRUE)
+  expect_no_match(template, "runs_actual: 8", fixed = TRUE)
+  expect_no_match(template, "crossings_expected: 15", fixed = TRUE)
+  expect_no_match(template, "crossings_actual: 10", fixed = TRUE)
+  expect_no_match(template, "outliers_expected: 0", fixed = TRUE)
+  expect_no_match(template, "outliers_actual: 0", fixed = TRUE)
+})
+
 test_that("bfh_export_pdf validates custom template_path", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
