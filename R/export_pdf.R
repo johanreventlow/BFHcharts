@@ -38,6 +38,9 @@
 #'   Only used when \code{auto_analysis = TRUE}.
 #' @param analysis_max_chars Maximum characters for AI-generated analysis. Default 375.
 #'   Only used when \code{auto_analysis = TRUE}.
+#' @param dpi Resolution passed to \code{ggplot2::ggsave()}. Default 150.
+#'   PDF export currently uses SVG as intermediate format, so this is mainly
+#'   relevant if the plot contains rasterized content.
 #' @param font_path Optional path to directory containing additional fonts.
 #'   Passed as \code{--font-path} to the Typst compiler. Useful when fonts
 #'   (e.g., Mari) are bundled in a downstream package and not installed
@@ -139,6 +142,7 @@ bfh_export_pdf <- function(x,
                            use_ai = NULL,
                            analysis_min_chars = 300,
                            analysis_max_chars = 375,
+                           dpi = 150,
                            font_path = NULL,
                            inject_assets = NULL) {
   # Input validation
@@ -242,6 +246,10 @@ bfh_export_pdf <- function(x,
     if (!is.character(font_path) || length(font_path) != 1) {
       stop("font_path must be a single character string or NULL", call. = FALSE)
     }
+  }
+
+  if (!is.numeric(dpi) || length(dpi) != 1 || is.na(dpi) || dpi <= 0) {
+    stop("dpi must be a single positive numeric value", call. = FALSE)
   }
 
   # ============================================================================
@@ -412,6 +420,7 @@ bfh_export_pdf <- function(x,
       width = PDF_IMAGE_WIDTH_MM / 25.4,  # 250mm - original working size
       height = PDF_IMAGE_HEIGHT_MM / 25.4, # 140mm
       units = "in",
+      dpi = dpi,
       device = "svg"
     ),
     error = function(e) {
@@ -1025,4 +1034,3 @@ format_centerline_for_details <- function(cl_value, y_axis_unit) {
 
   sprintf("Nuværende niveau: %s", formatted)
 }
-
