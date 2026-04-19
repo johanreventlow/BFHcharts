@@ -1319,6 +1319,10 @@ test_that("format_centerline_for_details handles different y_axis_units", {
 
   # Count (integer value)
   expect_match(BFHcharts:::format_centerline_for_details(127, "count"), "127")
+  expect_equal(
+    BFHcharts:::format_centerline_for_details(1234.5, "count"),
+    "Nuværende niveau: 1.234,5"
+  )
 
   # Rate (1 decimal)
   expect_match(BFHcharts:::format_centerline_for_details(5.5, "rate"), "5,5")
