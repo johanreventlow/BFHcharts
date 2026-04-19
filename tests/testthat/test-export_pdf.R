@@ -849,7 +849,7 @@ test_that("generated Typst contains metadata and chart reference", {
   # Verify metadata appears in content
   expect_match(content, "My Test Title")
   expect_match(content, "Copenhagen Hospital")
-  expect_match(content, "2025-03-15")
+  expect_match(content, "datetime\\(year: 2025, month: 3, day: 15\\)")
 
   # Verify SPC stats appear
   expect_match(content, "runs_expected: 7")
