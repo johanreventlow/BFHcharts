@@ -71,6 +71,10 @@ add_plot_enhancements <- function(plot,
 
     if (nrow(part_data) > 0) {
       last_row <- part_data[nrow(part_data), ]
+      last_part_x <- max(part_data$x, na.rm = TRUE)
+      if (inherits(last_part_x, "Date")) {
+        last_part_x <- as.POSIXct(last_part_x)
+      }
       cl_value <- last_row$cl
 
       # Determine linetype based on Anhoej signal
@@ -82,7 +86,7 @@ add_plot_enhancements <- function(plot,
 
       if (!is.na(cl_value)) {
         extended_lines_list$cl <- tibble::tibble(
-          x = c(last_row$x, extended_x),
+          x = c(last_part_x, extended_x),
           y = c(cl_value, cl_value),
           type = "cl",
           linetype = cl_linetype
