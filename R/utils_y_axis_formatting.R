@@ -144,7 +144,7 @@ format_y_axis_percent <- function(y_range = NULL) {
   }
 
   BFHtheme::scale_y_continuous_bfh(
-    expand = ggplot2::expansion(mult = c(.20, .20)),
+    expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
     breaks = percent_breaks,
     labels = percent_labels
   )
@@ -163,7 +163,7 @@ format_y_axis_percent <- function(y_range = NULL) {
 #' @noRd
 format_y_axis_count <- function() {
   BFHtheme::scale_y_continuous_bfh(
-    expand = ggplot2::expansion(mult = c(.20, .20)),
+    expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
     labels = function(x, ...) {
       # Uses canonical format_count_danish() from utils_number_formatting.R
       purrr::map_chr(x, format_count_danish)
@@ -178,7 +178,7 @@ format_y_axis_count <- function() {
 #' @noRd
 format_y_axis_rate <- function() {
   BFHtheme::scale_y_continuous_bfh(
-    expand = ggplot2::expansion(mult = c(.20, .20)),
+    expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
     labels = function(x, ...) {
       # Uses canonical format_rate_danish() from utils_number_formatting.R
       purrr::map_chr(x, format_rate_danish)
@@ -205,14 +205,16 @@ format_y_axis_rate <- function() {
 format_y_axis_time <- function(qic_data) {
   if (is.null(qic_data) || !"y" %in% names(qic_data)) {
     warning("format_y_axis_time: missing qic_data or y column, using default")
-    return(BFHtheme::scale_y_continuous_bfh(expand = ggplot2::expansion(mult = c(.20, .20))))
+    return(BFHtheme::scale_y_continuous_bfh(
+      expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT))
+    ))
   }
 
   # Tids-naturlige tick-breaks baseret på data-range (target_n = 5 som default)
   breaks <- time_breaks(qic_data$y)
 
   BFHtheme::scale_y_continuous_bfh(
-    expand = ggplot2::expansion(mult = c(.20, .20)),
+    expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
     breaks = breaks,
     labels = function(x, ...) {
       # Defensiv: ggplot2 kan passere waiver-objekter under layout

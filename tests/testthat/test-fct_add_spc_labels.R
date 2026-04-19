@@ -221,6 +221,45 @@ test_that("CL at zero with target above does not crash and returns ggplot", {
   expect_true(inherits(result, "gg"))
 })
 
+test_that("boundary labels avoid adding excess whitespace when minimal expansion is enough", {
+  qic_data <- data.frame(
+    x = as.Date("2024-01-01") + 0:11 * 30,
+    y = c(0, 0, 0, 0.06, 0, 0.04, 0, 0, 0, 0, 0, 0),
+    cl = rep(0, 12),
+    target = rep(0.01, 12)
+  )
+  p <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_line()
+
+  plot_before_labels <- apply_y_axis_formatting(p, "percent", qic_data)
+  range_before <- ggplot2::ggplot_build(plot_before_labels)$layout$panel_params[[1]]$y.range
+
+  result <- suppressWarnings(add_spc_labels(plot_before_labels, qic_data, y_axis_unit = "percent"))
+  range_after <- ggplot2::ggplot_build(result)$layout$panel_params[[1]]$y.range
+
+  expect_equal(range_before, c(-0.003, 0.063), tolerance = 1e-8)
+  expect_equal(range_after, range_before, tolerance = 1e-8)
+})
+
+test_that("non-boundary labels keep the minimal default y expansion", {
+  qic_data <- data.frame(
+    x = as.Date("2024-01-01") + 0:11 * 30,
+    y = c(40, 52, 48, 55, 47, 51, 49, 53, 50, 48, 52, 60),
+    cl = rep(50.5, 12),
+    target = rep(48, 12)
+  )
+  p <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_line()
+
+  plot_before_labels <- apply_y_axis_formatting(p, "count", qic_data)
+  range_before <- ggplot2::ggplot_build(plot_before_labels)$layout$panel_params[[1]]$y.range
+
+  result <- suppressWarnings(add_spc_labels(plot_before_labels, qic_data, y_axis_unit = "count"))
+  range_after <- ggplot2::ggplot_build(result)$layout$panel_params[[1]]$y.range
+
+  expect_equal(range_after, range_before, tolerance = 1e-8)
+})
+
 test_that("CL at data maximum with target below does not crash", {
   # Spejlvendt scenarie: CL nær toppen
   qic_data <- data.frame(

@@ -26,6 +26,10 @@ utils::globalVariables(c(
 # Line extension factor — hvor langt CL/target forlænges forbi sidste datapunkt
 LINE_EXTENSION_FACTOR <- 0.20
 
+# Default y-axis expansion for chart scales — holdes lav for at minimere
+# tom whitespace. Boundary labels kan stadig udvide skalaen dynamisk.
+Y_AXIS_BASE_EXPANSION_MULT <- 0.05
+
 # Y-axis expansion multiplier — matcher ggplot2 expansion(mult = ...)
 Y_AXIS_EXPANSION_MULT <- 0.25
 

@@ -51,6 +51,16 @@ test_that("apply_y_axis_formatting applies count formatting", {
   expect_true(length(result$scales$scales) > 0)
 })
 
+test_that("apply_y_axis_formatting uses minimal default y expansion", {
+  qic_data <- data.frame(x = 1:3, y = c(40, 50, 60))
+  plot <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_point()
+
+  result <- apply_y_axis_formatting(plot, "count", qic_data)
+  y_range <- ggplot2::ggplot_build(result)$layout$panel_params[[1]]$y.range
+
+  expect_equal(y_range, c(39, 61), tolerance = 1e-8)
+})
+
 test_that("apply_y_axis_formatting applies rate formatting", {
   data <- data.frame(x = 1:10, y = rnorm(10, 5, 1))
   plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_point()
