@@ -81,7 +81,7 @@ show table.cell: it => {
     grid(
       //rows: (51.33mm, 22.66mm, 1fr),
       //rows: (59.4mm, 22.1mm, 1fr),
-      rows: (52.8mm, 26.4mm, 1fr),
+      rows: (52.8mm, auto, 1fr),
         block(
           //fill: rgb("DCF1FC"),
           fill: rgb("007dbb"),
