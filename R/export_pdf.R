@@ -582,8 +582,14 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
   is_run_chart <- identical(x$config$chart_type, "run")
   stats$is_run_chart <- is_run_chart
 
-  # Run charts har ingen kontrolgrænser → outlier-felter forbliver NULL
-  if (is_run_chart) return(stats)
+  # Run charts har ingen kontrolgrænser → outlier-felter skal være NULL,
+  # selvom format_qic_summary() har tilføjet aggregerede outlier-kolonner.
+  if (is_run_chart) {
+    stats$outliers_expected <- NULL
+    stats$outliers_actual <- NULL
+    stats$outliers_recent_count <- NULL
+    return(stats)
+  }
 
   if (is.null(x$qic_data) || !"sigma.signal" %in% names(x$qic_data)) {
     # Uden sigma.signal kan vi ikke tælle outliers; lad felterne forblive NULL
