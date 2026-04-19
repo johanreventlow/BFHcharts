@@ -82,6 +82,18 @@ test_that("format_qic_summary kombinerer signals korrekt med any()", {
   expect_false(result$løbelængde_signal[2])
 })
 
+test_that("format_qic_summary inkluderer aggregerede outlier-kolonner per fase", {
+  qic_data <- fixture_qicharts_summary_data(n = 24, parts = 2)
+  qic_data$sigma.signal[c(2, 14, 15)] <- TRUE
+
+  result <- format_qic_summary(qic_data, y_axis_unit = "count")
+
+  expect_true("forventede_outliers" %in% names(result))
+  expect_true("antal_outliers" %in% names(result))
+  expect_equal(result$forventede_outliers, c(0L, 0L))
+  expect_equal(result$antal_outliers, c(1L, 2L))
+})
+
 # =============================================================================
 # AFRUNDING OG UNIT-SPECIFIK FORMATERING
 # =============================================================================

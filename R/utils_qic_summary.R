@@ -108,6 +108,26 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   formatted$løbelængde_signal <- as.logical(raw_summary$runs.signal)
   formatted$sigma_signal <- as.logical(raw_summary$sigma.signal)
 
+  # Add aggregated outlier counts per part when sigma.signal is available.
+  has_sigma_signal <- "sigma.signal" %in% names(qic_data) &&
+    any(!is.na(qic_data$sigma.signal))
+
+  if (has_sigma_signal) {
+    if ("part" %in% names(qic_data)) {
+      outliers_by_part <- vapply(
+        split(qic_data$sigma.signal, qic_data$part),
+        function(x) sum(x, na.rm = TRUE),
+        integer(1)
+      )
+      part_key <- as.character(raw_summary$part)
+      formatted$forventede_outliers <- unname(as.integer(rep(0L, length(part_key))))
+      formatted$antal_outliers <- unname(as.integer(outliers_by_part[part_key]))
+    } else {
+      formatted$forventede_outliers <- 0L
+      formatted$antal_outliers <- as.integer(sum(qic_data$sigma.signal, na.rm = TRUE))
+    }
+  }
+
   # Add control limits with appropriate rounding (if they exist)
   if ("cl" %in% names(raw_summary)) {
     formatted$centerlinje <- round(raw_summary$cl, decimal_places)

@@ -566,8 +566,18 @@ bfh_extract_spc_stats.data.frame <- function(x) {
     stats$crossings_actual <- clean_spc_value(row$antal_kryds)
   }
 
-  # Outliers kan ikke udledes af summary alene (kræver sigma.signal fra qic_data).
-  # Brug bfh_extract_spc_stats(bfh_qic_result) hvis outliers skal udfyldes.
+  # Outliers kan udledes fra summary, hvis summary-generatoren har tilføjet
+  # aggregerede outlier-kolonner.
+  if ("forventede_outliers" %in% names(row)) {
+    stats$outliers_expected <- clean_spc_value(row$forventede_outliers)
+  } else if ("outliers_expected" %in% names(row)) {
+    stats$outliers_expected <- clean_spc_value(row$outliers_expected)
+  }
+  if ("antal_outliers" %in% names(row)) {
+    stats$outliers_actual <- clean_spc_value(row$antal_outliers)
+  } else if ("outliers_actual" %in% names(row)) {
+    stats$outliers_actual <- clean_spc_value(row$outliers_actual)
+  }
 
   stats
 }
@@ -581,8 +591,14 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
   is_run_chart <- identical(x$config$chart_type, "run")
   stats$is_run_chart <- is_run_chart
 
-  # Run charts har ingen kontrolgrænser → outlier-felter forbliver NULL
-  if (is_run_chart) return(stats)
+  # Run charts har ingen kontrolgrænser → outlier-felter skal være NULL,
+  # selvom format_qic_summary() har tilføjet aggregerede outlier-kolonner.
+  if (is_run_chart) {
+    stats$outliers_expected <- NULL
+    stats$outliers_actual <- NULL
+    stats$outliers_recent_count <- NULL
+    return(stats)
+  }
 
   if (is.null(x$qic_data) || !"sigma.signal" %in% names(x$qic_data)) {
     # Uden sigma.signal kan vi ikke tælle outliers; lad felterne forblive NULL
