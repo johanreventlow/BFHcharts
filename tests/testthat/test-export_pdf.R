@@ -631,7 +631,8 @@ test_that("build_typst_content includes date parameter", {
   # Content should include date parameter
   content_str <- paste(content, collapse = "\n")
   expect_true(grepl("date:", content_str))
-  expect_true(grepl("2025-01-15", content_str))
+  expect_true(grepl("datetime\\(year: 2025, month: 1, day: 15\\)", content_str))
+  expect_false(grepl('date:\\s*"2025-01-15"', content_str))
 })
 
 test_that("build_typst_content escapes file paths", {
@@ -889,7 +890,7 @@ test_that("generated Typst contains metadata and chart reference", {
   # Verify metadata appears in content
   expect_match(content, "My Test Title")
   expect_match(content, "Copenhagen Hospital")
-  expect_match(content, "2025-03-15")
+  expect_match(content, "datetime\\(year: 2025, month: 3, day: 15\\)")
 
   # Verify SPC stats appear
   expect_match(content, "runs_expected: 7")
