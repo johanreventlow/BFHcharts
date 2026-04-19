@@ -686,6 +686,20 @@ test_that("bfh template uses none for optional metadata and SPC defaults", {
   expect_no_match(template, "outliers_actual: 0", fixed = TRUE)
 })
 
+test_that("bfh template uses auto height for analysis row", {
+  template_file <- system.file(
+    "templates/typst/bfh-template/bfh-template.typ",
+    package = "BFHcharts"
+  )
+
+  skip_if(!file.exists(template_file), "Template file not found")
+
+  template <- paste(readLines(template_file), collapse = "\n")
+
+  expect_match(template, "rows: (52.8mm, auto, 1fr)", fixed = TRUE)
+  expect_no_match(template, "rows: (52.8mm, 26.4mm, 1fr)", fixed = TRUE)
+})
+
 test_that("bfh_export_pdf validates custom template_path", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
