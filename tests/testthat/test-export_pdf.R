@@ -1753,6 +1753,33 @@ test_that("bfh_export_pdf has analysis_min_chars and analysis_max_chars paramete
   expect_equal(fn_args$analysis_max_chars, 375)
 })
 
+test_that("bfh_export_pdf has dpi parameter with default 150", {
+  fn_args <- formals(bfh_export_pdf)
+
+  expect_true("dpi" %in% names(fn_args))
+  expect_equal(fn_args$dpi, 150)
+})
+
+test_that("bfh_export_pdf validates dpi parameter", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
+  )
+
+  expect_error(
+    bfh_export_pdf(result, tempfile(fileext = ".pdf"), dpi = "300"),
+    "dpi must be a single positive numeric value"
+  )
+  expect_error(
+    bfh_export_pdf(result, tempfile(fileext = ".pdf"), dpi = 0),
+    "dpi must be a single positive numeric value"
+  )
+})
+
 test_that("bfh_export_pdf accepts custom analysis length parameters", {
   skip_if_not(quarto_available(), "Quarto not available")
   skip_on_cran()
