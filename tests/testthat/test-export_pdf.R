@@ -1033,6 +1033,18 @@ test_that("markdown_to_typst preserves plain text without formatting", {
   expect_equal(BFHcharts:::markdown_to_typst(plain_text), plain_text)
 })
 
+test_that("markdown_to_typst escapes Typst special characters in content blocks", {
+  result <- BFHcharts:::markdown_to_typst(
+    "Afd. #3 @akut koster $100 for kode_navn <Akut>"
+  )
+
+  expect_match(result, "\\\\#3")
+  expect_match(result, "\\\\@akut")
+  expect_match(result, "\\\\\\$100")
+  expect_match(result, "kode\\\\_navn")
+  expect_match(result, "\\\\<Akut\\\\>")
+})
+
 test_that("build_typst_content uses content blocks for title and analysis", {
   # Create minimal test setup
   test_metadata <- list(

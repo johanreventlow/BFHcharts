@@ -448,6 +448,8 @@ markdown_to_typst <- function(text) {
   result <- gsub("<", "\\\\<", result)
   result <- gsub(">", "\\\\>", result)
   result <- gsub("@", "\\\\@", result)
+  result <- gsub("\\$", "\\\\$", result)
+  result <- gsub("_", "\\\\_", result)
   result <- gsub("\\[", "\\\\[", result)  # Bracket injection prevention
   result <- gsub("\\]", "\\\\]", result)
   result <- gsub("(?<!\\*)#", "\\\\#", result, perl = TRUE)
