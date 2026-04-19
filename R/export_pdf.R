@@ -557,8 +557,18 @@ bfh_extract_spc_stats.data.frame <- function(x) {
     stats$crossings_actual <- clean_spc_value(row$antal_kryds)
   }
 
-  # Outliers kan ikke udledes af summary alene (kræver sigma.signal fra qic_data).
-  # Brug bfh_extract_spc_stats(bfh_qic_result) hvis outliers skal udfyldes.
+  # Outliers kan udledes fra summary, hvis summary-generatoren har tilføjet
+  # aggregerede outlier-kolonner.
+  if ("forventede_outliers" %in% names(row)) {
+    stats$outliers_expected <- clean_spc_value(row$forventede_outliers)
+  } else if ("outliers_expected" %in% names(row)) {
+    stats$outliers_expected <- clean_spc_value(row$outliers_expected)
+  }
+  if ("antal_outliers" %in% names(row)) {
+    stats$outliers_actual <- clean_spc_value(row$antal_outliers)
+  } else if ("outliers_actual" %in% names(row)) {
+    stats$outliers_actual <- clean_spc_value(row$outliers_actual)
+  }
 
   stats
 }
@@ -1025,4 +1035,3 @@ format_centerline_for_details <- function(cl_value, y_axis_unit) {
 
   sprintf("Nuværende niveau: %s", formatted)
 }
-

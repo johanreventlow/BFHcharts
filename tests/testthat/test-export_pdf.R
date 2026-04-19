@@ -378,6 +378,22 @@ test_that("bfh_extract_spc_stats extracts statistics from valid summary", {
   expect_null(stats$outliers_actual)
 })
 
+test_that("bfh_extract_spc_stats extracts outliers from summary when present", {
+  summary <- data.frame(
+    længste_løb_max = 8,
+    længste_løb = 6,
+    antal_kryds_min = 10,
+    antal_kryds = 12,
+    forventede_outliers = 0,
+    antal_outliers = 2
+  )
+
+  stats <- bfh_extract_spc_stats(summary)
+
+  expect_equal(stats$outliers_expected, 0)
+  expect_equal(stats$outliers_actual, 2)
+})
+
 test_that("bfh_extract_spc_stats handles NULL summary gracefully", {
   stats <- bfh_extract_spc_stats(NULL)
 
