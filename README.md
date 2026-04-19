@@ -1,5 +1,7 @@
 # BFHcharts
 
+[![codecov](https://codecov.io/gh/johanreventlow/BFHcharts/branch/main/graph/badge.svg)](https://codecov.io/gh/johanreventlow/BFHcharts)
+
 > Modern SPC Visualization for Healthcare Quality Improvement
 
 **BFHcharts** is an R package for creating beautiful, publication-ready Statistical Process Control (SPC) charts tailored for healthcare settings. Built on `ggplot2` and `qicharts2`, it provides a consistent visual style inspired by BBC's data journalism approach.
