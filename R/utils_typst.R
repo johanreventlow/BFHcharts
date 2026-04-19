@@ -331,9 +331,13 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
 
   # Date parameter - format for Typst template
   if (!is.null(metadata$date)) {
-    # Format date as ISO string for Typst
-    date_str <- format(as.Date(metadata$date), "%Y-%m-%d")
-    params$date <- sprintf('"%s"', date_str)
+    date_obj <- as.Date(metadata$date)
+    params$date <- sprintf(
+      "datetime(year: %d, month: %d, day: %d)",
+      as.integer(format(date_obj, "%Y")),
+      as.integer(format(date_obj, "%m")),
+      as.integer(format(date_obj, "%d"))
+    )
   }
 
   # SPC statistics — send "?" for NA (vises i tabel), udelad kun NULL
