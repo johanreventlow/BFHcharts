@@ -659,6 +659,33 @@ test_that("build_typst_content escapes file paths", {
   expect_true(grepl("image\\(", content_str))
 })
 
+test_that("bfh template uses none for optional metadata and SPC defaults", {
+  template_file <- system.file(
+    "templates/typst/bfh-template/bfh-template.typ",
+    package = "BFHcharts"
+  )
+
+  skip_if(!file.exists(template_file), "Template file not found")
+
+  template <- paste(readLines(template_file), collapse = "\n")
+
+  expect_match(template, "data_definition: none", fixed = TRUE)
+  expect_match(template, "runs_expected: none", fixed = TRUE)
+  expect_match(template, "runs_actual: none", fixed = TRUE)
+  expect_match(template, "crossings_expected: none", fixed = TRUE)
+  expect_match(template, "crossings_actual: none", fixed = TRUE)
+  expect_match(template, "outliers_expected: none", fixed = TRUE)
+  expect_match(template, "outliers_actual: none", fixed = TRUE)
+
+  expect_no_match(template, "data_definition: lorem(75)", fixed = TRUE)
+  expect_no_match(template, "runs_expected: 7", fixed = TRUE)
+  expect_no_match(template, "runs_actual: 8", fixed = TRUE)
+  expect_no_match(template, "crossings_expected: 15", fixed = TRUE)
+  expect_no_match(template, "crossings_actual: 10", fixed = TRUE)
+  expect_no_match(template, "outliers_expected: 0", fixed = TRUE)
+  expect_no_match(template, "outliers_actual: 0", fixed = TRUE)
+})
+
 test_that("bfh_export_pdf validates custom template_path", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -1006,6 +1033,18 @@ test_that("markdown_to_typst preserves plain text without formatting", {
   expect_equal(BFHcharts:::markdown_to_typst(plain_text), plain_text)
 })
 
+test_that("markdown_to_typst escapes Typst special characters in content blocks", {
+  result <- BFHcharts:::markdown_to_typst(
+    "Afd. #3 @akut koster $100 for kode_navn <Akut>"
+  )
+
+  expect_match(result, "\\\\#3")
+  expect_match(result, "\\\\@akut")
+  expect_match(result, "\\\\\\$100")
+  expect_match(result, "kode\\\\_navn")
+  expect_match(result, "\\\\<Akut\\\\>")
+})
+
 test_that("build_typst_content uses content blocks for title and analysis", {
   # Create minimal test setup
   test_metadata <- list(
@@ -1319,6 +1358,10 @@ test_that("format_centerline_for_details handles different y_axis_units", {
 
   # Count (integer value)
   expect_match(BFHcharts:::format_centerline_for_details(127, "count"), "127")
+  expect_equal(
+    BFHcharts:::format_centerline_for_details(1234.5, "count"),
+    "Nuværende niveau: 1.234,5"
+  )
 
   # Rate (1 decimal)
   expect_match(BFHcharts:::format_centerline_for_details(5.5, "rate"), "5,5")

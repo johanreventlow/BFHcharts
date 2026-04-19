@@ -1005,32 +1005,63 @@ format_centerline_for_details <- function(cl_value, y_axis_unit) {
   formatted <- switch(y_axis_unit,
     "percent" = {
       # Percentage: multiply by 100 if needed, show 1 decimal
-      if (cl_value <= 1) {
-        sprintf("%.1f%%", cl_value * 100)
-      } else {
-        sprintf("%.1f%%", cl_value)
-      }
+      percent_value <- if (cl_value <= 1) cl_value * 100 else cl_value
+      paste0(
+        format(
+          round(percent_value, 1),
+          big.mark = ".",
+          decimal.mark = ",",
+          nsmall = 1,
+          trim = TRUE,
+          scientific = FALSE
+        ),
+        "%"
+      )
     },
     "rate" = {
       # Rate: typically per 1000 or similar, show 1 decimal
-      sprintf("%.1f", cl_value)
+      format(
+        round(cl_value, 1),
+        big.mark = ".",
+        decimal.mark = ",",
+        nsmall = 1,
+        trim = TRUE,
+        scientific = FALSE
+      )
     },
     "time" = {
       # Time: show as-is with 1 decimal
-      sprintf("%.1f", cl_value)
+      format(
+        round(cl_value, 1),
+        big.mark = ".",
+        decimal.mark = ",",
+        nsmall = 1,
+        trim = TRUE,
+        scientific = FALSE
+      )
     },
     # Default (count and others): show as integer or 1 decimal
     {
       if (cl_value == round(cl_value)) {
-        format(round(cl_value), big.mark = ".", decimal.mark = ",")
+        format(
+          round(cl_value),
+          big.mark = ".",
+          decimal.mark = ",",
+          trim = TRUE,
+          scientific = FALSE
+        )
       } else {
-        format(round(cl_value, 1), big.mark = ".", decimal.mark = ",", nsmall = 1)
+        format(
+          round(cl_value, 1),
+          big.mark = ".",
+          decimal.mark = ",",
+          nsmall = 1,
+          trim = TRUE,
+          scientific = FALSE
+        )
       }
     }
   )
-
-  # Replace . with , for Danish decimal notation (if not already done)
-  formatted <- gsub("\\.", ",", formatted)
 
   sprintf("Nuværende niveau: %s", formatted)
 }
