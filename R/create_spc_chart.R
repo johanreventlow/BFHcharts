@@ -504,21 +504,32 @@ bfh_qic <- function(data,
   # SECURITY: Validate column names are simple identifiers
   # Prevents NSE injection attacks where malicious code could be passed
   validate_column_name <- function(col_expr, param_name) {
+    # Understøt både direkte symboler (month) og quoted symboler (quote(month))
+    # til programmatisk brug via do.call/list-argumenter.
+    normalized_expr <- col_expr
+    if (is.call(col_expr) &&
+      identical(col_expr[[1]], as.name("quote")) &&
+      length(col_expr) == 2) {
+      normalized_expr <- col_expr[[2]]
+    }
+
     col_str <- deparse(col_expr)
     # Allow only simple identifiers: letters, numbers, dots, underscores
     # No parentheses, operators, or function calls
     valid_pattern <- "^[a-zA-Z][a-zA-Z0-9._]*$"
-    if (!grepl(valid_pattern, col_str)) {
+    if (!is.symbol(normalized_expr) || !grepl(valid_pattern, as.character(normalized_expr))) {
       stop(sprintf(
         "%s must be a simple column name, got: %s\nAvoid special characters, spaces, or expressions",
         param_name, col_str
       ), call. = FALSE)
     }
+
+    as.name(as.character(normalized_expr))
   }
 
   # Validate x and y column names
-  validate_column_name(substitute(x), "x")
-  validate_column_name(substitute(y), "y")
+  x_expr <- validate_column_name(substitute(x), "x")
+  y_expr <- validate_column_name(substitute(y), "y")
 
   # SECURITY: Validate numeric parameters for bounds and sanity
   # Prevents DoS attacks via memory exhaustion or crashes
@@ -636,16 +647,15 @@ bfh_qic <- function(data,
   # Build qicharts2::qic() arguments using NSE
   qic_args <- list(
     data = data,
-    x = substitute(x),
-    y = substitute(y),
+    x = x_expr,
+    y = y_expr,
     chart = chart_type,
     return.data = TRUE
   )
 
   # Add optional arguments
   if (!missing(n) && !is.null(substitute(n))) {
-    validate_column_name(substitute(n), "n")
-    qic_args$n <- substitute(n)
+    qic_args$n <- validate_column_name(substitute(n), "n")
   }
 
   if (!is.null(part)) {
