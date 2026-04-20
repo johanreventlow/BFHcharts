@@ -35,25 +35,11 @@ test_that("viewport_dims() creates valid viewport", {
   expect_equal(viewport$base_size, 14)
 })
 
-test_that("CHART_TYPES_DA mapping exists", {
-  expect_type(CHART_TYPES_DA, "character")
-  expect_true("run" %in% CHART_TYPES_DA)
-  expect_true("i" %in% CHART_TYPES_DA)
-  expect_true("p" %in% CHART_TYPES_DA)
-})
-
-test_that("get_qic_chart_type() translates Danish to English", {
-  expect_equal(
-    get_qic_chart_type("Seriediagram med SPC (Run Chart)"),
-    "run"
-  )
-})
-
-test_that("chart_type_requires_denominator() works correctly", {
-  expect_true(chart_type_requires_denominator("p"))
-  expect_true(chart_type_requires_denominator("u"))
-  expect_false(chart_type_requires_denominator("run"))
-  expect_false(chart_type_requires_denominator("i"))
+test_that("CHART_TYPES_EN mapping exists", {
+  expect_type(CHART_TYPES_EN, "character")
+  expect_true("run" %in% CHART_TYPES_EN)
+  expect_true("i" %in% CHART_TYPES_EN)
+  expect_true("p" %in% CHART_TYPES_EN)
 })
 
 test_that("BFHtheme theme works with BFHcharts", {

@@ -2,6 +2,15 @@
 
 ## Interne ændringer
 
+* Fjernet biSPCharts-specifik kode fra `chart_types.R` (#119):
+  `CHART_TYPES_DA`, `CHART_TYPE_DESCRIPTIONS`, `get_qic_chart_type()`,
+  `chart_type_requires_denominator()` og `get_chart_description()` var aldrig
+  en del af BFHcharts' pipeline og lå ubrugte i pakken. biSPCharts vedligeholder
+  egne versioner i `R/config_chart_types.R`. Kun `CHART_TYPES_EN` er bibeholdt
+  da den bruges internt til validering af chart-type input.
+
+
+
 * **CI: fuld R CMD check med tests.** Fjernede `--no-tests` workaround fra
   `R-CMD-check.yaml` efter at to pre-existing test-failures blev rettet:
   `test-smoke.R:10` brugte udfasede BFHtheme farvenavne

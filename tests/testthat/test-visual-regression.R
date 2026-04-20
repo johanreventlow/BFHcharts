@@ -174,11 +174,13 @@ test_that("vdiffr: p-chart med notes-annotationer", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     events = c(5, 8, 12, 10, 15, 11, 9, 14, 13, 16, 12, 10),
-    total = c(100, 120, 150, 110, 180, 130, 115, 160, 145, 170, 135, 125),
-    notes = c(
-      NA, NA, "Intervention", NA, NA, NA,
-      "Audit", NA, NA, NA, NA, "Follow-up"
-    )
+    total = c(100, 120, 150, 110, 180, 130, 115, 160, 145, 170, 135, 125)
+  )
+
+  # bfh_qic evaluerer notes eagerly (ikke NSE), så vektoren skal passes direkte
+  notes_vec <- c(
+    NA, NA, "Intervention", NA, NA, NA,
+    "Audit", NA, NA, NA, NA, "Follow-up"
   )
 
   result <- suppressWarnings(
@@ -187,7 +189,7 @@ test_that("vdiffr: p-chart med notes-annotationer", {
       x = month,
       y = events,
       n = total,
-      notes = notes,
+      notes = notes_vec,
       chart_type = "p",
       y_axis_unit = "percent",
       chart_title = "P-Chart with Notes"
