@@ -164,7 +164,11 @@ format_y_axis_percent <- function(y_range = NULL) {
 format_y_axis_count <- function() {
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
-    labels = format_count_danish
+    labels = function(x, ...) {
+      # format_count_danish() er scalar — vektorisér via map_chr for at
+      # håndtere ggplot2's vektor-input af breakpoints.
+      purrr::map_chr(x, format_count_danish)
+    }
   )
 }
 
@@ -176,7 +180,11 @@ format_y_axis_count <- function() {
 format_y_axis_rate <- function() {
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
-    labels = format_rate_danish
+    labels = function(x, ...) {
+      # format_rate_danish() er scalar — vektorisér via map_chr for at
+      # håndtere ggplot2's vektor-input af breakpoints.
+      purrr::map_chr(x, format_rate_danish)
+    }
   )
 }
 

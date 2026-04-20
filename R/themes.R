@@ -62,6 +62,19 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
     )
   }
 
+  # Remove blank axis titles (NULL eller tomme strings → element_blank).
+  # bfh_qic() normaliserer allerede sine egne input, men apply_spc_theme()
+  # kan kaldes direkte med vilkårlige ggplot-objekter og skal derfor
+  # håndtere edge cases selv.
+  x_title <- plot$labels$x
+  if (is.null(x_title) || (is.character(x_title) && nchar(trimws(x_title)) == 0)) {
+    plot <- plot + ggplot2::theme(axis.title.x.bottom = ggplot2::element_blank())
+  }
+
+  y_title <- plot$labels$y
+  if (is.null(y_title) || (is.character(y_title) && nchar(trimws(y_title)) == 0)) {
+    plot <- plot + ggplot2::theme(axis.title.y.left = ggplot2::element_blank())
+  }
 
   return(plot)
 }
