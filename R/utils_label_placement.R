@@ -31,7 +31,7 @@
 #   theme_minimal()
 #
 # # Opret NPC mapper
-# mapper <- npc_mapper_from_plot(p)
+# mapper <- npc_mapper_from_built(ggplot2::ggplot_build(p), original_plot = p)
 #
 # # Definer labels (marquee format)
 # label_A <- "{.8 **CL**}  \n{.24 **20 mpg**}"
@@ -57,7 +57,7 @@
 #
 # EXPORTS:
 # Core placement functions:
-# - npc_mapper_from_plot()
+# - npc_mapper_from_built()
 # - estimate_label_height_npc()
 # - place_two_labels_npc()
 # - propose_single_label()
@@ -148,7 +148,7 @@ clamp_to_bounds <- function(x, low_bound, high_bound) {
 #' Opret NPC mapper fra et pre-built ggplot object (PERFORMANCE OPTIMIZED)
 #'
 #' Denne funktion accepterer et allerede bygget plot (ggplot_built object)
-#' og opretter samme mapper som npc_mapper_from_plot(), men uden overhead
+#' og opretter mapper direkte fra et bygget plot uden ekstra build-overhead
 #' fra at bygge plottet igen.
 #'
 #' @param built_plot ggplot_built object fra ggplot2::ggplot_build()
@@ -306,48 +306,6 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
     trans_name = info$trans_name
   )
 }
-
-#' Opret konverteringsfunktioner mellem data-y værdier og NPC-koordinater.
-#'
-#' @param p ggplot object der skal bruges til beregning af mapper
-#' @param panel Hvilket panel (1-baseret) der skal aflæses
-#'
-#' @return Liste med mapping-funktioner (`y_to_npc`, `npc_to_y`) samt metadata
-#' @keywords internal
-#' @noRd
-#' @examples
-#' \dontrun{
-#' p <- ggplot(mtcars, aes(wt, mpg)) +
-#'   geom_point()
-#' mapper <- npc_mapper_from_plot(p)
-#' mapper$y_to_npc(20) # Konverter 20 mpg til NPC
-#' mapper$npc_to_y(0.5) # Konverter 0.5 NPC til mpg
-#' }
-npc_mapper_from_plot <- function(p, panel = 1) {
-  # Validate ggplot object
-  if (is.null(p) || !inherits(p, "ggplot")) {
-    stop("npc_mapper_from_plot: p skal være et ggplot object, modtog: ", class(p)[1])
-  }
-
-  # Validate panel parameter
-  if (!is.numeric(panel) || length(panel) != 1 || panel < 1 || panel != floor(panel)) {
-    stop("npc_mapper_from_plot: panel skal være et positivt heltal, modtog: ", panel)
-  }
-
-  # Build plot med fejlhåndtering
-  b <- tryCatch(
-    {
-      ggplot2::ggplot_build(p)
-    },
-    error = function(e) {
-      stop("npc_mapper_from_plot: Kunne ikke bygge ggplot object. Fejl: ", e$message)
-    }
-  )
-
-  # Delegate til optimized version
-  npc_mapper_from_built(b, panel = panel, original_plot = p)
-}
-
 
 # ==============================================================================
 # LABEL HEIGHT ESTIMATION
@@ -941,10 +899,8 @@ place_two_labels_npc <- function(
   )
 
   cfg <- default_cfg
-  config_available <- FALSE
 
   # Hent config (altid tilgængelig i pakken)
-  config_available <- TRUE
   loaded_cfg <- get_label_placement_config()
 
   if (!is.null(loaded_cfg)) {

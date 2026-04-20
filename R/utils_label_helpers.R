@@ -40,15 +40,6 @@ get_right_aligned_marquee_style <- function(lineheight = 0.9) {
   .marquee_style_cache[[cache_key]]
 }
 
-#' Clear marquee style cache (for testing or memory management)
-#'
-#' @keywords internal
-#' @noRd
-clear_marquee_style_cache <- function() {
-  rm(list = ls(envir = .marquee_style_cache), envir = .marquee_style_cache)
-  invisible(NULL)
-}
-
 # ============================================================================
 # INPUT SANITIZATION
 # ============================================================================

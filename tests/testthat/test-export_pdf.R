@@ -298,15 +298,15 @@ test_that("bfh_export_pdf creates directory if needed", {
   unlink(temp_dir, recursive = TRUE)
 })
 
-test_that("extract_spc_stats handles missing columns gracefully", {
+test_that("bfh_extract_spc_stats handles missing columns gracefully (public API)", {
   # Empty summary
-  stats <- BFHcharts:::extract_spc_stats(data.frame())
+  stats <- bfh_extract_spc_stats(data.frame())
   expect_type(stats, "list")
   expect_null(stats$runs_expected)
   expect_null(stats$runs_actual)
 
   # NULL summary
-  stats <- BFHcharts:::extract_spc_stats(NULL)
+  stats <- bfh_extract_spc_stats(NULL)
   expect_type(stats, "list")
 
   # Summary with some columns
@@ -314,19 +314,19 @@ test_that("extract_spc_stats handles missing columns gracefully", {
     længste_løb = 8,
     antal_kryds = 5
   )
-  stats <- BFHcharts:::extract_spc_stats(summary)
+  stats <- bfh_extract_spc_stats(summary)
   expect_equal(stats$runs_actual, 8)
   expect_equal(stats$crossings_actual, 5)
 })
 
-test_that("merge_metadata preserves user values and provides defaults", {
+test_that("bfh_merge_metadata preserves user values and provides defaults", {
   # Empty metadata
-  merged <- BFHcharts:::merge_metadata(list(), "Test Title")
+  merged <- bfh_merge_metadata(list(), "Test Title")
   expect_equal(merged$title, "Test Title")
   expect_equal(merged$hospital, "Bispebjerg og Frederiksberg Hospital")
 
   # User metadata overrides
-  merged <- BFHcharts:::merge_metadata(
+  merged <- bfh_merge_metadata(
     list(hospital = "Custom Hospital", department = "Custom Dept"),
     "Test Title"
   )
@@ -567,26 +567,6 @@ test_that("bfh_merge_metadata all fields can be overridden", {
   expect_equal(merged$author, "Custom Author")
   expect_equal(merged$date, as.Date("2025-01-01"))
   expect_equal(merged$data_definition, "Custom Definition")
-})
-
-test_that("internal functions delegate to public API", {
-  # Verify that internal versions call public versions
-  summary <- data.frame(
-    længste_løb_max = 8,
-    længste_løb = 6
-  )
-
-  # Internal function should give same result as public
-  internal_result <- BFHcharts:::extract_spc_stats(summary)
-  public_result <- bfh_extract_spc_stats(summary)
-
-  expect_identical(internal_result, public_result)
-
-  # Same for merge_metadata
-  internal_merged <- BFHcharts:::merge_metadata(list(department = "Test"), "Title")
-  public_merged <- bfh_merge_metadata(list(department = "Test"), "Title")
-
-  expect_identical(internal_merged, public_merged)
 })
 
 # ============================================================================

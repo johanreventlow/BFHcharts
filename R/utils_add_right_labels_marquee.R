@@ -140,14 +140,10 @@ add_right_labels_marquee <- function(
   scale_factor <- label_size / 6
 
   # PERFORMANCE: Load config ÉN gang i starten
-  placement_cfg <- list()
-  config_available <- FALSE
-
   placement_cfg <- get_label_placement_config()
-  config_available <- TRUE
 
   # Hent marquee_lineheight fra config
-  marquee_lineheight <- if (config_available && !is.null(placement_cfg$marquee_lineheight)) {
+  marquee_lineheight <- if (!is.null(placement_cfg$marquee_lineheight)) {
     placement_cfg$marquee_lineheight
   } else {
     0.9
@@ -157,7 +153,7 @@ add_right_labels_marquee <- function(
   right_aligned_style <- get_right_aligned_marquee_style(lineheight = marquee_lineheight)
 
   # Beregn marquee_size tidligt, så vi kan bruge den til målinger
-  marquee_size_factor <- if (config_available && !is.null(placement_cfg$marquee_size_factor)) {
+  marquee_size_factor <- if (!is.null(placement_cfg$marquee_size_factor)) {
     placement_cfg$marquee_size_factor
   } else {
     6
@@ -405,7 +401,7 @@ add_right_labels_marquee <- function(
 
   # Default parameters
   if (is.null(params$pad_top)) {
-    if (config_available && !is.null(placement_cfg$pad_top)) {
+    if (!is.null(placement_cfg$pad_top)) {
       params$pad_top <- placement_cfg$pad_top
     } else {
       params$pad_top <- 0.01
@@ -413,7 +409,7 @@ add_right_labels_marquee <- function(
   }
 
   if (is.null(params$pad_bot)) {
-    if (config_available && !is.null(placement_cfg$pad_bot)) {
+    if (!is.null(placement_cfg$pad_bot)) {
       params$pad_bot <- placement_cfg$pad_bot
     } else {
       params$pad_bot <- 0.01
