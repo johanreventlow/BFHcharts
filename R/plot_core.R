@@ -99,12 +99,20 @@ bfh_spc_plot <- function(qic_data,
   }
 
   # Cache BFHtheme farver (undgår gentagne opslag)
+  color_keys <- c(
+    "hospital_blue",
+    "regionh_grey",
+    "regionh_dark",
+    "light_blue",
+    "very_light_blue"
+  )
+  bfh_colors <- BFHtheme::bfh_cols(color_keys)
   cols <- list(
-    blue = BFHtheme::bfh_cols("hospital_blue"),
-    grey = BFHtheme::bfh_cols("regionh_grey"),
-    dark_grey = BFHtheme::bfh_cols("regionh_dark"),
-    light_blue = BFHtheme::bfh_cols("light_blue"),
-    very_light_blue = BFHtheme::bfh_cols("very_light_blue")
+    blue = bfh_colors[[1]],
+    grey = bfh_colors[[2]],
+    dark_grey = bfh_colors[[3]],
+    light_blue = bfh_colors[[4]],
+    very_light_blue = bfh_colors[[5]]
   )
 
   # Add anhoej.signal column if missing (for linetype switching)

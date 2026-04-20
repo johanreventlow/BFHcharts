@@ -3,7 +3,7 @@
 # ============================================================================
 
 test_that("PNG export pipe workflow works end-to-end", {
-  skip_on_cran()
+  skip_if_not_full_test()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
@@ -37,8 +37,8 @@ test_that("PNG export pipe workflow works end-to-end", {
 })
 
 test_that("PDF export pipe workflow works end-to-end", {
+  skip_if_not_render_test()
   skip_if_not(quarto_available(), "Quarto not available")
-  skip_on_cran()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
@@ -80,8 +80,8 @@ test_that("PDF export pipe workflow works end-to-end", {
 })
 
 test_that("Multiple exports from same result work", {
+  skip_if_not_render_test()
   skip_if_not(quarto_available(), "Quarto not available")
-  skip_on_cran()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -117,7 +117,7 @@ test_that("Multiple exports from same result work", {
 })
 
 test_that("PNG export works with different chart types", {
-  skip_on_cran()
+  skip_if_not_full_test()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -156,8 +156,8 @@ test_that("PNG export works with different chart types", {
 })
 
 test_that("PDF export works with different chart types", {
+  skip_if_not_render_test()
   skip_if_not(quarto_available(), "Quarto not available")
-  skip_on_cran()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -193,8 +193,8 @@ test_that("PDF export works with different chart types", {
 })
 
 test_that("Title appears in PNG but not in PDF chart image", {
+  skip_if_not_render_test()
   skip_if_not(quarto_available(), "Quarto not available")
-  skip_on_cran()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -238,8 +238,8 @@ test_that("Title appears in PNG but not in PDF chart image", {
 })
 
 test_that("Chained exports preserve result object", {
+  skip_if_not_render_test()
   skip_if_not(quarto_available(), "Quarto not available")
-  skip_on_cran()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -274,8 +274,8 @@ test_that("Chained exports preserve result object", {
 })
 
 test_that("Export works with multi-phase charts", {
+  skip_if_not_render_test()
   skip_if_not(quarto_available(), "Quarto not available")
-  skip_on_cran()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 36),
@@ -315,8 +315,8 @@ test_that("Export works with multi-phase charts", {
 })
 
 test_that("Export handles Danish characters in metadata", {
+  skip_if_not_render_test()
   skip_if_not(quarto_available(), "Quarto not available")
-  skip_on_cran()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),

@@ -64,7 +64,7 @@ format_scaled_number <- function(val, scale, suffix) {
   scaled <- val / scale
   # Use all.equal() for floating point comparison
   # (e.g., 1000000 / 1e6 = 1.0 exactly)
-  if (isTRUE(all.equal(scaled, round(scaled), tolerance = 1e-10))) {
+  if (is_effective_integer(scaled)) {
     paste0(round(scaled), suffix)
   } else {
     paste0(format(round(scaled, 1), decimal.mark = ",", nsmall = 1), suffix)
@@ -86,7 +86,7 @@ format_unscaled_number <- function(val) {
   }
 
   # Heltal: ingen decimaler
-  if (isTRUE(all.equal(val, round(val), tolerance = 1e-10))) {
+  if (is_effective_integer(val)) {
     format(round(val), big.mark = ".", decimal.mark = ",")
   } else if (abs(val) < 1) {
     # Andele (0-1): 2 decimaler
@@ -144,7 +144,7 @@ format_rate_danish <- function(val) {
   }
 
   # Heltal: ingen decimaler
-  if (isTRUE(all.equal(val, round(val), tolerance = 1e-10))) {
+  if (is_effective_integer(val)) {
     format(round(val), decimal.mark = ",")
   } else if (abs(val) < 1) {
     # Andele (0-1): 2 decimaler

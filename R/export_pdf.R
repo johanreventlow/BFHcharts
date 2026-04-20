@@ -436,7 +436,7 @@ bfh_export_pdf <- function(x,
   spc_stats <- bfh_extract_spc_stats(x)
 
   # Merge user metadata with defaults
-  metadata_full <- merge_metadata(metadata, chart_title)
+  metadata_full <- bfh_merge_metadata(metadata, chart_title)
 
   # Create Typst document
   typst_file <- file.path(temp_dir, "document.typ")
@@ -629,12 +629,6 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
   stats
 }
 
-#' @keywords internal
-#' @rdname bfh_extract_spc_stats
-extract_spc_stats <- function(x) {
-  bfh_extract_spc_stats(x)
-}
-
 # Internal helpers ============================================================
 
 # Returner tom SPC-stats-liste (alle felter NULL).
@@ -735,14 +729,6 @@ bfh_merge_metadata <- function(metadata, chart_title) {
 
   return(merged)
 }
-
-#' @keywords internal
-#' @rdname bfh_merge_metadata
-merge_metadata <- function(metadata, chart_title) {
-  bfh_merge_metadata(metadata, chart_title)
-}
-
-
 
 # ============================================================================
 # LABEL RECALCULATION FOR PDF EXPORT

@@ -116,8 +116,8 @@ add_right_labels_marquee <- function(
       pref_pos = c("under", "under"),
       priority = "A"
     ),
-    gpA = grid::gpar(col = BFHtheme::bfh_cols("hospital_blue")),
-    gpB = grid::gpar(col = BFHtheme::bfh_cols("regionh_dark")),
+    gpA = NULL,
+    gpB = NULL,
     label_size = 6,
     viewport_width = NULL,
     viewport_height = NULL,
@@ -125,18 +125,25 @@ add_right_labels_marquee <- function(
     debug_mode = FALSE,
     .built_plot = NULL,
     .mapper = NULL) {
+  # Resolve default farver i ét opslag (undgår gentagne bfh_cols-kald)
+  if (is.null(gpA) || is.null(gpB)) {
+    default_cols <- BFHtheme::bfh_cols(c("hospital_blue", "regionh_dark"))
+    if (is.null(gpA)) {
+      gpA <- grid::gpar(col = default_cols[[1]])
+    }
+    if (is.null(gpB)) {
+      gpB <- grid::gpar(col = default_cols[[2]])
+    }
+  }
+
   # Beregn responsive størrelser baseret på label_size (baseline = 6)
   scale_factor <- label_size / 6
 
   # PERFORMANCE: Load config ÉN gang i starten
-  placement_cfg <- list()
-  config_available <- FALSE
-
   placement_cfg <- get_label_placement_config()
-  config_available <- TRUE
 
   # Hent marquee_lineheight fra config
-  marquee_lineheight <- if (config_available && !is.null(placement_cfg$marquee_lineheight)) {
+  marquee_lineheight <- if (!is.null(placement_cfg$marquee_lineheight)) {
     placement_cfg$marquee_lineheight
   } else {
     0.9
@@ -146,7 +153,7 @@ add_right_labels_marquee <- function(
   right_aligned_style <- get_right_aligned_marquee_style(lineheight = marquee_lineheight)
 
   # Beregn marquee_size tidligt, så vi kan bruge den til målinger
-  marquee_size_factor <- if (config_available && !is.null(placement_cfg$marquee_size_factor)) {
+  marquee_size_factor <- if (!is.null(placement_cfg$marquee_size_factor)) {
     placement_cfg$marquee_size_factor
   } else {
     6
@@ -394,7 +401,7 @@ add_right_labels_marquee <- function(
 
   # Default parameters
   if (is.null(params$pad_top)) {
-    if (config_available && !is.null(placement_cfg$pad_top)) {
+    if (!is.null(placement_cfg$pad_top)) {
       params$pad_top <- placement_cfg$pad_top
     } else {
       params$pad_top <- 0.01
@@ -402,7 +409,7 @@ add_right_labels_marquee <- function(
   }
 
   if (is.null(params$pad_bot)) {
-    if (config_available && !is.null(placement_cfg$pad_bot)) {
+    if (!is.null(placement_cfg$pad_bot)) {
       params$pad_bot <- placement_cfg$pad_bot
     } else {
       params$pad_bot <- 0.01

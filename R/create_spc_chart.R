@@ -477,6 +477,8 @@ bfh_qic <- function(data,
                               caption = NULL,
                               return.data = FALSE,
                               print.summary = FALSE) {
+  agg_fun_supplied <- !missing(agg.fun)
+
   # Validate inputs
   if (!is.data.frame(data)) {
     stop("data must be a data frame")
@@ -577,8 +579,12 @@ bfh_qic <- function(data,
     len = 1
   )
 
-  # Validate agg.fun parameter
-  agg.fun <- match.arg(agg.fun)
+  # Validate agg.fun parameter (kun når bruger eksplicit har angivet argumentet)
+  if (agg_fun_supplied) {
+    agg.fun <- match.arg(agg.fun)
+  } else {
+    agg.fun <- NULL
+  }
 
   # Validate return.data parameter
   if (!is.logical(return.data) || length(return.data) != 1 || is.na(return.data)) {
@@ -670,7 +676,7 @@ bfh_qic <- function(data,
     qic_args$multiply <- multiply
   }
 
-  if (!missing(agg.fun)) {
+  if (agg_fun_supplied) {
     qic_args$agg.fun <- agg.fun
   }
 
@@ -683,40 +689,19 @@ bfh_qic <- function(data,
   # Execute qicharts2::qic() to get calculation results
   qic_data <- do.call(qicharts2::qic, qic_args, envir = parent.frame())
 
-  # Post-process: Add combined anhoej.signal column
-  # This combines runs.signal and crossings.signal per part
+  # Post-process: Add normalized anhoej.signal column
+  # Brug qicharts2-output direkte hvor muligt for baseline-kompatibilitet.
   if (!is.null(qic_data)) {
-    # Use runs.signal directly from qicharts2 (replace NA med FALSE)
-    runs_sig_col <- if ("runs.signal" %in% names(qic_data)) {
-      ifelse(is.na(qic_data$runs.signal), FALSE, qic_data$runs.signal)
+    if ("anhoej.signal" %in% names(qic_data)) {
+      qic_data$anhoej.signal <- as.logical(qic_data$anhoej.signal)
+    } else if ("anhoej.signals" %in% names(qic_data)) {
+      qic_data$anhoej.signal <- as.logical(qic_data$anhoej.signals)
+    } else if ("runs.signal" %in% names(qic_data) && "crossings.signal" %in% names(qic_data)) {
+      qic_data$anhoej.signal <- as.logical(qic_data$runs.signal | qic_data$crossings.signal)
+    } else if ("runs.signal" %in% names(qic_data)) {
+      qic_data$anhoej.signal <- as.logical(qic_data$runs.signal)
     } else {
-      rep(FALSE, nrow(qic_data))
-    }
-
-    # Calculate crossings signal per part using dplyr
-    if ("n.crossings" %in% names(qic_data) &&
-      "n.crossings.min" %in% names(qic_data) &&
-      "part" %in% names(qic_data)) {
-      qic_data <- qic_data |>
-        dplyr::group_by(part) |>
-        dplyr::mutate(
-          part_n_cross = safe_max(n.crossings),
-          part_n_cross_min = safe_max(n.crossings.min),
-          crossings_signal = !is.na(part_n_cross) & !is.na(part_n_cross_min) &
-            part_n_cross < part_n_cross_min
-        ) |>
-        dplyr::ungroup()
-
-      # Combine: TRUE if EITHER runs OR crossings signal
-      qic_data$anhoej.signal <- runs_sig_col | qic_data$crossings_signal
-
-      # Cleanup intermediate columns
-      qic_data$part_n_cross <- NULL
-      qic_data$part_n_cross_min <- NULL
-      qic_data$crossings_signal <- NULL
-    } else {
-      # No crossings data - use runs.signal only
-      qic_data$anhoej.signal <- runs_sig_col
+      qic_data$anhoej.signal <- rep(FALSE, nrow(qic_data))
     }
 
     # Sikr at anhoej.signal aldrig indeholder NA (downstream kræver TRUE/FALSE)
