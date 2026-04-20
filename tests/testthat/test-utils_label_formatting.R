@@ -86,6 +86,33 @@ test_that("format_percent_contextual handles NA target", {
   expect_equal(format_percent_contextual(0.887, target = NA), "89%")
 })
 
+test_that("format_percent_contextual validates input arguments", {
+  expect_error(
+    format_percent_contextual("0.88", target = 0.9),
+    "val must be a single numeric value"
+  )
+  expect_error(
+    format_percent_contextual(c(0.88, 0.89), target = 0.9),
+    "val must be a single numeric value"
+  )
+  expect_error(
+    format_percent_contextual(0.88, target = "0.9"),
+    "target must be NULL or a single numeric value"
+  )
+  expect_error(
+    format_percent_contextual(0.88, target = c(0.9, 0.8)),
+    "target must be NULL or a single numeric value"
+  )
+  expect_error(
+    format_percent_contextual(0.88, target = 0.9, threshold = -0.01),
+    "threshold must be a single non-negative finite numeric value"
+  )
+  expect_error(
+    format_percent_contextual(0.88, target = 0.9, threshold = Inf),
+    "threshold must be a single non-negative finite numeric value"
+  )
+})
+
 test_that("format_y_value with target parameter shows contextual precision", {
   # With target - shows decimal when close
   expect_equal(format_y_value(0.887, "percent", target = 0.90), "88,7%")

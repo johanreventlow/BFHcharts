@@ -34,3 +34,4 @@ Path to created .typ file (invisibly)
 Generates a Typst document (.typ) using BFH hospital template with
 chart image and metadata.
 }
+\keyword{internal}
