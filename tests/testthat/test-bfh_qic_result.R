@@ -168,8 +168,7 @@ test_that("print.bfh_qic_result displays plot", {
   )
 
   # Print should return invisibly for pipe chaining
-  # (print triggers rendering som kræver fonts — wrap i tryCatch)
-  printed <- tryCatch(print(result), error = function(e) result)
+  printed <- expect_no_error(print(result))
   expect_identical(printed, result)
 })
 
@@ -200,9 +199,8 @@ test_that("plot.bfh_qic_result displays plot", {
     config = list(chart_type = "run")
   )
 
-  # Plot should return the ggplot object invisibly
-  # (rendering kan fejle pga. manglende fonts — test kun return-type)
-  plotted <- tryCatch(plot(result), error = function(e) result$plot)
+  # Plot should return the ggplot object
+  plotted <- expect_no_error(plot(result))
   expect_s3_class(plotted, "ggplot")
 })
 

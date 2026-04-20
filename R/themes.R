@@ -62,16 +62,6 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
     )
   }
 
-  # Remove blank axis titles (NULL or empty strings become element_blank)
-  x_title <- plot$labels$x
-  if (is.null(x_title) || (is.character(x_title) && nchar(trimws(x_title)) == 0)) {
-    plot <- plot + ggplot2::theme(axis.title.x.bottom = ggplot2::element_blank())
-  }
-
-  y_title <- plot$labels$y
-  if (is.null(y_title) || (is.character(y_title) && nchar(trimws(y_title)) == 0)) {
-    plot <- plot + ggplot2::theme(axis.title.y.left = ggplot2::element_blank())
-  }
 
   return(plot)
 }

@@ -173,6 +173,48 @@ test_that("bfh_qic() handles target values correctly", {
   }
 })
 
+test_that("bfh_qic() propagates subtitle/caption/xlab/ylab labels", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = c(15, 18, 12, 20, 16, 14, 19, 17, 13, 21, 18, 16)
+  )
+
+  result <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    subtitle = "Kirurgisk afdeling",
+    caption = "Kilde: EPJ",
+    xlab = "Måned",
+    ylab = "Infektioner"
+  )
+
+  expect_equal(result$plot$labels$subtitle, "KIRURGISK AFDELING")
+  expect_equal(result$plot$labels$caption, "KILDE: EPJ")
+  expect_equal(result$plot$labels$x, "MÅNED")
+  expect_equal(result$plot$labels$y, "INFEKTIONER")
+})
+
+test_that("bfh_qic() maps blank axis labels to NULL", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = c(15, 18, 12, 20, 16, 14, 19, 17, 13, 21, 18, 16)
+  )
+
+  result <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    xlab = "",
+    ylab = "   "
+  )
+
+  expect_null(result$plot$labels$x)
+  expect_null(result$plot$labels$y)
+})
+
 test_that("bfh_qic() validates input correctly", {
   # Test invalid chart type
   expect_error(
