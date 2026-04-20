@@ -170,19 +170,44 @@ test_that("vdiffr: chart med target line", {
 # NOTES / ANNOTATIONS
 # ============================================================================
 
-test_that("vdiffr: chart med notes-annotationer", {
+test_that("vdiffr: p-chart med notes-annotationer", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    events = c(5, 8, 12, 10, 15, 11, 9, 14, 13, 16, 12, 10),
+    total = c(100, 120, 150, 110, 180, 130, 115, 160, 145, 170, 135, 125),
+    notes = c(
+      NA, NA, "Intervention", NA, NA, NA,
+      "Audit", NA, NA, NA, NA, "Follow-up"
+    )
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(
+      data,
+      x = month,
+      y = events,
+      n = total,
+      notes = notes,
+      chart_type = "p",
+      y_axis_unit = "percent",
+      chart_title = "P-Chart with Notes"
+    )
+  )
+  vdiffr::expect_doppelganger("p-chart-with-notes", result$plot)
+})
+
+test_that("vdiffr: chart med custom labels", {
   data <- fixture_deterministic_chart_data()
-  data$notes <- c(NA, NA, NA, "Intervention", NA, NA,
-                  NA, NA, NA, NA, NA, "Follow-up")
 
   result <- bfh_qic(
     data,
     x = month,
     y = infections,
-    notes = notes,
-    chart_type = "i",
+    chart_type = "run",
     y_axis_unit = "count",
-    chart_title = "Chart with Notes"
+    chart_title = "Chart with Custom Labels",
+    xlab = "Måned",
+    ylab = "Infektioner pr. måned"
   )
-  vdiffr::expect_doppelganger("i-chart-with-notes", result$plot)
+  vdiffr::expect_doppelganger("run-chart-with-custom-labels", result$plot)
 })
