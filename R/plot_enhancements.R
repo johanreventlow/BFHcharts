@@ -210,19 +210,19 @@ add_plot_enhancements <- function(plot,
         y_span_arrow <- diff(y_range)
         pad_norm <- ARROW_PADDING_NORM
 
-        for (r in seq_len(nrow(arrow_data))) {
-          dx_norm <- (as.numeric(arrow_data$point_x[r]) - as.numeric(arrow_data$arrow_x[r])) / x_span
-          dy_norm <- (arrow_data$point_y[r] - arrow_data$arrow_y[r]) / y_span_arrow
-          seg_len_norm <- sqrt(dx_norm^2 + dy_norm^2)
-          if (seg_len_norm > 1e-10) {
-            shrink <- min(pad_norm / seg_len_norm, 0.4)
-            arrow_data$end_x[r] <- as.numeric(arrow_data$point_x[r]) - shrink * (as.numeric(arrow_data$point_x[r]) - as.numeric(arrow_data$arrow_x[r]))
-            arrow_data$end_y[r] <- arrow_data$point_y[r] - shrink * (arrow_data$point_y[r] - arrow_data$arrow_y[r])
-          } else {
-            arrow_data$end_x[r] <- as.numeric(arrow_data$point_x[r])
-            arrow_data$end_y[r] <- arrow_data$point_y[r]
-          }
-        }
+        point_x_num <- as.numeric(arrow_data$point_x)
+        arrow_x_num <- as.numeric(arrow_data$arrow_x)
+
+        dx_norm <- (point_x_num - arrow_x_num) / x_span
+        dy_norm <- (arrow_data$point_y - arrow_data$arrow_y) / y_span_arrow
+        seg_len_norm <- sqrt(dx_norm^2 + dy_norm^2)
+
+        has_length <- seg_len_norm > 1e-10
+        shrink <- numeric(length(seg_len_norm))
+        shrink[has_length] <- pmin(pad_norm / seg_len_norm[has_length], 0.4)
+
+        arrow_data$end_x <- point_x_num - shrink * (point_x_num - arrow_x_num)
+        arrow_data$end_y <- arrow_data$point_y - shrink * (arrow_data$point_y - arrow_data$arrow_y)
 
         arrow_data$end_x <- restore_x(arrow_data$end_x)
 
