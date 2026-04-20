@@ -181,7 +181,7 @@ NULL
 #'   data = data, x = month, y = infections,
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Small Plot - Auto Scaled Typography",
-#'   width = 6, height = 4  # Auto: base_size ≈ 14pt
+#'   width = 6, height = 4 # Auto: base_size ≈ 14pt
 #' )
 #'
 #' # Medium plot (10×6 inches) → base_size ≈ 22pt
@@ -189,7 +189,7 @@ NULL
 #'   data = data, x = month, y = infections,
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Medium Plot - Auto Scaled Typography",
-#'   width = 10, height = 6  # Auto: base_size ≈ 22pt
+#'   width = 10, height = 6 # Auto: base_size ≈ 22pt
 #' )
 #'
 #' # Large plot (16×9 inches) → base_size ≈ 34pt
@@ -197,7 +197,7 @@ NULL
 #'   data = data, x = month, y = infections,
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Large Plot - Auto Scaled Typography",
-#'   width = 16, height = 9  # Auto: base_size ≈ 34pt
+#'   width = 16, height = 9 # Auto: base_size ≈ 34pt
 #' )
 #'
 #' # Override auto-scaling with explicit base_size
@@ -206,7 +206,7 @@ NULL
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Custom Typography Override",
 #'   width = 10, height = 6,
-#'   base_size = 18  # Explicit override
+#'   base_size = 18 # Explicit override
 #' )
 #'
 #' # Example 6: Exclude outliers from calculations
@@ -217,7 +217,7 @@ NULL
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
 #'   chart_title = "I-Chart with Excluded Outliers",
-#'   exclude = c(3, 15)  # Exclude data points 3 and 15
+#'   exclude = c(3, 15) # Exclude data points 3 and 15
 #' )
 #'
 #' # Example 7: Use median instead of mean for aggregation
@@ -235,7 +235,7 @@ NULL
 #' # Convert proportions (0-1) to percentages (0-100)
 #' data_prop <- data.frame(
 #'   month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
-#'   proportion = runif(24, 0.01, 0.05)  # Proportions 0.01-0.05
+#'   proportion = runif(24, 0.01, 0.05) # Proportions 0.01-0.05
 #' )
 #'
 #' plot_multiply <- bfh_qic(
@@ -245,7 +245,7 @@ NULL
 #'   chart_type = "i",
 #'   y_axis_unit = "percent",
 #'   chart_title = "Proportions Converted to Percentages",
-#'   multiply = 100  # Convert 0.01 → 1%
+#'   multiply = 100 # Convert 0.01 → 1%
 #' )
 #'
 #' # Example 9: Custom centerline (cl parameter)
@@ -257,7 +257,7 @@ NULL
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
 #'   chart_title = "Infections with Custom Centerline",
-#'   cl = 10  # Set centerline to fixed benchmark of 10
+#'   cl = 10 # Set centerline to fixed benchmark of 10
 #' )
 #'
 #' # Example 10: Custom plot margins (numeric vector in mm)
@@ -268,7 +268,7 @@ NULL
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
 #'   chart_title = "Chart with Tight Margins",
-#'   plot_margin = c(2, 2, 2, 2)  # 2mm on all sides
+#'   plot_margin = c(2, 2, 2, 2) # 2mm on all sides
 #' )
 #'
 #' # Example 11: Custom margins with margin() object
@@ -317,7 +317,7 @@ NULL
 #'   chart_title = "Hospital-Acquired Infections - Official Report",
 #'   base_size = 14
 #' ) |>
-#'   BFHtheme::add_bfh_logo()  # Add hospital branding
+#'   BFHtheme::add_bfh_logo() # Add hospital branding
 #'
 #' # Alternate BFHtheme styles available:
 #' # - BFHtheme::theme_bfh_dark() for dark theme
@@ -332,8 +332,8 @@ NULL
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
 #'   chart_title = "Plot in Centimeters (Danish Standard)",
-#'   width = 25,   # 25 cm (auto-detected as cm)
-#'   height = 15   # 15 cm
+#'   width = 25, # 25 cm (auto-detected as cm)
+#'   height = 15 # 15 cm
 #' )
 #'
 #' # Example 16: Explicit unit specification
@@ -355,8 +355,8 @@ NULL
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
 #'   chart_title = "Plot for Web Display",
-#'   width = 800,   # 800 px (auto-detected as px)
-#'   height = 600,  # 600 px
+#'   width = 800, # 800 px (auto-detected as px)
+#'   height = 600, # 600 px
 #'   dpi = 96
 #' )
 #'
@@ -368,8 +368,8 @@ NULL
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
 #'   chart_title = "Legacy Inches Format",
-#'   width = 10,    # 10 inches (auto-detected as in)
-#'   height = 6     # 6 inches
+#'   width = 10, # 10 inches (auto-detected as in)
+#'   height = 6 # 6 inches
 #' )
 #'
 #' # Example 19: Get raw qic data for further analysis
@@ -379,7 +379,7 @@ NULL
 #'   y = infections,
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
-#'   return.data = TRUE  # Return data.frame instead of plot
+#'   return.data = TRUE # Return data.frame instead of plot
 #' )
 #'
 #' # Now you can access all qic calculations
@@ -394,7 +394,7 @@ NULL
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
 #'   chart_title = "Infections - With Summary",
-#'   print.summary = TRUE  # Return list(plot, summary)
+#'   print.summary = TRUE # Return list(plot, summary)
 #' )
 #'
 #' # Access the plot
@@ -413,9 +413,9 @@ NULL
 #'   y = infections,
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
-#'   part = c(12),  # Split into phases
+#'   part = c(12), # Split into phases
 #'   return.data = TRUE,
-#'   print.summary = TRUE  # Return list(data, summary)
+#'   print.summary = TRUE # Return list(data, summary)
 #' )
 #'
 #' # Access raw qic data
@@ -450,33 +450,35 @@ NULL
 #' }
 #' }
 bfh_qic <- function(data,
-                              x,
-                              y,
-                              n = NULL,
-                              chart_type = "run",
-                              y_axis_unit = "count",
-                              chart_title = NULL,
-                              target_value = NULL,
-                              target_text = NULL,
-                              notes = NULL,
-                              part = NULL,
-                              freeze = NULL,
-                              exclude = NULL,
-                              cl = NULL,
-                              multiply = 1,
-                              agg.fun = c("mean", "median", "sum", "sd"),
-                              base_size = 14,
-                              width = NULL,
-                              height = NULL,
-                              units = NULL,
-                              dpi = 96,
-                              plot_margin = NULL,
-                              ylab = "",
-                              xlab = "",
-                              subtitle = NULL,
-                              caption = NULL,
-                              return.data = FALSE,
-                              print.summary = FALSE) {
+                    x,
+                    y,
+                    n = NULL,
+                    chart_type = "run",
+                    y_axis_unit = "count",
+                    chart_title = NULL,
+                    target_value = NULL,
+                    target_text = NULL,
+                    notes = NULL,
+                    part = NULL,
+                    freeze = NULL,
+                    exclude = NULL,
+                    cl = NULL,
+                    multiply = 1,
+                    agg.fun = c("mean", "median", "sum", "sd"),
+                    base_size = 14,
+                    width = NULL,
+                    height = NULL,
+                    units = NULL,
+                    dpi = 96,
+                    plot_margin = NULL,
+                    ylab = "",
+                    xlab = "",
+                    subtitle = NULL,
+                    caption = NULL,
+                    return.data = FALSE,
+                    print.summary = FALSE) {
+  agg_fun_supplied <- !missing(agg.fun)
+
   # Validate inputs
   if (!is.data.frame(data)) {
     stop("data must be a data frame")
@@ -544,14 +546,14 @@ bfh_qic <- function(data,
 
   validate_numeric_parameter(
     width, "width",
-    min = 0.1, max = 3000,  # Allow up to 3000 for pixels (typical: 600-2000px)
+    min = 0.1, max = 3000, # Allow up to 3000 for pixels (typical: 600-2000px)
     allow_null = TRUE,
     len = 1
   )
 
   validate_numeric_parameter(
     height, "height",
-    min = 0.1, max = 3000,  # Allow up to 3000 for pixels (typical: 600-2000px)
+    min = 0.1, max = 3000, # Allow up to 3000 for pixels (typical: 600-2000px)
     allow_null = TRUE,
     len = 1
   )
@@ -577,8 +579,12 @@ bfh_qic <- function(data,
     len = 1
   )
 
-  # Validate agg.fun parameter
-  agg.fun <- match.arg(agg.fun)
+  # Validate agg.fun parameter (kun når bruger eksplicit har angivet argumentet)
+  if (agg_fun_supplied) {
+    agg.fun <- match.arg(agg.fun)
+  } else {
+    agg.fun <- NULL
+  }
 
   # Validate return.data parameter
   if (!is.logical(return.data) || length(return.data) != 1 || is.na(return.data)) {
@@ -670,7 +676,7 @@ bfh_qic <- function(data,
     qic_args$multiply <- multiply
   }
 
-  if (!missing(agg.fun)) {
+  if (agg_fun_supplied) {
     qic_args$agg.fun <- agg.fun
   }
 
@@ -683,40 +689,19 @@ bfh_qic <- function(data,
   # Execute qicharts2::qic() to get calculation results
   qic_data <- do.call(qicharts2::qic, qic_args, envir = parent.frame())
 
-  # Post-process: Add combined anhoej.signal column
-  # This combines runs.signal and crossings.signal per part
+  # Post-process: Add normalized anhoej.signal column
+  # Brug qicharts2-output direkte hvor muligt for baseline-kompatibilitet.
   if (!is.null(qic_data)) {
-    # Use runs.signal directly from qicharts2 (replace NA med FALSE)
-    runs_sig_col <- if ("runs.signal" %in% names(qic_data)) {
-      ifelse(is.na(qic_data$runs.signal), FALSE, qic_data$runs.signal)
+    if ("anhoej.signal" %in% names(qic_data)) {
+      qic_data$anhoej.signal <- as.logical(qic_data$anhoej.signal)
+    } else if ("anhoej.signals" %in% names(qic_data)) {
+      qic_data$anhoej.signal <- as.logical(qic_data$anhoej.signals)
+    } else if ("runs.signal" %in% names(qic_data) && "crossings.signal" %in% names(qic_data)) {
+      qic_data$anhoej.signal <- as.logical(qic_data$runs.signal | qic_data$crossings.signal)
+    } else if ("runs.signal" %in% names(qic_data)) {
+      qic_data$anhoej.signal <- as.logical(qic_data$runs.signal)
     } else {
-      rep(FALSE, nrow(qic_data))
-    }
-
-    # Calculate crossings signal per part using dplyr
-    if ("n.crossings" %in% names(qic_data) &&
-      "n.crossings.min" %in% names(qic_data) &&
-      "part" %in% names(qic_data)) {
-      qic_data <- qic_data |>
-        dplyr::group_by(part) |>
-        dplyr::mutate(
-          part_n_cross = safe_max(n.crossings),
-          part_n_cross_min = safe_max(n.crossings.min),
-          crossings_signal = !is.na(part_n_cross) & !is.na(part_n_cross_min) &
-            part_n_cross < part_n_cross_min
-        ) |>
-        dplyr::ungroup()
-
-      # Combine: TRUE if EITHER runs OR crossings signal
-      qic_data$anhoej.signal <- runs_sig_col | qic_data$crossings_signal
-
-      # Cleanup intermediate columns
-      qic_data$part_n_cross <- NULL
-      qic_data$part_n_cross_min <- NULL
-      qic_data$crossings_signal <- NULL
-    } else {
-      # No crossings data - use runs.signal only
-      qic_data$anhoej.signal <- runs_sig_col
+      qic_data$anhoej.signal <- rep(FALSE, nrow(qic_data))
     }
 
     # Sikr at anhoej.signal aldrig indeholder NA (downstream kræver TRUE/FALSE)

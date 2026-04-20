@@ -72,8 +72,8 @@ test_that("format_percent_contextual handles boundary at 2 percentage points", {
 
 test_that("format_percent_contextual uses Danish comma notation", {
   result <- format_percent_contextual(0.887, target = 0.90)
-  expect_true(grepl(",", result))  # Danish comma
-  expect_false(grepl("\\.", result))  # No English dot
+  expect_true(grepl(",", result)) # Danish comma
+  expect_false(grepl("\\.", result)) # No English dot
 })
 
 test_that("format_percent_contextual handles NA values", {
@@ -84,6 +84,33 @@ test_that("format_percent_contextual handles NA values", {
 test_that("format_percent_contextual handles NA target", {
   # NA target should behave like NULL target - whole percent
   expect_equal(format_percent_contextual(0.887, target = NA), "89%")
+})
+
+test_that("format_percent_contextual validates input arguments", {
+  expect_error(
+    format_percent_contextual("0.88", target = 0.9),
+    "val must be a single numeric value"
+  )
+  expect_error(
+    format_percent_contextual(c(0.88, 0.89), target = 0.9),
+    "val must be a single numeric value"
+  )
+  expect_error(
+    format_percent_contextual(0.88, target = "0.9"),
+    "target must be NULL or a single numeric value"
+  )
+  expect_error(
+    format_percent_contextual(0.88, target = c(0.9, 0.8)),
+    "target must be NULL or a single numeric value"
+  )
+  expect_error(
+    format_percent_contextual(0.88, target = 0.9, threshold = -0.01),
+    "threshold must be a single non-negative finite numeric value"
+  )
+  expect_error(
+    format_percent_contextual(0.88, target = 0.9, threshold = Inf),
+    "threshold must be a single non-negative finite numeric value"
+  )
 })
 
 test_that("format_y_value with target parameter shows contextual precision", {
@@ -286,7 +313,7 @@ test_that("format_y_value produces valid count format", {
 
   # Small numbers: should be formatted with K notation
   result_1234 <- format_y_value(1234, "count")
-  expect_match(result_1234, "K")  # Should become 1.2K
+  expect_match(result_1234, "K") # Should become 1.2K
 
   # K notation (thousands)
   expect_match(format_y_value(1500, "count"), "K")

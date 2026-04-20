@@ -31,7 +31,7 @@
 #   theme_minimal()
 #
 # # Opret NPC mapper
-# mapper <- npc_mapper_from_plot(p)
+# mapper <- npc_mapper_from_built(ggplot2::ggplot_build(p), original_plot = p)
 #
 # # Definer labels (marquee format)
 # label_A <- "{.8 **CL**}  \n{.24 **20 mpg**}"
@@ -57,7 +57,7 @@
 #
 # EXPORTS:
 # Core placement functions:
-# - npc_mapper_from_plot()
+# - npc_mapper_from_built()
 # - estimate_label_height_npc()
 # - place_two_labels_npc()
 # - propose_single_label()
@@ -148,7 +148,7 @@ clamp_to_bounds <- function(x, low_bound, high_bound) {
 #' Opret NPC mapper fra et pre-built ggplot object (PERFORMANCE OPTIMIZED)
 #'
 #' Denne funktion accepterer et allerede bygget plot (ggplot_built object)
-#' og opretter samme mapper som npc_mapper_from_plot(), men uden overhead
+#' og opretter mapper direkte fra et bygget plot uden ekstra build-overhead
 #' fra at bygge plottet igen.
 #'
 #' @param built_plot ggplot_built object fra ggplot2::ggplot_build()
@@ -307,48 +307,6 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
   )
 }
 
-#' Opret konverteringsfunktioner mellem data-y værdier og NPC-koordinater.
-#'
-#' @param p ggplot object der skal bruges til beregning af mapper
-#' @param panel Hvilket panel (1-baseret) der skal aflæses
-#'
-#' @return Liste med mapping-funktioner (`y_to_npc`, `npc_to_y`) samt metadata
-#' @keywords internal
-#' @noRd
-#' @examples
-#' \dontrun{
-#' p <- ggplot(mtcars, aes(wt, mpg)) +
-#'   geom_point()
-#' mapper <- npc_mapper_from_plot(p)
-#' mapper$y_to_npc(20) # Konverter 20 mpg til NPC
-#' mapper$npc_to_y(0.5) # Konverter 0.5 NPC til mpg
-#' }
-npc_mapper_from_plot <- function(p, panel = 1) {
-  # Validate ggplot object
-  if (is.null(p) || !inherits(p, "ggplot")) {
-    stop("npc_mapper_from_plot: p skal være et ggplot object, modtog: ", class(p)[1])
-  }
-
-  # Validate panel parameter
-  if (!is.numeric(panel) || length(panel) != 1 || panel < 1 || panel != floor(panel)) {
-    stop("npc_mapper_from_plot: panel skal være et positivt heltal, modtog: ", panel)
-  }
-
-  # Build plot med fejlhåndtering
-  b <- tryCatch(
-    {
-      ggplot2::ggplot_build(p)
-    },
-    error = function(e) {
-      stop("npc_mapper_from_plot: Kunne ikke bygge ggplot object. Fejl: ", e$message)
-    }
-  )
-
-  # Delegate til optimized version
-  npc_mapper_from_built(b, panel = panel, original_plot = p)
-}
-
-
 # ==============================================================================
 # LABEL HEIGHT ESTIMATION
 # ==============================================================================
@@ -362,7 +320,7 @@ npc_mapper_from_plot <- function(p, panel = 1) {
 #' @keywords internal
 #' @noRd
 measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, device_height = 7,
-                                              device_ready = FALSE) {
+                                             device_ready = FALSE) {
   # Find panel viewport navn fra gtable layout
   panel_layout <- gt$layout[gt$layout$name == "panel", , drop = FALSE]
 
@@ -459,14 +417,15 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
 #' @keywords internal
 #' @noRd
 .estimate_label_height_npc_internal <- function(
-    text,
-    style,
-    panel_height_inches = NULL,
-    device_width = NULL,
-    device_height = NULL,
-    marquee_size = NULL,
-    fallback_npc = 0.13,
-    return_details = FALSE) {
+  text,
+  style,
+  panel_height_inches = NULL,
+  device_width = NULL,
+  device_height = NULL,
+  marquee_size = NULL,
+  fallback_npc = 0.13,
+  return_details = FALSE
+) {
   # Create grob and measure (assumes active device exists)
   # FIX: Apply marquee_size scaling to style if provided
   # marquee_grob uses style-based sizing, not explicit size parameter
@@ -587,15 +546,16 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
 #' @keywords internal
 #' @noRd
 estimate_label_heights_npc <- function(
-    texts,
-    style = NULL,
-    panel_height_inches = NULL,
-    device_width = NULL,
-    device_height = NULL,
-    marquee_size = NULL,
-    fallback_npc = 0.13,
-    return_details = FALSE,
-    device_ready = FALSE) {
+  texts,
+  style = NULL,
+  panel_height_inches = NULL,
+  device_width = NULL,
+  device_height = NULL,
+  marquee_size = NULL,
+  fallback_npc = 0.13,
+  return_details = FALSE,
+  device_ready = FALSE
+) {
   # Default style hvis ikke angivet
   if (is.null(style)) {
     style <- marquee::modify_style(
@@ -681,7 +641,6 @@ estimate_label_heights_npc <- function(
 
   return(results)
 }
-
 
 
 # ==============================================================================
@@ -809,17 +768,18 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #' # Result: sideA = "under", sideB = "over"
 #' }
 place_two_labels_npc <- function(
-    yA_npc,
-    yB_npc,
-    # label_height_npc = 0.035,
-    label_height_npc = 0.114,
-    gap_line = NULL, # NU: Auto-beregnes fra config
-    gap_labels = NULL, # NU: Auto-beregnes fra config
-    pad_top = NULL, # NU: Hentes fra config
-    pad_bot = NULL, # NU: Hentes fra config
-    priority = c("A", "B")[1],
-    pref_pos = c("under", "under"),
-    debug = FALSE) {
+  yA_npc,
+  yB_npc,
+  # label_height_npc = 0.035,
+  label_height_npc = 0.114,
+  gap_line = NULL, # NU: Auto-beregnes fra config
+  gap_labels = NULL, # NU: Auto-beregnes fra config
+  pad_top = NULL, # NU: Hentes fra config
+  pad_bot = NULL, # NU: Hentes fra config
+  priority = c("A", "B")[1],
+  pref_pos = c("under", "under"),
+  debug = FALSE
+) {
   # ============================================================================
   # INPUT VALIDATION & PARSING
   # ============================================================================
@@ -941,10 +901,8 @@ place_two_labels_npc <- function(
   )
 
   cfg <- default_cfg
-  config_available <- FALSE
 
   # Hent config (altid tilgængelig i pakken)
-  config_available <- TRUE
   loaded_cfg <- get_label_placement_config()
 
   if (!is.null(loaded_cfg)) {
@@ -1169,7 +1127,6 @@ place_two_labels_npc <- function(
   # Kollision detekteret - resolution logic
   warnings <- c(warnings, "Label kollision detekteret - justerer placering")
   {
-
     # Sortér efter linje-position (lower først)
     if (yA_npc < yB_npc) {
       lower_y <- yA

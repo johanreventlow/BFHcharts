@@ -19,7 +19,9 @@
 #   ingen op. → NULL (værdineutral)
 resolve_target <- function(target_input) {
   empty <- list(value = NA_real_, direction = NULL, display = "")
-  if (is.null(target_input)) return(empty)
+  if (is.null(target_input)) {
+    return(empty)
+  }
 
   # Numerisk input: bagudkompatibelt — ingen retning
   if (is.numeric(target_input)) {
@@ -27,7 +29,7 @@ resolve_target <- function(target_input) {
   }
 
   if (!is.character(target_input) || length(target_input) == 0 ||
-      nchar(trimws(target_input)) == 0) {
+    nchar(trimws(target_input)) == 0) {
     return(empty)
   }
 
@@ -67,7 +69,9 @@ resolve_target <- function(target_input) {
 # Vælg ental eller flertal ud fra n. n == 1 → singular, alt andet → plural.
 # NA og NULL behandles som flertal (neutral default).
 pluralize_da <- function(n, singular, plural) {
-  if (is.null(n) || length(n) == 0 || is.na(n)) return(plural)
+  if (is.null(n) || length(n) == 0 || is.na(n)) {
+    return(plural)
+  }
   if (n == 1) singular else plural
 }
 
@@ -75,8 +79,12 @@ pluralize_da <- function(n, singular, plural) {
 # Garantér at tekst ikke overskrider max_chars. Trim ved sidste sætnings- eller
 # klausulgrænse (punktum, komma) før grænsen. Undgå at klippe midt i et ord.
 ensure_within_max <- function(text, max_chars) {
-  if (is.null(text) || is.na(text)) return("")
-  if (nchar(text) <= max_chars) return(text)
+  if (is.null(text) || is.na(text)) {
+    return("")
+  }
+  if (nchar(text) <= max_chars) {
+    return(text)
+  }
 
   cut <- substr(text, 1, max_chars)
 
@@ -148,7 +156,7 @@ ensure_within_max <- function(text, max_chars) {
 #' @export
 bfh_build_analysis_context <- function(x, metadata = list()) {
   # Input validation
-if (!inherits(x, "bfh_qic_result")) {
+  if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()")
   }
 
@@ -197,7 +205,7 @@ if (!inherits(x, "bfh_qic_result")) {
     # Brug summary (har korrekt per-part centerlinje) fremfor qic_data
     # (som har samme cl i alle raekker uanset part)
     centerline = if (!is.null(x$summary) && "centerlinje" %in% names(x$summary) &&
-                     nrow(x$summary) > 0) {
+      nrow(x$summary) > 0) {
       x$summary$centerlinje[nrow(x$summary)]
     } else if (!is.null(x$qic_data) && "cl" %in% names(x$qic_data)) {
       x$qic_data$cl[1]
@@ -207,7 +215,6 @@ if (!inherits(x, "bfh_qic_result")) {
 
     # Anhøj statistikker
     spc_stats = spc_stats,
-
     has_signals = has_signals,
 
     # Bruger-metadata
@@ -245,6 +252,8 @@ if (!inherits(x, "bfh_qic_result")) {
 #' @param target_tolerance Fractional tolerance for `at_target` classification
 #'   when `target_direction` is unknown (default 0.05 = 5%). Ignored when the
 #'   user provides `metadata$target` with an operator (retning er da kendt).
+#' @param texts_loader Function that returns SPC analysis text templates.
+#'   Defaults to [load_spc_texts()]. Primarily intended for tests/mocking.
 #'
 #' @return Character string with analysis text suitable for PDF export.
 #'
@@ -276,11 +285,12 @@ if (!inherits(x, "bfh_qic_result")) {
 #'
 #' @export
 bfh_generate_analysis <- function(x,
-                                   metadata = list(),
-                                   use_ai = NULL,
-                                   min_chars = 300,
-                                   max_chars = 375,
-                                   target_tolerance = 0.05) {
+                                  metadata = list(),
+                                  use_ai = NULL,
+                                  min_chars = 300,
+                                  max_chars = 375,
+                                  target_tolerance = 0.05,
+                                  texts_loader = load_spc_texts) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()")
@@ -321,9 +331,11 @@ bfh_generate_analysis <- function(x,
 
     # Byg fallback-analyse som baseline for AI
     baseline_analysis <- build_fallback_analysis(context,
-                                                 min_chars = min_chars,
-                                                 max_chars = max_chars,
-                                                 target_tolerance = target_tolerance)
+      min_chars = min_chars,
+      max_chars = max_chars,
+      target_tolerance = target_tolerance,
+      texts_loader = texts_loader
+    )
 
     # Byg kontekst til BFHllm
     llm_context <- list(
@@ -367,9 +379,11 @@ bfh_generate_analysis <- function(x,
 
   # === FALLBACK: STANDARDTEKSTER ===
   analysis <- build_fallback_analysis(context,
-                                      min_chars = min_chars,
-                                      max_chars = max_chars,
-                                      target_tolerance = target_tolerance)
+    min_chars = min_chars,
+    max_chars = max_chars,
+    target_tolerance = target_tolerance,
+    texts_loader = texts_loader
+  )
   return(analysis)
 }
 
@@ -383,7 +397,8 @@ bfh_generate_analysis <- function(x,
 build_fallback_analysis <- function(context,
                                     min_chars = 300,
                                     max_chars = 375,
-                                    target_tolerance = 0.05) {
+                                    target_tolerance = 0.05,
+                                    texts_loader = load_spc_texts) {
   spc_stats <- context$spc_stats
   target_value <- context$target_value
   target_direction <- context$target_direction
@@ -435,7 +450,10 @@ build_fallback_analysis <- function(context,
     action_budget <- max_chars - stability_budget
   }
 
-  texts <- load_spc_texts()
+  if (!is.function(texts_loader)) {
+    stop("texts_loader must be a function", call. = FALSE)
+  }
+  texts <- texts_loader()
   # outliers_actual i placeholder_data bruger recent_count-værdien, så YAML-
   # skabelonernes {outliers_actual} placeholder også følger "seneste 6 obs"-
   # reglen. outliers_word giver korrekt dansk ental/flertal for 1 vs n.
@@ -480,19 +498,20 @@ build_fallback_analysis <- function(context,
       "all_signals"
     }
     stability <- pick_text(texts$stability[[key]],
-                           data = placeholder_data,
-                           budget = stability_budget)
+      data = placeholder_data,
+      budget = stability_budget
+    )
   }
 
   # --- 2. Målvurdering ---
   target_text <- ""
-  at_target <- FALSE   # bruges af værdineutral action-sti
-  goal_met <- FALSE    # bruges af retningsbevidst action-sti
+  at_target <- FALSE # bruges af værdineutral action-sti
+  goal_met <- FALSE # bruges af retningsbevidst action-sti
 
   if (has_target) {
     # Foretræk display-streng fra input (fx "<= 2,5"), ellers format numerisk
     display_target <- if (!is.null(context$target_display) &&
-                          nzchar(context$target_display)) {
+      nzchar(context$target_display)) {
       context$target_display
     } else {
       format_target_value(target_value, y_axis_unit = context$y_axis_unit)
@@ -509,24 +528,28 @@ build_fallback_analysis <- function(context,
       )
       key <- if (goal_met) "goal_met" else "goal_not_met"
       target_text <- pick_text(texts$target[[key]],
-                               data = list(target = display_target),
-                               budget = target_budget)
+        data = list(target = display_target),
+        budget = target_budget
+      )
     } else {
       # === VÆRDINEUTRAL LOGIK (bagudkompatibel) ===
       tolerance <- max(abs(target_value) * target_tolerance, 0.01)
       if (abs(centerline - target_value) <= tolerance) {
         target_text <- pick_text(texts$target$at_target,
-                                 data = list(target = display_target),
-                                 budget = target_budget)
+          data = list(target = display_target),
+          budget = target_budget
+        )
         at_target <- TRUE
       } else if (centerline > target_value) {
         target_text <- pick_text(texts$target$over_target,
-                                 data = list(target = display_target),
-                                 budget = target_budget)
+          data = list(target = display_target),
+          budget = target_budget
+        )
       } else {
         target_text <- pick_text(texts$target$under_target,
-                                 data = list(target = display_target),
-                                 budget = target_budget)
+          data = list(target = display_target),
+          budget = target_budget
+        )
       }
     }
   }
@@ -577,7 +600,9 @@ build_fallback_analysis <- function(context,
 # Formatér målværdi til visning
 # y_axis_unit bruges til at afgøre om værdien skal vises som procent
 format_target_value <- function(x, y_axis_unit = NULL) {
-  if (is.null(x) || is.na(x)) return("")
+  if (is.null(x) || is.na(x)) {
+    return("")
+  }
 
   # Konverter proportion til procent hvis relevant
   # x i [0, 1] → proportion, multiplicer med 100. x > 1 → allerede procent.
@@ -589,7 +614,7 @@ format_target_value <- function(x, y_axis_unit = NULL) {
     }
   }
 
-  if (x == round(x)) {
+  if (is_effective_integer(x)) {
     as.character(as.integer(x))
   } else {
     format(round(x, 2), decimal.mark = ",", nsmall = 1)
@@ -600,15 +625,18 @@ format_target_value <- function(x, y_axis_unit = NULL) {
 # Tilføj padding-tekst hvis teksten er under minimumlængde.
 # max_chars sikrer at padding ikke sprænger det absolutte loft.
 pad_to_minimum <- function(text, min_chars, n_points, texts, max_chars = Inf) {
-  if (nchar(text) >= min_chars) return(text)
+  if (nchar(text) >= min_chars) {
+    return(text)
+  }
 
   # Plads til padding: respektér både min og max
-  available <- max_chars - nchar(text) - 1L  # -1 for space-separator
+  available <- max_chars - nchar(text) - 1L # -1 for space-separator
 
   if (!is.null(n_points) && !is.na(n_points) && available > 0) {
     padding <- pick_text(texts$padding$data_points,
-                         data = list(n_points = n_points),
-                         budget = min(min_chars - nchar(text), available))
+      data = list(n_points = n_points),
+      budget = min(min_chars - nchar(text), available)
+    )
     if (nchar(padding) > 0 && nchar(text) + nchar(padding) + 1L <= max_chars) {
       text <- paste(text, padding)
     }
@@ -617,7 +645,8 @@ pad_to_minimum <- function(text, min_chars, n_points, texts, max_chars = Inf) {
   available <- max_chars - nchar(text) - 1L
   if (nchar(text) < min_chars && available > 0) {
     padding <- pick_text(texts$padding$generic,
-                         budget = min(min_chars - nchar(text), available))
+      budget = min(min_chars - nchar(text), available)
+    )
     if (nchar(padding) > 0 && nchar(text) + nchar(padding) + 1L <= max_chars) {
       text <- paste(text, padding)
     }
@@ -637,7 +666,8 @@ load_spc_texts <- function() {
   }
 
   yaml_path <- system.file("texts", "spc_analysis.yml",
-                           package = "BFHcharts")
+    package = "BFHcharts"
+  )
   if (yaml_path == "") {
     warning("spc_analysis.yml not found, using empty texts")
     return(list())
@@ -653,7 +683,9 @@ load_spc_texts <- function() {
 # Named variants (short/standard/detailed): vælg længste der passer.
 # Bagudkompatibel med gammelt format (liste af strenge).
 pick_text <- function(variants, data = list(), budget = Inf) {
-  if (length(variants) == 0) return("")
+  if (length(variants) == 0) {
+    return("")
+  }
 
   # Bagudkompatibilitet: gammelt format er en unamed liste af strenge
   if (is.null(names(variants)) && is.character(variants[[1]])) {
@@ -667,7 +699,9 @@ pick_text <- function(variants, data = list(), budget = Inf) {
   for (candidate in candidates) {
     if (!is.null(variants[[candidate]])) {
       text <- substitute_placeholders(variants[[candidate]], data)
-      if (nchar(text) <= budget) return(text)
+      if (nchar(text) <= budget) {
+        return(text)
+      }
     }
   }
 

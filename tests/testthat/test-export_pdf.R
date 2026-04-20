@@ -161,8 +161,10 @@ test_that("bfh_export_pdf works in pipe workflow", {
 
   # Pipe workflow
   result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i",
-            y_axis_unit = "count", chart_title = "Test") |>
+    bfh_qic(data, month, value,
+      chart_type = "i",
+      y_axis_unit = "count", chart_title = "Test"
+    ) |>
       bfh_export_pdf(temp_file)
   )
 
@@ -298,15 +300,15 @@ test_that("bfh_export_pdf creates directory if needed", {
   unlink(temp_dir, recursive = TRUE)
 })
 
-test_that("extract_spc_stats handles missing columns gracefully", {
+test_that("bfh_extract_spc_stats handles missing columns gracefully (public API)", {
   # Empty summary
-  stats <- BFHcharts:::extract_spc_stats(data.frame())
+  stats <- bfh_extract_spc_stats(data.frame())
   expect_type(stats, "list")
   expect_null(stats$runs_expected)
   expect_null(stats$runs_actual)
 
   # NULL summary
-  stats <- BFHcharts:::extract_spc_stats(NULL)
+  stats <- bfh_extract_spc_stats(NULL)
   expect_type(stats, "list")
 
   # Summary with some columns
@@ -314,19 +316,19 @@ test_that("extract_spc_stats handles missing columns gracefully", {
     længste_løb = 8,
     antal_kryds = 5
   )
-  stats <- BFHcharts:::extract_spc_stats(summary)
+  stats <- bfh_extract_spc_stats(summary)
   expect_equal(stats$runs_actual, 8)
   expect_equal(stats$crossings_actual, 5)
 })
 
-test_that("merge_metadata preserves user values and provides defaults", {
+test_that("bfh_merge_metadata preserves user values and provides defaults", {
   # Empty metadata
-  merged <- BFHcharts:::merge_metadata(list(), "Test Title")
+  merged <- bfh_merge_metadata(list(), "Test Title")
   expect_equal(merged$title, "Test Title")
   expect_equal(merged$hospital, "Bispebjerg og Frederiksberg Hospital")
 
   # User metadata overrides
-  merged <- BFHcharts:::merge_metadata(
+  merged <- bfh_merge_metadata(
     list(hospital = "Custom Hospital", department = "Custom Dept"),
     "Test Title"
   )
@@ -366,8 +368,10 @@ test_that("bfh_extract_spc_stats extracts statistics from valid summary", {
 
   # Verify structure
   expect_type(stats, "list")
-  expect_named(stats, c("runs_expected", "runs_actual", "crossings_expected",
-                        "crossings_actual", "outliers_expected", "outliers_actual"))
+  expect_named(stats, c(
+    "runs_expected", "runs_actual", "crossings_expected",
+    "crossings_actual", "outliers_expected", "outliers_actual"
+  ))
 
   # Verify values
   expect_equal(stats$runs_expected, 8)
@@ -428,10 +432,10 @@ test_that("bfh_extract_spc_stats handles missing columns gracefully", {
   stats <- bfh_extract_spc_stats(summary)
 
   # Should extract available columns
-  expect_null(stats$runs_expected)  # Missing column
-  expect_equal(stats$runs_actual, 6)  # Present
-  expect_null(stats$crossings_expected)  # Missing column
-  expect_equal(stats$crossings_actual, 12)  # Present
+  expect_null(stats$runs_expected) # Missing column
+  expect_equal(stats$runs_actual, 6) # Present
+  expect_null(stats$crossings_expected) # Missing column
+  expect_equal(stats$crossings_actual, 12) # Present
 })
 
 test_that("bfh_extract_spc_stats validates input type", {
@@ -561,32 +565,12 @@ test_that("bfh_merge_metadata all fields can be overridden", {
   # All fields should be overridden (including title from metadata)
   expect_equal(merged$hospital, "Custom Hospital")
   expect_equal(merged$department, "Custom Department")
-  expect_equal(merged$title, "Custom Title")  # metadata title, not chart_title
+  expect_equal(merged$title, "Custom Title") # metadata title, not chart_title
   expect_equal(merged$analysis, "Custom Analysis")
   expect_equal(merged$details, "Custom Details")
   expect_equal(merged$author, "Custom Author")
   expect_equal(merged$date, as.Date("2025-01-01"))
   expect_equal(merged$data_definition, "Custom Definition")
-})
-
-test_that("internal functions delegate to public API", {
-  # Verify that internal versions call public versions
-  summary <- data.frame(
-    længste_løb_max = 8,
-    længste_løb = 6
-  )
-
-  # Internal function should give same result as public
-  internal_result <- BFHcharts:::extract_spc_stats(summary)
-  public_result <- bfh_extract_spc_stats(summary)
-
-  expect_identical(internal_result, public_result)
-
-  # Same for merge_metadata
-  internal_merged <- BFHcharts:::merge_metadata(list(department = "Test"), "Title")
-  public_merged <- bfh_merge_metadata(list(department = "Test"), "Title")
-
-  expect_identical(internal_merged, public_merged)
 })
 
 # ============================================================================
@@ -632,7 +616,8 @@ test_that("build_typst_content includes date parameter", {
   # Mock chart_image and template_file paths
   chart_image <- "/tmp/chart.png"
   template_file <- system.file("templates/typst/bfh-template/bfh-template.typ",
-                               package = "BFHcharts")
+    package = "BFHcharts"
+  )
 
   skip_if(!file.exists(template_file), "Template file not found")
 
@@ -658,7 +643,8 @@ test_that("build_typst_content escapes file paths", {
   # Path with spaces
   chart_image <- "/tmp/my charts/test chart.png"
   template_file <- system.file("templates/typst/bfh-template/bfh-template.typ",
-                               package = "BFHcharts")
+    package = "BFHcharts"
+  )
 
   skip_if(!file.exists(template_file), "Template file not found")
 
@@ -794,7 +780,7 @@ test_that("bfh_create_typst_document works with chart from different directory",
   output_path <- file.path(output_dir, "document.typ")
 
   # This should work - chart is copied to output directory
-  bfh_create_typst_document(
+  BFHcharts:::bfh_create_typst_document(
     chart_image = chart_path,
     output = output_path,
     metadata = list(title = "Test Chart", hospital = "Test Hospital"),
@@ -811,7 +797,7 @@ test_that("bfh_create_typst_document works with chart from different directory",
   # Verify Typst content uses relative path (not absolute)
   content <- paste(readLines(output_path), collapse = "\n")
   expect_match(content, 'image\\("my_chart.png"\\)')
-  expect_false(grepl(chart_dir, content))  # No absolute path
+  expect_false(grepl(chart_dir, content)) # No absolute path
 
   # Cleanup
   unlink(chart_dir, recursive = TRUE)
@@ -889,7 +875,7 @@ test_that("generated Typst contains metadata and chart reference", {
 
   output_path <- file.path(output_dir, "document.typ")
 
-  bfh_create_typst_document(
+  BFHcharts:::bfh_create_typst_document(
     chart_image = chart_path,
     output = output_path,
     metadata = list(
@@ -964,7 +950,7 @@ test_that("bfh_export_pdf validates input structure", {
 
   # Create malformed bfh_qic_result (missing required components)
   bad_result <- list(
-    plot = NULL,  # Missing plot
+    plot = NULL, # Missing plot
     summary = NULL,
     config = list(chart_title = "Test")
   )
@@ -988,7 +974,7 @@ test_that("bfh_compile_typst reports Quarto compilation failures", {
   # Create invalid Typst file that will fail compilation
   temp_typst <- tempfile(fileext = ".typ")
   writeLines(c(
-    "#let invalid_syntax = ",  # Incomplete statement
+    "#let invalid_syntax = ", # Incomplete statement
     "This will cause a Typst error"
   ), temp_typst)
 
@@ -1011,7 +997,7 @@ test_that("bfh_compile_typst reports Quarto compilation failures", {
 
 test_that("markdown_to_typst converts bold text", {
   # Single bold phrase
- expect_equal(
+  expect_equal(
     BFHcharts:::markdown_to_typst("This is **bold** text"),
     "This is #strong[bold] text"
   )
@@ -1224,7 +1210,7 @@ test_that("apply_spc_theme handles empty string axis titles", {
   # Create plot with empty string labels (should be treated as blank)
   plot_empty <- ggplot2::ggplot(data.frame(x = 1:10, y = 1:10)) +
     ggplot2::geom_point(ggplot2::aes(x = x, y = y)) +
-    ggplot2::labs(x = "", y = "  ")  # Empty and whitespace-only
+    ggplot2::labs(x = "", y = "  ") # Empty and whitespace-only
 
   result <- BFHcharts:::apply_spc_theme(plot_empty, base_size = 14)
 
@@ -1262,8 +1248,10 @@ test_that("apply_spc_theme respects custom plot_margin override", {
   expect_s3_class(result, "ggplot")
 
   # Test with margin object
-  result2 <- BFHcharts:::apply_spc_theme(plot, base_size = 14,
-                                          plot_margin = ggplot2::margin(0, 0, 0, 0, "mm"))
+  result2 <- BFHcharts:::apply_spc_theme(plot,
+    base_size = 14,
+    plot_margin = ggplot2::margin(0, 0, 0, 0, "mm")
+  )
   expect_s3_class(result2, "ggplot")
 })
 
@@ -1286,8 +1274,8 @@ test_that("bfh_generate_details generates correct format for p-chart", {
 
   # Should contain all parts
   expect_match(details, "Periode:")
-  expect_match(details, "feb\\. 2019")  # Start date (Danish format)
-  expect_match(details, "jan\\. 2020")  # End date (Danish format)
+  expect_match(details, "feb\\. 2019") # Start date (Danish format)
+  expect_match(details, "jan\\. 2020") # End date (Danish format)
   expect_match(details, "Gns\\. måned:")
   expect_match(details, "Seneste måned:")
   expect_match(details, "Nuværende niveau:")
@@ -1296,7 +1284,7 @@ test_that("bfh_generate_details generates correct format for p-chart", {
   expect_match(details, "/")
 
   # Should use bullet separator
-  expect_match(details, "\u2022")  # bullet character
+  expect_match(details, "\u2022") # bullet character
 })
 
 test_that("bfh_generate_details generates correct format for i-chart", {
@@ -1313,7 +1301,7 @@ test_that("bfh_generate_details generates correct format for i-chart", {
 
   # Should contain all parts
   expect_match(details, "Periode:")
-  expect_match(details, "Gns\\. uge:")  # Weekly interval
+  expect_match(details, "Gns\\. uge:") # Weekly interval
   expect_match(details, "Seneste uge:")
   expect_match(details, "Nuværende niveau:")
 
@@ -1465,8 +1453,10 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) calculates outliers for i-chart
   # Outliers i både ældre og seneste del af serien
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
-    value = c(50, 52, 48, 51, 49, 53, 47, 52, 50, 48, 51,
-              49, 52, 48, 51, 50, 52, 48, 51, 100, 50, 10, 50, 52)
+    value = c(
+      50, 52, 48, 51, 49, 53, 47, 52, 50, 48, 51,
+      49, 52, 48, 51, 50, 52, 48, 51, 100, 50, 10, 50, 52
+    )
   )
 
   result <- suppressWarnings(

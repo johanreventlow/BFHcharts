@@ -17,7 +17,6 @@ test_that("bfh_build_analysis_context rejects invalid input", {
 })
 
 test_that("bfh_build_analysis_context extracts context from bfh_qic_result", {
-
   # Create test data
   set.seed(123)
   test_data <- data.frame(
@@ -190,12 +189,12 @@ test_that("bfh_generate_analysis accepts min_chars and max_chars parameters", {
 })
 
 test_that("bfh_generate_analysis has correct default values", {
-
   # Check function defaults
   fn_args <- formals(bfh_generate_analysis)
 
   expect_equal(fn_args$min_chars, 300)
   expect_equal(fn_args$max_chars, 375)
+  expect_equal(fn_args$texts_loader, quote(load_spc_texts))
 })
 
 test_that("bfh_generate_analysis validates min_chars < max_chars", {
@@ -218,6 +217,70 @@ test_that("bfh_generate_analysis validates min_chars < max_chars", {
   expect_error(
     bfh_generate_analysis(result, min_chars = 500, max_chars = 300),
     "min_chars must be less than max_chars"
+  )
+})
+
+test_that("bfh_generate_analysis threads texts_loader to fallback pipeline", {
+  set.seed(42)
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
+
+  custom_texts <- list(
+    stability = list(
+      no_variation = list(short = "CUSTOM_STABILITY"),
+      no_signals = list(short = "CUSTOM_STABILITY"),
+      runs_only = list(short = "CUSTOM_STABILITY"),
+      crossings_only = list(short = "CUSTOM_STABILITY"),
+      outliers_only = list(short = "CUSTOM_STABILITY"),
+      runs_crossings = list(short = "CUSTOM_STABILITY"),
+      runs_outliers = list(short = "CUSTOM_STABILITY"),
+      crossings_outliers = list(short = "CUSTOM_STABILITY"),
+      all_signals = list(short = "CUSTOM_STABILITY")
+    ),
+    target = list(
+      at_target = list(short = "CUSTOM_TARGET"),
+      over_target = list(short = "CUSTOM_TARGET"),
+      under_target = list(short = "CUSTOM_TARGET"),
+      goal_met = list(short = "CUSTOM_TARGET"),
+      goal_not_met = list(short = "CUSTOM_TARGET")
+    ),
+    action = list(
+      stable_at_target = list(short = "CUSTOM_ACTION"),
+      stable_not_at_target = list(short = "CUSTOM_ACTION"),
+      unstable_at_target = list(short = "CUSTOM_ACTION"),
+      unstable_not_at_target = list(short = "CUSTOM_ACTION"),
+      stable_no_target = list(short = "CUSTOM_ACTION"),
+      unstable_no_target = list(short = "CUSTOM_ACTION"),
+      stable_goal_met = list(short = "CUSTOM_ACTION"),
+      stable_goal_not_met = list(short = "CUSTOM_ACTION"),
+      unstable_goal_met = list(short = "CUSTOM_ACTION"),
+      unstable_goal_not_met = list(short = "CUSTOM_ACTION")
+    ),
+    padding = list(
+      data_points = list(short = ""),
+      generic = list(short = "")
+    )
+  )
+
+  analysis <- bfh_generate_analysis(
+    result,
+    use_ai = FALSE,
+    min_chars = 10,
+    max_chars = 100,
+    texts_loader = function() custom_texts
+  )
+
+  expect_match(analysis, "CUSTOM_STABILITY")
+  expect_match(analysis, "CUSTOM_ACTION")
+})
+
+test_that("build_fallback_analysis validates texts_loader", {
+  expect_error(
+    BFHcharts:::build_fallback_analysis(list(), texts_loader = "bad"),
+    "texts_loader must be a function"
   )
 })
 
@@ -413,7 +476,7 @@ test_that("ensure_within_max trimmer ved sidste punktum", {
   text <- "Første sætning. Anden sætning. Tredje sætning der er meget lang."
   result <- BFHcharts:::ensure_within_max(text, 30)
   expect_lte(nchar(result), 30)
-  expect_match(result, "\\.$")  # ender på punktum
+  expect_match(result, "\\.$") # ender på punktum
 })
 
 test_that("ensure_within_max trimmer ved komma hvis intet punktum findes", {
@@ -442,8 +505,11 @@ test_that("ensure_within_max aldrig klipper midt i et ord", {
       gsub("[.!?,]+$", "", p) == clean_trimmed
     }))
     expect_true(ends_on_punct || is_prefix,
-                label = sprintf("Resultat '%s' bør slutte på punktuation eller være et ord-præfiks",
-                                trimmed))
+      label = sprintf(
+        "Resultat '%s' bør slutte på punktuation eller være et ord-præfiks",
+        trimmed
+      )
+    )
   }
 })
 
@@ -493,35 +559,45 @@ test_that("build_fallback_analysis overstiger aldrig max_chars", {
     ctx <- fixture_analysis_context(target_value = 50, target_direction = "lower", centerline = 45)
     txt <- BFHcharts:::build_fallback_analysis(ctx, min_chars = 50, max_chars = mx)
     expect_lte(nchar(txt), mx,
-               label = sprintf("max_chars=%d giver %d tegn", mx, nchar(txt)))
+      label = sprintf("max_chars=%d giver %d tegn", mx, nchar(txt))
+    )
   }
 })
 
 test_that("build_fallback_analysis bruger goal_met-tekst når target_direction er 'lower' og CL <= target", {
-  ctx <- fixture_analysis_context(target_value = 2.5, target_direction = "lower", centerline = 2.0,
-                  target_display = "<= 2,5")
+  ctx <- fixture_analysis_context(
+    target_value = 2.5, target_direction = "lower", centerline = 2.0,
+    target_display = "<= 2,5"
+  )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   # Skal INDEHOLDE "opfylder målet" eller "målet ... nået"
   expect_true(grepl("opfylder målet|målet.*nået", txt),
-              info = paste("Forventede goal_met-sprog, fik:", txt))
+    info = paste("Forventede goal_met-sprog, fik:", txt)
+  )
   # Må IKKE indeholde den værdineutrale "ligger under målet"
   expect_false(grepl("ligger under målet", txt))
 })
 
 test_that("build_fallback_analysis bruger goal_not_met når CL overstiger 'lower'-target", {
-  ctx <- fixture_analysis_context(target_value = 2.5, target_direction = "lower", centerline = 4.0,
-                  target_display = "<= 2,5")
+  ctx <- fixture_analysis_context(
+    target_value = 2.5, target_direction = "lower", centerline = 4.0,
+    target_display = "<= 2,5"
+  )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   expect_true(grepl("opfylder (endnu )?ikke målet|endnu ikke nået", txt),
-              info = paste("Forventede goal_not_met-sprog, fik:", txt))
+    info = paste("Forventede goal_not_met-sprog, fik:", txt)
+  )
 })
 
 test_that("build_fallback_analysis bruger goal_met for 'higher'-target når CL >= target", {
-  ctx <- fixture_analysis_context(target_value = 90, target_direction = "higher", centerline = 95,
-                  target_display = ">= 90")
+  ctx <- fixture_analysis_context(
+    target_value = 90, target_direction = "higher", centerline = 95,
+    target_display = ">= 90"
+  )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   expect_true(grepl("opfylder målet|målet.*nået", txt),
-              info = paste("Forventede goal_met, fik:", txt))
+    info = paste("Forventede goal_met, fik:", txt)
+  )
 })
 
 test_that("build_fallback_analysis bruger værdineutral tekst når target_direction er NULL", {
@@ -540,9 +616,11 @@ test_that("build_fallback_analysis reallokerer budget når target mangler", {
 })
 
 test_that("build_fallback_analysis bruger ental ved 1 outlier", {
-  stats <- list(runs_actual = 5, runs_expected = 7,
-                crossings_actual = 8, crossings_expected = 5,
-                outliers_recent_count = 1)
+  stats <- list(
+    runs_actual = 5, runs_expected = 7,
+    crossings_actual = 8, crossings_expected = 5,
+    outliers_recent_count = 1
+  )
   ctx <- fixture_analysis_context(spc_stats = stats)
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   # Grammatisk korrekt dansk: enten "1 observation ligger" (direkte) eller
@@ -553,9 +631,11 @@ test_that("build_fallback_analysis bruger ental ved 1 outlier", {
 })
 
 test_that("build_fallback_analysis bruger flertal ved 3 outliers", {
-  stats <- list(runs_actual = 5, runs_expected = 7,
-                crossings_actual = 8, crossings_expected = 5,
-                outliers_recent_count = 3)
+  stats <- list(
+    runs_actual = 5, runs_expected = 7,
+    crossings_actual = 8, crossings_expected = 5,
+    outliers_recent_count = 3
+  )
   ctx <- fixture_analysis_context(spc_stats = stats)
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   # Grammatisk korrekt dansk: enten "3 observationer" (direkte) eller

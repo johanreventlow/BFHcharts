@@ -73,19 +73,19 @@ compute_label_size_for_viewport <- function(viewport_width_inches,
 #' @keywords internal
 #' @noRd
 add_spc_labels <- function(
-    plot,
-    qic_data,
-    y_axis_unit = "count",
-    label_size = 6,
-    viewport_width = NULL,
-    viewport_height = NULL,
-    target_text = NULL,
-    centerline_value = NULL,
-    has_frys_column = FALSE,
-    has_skift_column = FALSE,
-    verbose = FALSE,
-    debug_mode = FALSE) {
-
+  plot,
+  qic_data,
+  y_axis_unit = "count",
+  label_size = 6,
+  viewport_width = NULL,
+  viewport_height = NULL,
+  target_text = NULL,
+  centerline_value = NULL,
+  has_frys_column = FALSE,
+  has_skift_column = FALSE,
+  verbose = FALSE,
+  debug_mode = FALSE
+) {
   # Input validation ----
   if (!inherits(plot, "gg")) {
     stop("plot skal være et ggplot object")
@@ -98,8 +98,10 @@ add_spc_labels <- function(
   # Validate y_axis_unit
   valid_units <- c("count", "percent", "rate", "time")
   if (!y_axis_unit %in% valid_units && verbose) {
-    message(sprintf("Non-standard y_axis_unit: %s (valid: %s)",
-                    y_axis_unit, paste(valid_units, collapse = ", ")))
+    message(sprintf(
+      "Non-standard y_axis_unit: %s (valid: %s)",
+      y_axis_unit, paste(valid_units, collapse = ", ")
+    ))
   }
 
   # Device info (non-blocking) ----
@@ -299,7 +301,7 @@ add_spc_labels <- function(
     npc_B <- shared_mapper$y_to_npc(yB)
 
     if (!is.null(npc_A) && !is.na(npc_A) &&
-        !is.null(npc_B) && !is.na(npc_B)) {
+      !is.null(npc_B) && !is.na(npc_B)) {
       both_near_bottom <- npc_A < boundary_threshold && npc_B < boundary_threshold
       both_near_top <- npc_A > (1 - boundary_threshold) && npc_B > (1 - boundary_threshold)
 
@@ -325,15 +327,15 @@ add_spc_labels <- function(
         # Én linje nær kanten: send den mod kanten (ind i expansion-zonen),
         # og den anden linje den modsatte vej — det spreder labels maksimalt.
         if (npc_A < boundary_threshold) {
-          pref_A <- "under"  # CL nær bund → under (ind i expansion)
-          pref_B <- "over"   # Target → over (væk fra CL)
+          pref_A <- "under" # CL nær bund → under (ind i expansion)
+          pref_B <- "over" # Target → over (væk fra CL)
         } else if (npc_B < boundary_threshold) {
           pref_B <- "under"
           pref_A <- "over"
         }
         if (npc_A > (1 - boundary_threshold)) {
-          pref_A <- "over"   # CL nær top → over (ind i expansion)
-          pref_B <- "under"  # Target → under (væk fra CL)
+          pref_A <- "over" # CL nær top → over (ind i expansion)
+          pref_B <- "under" # Target → under (væk fra CL)
         } else if (npc_B > (1 - boundary_threshold)) {
           pref_B <- "over"
           pref_A <- "under"
@@ -350,6 +352,8 @@ add_spc_labels <- function(
   )
   if (has_arrow) label_params$gap_labels <- 0
 
+  label_cols <- BFHtheme::bfh_cols(c("hospital_blue", "regionh_dark"))
+
   plot_with_labels <- add_right_labels_marquee(
     p = plot,
     yA = yA,
@@ -357,8 +361,8 @@ add_spc_labels <- function(
     textA = textA,
     textB = textB,
     params = label_params,
-    gpA = grid::gpar(col = BFHtheme::bfh_cols("hospital_blue")),
-    gpB = grid::gpar(col = BFHtheme::bfh_cols("regionh_dark")),
+    gpA = grid::gpar(col = label_cols[[1]]),
+    gpB = grid::gpar(col = label_cols[[2]]),
     label_size = label_size,
     viewport_width = viewport_width,
     viewport_height = viewport_height,

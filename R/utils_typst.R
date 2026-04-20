@@ -23,7 +23,7 @@ NULL
 #'
 #' @return Path to created .typ file (invisibly)
 #'
-#' @export
+#' @keywords internal
 bfh_create_typst_document <- function(chart_image,
                                       output,
                                       metadata,
@@ -137,11 +137,11 @@ bfh_create_typst_document <- function(chart_image,
 
   # Build Typst document content with relative paths
   typst_content <- build_typst_content(
-    chart_image = chart_basename,  # Use basename since image is now in output_dir
+    chart_image = chart_basename, # Use basename since image is now in output_dir
     metadata = metadata,
     spc_stats = spc_stats,
     template = template,
-    template_file = template_basename  # Use relative path
+    template_file = template_basename # Use relative path
   )
 
   # Write Typst file
@@ -281,7 +281,8 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
 
   if (!grepl("^[a-zA-Z][a-zA-Z0-9_-]*$", template)) {
     stop("template must be a valid Typst identifier (letters, numbers, hyphens, underscores)",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
 
   # Build import statement with relative path
@@ -309,11 +310,11 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   }
   if (!is.null(metadata$title) && nchar(metadata$title) > 0) {
     # Title supports rich text - use content block [...]
-    params$title <- sprintf('[%s]', markdown_to_typst(metadata$title))
+    params$title <- sprintf("[%s]", markdown_to_typst(metadata$title))
   }
   if (!is.null(metadata$analysis)) {
     # Analysis supports rich text - use content block [...]
-    params$analysis <- sprintf('[%s]', markdown_to_typst(metadata$analysis))
+    params$analysis <- sprintf("[%s]", markdown_to_typst(metadata$analysis))
   }
   if (!is.null(metadata$details)) {
     params$details <- sprintf('"%s"', escape_typst_string(metadata$details))
@@ -326,7 +327,7 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   }
   if (!is.null(metadata$footer_content)) {
     # Footer content supports rich text - use content block [...]
-    params$footer_content <- sprintf('[%s]', markdown_to_typst(metadata$footer_content))
+    params$footer_content <- sprintf("[%s]", markdown_to_typst(metadata$footer_content))
   }
 
   # Date parameter - format for Typst template
@@ -342,22 +343,32 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
 
   # SPC statistics — send "?" for NA (vises i tabel), udelad kun NULL
   spc_val <- function(x) {
-    if (is.null(x)) return(NULL)
-    if (is.na(x) || is.infinite(x)) return("\"?\"")
+    if (is.null(x)) {
+      return(NULL)
+    }
+    if (is.na(x) || is.infinite(x)) {
+      return("\"?\"")
+    }
     as.character(x)
   }
-  if (!is.null(spc_stats$runs_expected))
+  if (!is.null(spc_stats$runs_expected)) {
     params$runs_expected <- spc_val(spc_stats$runs_expected)
-  if (!is.null(spc_stats$runs_actual))
+  }
+  if (!is.null(spc_stats$runs_actual)) {
     params$runs_actual <- spc_val(spc_stats$runs_actual)
-  if (!is.null(spc_stats$crossings_expected))
+  }
+  if (!is.null(spc_stats$crossings_expected)) {
     params$crossings_expected <- spc_val(spc_stats$crossings_expected)
-  if (!is.null(spc_stats$crossings_actual))
+  }
+  if (!is.null(spc_stats$crossings_actual)) {
     params$crossings_actual <- spc_val(spc_stats$crossings_actual)
-  if (!is.null(spc_stats$outliers_expected))
+  }
+  if (!is.null(spc_stats$outliers_expected)) {
     params$outliers_expected <- spc_val(spc_stats$outliers_expected)
-  if (!is.null(spc_stats$outliers_actual))
+  }
+  if (!is.null(spc_stats$outliers_actual)) {
     params$outliers_actual <- spc_val(spc_stats$outliers_actual)
+  }
 
   # Run chart flag (for hiding outlier row in Typst)
   if (!is.null(spc_stats$is_run_chart)) {
@@ -394,8 +405,9 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
 #' @return Escaped string safe for Typst
 #' @keywords internal
 escape_typst_string <- function(s) {
-
-  if (is.null(s) || length(s) == 0) return("")
+  if (is.null(s) || length(s) == 0) {
+    return("")
+  }
 
   # Escape backslashes and quotes
   s <- gsub("\\\\", "\\\\\\\\", s)
@@ -439,10 +451,12 @@ escape_typst_string <- function(s) {
 #'
 #' # Mixed formatting
 #' markdown_to_typst("Write a title or\n**conclude what the chart shows**")
-#' # Returns: "Write a title or\\ #strong[conclude what the chart shows]"
+#' # Returns: "Write a title or\ #strong[conclude what the chart shows]"
 #' }
 markdown_to_typst <- function(text) {
-  if (is.null(text) || length(text) == 0 || nchar(text) == 0) return("")
+  if (is.null(text) || length(text) == 0 || nchar(text) == 0) {
+    return("")
+  }
 
   result <- text
 
@@ -454,7 +468,7 @@ markdown_to_typst <- function(text) {
   result <- gsub("@", "\\\\@", result)
   result <- gsub("\\$", "\\\\$", result)
   result <- gsub("_", "\\\\_", result)
-  result <- gsub("\\[", "\\\\[", result)  # Bracket injection prevention
+  result <- gsub("\\[", "\\\\[", result) # Bracket injection prevention
   result <- gsub("\\]", "\\\\]", result)
   result <- gsub("(?<!\\*)#", "\\\\#", result, perl = TRUE)
 
