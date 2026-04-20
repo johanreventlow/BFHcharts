@@ -18,4 +18,3 @@ The object invisibly for pipe chaining
 Displays the plot in the console/viewer, maintaining backwards-compatible
 behavior with previous versions that returned ggplot objects directly.
 }
-\keyword{internal}

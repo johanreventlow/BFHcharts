@@ -14,6 +14,7 @@ bfh_export_pdf(
   use_ai = NULL,
   analysis_min_chars = 300,
   analysis_max_chars = 375,
+  dpi = 150,
   font_path = NULL,
   inject_assets = NULL
 )
@@ -62,6 +63,10 @@ Only used when \code{auto_analysis = TRUE}.}
 
 \item{analysis_max_chars}{Maximum characters for AI-generated analysis. Default 375.
 Only used when \code{auto_analysis = TRUE}.}
+
+\item{dpi}{Resolution passed to \code{ggplot2::ggsave()}. Default 150.
+PDF export currently uses SVG as intermediate format, so this is mainly
+relevant if the plot contains rasterized content.}
 
 \item{font_path}{Optional path to directory containing additional fonts.
 Passed as \code{--font-path} to the Typst compiler. Useful when fonts

@@ -24,7 +24,6 @@ NULL
 #'   \item{qic_data}{data.frame with qicharts2 calculations}
 #'   \item{config}{list with original parameters}
 #'
-#' @keywords internal
 #' @export
 new_bfh_qic_result <- function(plot, summary, qic_data, config) {
   # Validate inputs
@@ -67,7 +66,6 @@ new_bfh_qic_result <- function(plot, summary, qic_data, config) {
 #' @return The object invisibly for pipe chaining
 #'
 #' @export
-#' @keywords internal
 print.bfh_qic_result <- function(x, ...) {
   print(x$plot)
   invisible(x)
@@ -84,7 +82,6 @@ print.bfh_qic_result <- function(x, ...) {
 #' @return The ggplot object invisibly
 #'
 #' @export
-#' @keywords internal
 plot.bfh_qic_result <- function(x, ...) {
   print(x$plot, ...)
   invisible(x$plot)
@@ -99,7 +96,6 @@ plot.bfh_qic_result <- function(x, ...) {
 #'
 #' @return ggplot2 object
 #'
-#' @keywords internal
 #' @export
 get_plot <- function(x) {
   if (!inherits(x, "bfh_qic_result")) {
@@ -114,7 +110,6 @@ get_plot <- function(x) {
 #'
 #' @return Logical indicating whether x is a bfh_qic_result object
 #'
-#' @keywords internal
 #' @export
 is_bfh_qic_result <- function(x) {
   inherits(x, "bfh_qic_result")
