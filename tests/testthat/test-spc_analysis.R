@@ -196,6 +196,7 @@ test_that("bfh_generate_analysis has correct default values", {
 
   expect_equal(fn_args$min_chars, 300)
   expect_equal(fn_args$max_chars, 375)
+  expect_equal(fn_args$texts_loader, quote(load_spc_texts))
 })
 
 test_that("bfh_generate_analysis validates min_chars < max_chars", {
@@ -218,6 +219,70 @@ test_that("bfh_generate_analysis validates min_chars < max_chars", {
   expect_error(
     bfh_generate_analysis(result, min_chars = 500, max_chars = 300),
     "min_chars must be less than max_chars"
+  )
+})
+
+test_that("bfh_generate_analysis threads texts_loader to fallback pipeline", {
+  set.seed(42)
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
+
+  custom_texts <- list(
+    stability = list(
+      no_variation = list(short = "CUSTOM_STABILITY"),
+      no_signals = list(short = "CUSTOM_STABILITY"),
+      runs_only = list(short = "CUSTOM_STABILITY"),
+      crossings_only = list(short = "CUSTOM_STABILITY"),
+      outliers_only = list(short = "CUSTOM_STABILITY"),
+      runs_crossings = list(short = "CUSTOM_STABILITY"),
+      runs_outliers = list(short = "CUSTOM_STABILITY"),
+      crossings_outliers = list(short = "CUSTOM_STABILITY"),
+      all_signals = list(short = "CUSTOM_STABILITY")
+    ),
+    target = list(
+      at_target = list(short = "CUSTOM_TARGET"),
+      over_target = list(short = "CUSTOM_TARGET"),
+      under_target = list(short = "CUSTOM_TARGET"),
+      goal_met = list(short = "CUSTOM_TARGET"),
+      goal_not_met = list(short = "CUSTOM_TARGET")
+    ),
+    action = list(
+      stable_at_target = list(short = "CUSTOM_ACTION"),
+      stable_not_at_target = list(short = "CUSTOM_ACTION"),
+      unstable_at_target = list(short = "CUSTOM_ACTION"),
+      unstable_not_at_target = list(short = "CUSTOM_ACTION"),
+      stable_no_target = list(short = "CUSTOM_ACTION"),
+      unstable_no_target = list(short = "CUSTOM_ACTION"),
+      stable_goal_met = list(short = "CUSTOM_ACTION"),
+      stable_goal_not_met = list(short = "CUSTOM_ACTION"),
+      unstable_goal_met = list(short = "CUSTOM_ACTION"),
+      unstable_goal_not_met = list(short = "CUSTOM_ACTION")
+    ),
+    padding = list(
+      data_points = list(short = ""),
+      generic = list(short = "")
+    )
+  )
+
+  analysis <- bfh_generate_analysis(
+    result,
+    use_ai = FALSE,
+    min_chars = 10,
+    max_chars = 100,
+    texts_loader = function() custom_texts
+  )
+
+  expect_match(analysis, "CUSTOM_STABILITY")
+  expect_match(analysis, "CUSTOM_ACTION")
+})
+
+test_that("build_fallback_analysis validates texts_loader", {
+  expect_error(
+    BFHcharts:::build_fallback_analysis(list(), texts_loader = "bad"),
+    "texts_loader must be a function"
   )
 })
 

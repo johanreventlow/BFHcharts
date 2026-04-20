@@ -245,6 +245,8 @@ if (!inherits(x, "bfh_qic_result")) {
 #' @param target_tolerance Fractional tolerance for `at_target` classification
 #'   when `target_direction` is unknown (default 0.05 = 5%). Ignored when the
 #'   user provides `metadata$target` with an operator (retning er da kendt).
+#' @param texts_loader Function that returns SPC analysis text templates.
+#'   Defaults to [load_spc_texts()]. Primarily intended for tests/mocking.
 #'
 #' @return Character string with analysis text suitable for PDF export.
 #'
@@ -280,7 +282,8 @@ bfh_generate_analysis <- function(x,
                                    use_ai = NULL,
                                    min_chars = 300,
                                    max_chars = 375,
-                                   target_tolerance = 0.05) {
+                                   target_tolerance = 0.05,
+                                   texts_loader = load_spc_texts) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()")
@@ -323,7 +326,8 @@ bfh_generate_analysis <- function(x,
     baseline_analysis <- build_fallback_analysis(context,
                                                  min_chars = min_chars,
                                                  max_chars = max_chars,
-                                                 target_tolerance = target_tolerance)
+                                                 target_tolerance = target_tolerance,
+                                                 texts_loader = texts_loader)
 
     # Byg kontekst til BFHllm
     llm_context <- list(
@@ -369,7 +373,8 @@ bfh_generate_analysis <- function(x,
   analysis <- build_fallback_analysis(context,
                                       min_chars = min_chars,
                                       max_chars = max_chars,
-                                      target_tolerance = target_tolerance)
+                                      target_tolerance = target_tolerance,
+                                      texts_loader = texts_loader)
   return(analysis)
 }
 
@@ -383,7 +388,8 @@ bfh_generate_analysis <- function(x,
 build_fallback_analysis <- function(context,
                                     min_chars = 300,
                                     max_chars = 375,
-                                    target_tolerance = 0.05) {
+                                    target_tolerance = 0.05,
+                                    texts_loader = load_spc_texts) {
   spc_stats <- context$spc_stats
   target_value <- context$target_value
   target_direction <- context$target_direction
@@ -435,7 +441,10 @@ build_fallback_analysis <- function(context,
     action_budget <- max_chars - stability_budget
   }
 
-  texts <- load_spc_texts()
+  if (!is.function(texts_loader)) {
+    stop("texts_loader must be a function", call. = FALSE)
+  }
+  texts <- texts_loader()
   # outliers_actual i placeholder_data bruger recent_count-værdien, så YAML-
   # skabelonernes {outliers_actual} placeholder også følger "seneste 6 obs"-
   # reglen. outliers_word giver korrekt dansk ental/flertal for 1 vs n.
@@ -589,7 +598,7 @@ format_target_value <- function(x, y_axis_unit = NULL) {
     }
   }
 
-  if (x == round(x)) {
+  if (is_effective_integer(x)) {
     as.character(as.integer(x))
   } else {
     format(round(x, 2), decimal.mark = ",", nsmall = 1)

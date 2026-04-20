@@ -37,6 +37,18 @@
 #' @keywords internal
 #' @noRd
 format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
+  if (!is.numeric(val) || length(val) != 1) {
+    stop("val must be a single numeric value", call. = FALSE)
+  }
+
+  if (!is.null(target) && (!is.numeric(target) || length(target) != 1)) {
+    stop("target must be NULL or a single numeric value", call. = FALSE)
+  }
+
+  if (!is.numeric(threshold) || length(threshold) != 1 || is.na(threshold) ||
+      !is.finite(threshold) || threshold < 0) {
+    stop("threshold must be a single non-negative finite numeric value", call. = FALSE)
+  }
 
   if (is.na(val)) {
     return(NA_character_)
@@ -131,7 +143,7 @@ format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
   }
 
   # Default formatting - kontekstuel dansk notation
-  if (isTRUE(all.equal(val, round(val), tolerance = 1e-10))) {
+  if (is_effective_integer(val)) {
     return(format(round(val), decimal.mark = ","))
   } else if (abs(val) < 1) {
     return(format(round(val, 2), decimal.mark = ",", nsmall = 2))

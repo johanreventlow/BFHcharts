@@ -36,10 +36,12 @@ add_plot_enhancements <- function(plot,
                                   suppress_targetline = FALSE,
                                   line_positions = NULL) {
   # Cache BFHtheme farver (undgår gentagne opslag)
+  color_keys <- c("hospital_blue", "regionh_grey", "regionh_dark")
+  bfh_colors <- BFHtheme::bfh_cols(color_keys)
   cols <- list(
-    blue = BFHtheme::bfh_cols("hospital_blue"),
-    grey = BFHtheme::bfh_cols("regionh_grey"),
-    dark_grey = BFHtheme::bfh_cols("regionh_dark")
+    blue = bfh_colors[[1]],
+    grey = bfh_colors[[2]],
+    dark_grey = bfh_colors[[3]]
   )
 
   # Calculate extended x position (20% beyond last data point)

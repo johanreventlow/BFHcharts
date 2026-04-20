@@ -794,7 +794,7 @@ test_that("bfh_create_typst_document works with chart from different directory",
   output_path <- file.path(output_dir, "document.typ")
 
   # This should work - chart is copied to output directory
-  bfh_create_typst_document(
+  BFHcharts:::bfh_create_typst_document(
     chart_image = chart_path,
     output = output_path,
     metadata = list(title = "Test Chart", hospital = "Test Hospital"),
@@ -889,7 +889,7 @@ test_that("generated Typst contains metadata and chart reference", {
 
   output_path <- file.path(output_dir, "document.typ")
 
-  bfh_create_typst_document(
+  BFHcharts:::bfh_create_typst_document(
     chart_image = chart_path,
     output = output_path,
     metadata = list(

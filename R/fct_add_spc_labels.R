@@ -350,6 +350,8 @@ add_spc_labels <- function(
   )
   if (has_arrow) label_params$gap_labels <- 0
 
+  label_cols <- BFHtheme::bfh_cols(c("hospital_blue", "regionh_dark"))
+
   plot_with_labels <- add_right_labels_marquee(
     p = plot,
     yA = yA,
@@ -357,8 +359,8 @@ add_spc_labels <- function(
     textA = textA,
     textB = textB,
     params = label_params,
-    gpA = grid::gpar(col = BFHtheme::bfh_cols("hospital_blue")),
-    gpB = grid::gpar(col = BFHtheme::bfh_cols("regionh_dark")),
+    gpA = grid::gpar(col = label_cols[[1]]),
+    gpB = grid::gpar(col = label_cols[[2]]),
     label_size = label_size,
     viewport_width = viewport_width,
     viewport_height = viewport_height,
