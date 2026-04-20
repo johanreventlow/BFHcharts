@@ -52,6 +52,25 @@ is_valid_scalar <- function(x) {
   !is.null(x) && length(x) > 0 && !is.na(x[1])
 }
 
+#' Check om numerisk værdi effektivt er heltal (tolerance-baseret)
+#'
+#' Central helper for heltalsdetektion på tværs af formatteringsfunktioner.
+#' Undgår duplikeret `all.equal(..., round(...))` logik.
+#'
+#' @param x Numeric skalar.
+#' @param tolerance Numerisk tolerance til floating-point sammenligning.
+#'
+#' @return Logical. TRUE hvis `x` er numerisk og inden for tolerance af nærmeste heltal.
+#' @keywords internal
+#' @noRd
+is_effective_integer <- function(x, tolerance = 1e-10) {
+  if (!is.numeric(x) || length(x) != 1 || is.na(x) || !is.finite(x)) {
+    return(FALSE)
+  }
+
+  isTRUE(all.equal(x, round(x), tolerance = tolerance))
+}
+
 #' Validate Numeric Parameter
 #'
 #' Centralized validation for numeric parameters in bfh_qic.

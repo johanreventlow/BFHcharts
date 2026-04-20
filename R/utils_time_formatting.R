@@ -116,7 +116,7 @@ format_time_danish <- function(val_minutes, time_unit = "minutes") {
   scaled <- scale_to_time_unit(val_minutes, time_unit)
 
   # Check if value is integer or decimal
-  is_integer <- isTRUE(all.equal(scaled, round(scaled), tolerance = 1e-10))
+  is_integer <- is_effective_integer(scaled)
 
   if (is_integer) {
     num <- round(scaled)

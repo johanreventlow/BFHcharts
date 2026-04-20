@@ -116,8 +116,8 @@ add_right_labels_marquee <- function(
       pref_pos = c("under", "under"),
       priority = "A"
     ),
-    gpA = grid::gpar(col = BFHtheme::bfh_cols("hospital_blue")),
-    gpB = grid::gpar(col = BFHtheme::bfh_cols("regionh_dark")),
+    gpA = NULL,
+    gpB = NULL,
     label_size = 6,
     viewport_width = NULL,
     viewport_height = NULL,
@@ -125,6 +125,17 @@ add_right_labels_marquee <- function(
     debug_mode = FALSE,
     .built_plot = NULL,
     .mapper = NULL) {
+  # Resolve default farver i ét opslag (undgår gentagne bfh_cols-kald)
+  if (is.null(gpA) || is.null(gpB)) {
+    default_cols <- BFHtheme::bfh_cols(c("hospital_blue", "regionh_dark"))
+    if (is.null(gpA)) {
+      gpA <- grid::gpar(col = default_cols[[1]])
+    }
+    if (is.null(gpB)) {
+      gpB <- grid::gpar(col = default_cols[[2]])
+    }
+  }
+
   # Beregn responsive størrelser baseret på label_size (baseline = 6)
   scale_factor <- label_size / 6
 
