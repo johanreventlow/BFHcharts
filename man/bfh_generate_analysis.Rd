@@ -10,7 +10,8 @@ bfh_generate_analysis(
   use_ai = NULL,
   min_chars = 300,
   max_chars = 375,
-  target_tolerance = 0.05
+  target_tolerance = 0.05,
+  texts_loader = load_spc_texts
 )
 }
 \arguments{
@@ -40,6 +41,9 @@ bfh_generate_analysis(
 \item{target_tolerance}{Fractional tolerance for \code{at_target} classification
 when \code{target_direction} is unknown (default 0.05 = 5\%). Ignored when the
 user provides \code{metadata$target} with an operator (retning er da kendt).}
+
+\item{texts_loader}{Function that returns SPC analysis text templates.
+Defaults to \code{\link[=load_spc_texts]{load_spc_texts()}}. Primarily intended for tests/mocking.}
 }
 \value{
 Character string with analysis text suitable for PDF export.

@@ -2,12 +2,9 @@
 % Please edit documentation in R/export_pdf.R
 \name{bfh_merge_metadata}
 \alias{bfh_merge_metadata}
-\alias{merge_metadata}
 \title{Merge User Metadata with Defaults}
 \usage{
 bfh_merge_metadata(metadata, chart_title)
-
-merge_metadata(metadata, chart_title)
 }
 \arguments{
 \item{metadata}{Named list with user-provided metadata fields.
@@ -61,4 +58,3 @@ Other utility-functions:
 \code{\link{bfh_generate_details}()}
 }
 \concept{utility-functions}
-\keyword{internal}

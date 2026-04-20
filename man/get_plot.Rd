@@ -16,4 +16,3 @@ ggplot2 object
 Helper function to extract the ggplot object for further customization.
 Users can use \code{result$plot} directly or call this function.
 }
-\keyword{internal}
