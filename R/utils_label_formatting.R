@@ -37,11 +37,12 @@
 #' @keywords internal
 #' @noRd
 format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
-  if (!is.numeric(val) || length(val) != 1) {
+  if (length(val) != 1 || !(is.numeric(val) || is.na(val))) {
     stop("val must be a single numeric value", call. = FALSE)
   }
 
-  if (!is.null(target) && (!is.numeric(target) || length(target) != 1)) {
+  if (!is.null(target) &&
+      (length(target) != 1 || !(is.numeric(target) || is.na(target)))) {
     stop("target must be NULL or a single numeric value", call. = FALSE)
   }
 
