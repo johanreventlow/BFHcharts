@@ -23,6 +23,7 @@ NULL
 #'
 #' @return Path to created .typ file (invisibly)
 #'
+#' @keywords internal
 bfh_create_typst_document <- function(chart_image,
                                       output,
                                       metadata,
