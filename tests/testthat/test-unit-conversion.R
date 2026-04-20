@@ -115,34 +115,6 @@ test_that("smart_convert_to_inches() uses max dimension for detection", {
 })
 
 # ============================================================================
-# REVERSE CONVERSION TESTS
-# ============================================================================
-
-test_that("convert_from_inches() converts to centimeters correctly", {
-  result <- convert_from_inches(10, 6, "cm")
-
-  expect_equal(result$width, 25.4, tolerance = 0.01)
-  expect_equal(result$height, 15.24, tolerance = 0.01)
-  expect_equal(result$unit, "cm")
-})
-
-test_that("convert_from_inches() converts to millimeters correctly", {
-  result <- convert_from_inches(10, 6, "mm")
-
-  expect_equal(result$width, 254, tolerance = 0.1)
-  expect_equal(result$height, 152.4, tolerance = 0.1)
-  expect_equal(result$unit, "mm")
-})
-
-test_that("convert_from_inches() converts to pixels correctly", {
-  result <- convert_from_inches(10, 6, "px", dpi = 96)
-
-  expect_equal(result$width, 960)
-  expect_equal(result$height, 576)
-  expect_equal(result$unit, "px")
-})
-
-# ============================================================================
 # INTEGRATION WITH bfh_qic() TESTS
 # ============================================================================
 

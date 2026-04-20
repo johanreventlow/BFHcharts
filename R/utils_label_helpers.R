@@ -188,7 +188,7 @@ has_arrow_symbol <- function(text) {
     return(TRUE)
   }
 
-  # Check for < or > without numbers (will be converted to arrows by format_target_prefix)
+  # Check for < or > without numbers. These are rendered as direction arrows.
   # Match < or > at start, optionally followed by whitespace, but NOT followed by digit
   if (grepl("^<\\s*$|^>\\s*$", text)) {
     return(TRUE)
@@ -196,36 +196,6 @@ has_arrow_symbol <- function(text) {
 
   return(FALSE)
 }
-
-#' Formatér målværdi med foranstillede tegn
-#'
-#' Konverterer foranstillede operatorer i målværdi tekst til Unicode-symboler:
-#' - `>=` → ≥ (U+2265)
-#' - `<=` → ≤ (U+2264)
-#' - `<` (uden tal) → ↓ (U+2193, pil ned)
-#' - `>` (uden tal) → ↑ (U+2191, pil op)
-#'
-#' @param target_text character string med målværdi (kan indeholde operator)
-#' @return character string med formateret målværdi
-#'
-#' @details
-#' Funktionen parser input for at detektere foranstillede operatorer.
-#' For `<` og `>` tjekkes om der følger et tal efter operatoren:
-#' - Hvis intet tal: erstat med pil-symbol (↓ eller ↑)
-#' - Hvis tal følger: bevar original operator
-#'
-#' @examples
-#' \dontrun{
-#' format_target_prefix(">=90") # → "≥90"
-#' format_target_prefix("<= 25") # → "≤ 25"
-#' format_target_prefix("<") # → "↓"
-#' format_target_prefix(">") # → "↑"
-#' format_target_prefix("<25") # → "<25"
-#' format_target_prefix("80") # → "80"
-#' }
-#'
-#' @keywords internal
-#' @noRd
 
 # ============================================================================
 # RESPONSIVE LABEL FORMATTING
