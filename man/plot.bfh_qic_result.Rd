@@ -18,4 +18,3 @@ The ggplot object invisibly
 Extracts and displays the ggplot object from a bfh_qic_result.
 Enables use of generic plot() function.
 }
-\keyword{internal}

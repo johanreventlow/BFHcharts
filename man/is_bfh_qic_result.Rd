@@ -15,4 +15,3 @@ Logical indicating whether x is a bfh_qic_result object
 \description{
 Check if Object is bfh_qic_result
 }
-\keyword{internal}

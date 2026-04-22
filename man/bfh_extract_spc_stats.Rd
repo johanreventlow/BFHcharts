@@ -5,7 +5,6 @@
 \alias{bfh_extract_spc_stats.default}
 \alias{bfh_extract_spc_stats.data.frame}
 \alias{bfh_extract_spc_stats.bfh_qic_result}
-\alias{extract_spc_stats}
 \title{Extract SPC Statistics}
 \usage{
 bfh_extract_spc_stats(x)
@@ -15,8 +14,6 @@ bfh_extract_spc_stats(x)
 \method{bfh_extract_spc_stats}{data.frame}(x)
 
 \method{bfh_extract_spc_stats}{bfh_qic_result}(x)
-
-extract_spc_stats(x)
 }
 \arguments{
 \item{x}{Either a data frame (typically \code{bfh_qic_result$summary}), a
@@ -80,4 +77,3 @@ Other utility-functions:
 \code{\link{bfh_merge_metadata}()}
 }
 \concept{utility-functions}
-\keyword{internal}
