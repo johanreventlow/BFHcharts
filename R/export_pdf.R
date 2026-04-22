@@ -123,15 +123,18 @@
 #'   )
 #'
 #' # Multiple exports from same chart
-#' result <- bfh_qic(data, month, infections, chart_type = "i",
-#'                   chart_title = "Infections")
+#' result <- bfh_qic(data, month, infections,
+#'   chart_type = "i",
+#'   chart_title = "Infections"
+#' )
 #'
 #' # PNG for email/presentation
 #' bfh_export_png(result, "infections.png")
 #'
 #' # PDF for official report
 #' bfh_export_pdf(result, "infections_report.pdf",
-#'                metadata = list(department = "ICU"))
+#'   metadata = list(department = "ICU")
+#' )
 #' }
 bfh_export_pdf <- function(x,
                            output,
@@ -180,15 +183,16 @@ bfh_export_pdf <- function(x,
   }
 
   if (!is.list(metadata)) {
-    stop("metadata must be a list", call. = FALSE
-    )
+    stop("metadata must be a list", call. = FALSE)
   }
 
   # ============================================================================
   # METADATA VALIDATION - Type checking and length limits
   # ============================================================================
-  known_fields <- c("hospital", "department", "analysis", "details", "author",
-                    "date", "data_definition", "target", "footer_content")
+  known_fields <- c(
+    "hospital", "department", "analysis", "details", "author",
+    "date", "data_definition", "target", "footer_content"
+  )
 
   # Warn about unknown metadata fields (may indicate typos or misuse)
   unknown_fields <- setdiff(names(metadata), known_fields)
@@ -209,11 +213,11 @@ bfh_export_pdf <- function(x,
       if (!is.null(value) && !is.character(value)) {
         # Special case: date can be Date object
         if (field == "date" && inherits(value, "Date")) {
-          next  # Allow Date objects for date field
+          next # Allow Date objects for date field
         }
         # Special case: target can be numeric
         if (field == "target" && is.numeric(value)) {
-          next  # Allow numeric values for target field
+          next # Allow numeric values for target field
         }
         stop(
           "metadata$", field, " must be a character string",
@@ -417,7 +421,7 @@ bfh_export_pdf <- function(x,
     ggplot2::ggsave(
       filename = chart_svg,
       plot = plot_for_export,
-      width = PDF_IMAGE_WIDTH_MM / 25.4,  # 250mm - original working size
+      width = PDF_IMAGE_WIDTH_MM / 25.4, # 250mm - original working size
       height = PDF_IMAGE_HEIGHT_MM / 25.4, # 140mm
       units = "in",
       dpi = dpi,
@@ -532,7 +536,9 @@ bfh_extract_spc_stats <- function(x) {
 #' @export
 #' @rdname bfh_extract_spc_stats
 bfh_extract_spc_stats.default <- function(x) {
-  if (is.null(x)) return(empty_spc_stats())
+  if (is.null(x)) {
+    return(empty_spc_stats())
+  }
   stop(
     "bfh_extract_spc_stats(): x must be a data.frame (summary) or a ",
     "bfh_qic_result object, not a ", paste(class(x), collapse = "/"),
@@ -545,7 +551,9 @@ bfh_extract_spc_stats.default <- function(x) {
 bfh_extract_spc_stats.data.frame <- function(x) {
   stats <- empty_spc_stats()
 
-  if (nrow(x) == 0) return(stats)
+  if (nrow(x) == 0) {
+    return(stats)
+  }
 
   # Brug seneste part (sidste række) for aktuel proces-statistik
   row <- x[nrow(x), ]
@@ -623,7 +631,8 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
   n_obs <- nrow(qd)
   recent_start <- max(1, n_obs - 5)
   stats$outliers_recent_count <- sum(
-    qd$sigma.signal[recent_start:n_obs], na.rm = TRUE
+    qd$sigma.signal[recent_start:n_obs],
+    na.rm = TRUE
   )
 
   stats
@@ -646,8 +655,12 @@ empty_spc_stats <- function() {
 
 # Konverter NA, NaN og Inf til NA_real_; returnér NULL for tomme værdier.
 clean_spc_value <- function(x) {
-  if (is.null(x) || length(x) == 0) return(NULL)
-  if (is.na(x) || is.nan(x) || is.infinite(x)) return(NA_real_)
+  if (is.null(x) || length(x) == 0) {
+    return(NULL)
+  }
+  if (is.na(x) || is.nan(x) || is.infinite(x)) {
+    return(NA_real_)
+  }
   x
 }
 
@@ -932,34 +945,38 @@ bfh_generate_details <- function(x) {
   # 2. Format period range
   start_date <- format_danish_date_short(min(qic_data$x, na.rm = TRUE))
   end_date <- format_danish_date_short(max(qic_data$x, na.rm = TRUE))
-  periode <- sprintf("Periode: %s \u2013 %s", start_date, end_date)  # en-dash
+  periode <- sprintf("Periode: %s \u2013 %s", start_date, end_date) # en-dash
 
   # 3. Calculate averages (numerator/denominator or value only)
   chart_type <- config$chart_type
 
   # Check if denominator data is available
   has_denominator_data <- "y.sum" %in% names(qic_data) &&
-                          "n" %in% names(qic_data) &&
-                          !all(is.na(qic_data$n))
+    "n" %in% names(qic_data) &&
+    !all(is.na(qic_data$n))
 
   # Use numerator/denominator format for:
   # - p/u-charts (always)
   # - run charts IF they have denominator data (i.e., created from proportion data)
   uses_denominator <- (chart_type %in% c("p", "u")) ||
-                      (chart_type == "run" && has_denominator_data)
+    (chart_type == "run" && has_denominator_data)
 
   if (uses_denominator) {
     # Charts with denominator: show numerator/denominator
     avg_num <- round(mean(qic_data$y.sum, na.rm = TRUE))
     avg_den <- round(mean(qic_data$n, na.rm = TRUE))
-    gns <- sprintf("Gns. %s: %s/%s", interval_label,
-                   format(avg_num, big.mark = ".", decimal.mark = ","),
-                   format(avg_den, big.mark = ".", decimal.mark = ","))
+    gns <- sprintf(
+      "Gns. %s: %s/%s", interval_label,
+      format(avg_num, big.mark = ".", decimal.mark = ","),
+      format(avg_den, big.mark = ".", decimal.mark = ",")
+    )
   } else {
     # Other chart types: show only value
     avg_val <- round(mean(qic_data$y, na.rm = TRUE))
-    gns <- sprintf("Gns. %s: %s", interval_label,
-                   format(avg_val, big.mark = ".", decimal.mark = ","))
+    gns <- sprintf(
+      "Gns. %s: %s", interval_label,
+      format(avg_val, big.mark = ".", decimal.mark = ",")
+    )
   }
 
   # 4. Get latest period values
@@ -968,13 +985,17 @@ bfh_generate_details <- function(x) {
   if (uses_denominator) {
     last_num <- round(last_row$y.sum)
     last_den <- round(last_row$n)
-    seneste <- sprintf("Seneste %s: %s/%s", interval_label,
-                       format(last_num, big.mark = ".", decimal.mark = ","),
-                       format(last_den, big.mark = ".", decimal.mark = ","))
+    seneste <- sprintf(
+      "Seneste %s: %s/%s", interval_label,
+      format(last_num, big.mark = ".", decimal.mark = ","),
+      format(last_den, big.mark = ".", decimal.mark = ",")
+    )
   } else {
     last_val <- round(last_row$y)
-    seneste <- sprintf("Seneste %s: %s", interval_label,
-                       format(last_val, big.mark = ".", decimal.mark = ","))
+    seneste <- sprintf(
+      "Seneste %s: %s", interval_label,
+      format(last_val, big.mark = ".", decimal.mark = ",")
+    )
   }
 
   # 5. Get current level (centerline value) with proper formatting
@@ -984,7 +1005,7 @@ bfh_generate_details <- function(x) {
   niveau <- format_centerline_for_details(cl_value, y_axis_unit)
 
   # 6. Combine with bullet separator
-  paste(periode, gns, seneste, niveau, sep = " \u2022 ")  # bullet character
+  paste(periode, gns, seneste, niveau, sep = " \u2022 ") # bullet character
 }
 
 #' Format Centerline Value for Details

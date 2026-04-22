@@ -294,7 +294,7 @@ test_that("Export works with multi-phase charts", {
       chart_type = "i",
       y_axis_unit = "count",
       chart_title = "Multi-Phase Analysis",
-      part = c(12, 24)  # 3 phases
+      part = c(12, 24) # 3 phases
     )
   )
 
@@ -327,8 +327,10 @@ test_that("Export handles Danish characters in metadata", {
 
   # Export with Danish characters
   result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i",
-            chart_title = "Infektioner på Afdelingen") |>
+    bfh_qic(data, month, infections,
+      chart_type = "i",
+      chart_title = "Infektioner på Afdelingen"
+    ) |>
       bfh_export_pdf(
         temp_pdf,
         metadata = list(

@@ -70,8 +70,10 @@ test_that("bfh_qic accepts all CHART_TYPES_EN chart types", {
   simple_types <- c("run", "i", "mr", "c", "g", "t")
   for (ct in simple_types) {
     result <- suppressWarnings(
-      bfh_qic(data = base_data, x = month, y = value,
-              chart_type = ct, y_axis_unit = "count")
+      bfh_qic(
+        data = base_data, x = month, y = value,
+        chart_type = ct, y_axis_unit = "count"
+      )
     )
     expect_s3_class(result, "bfh_qic_result")
   }
@@ -80,8 +82,10 @@ test_that("bfh_qic accepts all CHART_TYPES_EN chart types", {
   denom_types <- c("p", "pp", "u", "up")
   for (ct in denom_types) {
     result <- suppressWarnings(
-      bfh_qic(data = base_data, x = month, y = count, n = total,
-              chart_type = ct, y_axis_unit = "percent")
+      bfh_qic(
+        data = base_data, x = month, y = count, n = total,
+        chart_type = ct, y_axis_unit = "percent"
+      )
     )
     expect_s3_class(result, "bfh_qic_result")
   }
@@ -93,8 +97,10 @@ test_that("bfh_qic accepts all CHART_TYPES_EN chart types", {
   )
   for (ct in c("xbar", "s")) {
     result <- suppressWarnings(
-      bfh_qic(data = subgroup_data, x = group, y = value,
-              chart_type = ct, y_axis_unit = "count")
+      bfh_qic(
+        data = subgroup_data, x = group, y = value,
+        chart_type = ct, y_axis_unit = "count"
+      )
     )
     expect_s3_class(result, "bfh_qic_result")
   }

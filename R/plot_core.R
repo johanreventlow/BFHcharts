@@ -321,6 +321,6 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
   } else if (is.numeric(x_col)) {
     apply_numeric_x_axis(plot)
   } else {
-    plot  # Unknown type → return unchanged
+    plot # Unknown type → return unchanged
   }
 }

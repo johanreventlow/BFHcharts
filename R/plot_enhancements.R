@@ -194,9 +194,13 @@ add_plot_enhancements <- function(plot,
         "UTC"
       }
       restore_x <- function(values) {
-        if (inherits(x_range, "Date")) as.Date(values, origin = "1970-01-01")
-        else if (inherits(x_range, c("POSIXct", "POSIXt"))) as.POSIXct(values, origin = "1970-01-01", tz = tz)
-        else values
+        if (inherits(x_range, "Date")) {
+          as.Date(values, origin = "1970-01-01")
+        } else if (inherits(x_range, c("POSIXct", "POSIXt"))) {
+          as.POSIXct(values, origin = "1970-01-01", tz = tz)
+        } else {
+          values
+        }
       }
 
       label_data$label_x <- restore_x(label_data$label_x)

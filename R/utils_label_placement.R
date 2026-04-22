@@ -320,7 +320,7 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
 #' @keywords internal
 #' @noRd
 measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, device_height = 7,
-                                              device_ready = FALSE) {
+                                             device_ready = FALSE) {
   # Find panel viewport navn fra gtable layout
   panel_layout <- gt$layout[gt$layout$name == "panel", , drop = FALSE]
 
@@ -417,14 +417,15 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
 #' @keywords internal
 #' @noRd
 .estimate_label_height_npc_internal <- function(
-    text,
-    style,
-    panel_height_inches = NULL,
-    device_width = NULL,
-    device_height = NULL,
-    marquee_size = NULL,
-    fallback_npc = 0.13,
-    return_details = FALSE) {
+  text,
+  style,
+  panel_height_inches = NULL,
+  device_width = NULL,
+  device_height = NULL,
+  marquee_size = NULL,
+  fallback_npc = 0.13,
+  return_details = FALSE
+) {
   # Create grob and measure (assumes active device exists)
   # FIX: Apply marquee_size scaling to style if provided
   # marquee_grob uses style-based sizing, not explicit size parameter
@@ -545,15 +546,16 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
 #' @keywords internal
 #' @noRd
 estimate_label_heights_npc <- function(
-    texts,
-    style = NULL,
-    panel_height_inches = NULL,
-    device_width = NULL,
-    device_height = NULL,
-    marquee_size = NULL,
-    fallback_npc = 0.13,
-    return_details = FALSE,
-    device_ready = FALSE) {
+  texts,
+  style = NULL,
+  panel_height_inches = NULL,
+  device_width = NULL,
+  device_height = NULL,
+  marquee_size = NULL,
+  fallback_npc = 0.13,
+  return_details = FALSE,
+  device_ready = FALSE
+) {
   # Default style hvis ikke angivet
   if (is.null(style)) {
     style <- marquee::modify_style(
@@ -639,7 +641,6 @@ estimate_label_heights_npc <- function(
 
   return(results)
 }
-
 
 
 # ==============================================================================
@@ -767,17 +768,18 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #' # Result: sideA = "under", sideB = "over"
 #' }
 place_two_labels_npc <- function(
-    yA_npc,
-    yB_npc,
-    # label_height_npc = 0.035,
-    label_height_npc = 0.114,
-    gap_line = NULL, # NU: Auto-beregnes fra config
-    gap_labels = NULL, # NU: Auto-beregnes fra config
-    pad_top = NULL, # NU: Hentes fra config
-    pad_bot = NULL, # NU: Hentes fra config
-    priority = c("A", "B")[1],
-    pref_pos = c("under", "under"),
-    debug = FALSE) {
+  yA_npc,
+  yB_npc,
+  # label_height_npc = 0.035,
+  label_height_npc = 0.114,
+  gap_line = NULL, # NU: Auto-beregnes fra config
+  gap_labels = NULL, # NU: Auto-beregnes fra config
+  pad_top = NULL, # NU: Hentes fra config
+  pad_bot = NULL, # NU: Hentes fra config
+  priority = c("A", "B")[1],
+  pref_pos = c("under", "under"),
+  debug = FALSE
+) {
   # ============================================================================
   # INPUT VALIDATION & PARSING
   # ============================================================================
@@ -1125,7 +1127,6 @@ place_two_labels_npc <- function(
   # Kollision detekteret - resolution logic
   warnings <- c(warnings, "Label kollision detekteret - justerer placering")
   {
-
     # Sortér efter linje-position (lower først)
     if (yA_npc < yB_npc) {
       lower_y <- yA

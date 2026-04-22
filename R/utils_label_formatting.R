@@ -42,12 +42,12 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
   }
 
   if (!is.null(target) &&
-      (length(target) != 1 || !(is.numeric(target) || is.na(target)))) {
+    (length(target) != 1 || !(is.numeric(target) || is.na(target)))) {
     stop("target must be NULL or a single numeric value", call. = FALSE)
   }
 
   if (!is.numeric(threshold) || length(threshold) != 1 || is.na(threshold) ||
-      !is.finite(threshold) || threshold < 0) {
+    !is.finite(threshold) || threshold < 0) {
     stop("threshold must be a single non-negative finite numeric value", call. = FALSE)
   }
 

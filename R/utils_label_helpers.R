@@ -72,9 +72,9 @@ sanitize_marquee_text <- function(text) {
   # Operatorer (<, <=, >=, >) i target-labels håndteres SEPARAT via
   # parse_target_input() som returnerer en struktureret model (operator + value).
   # Denne sanitizer er generel og SKAL escape alt potentielt farligt.
-  text <- gsub("&", "&amp;", text)   # Ampersand først (undgå double-escaping)
-  text <- gsub("<", "&lt;", text)    # Left angle bracket
-  text <- gsub(">", "&gt;", text)    # Right angle bracket
+  text <- gsub("&", "&amp;", text) # Ampersand først (undgå double-escaping)
+  text <- gsub("<", "&lt;", text) # Left angle bracket
+  text <- gsub(">", "&gt;", text) # Right angle bracket
 
   # Escape marquee special characters
   text <- gsub("\\{", "&#123;", text) # Left brace
@@ -82,11 +82,11 @@ sanitize_marquee_text <- function(text) {
 
   # Fjern kontroltegn (men bevar \n for linjeskift)
   # Remove common control characters
-  text <- gsub("\t", "", text)       # Tab
-  text <- gsub("\r", "", text)       # Carriage return
-  text <- gsub("\f", "", text)       # Form feed
-  text <- gsub("\v", "", text)       # Vertical tab
-  text <- gsub("\b", "", text)       # Backspace
+  text <- gsub("\t", "", text) # Tab
+  text <- gsub("\r", "", text) # Carriage return
+  text <- gsub("\f", "", text) # Form feed
+  text <- gsub("\v", "", text) # Vertical tab
+  text <- gsub("\b", "", text) # Backspace
 
   # Begræns længde for at forhindre memory exhaustion
   max_length <- 200
@@ -119,19 +119,23 @@ sanitize_marquee_text <- function(text) {
 parse_target_input <- function(target_text) {
   empty_result <- list(operator = "", value = "", is_arrow = FALSE, display = "")
 
-  if (is.null(target_text) || length(target_text) == 0) return(empty_result)
+  if (is.null(target_text) || length(target_text) == 0) {
+    return(empty_result)
+  }
   if (!is.character(target_text)) target_text <- as.character(target_text)
-  if (nchar(trimws(target_text)) == 0) return(empty_result)
+  if (nchar(trimws(target_text)) == 0) {
+    return(empty_result)
+  }
 
   # Whitelist: kun disse operatorer accepteres i starten af strengen
   # Rækkefølge er vigtig: >= og <= skal matches FØR > og <
   patterns <- list(
-    list(re = "^>=\\s*", symbol = "\U2265", arrow = FALSE),  # ≥
-    list(re = "^<=\\s*", symbol = "\U2264", arrow = FALSE),  # ≤
-    list(re = "^<\\s*$", symbol = "\U2193", arrow = TRUE),   # ↓ (kun < uden tal)
-    list(re = "^>\\s*$", symbol = "\U2191", arrow = TRUE),   # ↑ (kun > uden tal)
-    list(re = "^<\\s*",  symbol = "<",      arrow = FALSE),  # < med tal
-    list(re = "^>\\s*",  symbol = ">",      arrow = FALSE)   # > med tal
+    list(re = "^>=\\s*", symbol = "\U2265", arrow = FALSE), # ≥
+    list(re = "^<=\\s*", symbol = "\U2264", arrow = FALSE), # ≤
+    list(re = "^<\\s*$", symbol = "\U2193", arrow = TRUE), # ↓ (kun < uden tal)
+    list(re = "^>\\s*$", symbol = "\U2191", arrow = TRUE), # ↑ (kun > uden tal)
+    list(re = "^<\\s*", symbol = "<", arrow = FALSE), # < med tal
+    list(re = "^>\\s*", symbol = ">", arrow = FALSE) # > med tal
   )
 
   for (pat in patterns) {
@@ -142,13 +146,17 @@ parse_target_input <- function(target_text) {
       if (pat$symbol %in% c("<", ">") && !grepl("^-?[0-9]", trimws(value))) {
         # Intet tal efter < eller > → pil
         arrow_sym <- if (pat$symbol == "<") "\U2193" else "\U2191"
-        return(list(operator = arrow_sym, value = "", is_arrow = TRUE,
-                    display = arrow_sym))
+        return(list(
+          operator = arrow_sym, value = "", is_arrow = TRUE,
+          display = arrow_sym
+        ))
       }
 
       display <- if (pat$arrow) pat$symbol else paste0(pat$symbol, value)
-      return(list(operator = pat$symbol, value = value,
-                  is_arrow = pat$arrow, display = display))
+      return(list(
+        operator = pat$symbol, value = value,
+        is_arrow = pat$arrow, display = display
+      ))
     }
   }
 

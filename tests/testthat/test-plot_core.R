@@ -102,7 +102,7 @@ test_that("bfh_spc_plot() works with all-NA ucl/lcl", {
 
 test_that("sigma.signal points get different color", {
   signals <- rep(FALSE, 12)
-  signals[c(4, 8)] <- TRUE  # Punkt 4 og 8 er sigma signals
+  signals[c(4, 8)] <- TRUE # Punkt 4 og 8 er sigma signals
   qic_data <- fixture_plot_qic_data(sigma_signals = signals)
   config <- spc_plot_config(chart_type = "i", y_axis_unit = "count")
   viewport <- viewport_dims(base_size = 14)
@@ -114,7 +114,7 @@ test_that("sigma.signal points get different color", {
   # Tjek at point_colour er sat korrekt i data
   plot_data <- result$data
   blue <- BFHtheme::bfh_cols("hospital_blue")
-  grey <- BFHtheme::bfh_cols("hospital_grey")
+  grey <- BFHtheme::bfh_cols("regionh_grey")
 
   expect_equal(unname(plot_data$point_colour[4]), unname(blue))
   expect_equal(unname(plot_data$point_colour[8]), unname(blue))
@@ -124,14 +124,14 @@ test_that("sigma.signal points get different color", {
 
 test_that("no sigma.signal column defaults to all grey", {
   qic_data <- fixture_plot_qic_data()
-  qic_data$sigma.signal <- NULL  # Fjern kolonnen
+  qic_data$sigma.signal <- NULL # Fjern kolonnen
   config <- spc_plot_config(chart_type = "run", y_axis_unit = "count")
   viewport <- viewport_dims(base_size = 14)
 
   result <- bfh_spc_plot(qic_data, config, viewport)
 
   expect_s3_class(result, "ggplot")
-  grey <- BFHtheme::bfh_cols("hospital_grey")
+  grey <- BFHtheme::bfh_cols("regionh_grey")
   expect_true(all(unname(result$data$point_colour) == unname(grey)))
 })
 
@@ -141,7 +141,7 @@ test_that("no sigma.signal column defaults to all grey", {
 
 test_that("anhoej.signal controls centerline linetype", {
   signals <- rep(FALSE, 12)
-  signals[5:10] <- TRUE  # Consecutive run
+  signals[5:10] <- TRUE # Consecutive run
   qic_data <- fixture_plot_qic_data(anhoej_signals = signals)
   config <- spc_plot_config(chart_type = "i", y_axis_unit = "count")
   viewport <- viewport_dims(base_size = 14)
@@ -218,7 +218,7 @@ test_that("target line is suppressed when target_text has arrow symbol", {
     chart_type = "i",
     y_axis_unit = "count",
     target_value = 55,
-    target_text = "\u2191 55"  # Up arrow triggers suppression
+    target_text = "\u2191 55" # Up arrow triggers suppression
   )
   viewport <- viewport_dims(base_size = 14)
 
