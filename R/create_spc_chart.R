@@ -699,26 +699,8 @@ bfh_qic <- function(data,
   # Execute qicharts2::qic() to get calculation results
   qic_data <- do.call(qicharts2::qic, qic_args, envir = parent.frame())
 
-  # Post-process: Add normalized anhoej.signal column
-  # Brug qicharts2-output direkte hvor muligt for baseline-kompatibilitet.
-  if (!is.null(qic_data)) {
-    if ("anhoej.signal" %in% names(qic_data)) {
-      qic_data$anhoej.signal <- as.logical(qic_data$anhoej.signal)
-    } else if ("anhoej.signals" %in% names(qic_data)) {
-      qic_data$anhoej.signal <- as.logical(qic_data$anhoej.signals)
-    } else if ("runs.signal" %in% names(qic_data) && "crossings.signal" %in% names(qic_data)) {
-      qic_data$anhoej.signal <- as.logical(qic_data$runs.signal | qic_data$crossings.signal)
-    } else if ("runs.signal" %in% names(qic_data)) {
-      qic_data$anhoej.signal <- as.logical(qic_data$runs.signal)
-    } else {
-      qic_data$anhoej.signal <- rep(FALSE, nrow(qic_data))
-    }
-
-    # Sikr at anhoej.signal aldrig indeholder NA (downstream kræver TRUE/FALSE)
-    qic_data$anhoej.signal <- ifelse(
-      is.na(qic_data$anhoej.signal), FALSE, qic_data$anhoej.signal
-    )
-  }
+  # Post-process: Normaliser anhoej.signal via dedikeret helper
+  qic_data <- add_anhoej_signal(qic_data)
 
   # Convert width/height to inches using unit conversion
   # Supports cm, mm, in, px with smart auto-detection
@@ -810,17 +792,6 @@ bfh_qic <- function(data,
   # Always generate summary for inclusion in result object
   summary_result <- format_qic_summary(qic_data, y_axis_unit = y_axis_unit)
 
-  # Deprecation warning for print.summary parameter
-  if (print.summary) {
-    warning(
-      "The 'print.summary' parameter is deprecated as of BFHcharts 0.3.0.\n",
-      "  The summary is now always included in the result object.\n",
-      "  Access it via result$summary instead of using print.summary = TRUE.\n",
-      "  This parameter will be removed in a future version.",
-      call. = FALSE
-    )
-  }
-
   # Build config object with original parameters
   config <- list(
     chart_type = chart_type,
@@ -845,36 +816,13 @@ bfh_qic <- function(data,
     )
   )
 
-  # Return based on user parameters
-  # Handle backwards compatibility for return.data parameter
-  if (return.data && print.summary) {
-    # Legacy behavior: return list(data, summary)
-    return(list(data = qic_data, summary = summary_result))
-  } else if (return.data) {
-    # Legacy behavior: return raw qic_data
-    return(qic_data)
-  } else if (print.summary) {
-    # Legacy behavior: return list(plot, summary)
-    # But also include the full result object for migration path
-    warning(
-      "Returning legacy list(plot, summary) format.\n",
-      "  Consider using the new bfh_qic_result object instead:\n",
-      "  result <- bfh_qic(...)\n",
-      "  result$plot     # Access plot\n",
-      "  result$summary  # Access summary\n",
-      "  This legacy format will be removed in a future version.",
-      call. = FALSE
-    )
-    return(list(plot = plot, summary = summary_result))
-  } else {
-    # NEW DEFAULT BEHAVIOR: Return bfh_qic_result S3 object
-    return(
-      new_bfh_qic_result(
-        plot = plot,
-        summary = summary_result,
-        qic_data = qic_data,
-        config = config
-      )
-    )
-  }
+  # Return-routing via dedikeret helper (inkl. legacy warnings)
+  build_bfh_qic_return(
+    qic_data = qic_data,
+    plot = plot,
+    summary_result = summary_result,
+    config = config,
+    return.data = return.data,
+    print.summary = print.summary
+  )
 }
