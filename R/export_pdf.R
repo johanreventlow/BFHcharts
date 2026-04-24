@@ -267,7 +267,6 @@ bfh_export_pdf <- function(x,
       stop("template_path must be a single character string", call. = FALSE)
     }
 
-    # Security: validate path before file system operations (traversal, metachar, extension)
     validate_export_path(template_path, extension = "typ")
 
     if (!file.exists(template_path)) {
@@ -278,9 +277,7 @@ bfh_export_pdf <- function(x,
       )
     }
 
-    # Resolve symlinks; re-validate so a symlink pointing through '..' is caught
     template_path <- normalizePath(template_path, winslash = "/", mustWork = TRUE)
-    template_path <- validate_export_path(template_path, extension = "typ")
 
     # Reject directories (file.exists returns TRUE for directories)
     if (dir.exists(template_path)) {

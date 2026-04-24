@@ -287,7 +287,7 @@ test_that("bfh_compile_typst afviser non-character font_path", {
       tempfile(fileext = ".pdf"),
       font_path = 123
     ),
-    "font_path must be a single character string"
+    class = "bfhcharts_path_policy_error"
   )
 
   expect_error(
@@ -296,7 +296,7 @@ test_that("bfh_compile_typst afviser non-character font_path", {
       tempfile(fileext = ".pdf"),
       font_path = c("a", "b")
     ),
-    "font_path must be a single character string"
+    class = "bfhcharts_path_policy_error"
   )
 })
 

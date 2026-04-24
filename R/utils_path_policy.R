@@ -37,11 +37,7 @@ validate_export_path <- function(path, extension = NULL, allow_root = NULL) {
     stop_path_policy_error("path must be a non-empty character string")
   }
 
-  # Reject shell metacharacters before any file system operation
-  .shell_metachars <- c(
-    ";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r"
-  )
-  if (any(vapply(.shell_metachars, function(ch) grepl(ch, path, fixed = TRUE), logical(1)))) {
+  if (grepl("[;|&$`(){}<>\n\r]", path)) {
     stop_path_policy_error(sprintf("path contains unsafe characters: %s", basename(path)))
   }
 

@@ -191,9 +191,6 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
 
   # Validér font_path hvis angivet
   if (!is.null(font_path)) {
-    if (!is.character(font_path) || length(font_path) != 1) {
-      stop("font_path must be a single character string", call. = FALSE)
-    }
     font_path <- validate_export_path(font_path)
     if (!dir.exists(font_path)) {
       warning("font_path directory does not exist: ", font_path, call. = FALSE)
