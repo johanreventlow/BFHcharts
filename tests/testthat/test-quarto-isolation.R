@@ -312,10 +312,12 @@ test_that("bfh_compile_typst afviser non-character font_path", {
 
 test_that(".system2 mock: success path verifies arg construction og returnerer output-sti", {
   typst_file <- tempfile(fileext = ".typ")
+  typst_file <- file.path(normalizePath(dirname(typst_file), mustWork = FALSE), basename(typst_file))
   writeLines("#text[test]", typst_file)
   withr::defer(unlink(typst_file))
 
   output <- tempfile(fileext = ".pdf")
+  output <- file.path(normalizePath(dirname(output), mustWork = FALSE), basename(output))
   withr::defer(unlink(output))
 
   captured_command <- NULL

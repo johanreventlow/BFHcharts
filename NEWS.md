@@ -1,6 +1,24 @@
 # BFHcharts 0.8.2
 
-## Breaking changes (internal API)
+## Security hardening
+
+* **Centraliseret path policy:** Al validering af eksport-stier sker nu via
+  den interne `validate_export_path()` helper i stedet for håndskrevne
+  inline-tjek i de tre eksport-funktioner. Validering er nu konsistent og
+  dækker: `..`-traversal (segment-baseret — ingen falske positiver på
+  filnavne med `..` i sig), shell-metacharacters (fuld sæt: `;|&$\`(){}
+  <>\n\r`), og extension-håndhævelse. Fejl kastes med class
+  `bfhcharts_path_policy_error` (#central-export-path-policy).
+
+## Breaking changes (intern API)
+
+* **`bfh_export_png()`: manglende `.png`-extension er nu en fejl** (ikke en
+  advarsel). Kald med forkert extension kaster en `bfhcharts_path_policy_error`
+  (#central-export-path-policy).
+
+* **`bfh_export_pdf()`: `.pdf`-extension håndhæves nu.** Hidtil var der intet
+  extension-tjek på output-stien; nu kastes en `bfhcharts_path_policy_error`
+  ved forkert extension (#central-export-path-policy).
 
 * **`spc_plot_config()`, `viewport_dims()`, `phase_config()` fejler nu
   ved ugyldigt input** i stedet for at udsende en advarsel og returnere

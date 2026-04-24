@@ -186,35 +186,15 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   }
 
   # Security: Validate paths before passing to system2()
-  shell_metachars <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
-
-  if (any(vapply(shell_metachars, function(char) grepl(char, typst_file, fixed = TRUE), logical(1)))) {
-    stop(
-      "typst_file path contains potentially unsafe characters\n",
-      "  Path: ", basename(typst_file),
-      call. = FALSE
-    )
-  }
-
-  if (any(vapply(shell_metachars, function(char) grepl(char, output, fixed = TRUE), logical(1)))) {
-    stop(
-      "output path contains potentially unsafe characters\n",
-      "  Path: ", basename(output),
-      call. = FALSE
-    )
-  }
+  typst_file <- validate_export_path(typst_file)
+  output <- validate_export_path(output)
 
   # Validér font_path hvis angivet
   if (!is.null(font_path)) {
     if (!is.character(font_path) || length(font_path) != 1) {
       stop("font_path must be a single character string", call. = FALSE)
     }
-    if (grepl("..", font_path, fixed = TRUE)) {
-      stop("font_path cannot contain '..' (path traversal attempt detected)", call. = FALSE)
-    }
-    if (any(vapply(shell_metachars, function(char) grepl(char, font_path, fixed = TRUE), logical(1)))) {
-      stop("font_path contains potentially unsafe characters", call. = FALSE)
-    }
+    font_path <- validate_export_path(font_path)
     if (!dir.exists(font_path)) {
       warning("font_path directory does not exist: ", font_path, call. = FALSE)
       font_path <- NULL

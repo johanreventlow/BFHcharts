@@ -163,24 +163,7 @@ bfh_export_pdf <- function(x,
     )
   }
 
-  # Security: Prevent path traversal attacks (check BEFORE file operations)
-  if (grepl("..", output, fixed = TRUE)) {
-    stop(
-      "output path cannot contain '..' (path traversal attempt detected)\n",
-      "  Provided path: ", basename(output),
-      call. = FALSE
-    )
-  }
-
-  # Security: Prevent shell metacharacter injection
-  shell_metachars <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
-  if (any(vapply(shell_metachars, function(char) grepl(char, output, fixed = TRUE), logical(1)))) {
-    stop(
-      "output path contains potentially unsafe characters\n",
-      "  Path: ", basename(output),
-      call. = FALSE
-    )
-  }
+  output <- validate_export_path(output, extension = "pdf")
 
   if (!is.list(metadata)) {
     stop("metadata must be a list", call. = FALSE)
@@ -277,35 +260,16 @@ bfh_export_pdf <- function(x,
   }
 
   # ============================================================================
-  # SECURITY VALIDATION - Custom template path
-  # All security checks MUST happen BEFORE file system operations or Quarto calls
+  # SECURITY + FILE VALIDATION - Custom template path
   # ============================================================================
   if (!is.null(template_path)) {
     if (!is.character(template_path) || length(template_path) != 1) {
       stop("template_path must be a single character string", call. = FALSE)
     }
 
-    # Security: Prevent path traversal in template_path (check BEFORE file.exists)
-    if (grepl("..", template_path, fixed = TRUE)) {
-      stop(
-        "template_path cannot contain '..' (path traversal attempt detected)",
-        call. = FALSE
-      )
-    }
+    # Security: validate path before file system operations (traversal, metachar, extension)
+    validate_export_path(template_path, extension = "typ")
 
-    # Security: Prevent shell metacharacters in template path
-    if (any(vapply(shell_metachars, function(char) grepl(char, template_path, fixed = TRUE), logical(1)))) {
-      stop(
-        "template_path contains potentially unsafe characters",
-        call. = FALSE
-      )
-    }
-  }
-
-  # ============================================================================
-  # FILE VALIDATION - After security checks pass
-  # ============================================================================
-  if (!is.null(template_path)) {
     if (!file.exists(template_path)) {
       stop(
         "Custom template file not found: ", basename(template_path), "\n",
@@ -314,31 +278,14 @@ bfh_export_pdf <- function(x,
       )
     }
 
-    # Resolve symlinks to prevent TOCTOU attacks and path confusion
-    # normalizePath() resolves symlinks and returns absolute path
+    # Resolve symlinks; re-validate so a symlink pointing through '..' is caught
     template_path <- normalizePath(template_path, winslash = "/", mustWork = TRUE)
-
-    # Re-check for path traversal AFTER symlink resolution
-    # (Symlink could point to ../../../etc/passwd)
-    if (grepl("..", template_path, fixed = TRUE)) {
-      stop(
-        "template_path resolves to a path containing '..' (path traversal attempt detected)",
-        call. = FALSE
-      )
-    }
+    template_path <- validate_export_path(template_path, extension = "typ")
 
     # Reject directories (file.exists returns TRUE for directories)
     if (dir.exists(template_path)) {
       stop(
         "template_path must be a file, not a directory: ", basename(template_path),
-        call. = FALSE
-      )
-    }
-    # Validate .typ extension
-    if (!grepl("\\.typ$", template_path, ignore.case = TRUE)) {
-      stop(
-        "template_path must be a .typ file: ", basename(template_path), "\n",
-        "  Typst templates require the .typ extension.",
         call. = FALSE
       )
     }

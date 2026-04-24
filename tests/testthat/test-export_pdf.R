@@ -834,10 +834,10 @@ test_that("bfh_export_pdf rejects directory as template_path", {
 
   temp_file <- tempfile(fileext = ".pdf")
 
-  # Directory should be rejected
+  # Directory should be rejected (no .typ extension, caught by path policy)
   expect_error(
     bfh_export_pdf(result, temp_file, template_path = tempdir()),
-    "must be a file, not a directory"
+    class = "bfhcharts_path_policy_error"
   )
 })
 
