@@ -42,6 +42,15 @@
 #' @noRd
 NULL
 
+# Internal helper: raise a structured config error
+stop_config_error <- function(msg) {
+  cond <- structure(
+    class = c("bfhcharts_config_error", "error", "condition"),
+    list(message = msg, call = sys.call(-1))
+  )
+  stop(cond)
+}
+
 # ============================================================================
 # SPC PLOT CONFIGURATION
 # ============================================================================
@@ -67,10 +76,10 @@ NULL
 #' This object groups all plot-specific configuration that controls
 #' the appearance and behavior of the SPC chart.
 #'
-#' **Validation**:
+#' **Validation** (all raise errors with class `bfhcharts_config_error`):
 #' - `chart_type` must be one of the valid SPC chart types
 #' - `y_axis_unit` must be one of: count, percent, rate, time
-#' - `target_value` must be numeric if provided
+#' - `target_value` must be a single finite numeric value or NULL
 #'
 #' @keywords internal
 #' @noRd
@@ -86,20 +95,20 @@ NULL
 #'   target_text = "Target: 95%"
 #' )
 spc_plot_config <- function(
-    chart_type = "run",
-    y_axis_unit = "count",
-    target_value = NULL,
-    target_text = NULL,
-    centerline_value = NULL,
-    chart_title = NULL,
-    ylab = "",
-    xlab = "",
-    subtitle = NULL,
-    caption = NULL) {
+  chart_type = "run",
+  y_axis_unit = "count",
+  target_value = NULL,
+  target_text = NULL,
+  centerline_value = NULL,
+  chart_title = NULL,
+  ylab = "",
+  xlab = "",
+  subtitle = NULL,
+  caption = NULL
+) {
   # Validation
-  # Validate chart type (CHART_TYPES_EN er single source of truth)
   if (!chart_type %in% CHART_TYPES_EN) {
-    warning(sprintf(
+    stop_config_error(sprintf(
       "Invalid chart_type: '%s'. Valid types are: %s",
       chart_type,
       paste(CHART_TYPES_EN, collapse = ", ")
@@ -108,16 +117,17 @@ spc_plot_config <- function(
 
   valid_units <- c("count", "percent", "rate", "time")
   if (!y_axis_unit %in% valid_units) {
-    warning(sprintf(
+    stop_config_error(sprintf(
       "Invalid y_axis_unit: '%s'. Valid units are: %s",
       y_axis_unit,
       paste(valid_units, collapse = ", ")
     ))
   }
 
-  if (!is.null(target_value) && !is.numeric(target_value)) {
-    warning("target_value must be numeric - setting to NULL")
-    target_value <- NULL
+  if (!is.null(target_value) &&
+    (!is.numeric(target_value) || length(target_value) != 1 ||
+      is.na(target_value) || is.infinite(target_value))) {
+    stop_config_error("target_value must be a single finite numeric value or NULL")
   }
 
   structure(
@@ -177,6 +187,10 @@ print.spc_plot_config <- function(x, ...) {
 #' - base_size controls responsive scaling of geoms and text
 #' - Reference: base_size 14 provides original sizing
 #'
+#' **Validation**:
+#' - width/height must be positive numeric or NULL; invalid values raise an error
+#' - base_size must be positive numeric; invalid values raise an error
+#'
 #' @keywords internal
 #' @noRd
 #' @examples
@@ -186,23 +200,28 @@ print.spc_plot_config <- function(x, ...) {
 #' # Fixed size with larger text
 #' vp <- viewport_dims(width = 1200, height = 800, base_size = 18)
 viewport_dims <- function(
-    width = NULL,
-    height = NULL,
-    base_size = 14) {
+  width = NULL,
+  height = NULL,
+  base_size = 14
+) {
   # Validation
-  if (!is.null(width) && (!is.numeric(width) || width <= 0)) {
-    warning("width must be positive numeric or NULL - setting to NULL")
-    width <- NULL
+  if (!is.null(width)) {
+    if (!is.numeric(width) || length(width) != 1 ||
+      is.na(width) || is.infinite(width) || width <= 0) {
+      stop_config_error("width must be a positive numeric value or NULL")
+    }
   }
 
-  if (!is.null(height) && (!is.numeric(height) || height <= 0)) {
-    warning("height must be positive numeric or NULL - setting to NULL")
-    height <- NULL
+  if (!is.null(height)) {
+    if (!is.numeric(height) || length(height) != 1 ||
+      is.na(height) || is.infinite(height) || height <= 0) {
+      stop_config_error("height must be a positive numeric value or NULL")
+    }
   }
 
-  if (!is.numeric(base_size) || base_size <= 0) {
-    warning("base_size must be positive numeric - defaulting to 14")
-    base_size <- 14
+  if (!is.numeric(base_size) || length(base_size) != 1 ||
+    is.na(base_size) || is.infinite(base_size) || base_size <= 0) {
+    stop_config_error("base_size must be a positive numeric value")
   }
 
   structure(
@@ -273,17 +292,22 @@ print.viewport_dims <- function(x, ...) {
 #'   freeze_position = 15
 #' )
 phase_config <- function(
-    part_positions = NULL,
-    freeze_position = NULL) {
+  part_positions = NULL,
+  freeze_position = NULL
+) {
   # Validation
-  if (!is.null(part_positions) && (!is.numeric(part_positions) || any(part_positions <= 0))) {
-    warning("part_positions must be positive integers - setting to NULL")
-    part_positions <- NULL
+  if (!is.null(part_positions)) {
+    if (!is.numeric(part_positions) || any(is.na(part_positions)) ||
+      any(part_positions <= 0)) {
+      stop_config_error("part_positions must be positive integers or NULL")
+    }
   }
 
-  if (!is.null(freeze_position) && (!is.numeric(freeze_position) || freeze_position <= 0)) {
-    warning("freeze_position must be a positive integer - setting to NULL")
-    freeze_position <- NULL
+  if (!is.null(freeze_position)) {
+    if (!is.numeric(freeze_position) || length(freeze_position) != 1 ||
+      is.na(freeze_position) || freeze_position <= 0) {
+      stop_config_error("freeze_position must be a positive integer or NULL")
+    }
   }
 
   structure(

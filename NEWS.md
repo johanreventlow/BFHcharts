@@ -1,5 +1,14 @@
 # BFHcharts 0.8.2
 
+## Breaking changes (internal API)
+
+* **`spc_plot_config()`, `viewport_dims()`, `phase_config()` fejler nu
+  ved ugyldigt input** i stedet for at udsende en advarsel og returnere
+  en coerced/default-værdi. Alle valideringsfejl kaster en condition med
+  class `bfhcharts_config_error`. Dette påvirker kun kode der direkte
+  kalder disse interne constructors — `bfh_qic()` er upåvirket
+  (#harden-config-validation).
+
 ## Interne ændringer
 
 * **Testsuite stabilisering:** Kanoniske skip-helpers tilføjet til
