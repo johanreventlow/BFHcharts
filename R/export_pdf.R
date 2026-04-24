@@ -157,30 +157,7 @@ bfh_export_pdf <- function(x,
     )
   }
 
-  if (!is.character(output) || length(output) != 1 || nchar(output) == 0) {
-    stop("output must be a non-empty character string specifying the PDF file path",
-      call. = FALSE
-    )
-  }
-
-  # Security: Prevent path traversal attacks (check BEFORE file operations)
-  if (grepl("..", output, fixed = TRUE)) {
-    stop(
-      "output path cannot contain '..' (path traversal attempt detected)\n",
-      "  Provided path: ", basename(output),
-      call. = FALSE
-    )
-  }
-
-  # Security: Prevent shell metacharacter injection
-  shell_metachars <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
-  if (any(vapply(shell_metachars, function(char) grepl(char, output, fixed = TRUE), logical(1)))) {
-    stop(
-      "output path contains potentially unsafe characters\n",
-      "  Path: ", basename(output),
-      call. = FALSE
-    )
-  }
+  validate_export_path(output, extension = "pdf", ext_action = "stop")
 
   if (!is.list(metadata)) {
     stop("metadata must be a list", call. = FALSE)
@@ -284,22 +261,7 @@ bfh_export_pdf <- function(x,
     if (!is.character(template_path) || length(template_path) != 1) {
       stop("template_path must be a single character string", call. = FALSE)
     }
-
-    # Security: Prevent path traversal in template_path (check BEFORE file.exists)
-    if (grepl("..", template_path, fixed = TRUE)) {
-      stop(
-        "template_path cannot contain '..' (path traversal attempt detected)",
-        call. = FALSE
-      )
-    }
-
-    # Security: Prevent shell metacharacters in template path
-    if (any(vapply(shell_metachars, function(char) grepl(char, template_path, fixed = TRUE), logical(1)))) {
-      stop(
-        "template_path contains potentially unsafe characters",
-        call. = FALSE
-      )
-    }
+    validate_export_path(template_path)
   }
 
   # ============================================================================
@@ -313,28 +275,13 @@ bfh_export_pdf <- function(x,
         call. = FALSE
       )
     }
-
-    # Resolve symlinks to prevent TOCTOU attacks and path confusion
-    # normalizePath() resolves symlinks and returns absolute path
-    template_path <- normalizePath(template_path, winslash = "/", mustWork = TRUE)
-
-    # Re-check for path traversal AFTER symlink resolution
-    # (Symlink could point to ../../../etc/passwd)
-    if (grepl("..", template_path, fixed = TRUE)) {
-      stop(
-        "template_path resolves to a path containing '..' (path traversal attempt detected)",
-        call. = FALSE
-      )
-    }
-
-    # Reject directories (file.exists returns TRUE for directories)
+    template_path <- validate_export_path(template_path, normalize = TRUE)
     if (dir.exists(template_path)) {
       stop(
         "template_path must be a file, not a directory: ", basename(template_path),
         call. = FALSE
       )
     }
-    # Validate .typ extension
     if (!grepl("\\.typ$", template_path, ignore.case = TRUE)) {
       stop(
         "template_path must be a .typ file: ", basename(template_path), "\n",

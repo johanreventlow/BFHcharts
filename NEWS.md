@@ -1,3 +1,19 @@
+# BFHcharts 0.8.3
+
+## Sikkerhed
+
+* **Centraliseret path policy for eksport-funktioner:** Duplikeret
+  sti-valideringslogik i `bfh_export_png()`, `bfh_export_pdf()` og
+  `bfh_compile_typst()` er samlet i en ny intern helper
+  `validate_export_path()` i `R/utils_path_policy.R`. Alle tre
+  call-sites anvender nu den samme komplette metacharacter-blacklist
+  (`; | & $ \` ( ) { } < > \n \r`) og det samme path-traversal-check.
+  **Adfærdsændringer:** `bfh_export_png()` afviser nu også `<`, `>`,
+  `\n` og `\r` i stier (tidligere tilladt); `bfh_export_pdf()` kræver
+  nu `.pdf`-extension på output-stien (tidligere ukontrolleret).
+  Ingen ændringer i public API-signaturer
+  (#central-export-path-policy).
+
 # BFHcharts 0.8.2
 
 ## Breaking changes (internal API)
