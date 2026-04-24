@@ -109,8 +109,7 @@ test_that("quarto_available separerer cache pr. min_version", {
 
   # Ikke cached for 2.0.0 → vil udføre reel detektion (skip hvis live-Quarto
   # ikke er tilgængeligt)
-  skip_if_not(BFHcharts:::quarto_available(use_cache = FALSE),
-              "Live Quarto not available; cannot verify separate cache key")
+  skip_if_no_quarto()
 
   # Hvis live-Quarto er < 2.0.0, skal 2.0.0-nøglen give FALSE (ikke genbruge 1.4.0-cache)
   # Vi cacher kun 1.4.0-TRUE → 2.0.0 skal lave sit eget opslag
@@ -138,9 +137,11 @@ test_that("find_quarto respekterer QUARTO_PATH environment-variabel", {
   # Dette test er miljø-afhængigt: Sys.which() har højere prioritet end
   # QUARTO_PATH. Hvis et system-Quarto findes i PATH, returneres det først.
   # Testen skip'er i så fald for at undgå false positive.
-  skip_if(nchar(Sys.which("quarto")) > 0 &&
-          file.exists(as.character(Sys.which("quarto"))),
-          "System Quarto present in PATH; cannot test QUARTO_PATH fallback")
+  skip_if(
+    nchar(Sys.which("quarto")) > 0 &&
+      file.exists(as.character(Sys.which("quarto"))),
+    "System Quarto present in PATH; cannot test QUARTO_PATH fallback"
+  )
 
   local_clean_quarto_cache()
 
@@ -163,7 +164,7 @@ test_that("find_quarto respekterer bfhcharts.quarto_path option", {
   file.create(fake_path)
   withr::defer(unlink(fake_path))
 
-  withr::local_envvar(QUARTO_PATH = "")  # Ryd environment først
+  withr::local_envvar(QUARTO_PATH = "") # Ryd environment først
   withr::local_options(bfhcharts.quarto_path = fake_path)
 
   result <- BFHcharts:::find_quarto()
@@ -257,7 +258,7 @@ test_that("bfh_compile_typst afviser ikke-eksisterende font_path med warning", {
 
   # Hop over fuld compile — vi tester kun validation-fasen
   # Kør funktionen, fang warning om manglende font-mappe
-  nonexistent_fonts <- tempfile()  # eksisterer ikke
+  nonexistent_fonts <- tempfile() # eksisterer ikke
 
   # Forventer warning (ikke error) om manglende font-mappe.
   # Den efterfølgende system2-kald vil fejle pga. live Quarto ikke garanteret,
@@ -269,7 +270,7 @@ test_that("bfh_compile_typst afviser ikke-eksisterende font_path med warning", {
         tempfile(fileext = ".pdf"),
         font_path = nonexistent_fonts
       ),
-      error = function(e) invisible(NULL)  # swallow downstream errors
+      error = function(e) invisible(NULL) # swallow downstream errors
     ),
     "font_path directory does not exist"
   )

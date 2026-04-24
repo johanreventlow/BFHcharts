@@ -103,7 +103,8 @@ test_that("bfh_export_pdf validates metadata", {
 })
 
 test_that("bfh_export_pdf creates PDF file", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(
@@ -149,7 +150,8 @@ test_that("bfh_export_pdf creates PDF file", {
 })
 
 test_that("bfh_export_pdf works in pipe workflow", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(
@@ -176,7 +178,8 @@ test_that("bfh_export_pdf works in pipe workflow", {
 })
 
 test_that("bfh_export_pdf extracts SPC statistics", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(
@@ -207,7 +210,8 @@ test_that("bfh_export_pdf extracts SPC statistics", {
 })
 
 test_that("bfh_export_pdf handles metadata correctly", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(
@@ -241,7 +245,8 @@ test_that("bfh_export_pdf handles metadata correctly", {
 })
 
 test_that("bfh_export_pdf strips title from chart image", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(
@@ -274,7 +279,8 @@ test_that("bfh_export_pdf strips title from chart image", {
 })
 
 test_that("bfh_export_pdf creates directory if needed", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(
@@ -732,7 +738,8 @@ test_that("bfh_export_pdf validates custom template_path", {
 })
 
 test_that("bfh_export_pdf passes date metadata to template", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(
@@ -914,7 +921,8 @@ test_that("generated Typst contains metadata and chart reference", {
 # ============================================================================
 
 test_that("bfh_export_pdf handles ggsave failure gracefully", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(
@@ -945,7 +953,8 @@ test_that("quarto_available handles unparseable version correctly", {
 })
 
 test_that("bfh_export_pdf validates input structure", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   # Create malformed bfh_qic_result (missing required components)
@@ -968,7 +977,8 @@ test_that("bfh_export_pdf validates input structure", {
 })
 
 test_that("bfh_compile_typst reports Quarto compilation failures", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   # Create invalid Typst file that will fail compilation
@@ -1391,7 +1401,8 @@ test_that("format_centerline_for_details handles different y_axis_units", {
 })
 
 test_that("bfh_export_pdf auto-generates details when not provided", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(
@@ -1416,7 +1427,8 @@ test_that("bfh_export_pdf auto-generates details when not provided", {
 })
 
 test_that("bfh_export_pdf preserves user-provided details", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(
@@ -1802,7 +1814,8 @@ test_that("bfh_export_pdf validates dpi parameter", {
 })
 
 test_that("bfh_export_pdf accepts custom analysis length parameters", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   data <- data.frame(

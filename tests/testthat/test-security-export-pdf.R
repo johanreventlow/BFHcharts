@@ -140,7 +140,8 @@ test_that("bfh_compile_typst rejects shell metacharacters", {
 # ============================================================================
 
 test_that("bfh_export_pdf allows safe paths", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   chart <- fixture_test_chart()
@@ -159,7 +160,8 @@ test_that("bfh_export_pdf allows safe paths", {
 })
 
 test_that("bfh_export_pdf allows paths with spaces", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   chart <- fixture_test_chart()
@@ -180,7 +182,8 @@ test_that("bfh_export_pdf allows paths with spaces", {
 })
 
 test_that("bfh_export_pdf allows paths with underscores and dashes", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   chart <- fixture_test_chart()
@@ -223,7 +226,8 @@ test_that("bfh_export_pdf validates metadata field types", {
 })
 
 test_that("bfh_export_pdf allows Date objects for date field", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   chart <- fixture_test_chart()
@@ -255,7 +259,8 @@ test_that("bfh_export_pdf enforces metadata string length limits", {
 })
 
 test_that("bfh_export_pdf warns about unknown metadata fields", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   chart <- fixture_test_chart()

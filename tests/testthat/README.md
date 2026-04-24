@@ -50,36 +50,36 @@ Workflows:
 | `BFHCHARTS_TEST_FULL` | ikke sat | Kører integration-tests ud over unit-tests |
 | `BFHCHARTS_TEST_RENDER` | ikke sat | Kører live render-tests (Quarto, PDF, PNG) |
 
-**Status (2026-04-18):** Miljøvariablerne er sat i CI, men de R-side helpers (`skip_if_not_full_test()` og `skip_if_not_render_test()`) implementeres i Fase 2 (task 13.1–13.4). Eksisterende tests bruger indtil da `skip_on_ci()` / `skip_on_cran()`-mønstre.
+**Status (2026-04-24):** Alle render/PDF-tests er migreret til de kanoniske helpers (`skip_if_not_render_test()` + `skip_if_no_quarto()`). Nye helpers `skip_if_no_quarto()` og `skip_if_no_mari_font()` tilføjet til `helper-skips.R`. Miljøvariablerne er sat i CI.
 
 ---
 
 ## Skip-politik
 
-### Legitime skips
+### Kanoniske skip-helpers (kilde: `helper-skips.R`)
 
-| Funktion | Brug | Eksempel |
-|----------|------|----------|
-| `skip_on_cran()` | Live Quarto render-tests (kan ikke køres på CRAN) | PDF-eksport-tests |
-| `skip_if_not(quarto_available())` | Test kræver Quarto CLI lokalt | PDF-compile tests |
-| `skip_if(!file.exists(...))` | Fixture afhængighed | Template-parsing tests |
+Alle skip-helpers er centraliseret i `tests/testthat/helper-skips.R`. Brug kun dem — bespoke skip-logik i individuelle testfiler er et anti-mønster.
 
-### Font-afhængige tests (`skip_if_fonts_unavailable()`)
+| Helper | Gate | Brug |
+|--------|------|------|
+| `skip_if_not_render_test()` | `BFHCHARTS_TEST_RENDER=true` | PDF/Quarto/Typst render-tests |
+| `skip_if_not_full_test()` | `BFHCHARTS_TEST_FULL=true` | Tunge integration-/export-kæder |
+| `skip_if_no_quarto()` | Quarto CLI binær til stede | Sekundær check efter env-gate |
+| `skip_if_no_mari_font()` | Mari-fonts installeret | Font-afhængig rendering |
+| `skip_if_fonts_unavailable()` | CI-detektion (legacy) | Bevar for eksisterende tests |
+| `skip_on_cran()` | CRAN-check | Fil-system-writes, live renders |
+| `skip_if(!file.exists(...))` | Fixture-fil | Template-parsing tests |
 
-Alle 18 tidligere `skip_on_ci()`-kald er migreret til `skip_if_fonts_unavailable()` — en beskrivende wrapper der tydeliggør hvorfor testen skippes (BFHtheme's proprietære Mari-fonts mangler på CI).
+**Render-tests (PDF/Quarto) bruger altid to gates i denne rækkefølge:**
+```r
+skip_if_not_render_test()  # env-gate — hurtig exit hvis ikke sat
+skip_if_no_quarto()        # binær check — Quarto CLI til stede?
+skip_on_cran()             # CRAN-sikring
+```
 
-**Filer med font-afhængige skips:**
-- `test-arrow-symbols.R` (2 kald) — fontbaseret arrow-rendering
-- `test-bfh_qic_result.R` (6 kald) — S3-klasse tests der triggerer rendering
-- `test-chart_types.R` (2 kald) — chart-type-baseret rendering
-- `test-integration.R` (file-level) — ende-til-ende bfh_qic tests
-- `test-notes.R` (file-level) — annotation-tests
-- `test-plot_core.R` (file-level) — core plot-rendering
-- `test-plot_margin.R` (file-level) — margin-konfig tests
-- `test-themes.R` (1 kald) — theme-rendering
-- `test-y_axis_formatting.R` (3 kald) — y-akse rendering
+### Font-afhængige tests
 
-**Fremtidig forbedring:** Helperen kan udvides til faktisk at detektere Mari-fonts via `systemfonts::system_fonts()` i stedet for at antage CI = ingen fonts. Dette ville tillade font-dependent tests at køre lokalt på udviklere der har Mari installeret.
+Tests der kræver Mari-fonts (BFHtheme) bruger `skip_if_fonts_unavailable()` (eksisterende tests) eller `skip_if_no_mari_font()` (nye tests). Sidstnævnte bruger faktisk font-detektion via `systemfonts::system_fonts()` hvis tilgængeligt.
 
 ### Anti-mønstre der IKKE accepteres
 
@@ -159,4 +159,4 @@ Commits der re-baseliner golden images SKAL have dokumenteret begrundelse i comm
 - `openspec/changes/strengthen-test-infrastructure/design.md` — tekniske beslutninger (D1-D10)
 - `openspec/changes/strengthen-test-infrastructure/tasks.md` — opgaver og status
 
-**Sidst opdateret:** 2026-04-18
+**Sidst opdateret:** 2026-04-24
