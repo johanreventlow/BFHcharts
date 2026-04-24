@@ -117,8 +117,8 @@ skip_if_no_quarto <- function(
 #' Denne helper skipper testen hvis vi er på CI.
 #'
 #' Forskel fra `skip_on_ci()`: giver en eksplicit besked om årsagen så det
-#' er klart hvorfor testen skippes. Kan på sigt erstattes med en faktisk
-#' font-detektion (fx via `systemfonts::system_fonts()` check for "Mari").
+#' er klart hvorfor testen skippes. For nye tests, brug `skip_if_no_mari_font()`
+#' som detekterer Mari-fonts via `systemfonts` i stedet for CI-proxy.
 #'
 #' @param msg Besked der vises ved skip
 #' @keywords internal

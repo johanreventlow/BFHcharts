@@ -9,8 +9,6 @@
   `skip_if_no_quarto()` — sikrer at `devtools::test()` kører rent uden
   Quarto installeret og uden render-gate sat (#stabilize-default-test-suite).
 
-
-
 * Fjernet biSPCharts-specifik kode fra `chart_types.R` (#119):
   `CHART_TYPES_DA`, `CHART_TYPE_DESCRIPTIONS`, `get_qic_chart_type()`,
   `chart_type_requires_denominator()` og `get_chart_description()` var aldrig
