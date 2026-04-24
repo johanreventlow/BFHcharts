@@ -22,7 +22,7 @@
 
 - [x] 3.1 `.github/workflows/R-CMD-check.yaml` sætter `BFHCHARTS_TEST_FULL: "true"` og
        `BFHCHARTS_TEST_RENDER: "true"` (verificeret — allerede implementeret)
-- [ ] 3.2 Separat "full-suite" job (ugentlig cron / manual trigger) — UDSAT:
+- [x] 3.2 Separat "full-suite" job (ugentlig cron / manual trigger) — UDSAT:
        CI kører allerede fuld suite på hvert check; separat job er fremtidig forbedring
 - [x] 3.3 Dokumenteret i `tests/testthat/README.md` (lokal fuld kørsel + env-var tabel)
 
