@@ -11,6 +11,12 @@
 
 ## Interne ændringer
 
+* **Testbarhed af Quarto-pipeline:** `bfh_compile_typst()` og
+  `quarto_available()` accepterer nu `.system2 = system2` og
+  `.quarto_path = NULL` parametre (dependency injection). Produktionskald
+  er uændret; tests kan injicere mocks uden live Quarto-installation
+  (#inject-quarto-system2).
+
 * **Testsuite stabilisering:** Kanoniske skip-helpers tilføjet til
   `tests/testthat/helper-skips.R`: `skip_if_no_quarto()` og
   `skip_if_no_mari_font()`. Alle render/PDF-tests migreret fra rå

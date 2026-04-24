@@ -40,7 +40,7 @@ markdown_to_typst("This is *emphasized*")
 
 # Mixed formatting
 markdown_to_typst("Write a title or\n**conclude what the chart shows**")
-# Returns: "Write a title or\\ #strong[conclude what the chart shows]"
+# Returns: "Write a title or\ #strong[conclude what the chart shows]"
 }
 }
 \keyword{internal}

@@ -163,15 +163,18 @@ bfh_qic(
   )
 
 # Multiple exports from same chart
-result <- bfh_qic(data, month, infections, chart_type = "i",
-                  chart_title = "Infections")
+result <- bfh_qic(data, month, infections,
+  chart_type = "i",
+  chart_title = "Infections"
+)
 
 # PNG for email/presentation
 bfh_export_png(result, "infections.png")
 
 # PDF for official report
 bfh_export_pdf(result, "infections_report.pdf",
-               metadata = list(department = "ICU"))
+  metadata = list(department = "ICU")
+)
 }
 }
 \seealso{

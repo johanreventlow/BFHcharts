@@ -300,19 +300,87 @@ test_that("bfh_compile_typst afviser non-character font_path", {
   )
 })
 
+
 # ============================================================================
-# FUTURE WORK: Fuld mock-baseret test af system2()
+# MOCK-BASEREDE TESTS: .system2 dependency injection i bfh_compile_typst()
 # ============================================================================
 #
-# bfh_compile_typst() kalder system2() direkte internt. For at teste
-# exit-status != 0 og missing-output-file cases kræves dependency injection
-# eller R-namespace-niveau mock af system2.
+# Disse tests bruger .system2-parameteret til at injicere mocks uden live Quarto.
+# Mock-factories er defineret i helper-mocks.R.
 #
-# Planlagt approach (opfølgning):
-#   1. Refactor bfh_compile_typst() til at acceptere `.system2` parameter
-#      med default system2; tests kan så injicere mocks direkte.
-#   2. Alternativt: brug testthat::local_mocked_bindings med .package = "base"
-#      når testthat 3.2+ er krav — kræver verifikation af at mocking fungerer
-#      på tværs af package-namespaces.
-#
-# Reference: design.md D4 (mocking framework decision)
+# For egne tests: brug BFHcharts:::bfh_compile_typst(..., .system2 = mock, .quarto_path = "/fake/quarto")
+
+test_that(".system2 mock: success path verifies arg construction og returnerer output-sti", {
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[test]", typst_file)
+  withr::defer(unlink(typst_file))
+
+  output <- tempfile(fileext = ".pdf")
+
+  captured_command <- NULL
+  captured_args <- NULL
+
+  success_mock <- function(command, args, ...) {
+    captured_command <<- command
+    captured_args <<- args
+    file.create(output)
+    character(0)
+  }
+
+  result <- BFHcharts:::bfh_compile_typst(
+    typst_file,
+    output,
+    .system2 = success_mock,
+    .quarto_path = "/fake/quarto"
+  )
+
+  expect_equal(result, output)
+  expect_equal(captured_command, "/fake/quarto")
+  expect_equal(captured_args[1:3], c("typst", "compile", shQuote(typst_file)))
+  expect_equal(captured_args[4], shQuote(output))
+})
+
+test_that(".system2 mock: non-zero exit code rejser fejl med output", {
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[test]", typst_file)
+  withr::defer(unlink(typst_file))
+
+  expect_error(
+    BFHcharts:::bfh_compile_typst(
+      typst_file,
+      tempfile(fileext = ".pdf"),
+      .system2 = make_system2_failure_mock(exit_code = 1L, output = "Error: compilation failed"),
+      .quarto_path = "/fake/quarto"
+    ),
+    "Quarto compilation failed"
+  )
+})
+
+test_that(".system2 mock: error fra system2 er wrappet med forklarende besked", {
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[test]", typst_file)
+  withr::defer(unlink(typst_file))
+
+  expect_error(
+    BFHcharts:::bfh_compile_typst(
+      typst_file,
+      tempfile(fileext = ".pdf"),
+      .system2 = make_system2_error_mock("cannot find quarto executable"),
+      .quarto_path = "/fake/quarto"
+    ),
+    "Failed to execute Quarto command"
+  )
+})
+
+test_that("bfh_compile_typst: reel Quarto integration (kun med BFHCHARTS_TEST_FULL=true)", {
+  skip_if_not_full_test()
+  skip_if_no_quarto()
+
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[integration test]", typst_file)
+  withr::defer(unlink(typst_file))
+  output <- tempfile(fileext = ".pdf")
+
+  expect_no_error(BFHcharts:::bfh_compile_typst(typst_file, output))
+  expect_true(file.exists(output))
+})
