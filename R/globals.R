@@ -53,6 +53,12 @@ ARROW_PADDING_NORM <- 0.03
 PDF_IMAGE_WIDTH_MM <- 191.4
 PDF_IMAGE_HEIGHT_MM <- 109
 
+# NOTE: Chart width/height matcher image dimensions i den nuværende Typst-layout.
+# Vi beholder separate konstanter for semantisk tydelighed:
+# - PDF_IMAGE_* bruges ved eksport-rendering (ggsave output)
+# - PDF_CHART_* bruges ved label-placement beregninger
+# Hvis template-layout divergerer i fremtiden, kan de ændres uafhængigt.
+
 # Target dimensions for label placement calculation (in mm)
 # These represent the actual visible chart area in the Typst template
 # Based on bfh-diagram 6.6mm grid layout:

@@ -770,7 +770,6 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 place_two_labels_npc <- function(
   yA_npc,
   yB_npc,
-  # label_height_npc = 0.035,
   label_height_npc = 0.114,
   gap_line = NULL, # NU: Auto-beregnes fra config
   gap_labels = NULL, # NU: Auto-beregnes fra config
