@@ -42,13 +42,18 @@
 #' @noRd
 NULL
 
-# Internal helper: raise a structured config error
 stop_config_error <- function(msg) {
   cond <- structure(
     class = c("bfhcharts_config_error", "error", "condition"),
     list(message = msg, call = sys.call(-1))
   )
   stop(cond)
+}
+
+assert_positive_scalar <- function(x, name) {
+  if (!is.numeric(x) || length(x) != 1 || is.na(x) || is.infinite(x) || x <= 0) {
+    stop_config_error(sprintf("%s must be a positive numeric value", name))
+  }
 }
 
 # ============================================================================
@@ -205,24 +210,9 @@ viewport_dims <- function(
   base_size = 14
 ) {
   # Validation
-  if (!is.null(width)) {
-    if (!is.numeric(width) || length(width) != 1 ||
-      is.na(width) || is.infinite(width) || width <= 0) {
-      stop_config_error("width must be a positive numeric value or NULL")
-    }
-  }
-
-  if (!is.null(height)) {
-    if (!is.numeric(height) || length(height) != 1 ||
-      is.na(height) || is.infinite(height) || height <= 0) {
-      stop_config_error("height must be a positive numeric value or NULL")
-    }
-  }
-
-  if (!is.numeric(base_size) || length(base_size) != 1 ||
-    is.na(base_size) || is.infinite(base_size) || base_size <= 0) {
-    stop_config_error("base_size must be a positive numeric value")
-  }
+  if (!is.null(width)) assert_positive_scalar(width, "width")
+  if (!is.null(height)) assert_positive_scalar(height, "height")
+  assert_positive_scalar(base_size, "base_size")
 
   structure(
     list(
@@ -253,10 +243,6 @@ print.viewport_dims <- function(x, ...) {
 # ============================================================================
 # PHASE CONFIGURATION
 # ============================================================================
-
-# NOTE: phase_config er reserveret til biSPCharts integration.
-# Bruges ikke i BFHcharts pipeline endnu — bfh_qic() passer part/freeze
-# direkte til qicharts2. Beholdt som fremtidig abstraktion.
 
 #' Create Phase Configuration
 #'
@@ -303,12 +289,7 @@ phase_config <- function(
     }
   }
 
-  if (!is.null(freeze_position)) {
-    if (!is.numeric(freeze_position) || length(freeze_position) != 1 ||
-      is.na(freeze_position) || freeze_position <= 0) {
-      stop_config_error("freeze_position must be a positive integer or NULL")
-    }
-  }
+  if (!is.null(freeze_position)) assert_positive_scalar(freeze_position, "freeze_position")
 
   structure(
     list(
