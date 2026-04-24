@@ -234,7 +234,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   }
 
   # Use quarto typst compile (not quarto render which expects .qmd files)
-  quarto_cmd <- if (!is.null(.quarto_path)) .quarto_path else get_quarto_path()
+  quarto_cmd <- .quarto_path %||% get_quarto_path()
   result <- tryCatch(
     .system2(
       quarto_cmd,

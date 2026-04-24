@@ -316,6 +316,7 @@ test_that(".system2 mock: success path verifies arg construction og returnerer o
   withr::defer(unlink(typst_file))
 
   output <- tempfile(fileext = ".pdf")
+  withr::defer(unlink(output))
 
   captured_command <- NULL
   captured_args <- NULL
