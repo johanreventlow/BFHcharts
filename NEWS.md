@@ -10,6 +10,16 @@
   <>\n\r`), og extension-håndhævelse. Fejl kastes med class
   `bfhcharts_path_policy_error` (#central-export-path-policy).
 
+## Breaking changes
+
+* **`bfh_generate_analysis()`: `use_ai` default ændret fra `NULL` til `FALSE`.**
+  AI-analyse aktiveres ikke længere automatisk ved detektion af BFHllm.
+  Eksplicit `use_ai = TRUE` er nu påkrævet for at anvende AI. Kald med
+  `use_ai = TRUE` uden BFHllm installeret kaster en informativ fejl i stedet
+  for at falde stille tilbage til standardtekster.
+  **Migration:** Tilføj `use_ai = TRUE` til eksisterende kald der forventer
+  AI-analyse (#secure-ai-explicit-opt-in).
+
 ## Breaking changes (intern API)
 
 * **`bfh_export_png()`: manglende `.png`-extension er nu en fejl** (ikke en
