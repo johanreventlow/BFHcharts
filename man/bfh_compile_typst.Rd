@@ -4,7 +4,13 @@
 \alias{bfh_compile_typst}
 \title{Compile Typst Document to PDF}
 \usage{
-bfh_compile_typst(typst_file, output, font_path = NULL)
+bfh_compile_typst(
+  typst_file,
+  output,
+  font_path = NULL,
+  .system2 = system2,
+  .quarto_path = NULL
+)
 }
 \arguments{
 \item{typst_file}{Path to .typ file}
@@ -14,6 +20,14 @@ bfh_compile_typst(typst_file, output, font_path = NULL)
 \item{font_path}{Optional path to directory containing additional fonts.
 Passed as \code{--font-path} to the Typst compiler. Useful when fonts
 are not installed system-wide (e.g., on cloud deployment platforms).}
+
+\item{.system2}{Dependency-injection hook for \code{system2()}. Default is
+the real \code{base::system2}. Tests can inject a mock to avoid spawning
+live Quarto processes.}
+
+\item{.quarto_path}{Path to the Quarto executable. When \code{NULL}
+(default), resolved via \code{get_quarto_path()}. Tests can supply
+\code{"/fake/quarto"} to avoid filesystem lookups.}
 }
 \value{
 Path to created PDF file (invisibly)

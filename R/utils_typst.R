@@ -169,11 +169,18 @@ bfh_create_typst_document <- function(chart_image,
 #' @param font_path Optional path to directory containing additional fonts.
 #'   Passed as \code{--font-path} to the Typst compiler. Useful when fonts
 #'   are not installed system-wide (e.g., on cloud deployment platforms).
+#' @param .system2 Dependency-injection hook for \code{system2()}. Default is
+#'   the real \code{base::system2}. Tests can inject a mock to avoid spawning
+#'   live Quarto processes.
+#' @param .quarto_path Path to the Quarto executable. When \code{NULL}
+#'   (default), resolved via \code{get_quarto_path()}. Tests can supply
+#'   \code{"/fake/quarto"} to avoid filesystem lookups.
 #'
 #' @return Path to created PDF file (invisibly)
 #'
 #' @keywords internal
-bfh_compile_typst <- function(typst_file, output, font_path = NULL) {
+bfh_compile_typst <- function(typst_file, output, font_path = NULL,
+                              .system2 = system2, .quarto_path = NULL) {
   if (!file.exists(typst_file)) {
     stop("Typst file not found: ", typst_file, call. = FALSE)
   }
@@ -227,9 +234,10 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL) {
   }
 
   # Use quarto typst compile (not quarto render which expects .qmd files)
+  quarto_cmd <- .quarto_path %||% get_quarto_path()
   result <- tryCatch(
-    system2(
-      get_quarto_path(),
+    .system2(
+      quarto_cmd,
       args = compile_args,
       stdout = TRUE,
       stderr = TRUE

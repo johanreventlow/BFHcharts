@@ -22,7 +22,9 @@
 
 .read_env_flag <- function(name, default = FALSE) {
   raw <- Sys.getenv(name, unset = "")
-  if (!nzchar(raw)) return(default)
+  if (!nzchar(raw)) {
+    return(default)
+  }
   tolower(trimws(raw)) %in% c("true", "t", "yes", "y", "1")
 }
 
@@ -61,7 +63,8 @@ is_render_test <- function() {
 #' })
 #' }
 skip_if_not_full_test <- function(
-    msg = "Skipping full-only test (set BFHCHARTS_TEST_FULL=true to enable)") {
+  msg = "Skipping full-only test (set BFHCHARTS_TEST_FULL=true to enable)"
+) {
   if (!is_full_test()) {
     testthat::skip(msg)
   }
@@ -75,8 +78,29 @@ skip_if_not_full_test <- function(
 #' @param msg Besked der vises ved skip
 #' @keywords internal
 skip_if_not_render_test <- function(
-    msg = "Skipping render test (set BFHCHARTS_TEST_RENDER=true to enable)") {
+  msg = "Skipping render test (set BFHCHARTS_TEST_RENDER=true to enable)"
+) {
   if (!is_render_test()) {
+    testthat::skip(msg)
+  }
+  invisible(TRUE)
+}
+
+# ----------------------------------------------------------------------------
+# Quarto-specifik skip-helper
+# ----------------------------------------------------------------------------
+
+#' Skip test hvis Quarto CLI ikke er tilgængeligt
+#'
+#' Kanonisk wrapper om `quarto_available()`. Brug i stedet for
+#' `skip_if_not(quarto_available(), ...)` for konsistens.
+#'
+#' @param msg Besked der vises ved skip
+#' @keywords internal
+skip_if_no_quarto <- function(
+  msg = "Skipping: Quarto CLI not available"
+) {
+  if (!quarto_available()) {
     testthat::skip(msg)
   }
   invisible(TRUE)
@@ -93,15 +117,45 @@ skip_if_not_render_test <- function(
 #' Denne helper skipper testen hvis vi er på CI.
 #'
 #' Forskel fra `skip_on_ci()`: giver en eksplicit besked om årsagen så det
-#' er klart hvorfor testen skippes. Kan på sigt erstattes med en faktisk
-#' font-detektion (fx via `systemfonts::system_fonts()` check for "Mari").
+#' er klart hvorfor testen skippes. For nye tests, brug `skip_if_no_mari_font()`
+#' som detekterer Mari-fonts via `systemfonts` i stedet for CI-proxy.
 #'
 #' @param msg Besked der vises ved skip
 #' @keywords internal
 skip_if_fonts_unavailable <- function(
-    msg = "Skipping font-dependent test (Mari fonts from BFHtheme required)") {
+  msg = "Skipping font-dependent test (Mari fonts from BFHtheme required)"
+) {
   # Brug samme detection som skip_on_ci — CI har ikke Mari
   if (isTRUE(as.logical(Sys.getenv("CI")))) {
+    testthat::skip(msg)
+  }
+  invisible(TRUE)
+}
+
+#' Skip test hvis Mari-fonts (BFHtheme) ikke er installeret
+#'
+#' Kanonisk erstatning for `skip_if_fonts_unavailable()`. Forsøger faktisk
+#' font-detektion via `systemfonts::system_fonts()` hvis pakken er installeret,
+#' falder ellers tilbage til CI-detektion.
+#'
+#' @param msg Besked der vises ved skip
+#' @keywords internal
+skip_if_no_mari_font <- function(
+  msg = "Skipping: Mari fonts (BFHtheme) not available"
+) {
+  mari_present <- tryCatch(
+    {
+      if (requireNamespace("systemfonts", quietly = TRUE)) {
+        fonts <- systemfonts::system_fonts()
+        any(grepl("Mari", fonts$family, ignore.case = TRUE))
+      } else {
+        !isTRUE(as.logical(Sys.getenv("CI")))
+      }
+    },
+    error = function(e) FALSE
+  )
+
+  if (!mari_present) {
     testthat::skip(msg)
   }
   invisible(TRUE)
