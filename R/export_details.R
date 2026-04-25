@@ -4,6 +4,7 @@
 #' period range, averages, latest values, and current level (centerline).
 #'
 #' @param x A \code{bfh_qic_result} object from \code{bfh_qic()}
+#' @param language Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Default \code{"da"} preserves backward compatibility.
 #'
 #' @return Character string with formatted details, e.g.:
 #'   "Periode: feb. 2019 – mar. 2022 • Gns. måned: 58938/97266 •
@@ -34,20 +35,25 @@
 #' @family utility-functions
 #' @seealso [bfh_export_pdf()] for PDF export functionality
 #' @export
-bfh_generate_details <- function(x) {
+bfh_generate_details <- function(x, language = "da") {
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()", call. = FALSE)
   }
+
+  validate_language(language)
 
   qic_data <- x$qic_data
   config <- x$config
 
   interval_info <- detect_date_interval(qic_data$x)
-  interval_label <- get_danish_interval_label(interval_info$type)
+  interval_label <- get_danish_interval_label(interval_info$type, language)
 
   start_date <- format_danish_date_short(min(qic_data$x, na.rm = TRUE))
   end_date <- format_danish_date_short(max(qic_data$x, na.rm = TRUE))
-  periode <- sprintf("Periode: %s – %s", start_date, end_date)
+  periode <- sprintf(
+    "%s: %s – %s",
+    i18n_lookup("labels.details.periode", language), start_date, end_date
+  )
 
   chart_type <- config$chart_type
 
@@ -59,18 +65,21 @@ bfh_generate_details <- function(x) {
   uses_denominator <- (chart_type %in% c("p", "u")) ||
     (chart_type == "run" && has_denominator_data)
 
+  lbl_gns <- i18n_lookup("labels.details.gns", language)
+  lbl_seneste <- i18n_lookup("labels.details.seneste", language)
+
   if (uses_denominator) {
     avg_num <- round(mean(qic_data$y.sum, na.rm = TRUE))
     avg_den <- round(mean(qic_data$n, na.rm = TRUE))
     gns <- sprintf(
-      "Gns. %s: %s/%s", interval_label,
+      "%s %s: %s/%s", lbl_gns, interval_label,
       format(avg_num, big.mark = ".", decimal.mark = ","),
       format(avg_den, big.mark = ".", decimal.mark = ",")
     )
   } else {
     avg_val <- round(mean(qic_data$y, na.rm = TRUE))
     gns <- sprintf(
-      "Gns. %s: %s", interval_label,
+      "%s %s: %s", lbl_gns, interval_label,
       format(avg_val, big.mark = ".", decimal.mark = ",")
     )
   }
@@ -81,14 +90,14 @@ bfh_generate_details <- function(x) {
     last_num <- round(last_row$y.sum)
     last_den <- round(last_row$n)
     seneste <- sprintf(
-      "Seneste %s: %s/%s", interval_label,
+      "%s %s: %s/%s", lbl_seneste, interval_label,
       format(last_num, big.mark = ".", decimal.mark = ","),
       format(last_den, big.mark = ".", decimal.mark = ",")
     )
   } else {
     last_val <- round(last_row$y)
     seneste <- sprintf(
-      "Seneste %s: %s", interval_label,
+      "%s %s: %s", lbl_seneste, interval_label,
       format(last_val, big.mark = ".", decimal.mark = ",")
     )
   }
@@ -96,7 +105,7 @@ bfh_generate_details <- function(x) {
   cl_value <- last_row$cl
   y_axis_unit <- config$y_axis_unit %||% "count"
 
-  niveau <- format_centerline_for_details(cl_value, y_axis_unit)
+  niveau <- format_centerline_for_details(cl_value, y_axis_unit, language)
 
   paste(periode, gns, seneste, niveau, sep = " • ")
 }
@@ -113,9 +122,9 @@ bfh_generate_details <- function(x) {
 #'
 #' @keywords internal
 #' @noRd
-format_centerline_for_details <- function(cl_value, y_axis_unit) {
+format_centerline_for_details <- function(cl_value, y_axis_unit, language = "da") {
   if (is.null(cl_value) || is.na(cl_value)) {
-    return("Nuværende niveau: -")
+    return(i18n_lookup("labels.details.niveau_unknown", language))
   }
 
   formatted <- switch(y_axis_unit,
@@ -167,5 +176,5 @@ format_centerline_for_details <- function(cl_value, y_axis_unit) {
     }
   )
 
-  sprintf("Nuværende niveau: %s", formatted)
+  sprintf("%s: %s", i18n_lookup("labels.details.niveau_label", language), formatted)
 }

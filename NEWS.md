@@ -1,4 +1,28 @@
+# BFHcharts (development)
+
+## Nye features
+
+* **Internationalisering (i18n):** Ny `language`-parameter (`"da"` eller `"en"`) på
+  `bfh_qic()`, `bfh_generate_analysis()` og `bfh_generate_details()`. Default er
+  `"da"` — alle eksisterende kald er bagudkompatible. Engelsksprogede diagramlabels
+  ("TARGET", "CUR. LEVEL") og analysetekster returneres ved `language = "en"`.
+  Strings er centraliseret i `inst/i18n/da.yaml` og `inst/i18n/en.yaml`.
+  Intern helper `i18n_lookup(key, language)` + language-keyed cache
+  (`.i18n_cache`) med reset via `bfh_reset_caches()` (#i18n-chart-strings).
+
 # BFHcharts 0.8.3
+
+## Nye features
+
+* **Batch eksport-session:** Ny funktion `bfh_create_export_session()` opretter
+  en genanvendelig eksport-session der kopierer Typst-template-assets én gang og
+  deler dem på tværs af multiple `bfh_export_pdf()`-kald. I batch-workflows
+  (N eksporter fra løkke) eliminerer dette den rekursive template-copy der
+  dominerer I/O-cost. Brug: `session <- bfh_create_export_session()`,
+  send `batch_session = session` til hvert `bfh_export_pdf()`-kald, og luk med
+  `close(session)`. `inject_assets`- og `font_path`-argumenter overføres til
+  session-konstruktøren i stedet for til individuelle kald
+  (#reuse-typst-template-assets).
 
 ## Interne ændringer
 

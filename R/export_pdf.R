@@ -50,6 +50,17 @@
 #'   to the template directory (e.g., \code{<temp_dir>/bfh-template}). Use this
 #'   to copy fonts, images, or other assets into the template directory when they
 #'   are not bundled in BFHcharts (e.g., proprietary fonts in a private package).
+#'   Cannot be combined with \code{batch_session} (pass \code{inject_assets} to
+#'   \code{bfh_create_export_session()} instead).
+#' @param batch_session Optional \code{bfh_export_session} object from
+#'   \code{bfh_create_export_session()}. When provided, the packaged template
+#'   assets are reused from the session tmpdir instead of being copied on every
+#'   call, which eliminates the dominant I/O cost in batch workflows.
+#'   \itemize{
+#'     \item Cannot be combined with \code{template_path} or \code{inject_assets}.
+#'     \item \code{font_path} here overrides \code{session$font_path}.
+#'     \item Close the session with \code{close(session)} after the batch is done.
+#'   }
 #'
 #' @return The input object \code{x} invisibly, enabling pipe chaining
 #'
@@ -135,6 +146,17 @@
 #' bfh_export_pdf(result, "infections_report.pdf",
 #'   metadata = list(department = "ICU")
 #' )
+#'
+#' # Batch export: reuse template assets across multiple exports
+#' departments <- c("ICU", "Medicine", "Surgery")
+#' session <- bfh_create_export_session()
+#' on.exit(close(session))
+#' for (dept in departments) {
+#'   bfh_export_pdf(result, paste0(dept, "_report.pdf"),
+#'     metadata = list(department = dept),
+#'     batch_session = session
+#'   )
+#' }
 #' }
 bfh_export_pdf <- function(x,
                            output,
@@ -147,7 +169,8 @@ bfh_export_pdf <- function(x,
                            analysis_max_chars = 375,
                            dpi = 150,
                            font_path = NULL,
-                           inject_assets = NULL) {
+                           inject_assets = NULL,
+                           batch_session = NULL) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop(
@@ -234,6 +257,35 @@ bfh_export_pdf <- function(x,
   }
 
   # ============================================================================
+  # BATCH SESSION VALIDATION
+  # ============================================================================
+  if (!is.null(batch_session)) {
+    if (!inherits(batch_session, "bfh_export_session")) {
+      stop(
+        "batch_session must be a bfh_export_session object from bfh_create_export_session()",
+        call. = FALSE
+      )
+    }
+    if (batch_session$closed()) {
+      stop("batch_session is already closed", call. = FALSE)
+    }
+    if (!is.null(template_path)) {
+      stop(
+        "batch_session cannot be combined with template_path.\n",
+        "  Custom templates are not supported in batch sessions.",
+        call. = FALSE
+      )
+    }
+    if (!is.null(inject_assets)) {
+      stop(
+        "batch_session cannot be combined with inject_assets.\n",
+        "  Pass inject_assets to bfh_create_export_session() instead.",
+        call. = FALSE
+      )
+    }
+  }
+
+  # ============================================================================
   # AUTO-ANALYSIS - Generate analysis text if requested
   # ============================================================================
   if (isTRUE(auto_analysis) && is.null(metadata$analysis)) {
@@ -305,31 +357,44 @@ bfh_export_pdf <- function(x,
     )
   }
 
-  # Create temporary directory for intermediate files
-  temp_dir <- tempfile("bfh_pdf_")
+  # Create or reuse temporary directory for intermediate files
+  if (!is.null(batch_session)) {
+    # Batch mode: reuse session tmpdir — template already staged there
+    temp_dir <- batch_session$tmpdir
+    # Register per-export file cleanup only (do NOT unlink session tmpdir)
+    on.exit(
+      {
+        unlink(file.path(temp_dir, "chart.svg"))
+        unlink(file.path(temp_dir, "document.typ"))
+      },
+      add = TRUE
+    )
+  } else {
+    temp_dir <- tempfile("bfh_pdf_")
 
-  # Register cleanup BEFORE dir.create() to ensure cleanup on any error
-  on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
+    # Register cleanup BEFORE dir.create() to ensure cleanup on any error
+    on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
 
-  dir.create(temp_dir, recursive = TRUE)
+    dir.create(temp_dir, recursive = TRUE)
 
-  # Security: Set restrictive permissions (owner-only: rwx------)
-  # Prevents other users from reading sensitive healthcare data in temp files
-  Sys.chmod(temp_dir, mode = "0700", use_umask = FALSE)
+    # Security: Set restrictive permissions (owner-only: rwx------)
+    # Prevents other users from reading sensitive healthcare data in temp files
+    Sys.chmod(temp_dir, mode = "0700", use_umask = FALSE)
 
-  # Security: Verify directory ownership on Unix systems
-  # Prevents TOCTOU attacks where attacker replaces our temp dir
-  if (.Platform$OS.type == "unix") {
-    dir_info <- file.info(temp_dir)
-    current_uid <- suppressWarnings(as.integer(Sys.getenv("UID")))
-    # Only verify if UID is available and valid (not NA or 0)
-    if (length(current_uid) > 0 && !is.na(current_uid) && current_uid > 0) {
-      if (dir_info$uid != current_uid) {
-        unlink(temp_dir, recursive = TRUE)
-        stop(
-          "Temp directory ownership mismatch (possible security issue)",
-          call. = FALSE
-        )
+    # Security: Verify directory ownership on Unix systems
+    # Prevents TOCTOU attacks where attacker replaces our temp dir
+    if (.Platform$OS.type == "unix") {
+      dir_info <- file.info(temp_dir)
+      current_uid <- suppressWarnings(as.integer(Sys.getenv("UID")))
+      # Only verify if UID is available and valid (not NA or 0)
+      if (length(current_uid) > 0 && !is.na(current_uid) && current_uid > 0) {
+        if (dir_info$uid != current_uid) {
+          unlink(temp_dir, recursive = TRUE)
+          stop(
+            "Temp directory ownership mismatch (possible security issue)",
+            call. = FALSE
+          )
+        }
       }
     }
   }
@@ -389,6 +454,9 @@ bfh_export_pdf <- function(x,
   # Merge user metadata with defaults
   metadata_full <- bfh_merge_metadata(metadata, chart_title)
 
+  # Resolve font_path: per-export arg > session default > NULL
+  effective_font_path <- font_path %||% batch_session$font_path
+
   # Create Typst document
   typst_file <- file.path(temp_dir, "document.typ")
   bfh_create_typst_document(
@@ -397,24 +465,25 @@ bfh_export_pdf <- function(x,
     metadata = metadata_full,
     spc_stats = spc_stats,
     template = template,
-    template_path = template_path
+    template_path = template_path,
+    skip_template_copy = !is.null(batch_session)
   )
 
-  # Inject external assets (fonts, images) if callback provided
+  # Inject external assets (fonts, images) if callback provided (single-call mode only)
   if (is.function(inject_assets)) {
     inject_assets(file.path(temp_dir, "bfh-template"))
 
     # Auto-detect font path fra injicerede assets hvis ikke eksplicit angivet
-    if (is.null(font_path)) {
+    if (is.null(effective_font_path)) {
       injected_fonts <- file.path(temp_dir, "bfh-template", "fonts")
       if (dir.exists(injected_fonts)) {
-        font_path <- injected_fonts
+        effective_font_path <- injected_fonts
       }
     }
   }
 
   # Compile to PDF via Quarto (with optional font path)
-  bfh_compile_typst(typst_file, output, font_path = font_path)
+  bfh_compile_typst(typst_file, output, font_path = effective_font_path)
 
   # Return input object invisibly for pipe chaining
   invisible(x)
@@ -518,7 +587,8 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
     centerline_value = label_config$centerline_value,
     has_frys_column = label_config$has_frys_column,
     has_skift_column = label_config$has_skift_column,
-    verbose = FALSE
+    verbose = FALSE,
+    language = config$language %||% "da"
   )
 
   return(plot_with_labels)
