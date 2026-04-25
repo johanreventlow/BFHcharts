@@ -3,7 +3,9 @@
 #
 # Extracted from bfh_layout_reference_dev.R POC
 
-# Cache for resolved font family per device-type
+# Cache for resolved font family per (resolved-family, device-type) kombination.
+# Nøgle bruger den BFHtheme-resolvede family (ikke rå arg) så NULL-kald
+# og eksplicitte kald med samme font deler cache-entry korrekt.
 # (systemfonts-registrering != PostScript font database)
 .font_cache <- new.env(parent = emptyenv())
 
@@ -25,14 +27,18 @@
     error = function(e) "other"
   )
 
-  cache_key <- paste0("resolved_", dev_type)
+  # Løs theme-fallback FØR cache-check: nøgle og cached value bruger samme f
+  f <- tryCatch(
+    family %||% BFHtheme::theme_bfh()$text$family %||% "sans",
+    error = function(e) family %||% "sans"
+  )
+  cache_key <- paste0("resolved_", dev_type, "_", f)
   if (exists(cache_key, envir = .font_cache)) {
     return(.font_cache[[cache_key]])
   }
 
   resolved <- tryCatch(
     {
-      f <- family %||% BFHtheme::theme_bfh()$text$family
       if (is.null(f) || length(f) == 0 || nchar(f) == 0) {
         "sans"
       } else if (dev_type == "postscript") {
