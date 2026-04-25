@@ -186,35 +186,16 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   }
 
   # Security: Validate paths before passing to system2()
-  shell_metachars <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
-
-  if (any(vapply(shell_metachars, function(char) grepl(char, typst_file, fixed = TRUE), logical(1)))) {
-    stop(
-      "typst_file path contains potentially unsafe characters\n",
-      "  Path: ", basename(typst_file),
-      call. = FALSE
-    )
-  }
-
-  if (any(vapply(shell_metachars, function(char) grepl(char, output, fixed = TRUE), logical(1)))) {
-    stop(
-      "output path contains potentially unsafe characters\n",
-      "  Path: ", basename(output),
-      call. = FALSE
-    )
-  }
+  validate_export_path(typst_file)
+  validate_export_path(output)
 
   # Validér font_path hvis angivet
   if (!is.null(font_path)) {
     if (!is.character(font_path) || length(font_path) != 1) {
       stop("font_path must be a single character string", call. = FALSE)
     }
-    if (grepl("..", font_path, fixed = TRUE)) {
-      stop("font_path cannot contain '..' (path traversal attempt detected)", call. = FALSE)
-    }
-    if (any(vapply(shell_metachars, function(char) grepl(char, font_path, fixed = TRUE), logical(1)))) {
-      stop("font_path contains potentially unsafe characters", call. = FALSE)
-    }
+    .check_traversal(font_path)
+    .check_metachars(font_path)
     if (!dir.exists(font_path)) {
       warning("font_path directory does not exist: ", font_path, call. = FALSE)
       font_path <- NULL
@@ -428,10 +409,133 @@ escape_typst_string <- function(s) {
   return(s)
 }
 
+#' Escape Plain Text for Typst Content Blocks
+#'
+#' Escapes all Typst markup characters in plain text so they render literally.
+#' Must be applied to text nodes only — do not apply to generated Typst markup.
+#'
+#' @param s Character string to escape
+#' @return Escaped string safe for Typst content blocks
+#' @keywords internal
+escape_typst_text <- function(s) {
+  if (is.null(s) || !nzchar(s)) {
+    return(s %||% "")
+  }
+  # Backslash MUST be escaped first — all others introduce a leading backslash
+  s <- gsub("\\", "\\\\", s, fixed = TRUE)
+  s <- gsub("#", "\\#", s, fixed = TRUE)
+  s <- gsub("$", "\\$", s, fixed = TRUE)
+  s <- gsub("@", "\\@", s, fixed = TRUE)
+  s <- gsub("_", "\\_", s, fixed = TRUE)
+  s <- gsub("*", "\\*", s, fixed = TRUE)
+  s <- gsub("[", "\\[", s, fixed = TRUE)
+  s <- gsub("]", "\\]", s, fixed = TRUE)
+  s <- gsub("<", "\\<", s, fixed = TRUE)
+  s <- gsub(">", "\\>", s, fixed = TRUE)
+  s <- gsub("`", "\\`", s, fixed = TRUE)
+  s <- gsub("~", "\\~", s, fixed = TRUE)
+  s <- gsub("^", "\\^", s, fixed = TRUE)
+  s
+}
+
+escape_typst_raw <- function(s) {
+  s <- gsub("\\", "\\\\", s, fixed = TRUE)
+  gsub('"', '\\"', s, fixed = TRUE)
+}
+
+#' Walk a CommonMark XML Node to Typst Markup
+#'
+#' Recursive AST walker: maps CommonMark XML node types to Typst content syntax.
+#' Text nodes are escaped via escape_typst_text().
+#'
+#' @param node xml2 node object
+#' @return Character string with Typst markup
+#' @keywords internal
+walk_typst_node <- function(node) {
+  tag <- xml2::xml_name(node)
+
+  switch(tag,
+    document = {
+      kids <- xml2::xml_children(node)
+      sections <- vapply(kids, walk_typst_node, character(1))
+      paste(sections, collapse = "\\\n")
+    },
+    paragraph = {
+      kids <- xml2::xml_children(node)
+      parts <- vapply(kids, walk_typst_node, character(1))
+      paste(parts, collapse = "")
+    },
+    text = escape_typst_text(xml2::xml_text(node)),
+    strong = {
+      kids <- xml2::xml_children(node)
+      inner <- paste(vapply(kids, walk_typst_node, character(1)), collapse = "")
+      sprintf("#strong[%s]", inner)
+    },
+    emph = {
+      kids <- xml2::xml_children(node)
+      inner <- paste(vapply(kids, walk_typst_node, character(1)), collapse = "")
+      sprintf("#emph[%s]", inner)
+    },
+    code = sprintf('#raw("%s")', escape_typst_raw(xml2::xml_text(node))),
+    code_block = sprintf('#raw(block: true, "%s")', escape_typst_raw(xml2::xml_text(node))),
+    softbreak = "\\\n",
+    linebreak = "\\\n",
+    # Link: render visible text only — hyperlinks are not supported in Typst content blocks
+    link = {
+      kids <- xml2::xml_children(node)
+      paste(vapply(kids, walk_typst_node, character(1)), collapse = "")
+    },
+    # Image: render alt text only
+    image = {
+      kids <- xml2::xml_children(node)
+      paste(vapply(kids, walk_typst_node, character(1)), collapse = "")
+    },
+    # Raw HTML: escape content for Typst — strip trailing newline added by CommonMark
+    html_block = escape_typst_text(trimws(xml2::xml_text(node), which = "right")),
+    html_inline = escape_typst_text(xml2::xml_text(node)),
+    list = {
+      items <- xml2::xml_children(node)
+      parts <- vapply(items, walk_typst_node, character(1))
+      paste(parts, collapse = "\\\n")
+    },
+    item = {
+      kids <- xml2::xml_children(node)
+      content <- paste(vapply(kids, walk_typst_node, character(1)), collapse = "")
+      sprintf("- %s", content)
+    },
+    # Default: walk children; fall back to escaped text for leaf nodes
+    {
+      kids <- xml2::xml_children(node)
+      if (length(kids) > 0) {
+        paste(vapply(kids, walk_typst_node, character(1)), collapse = "")
+      } else {
+        txt <- xml2::xml_text(node)
+        if (nzchar(txt)) escape_typst_text(txt) else ""
+      }
+    }
+  )
+}
+
+#' Parse Markdown to Typst via CommonMark AST
+#'
+#' Internal AST-based markdown parser. Parses markdown with commonmark,
+#' then walks the XML AST to produce Typst content markup with all
+#' special characters fully escaped.
+#'
+#' @param text Character string with CommonMark markdown
+#' @return Character string with Typst content markup
+#' @keywords internal
+parse_markdown_ast <- function(text) {
+  xml_str <- commonmark::markdown_xml(text)
+  doc <- xml2::read_xml(xml_str)
+  walk_typst_node(doc)
+}
+
 #' Convert Markdown Rich Text to Typst Content
 #'
-#' Converts CommonMark/Marquee-style markdown formatting to Typst content blocks.
-#' Supports bold (**text**), italic (*text*), and preserves newlines.
+#' Converts CommonMark markdown to Typst content block markup using an
+#' AST-based parser (commonmark + xml2). All Typst special characters in
+#' plain text are fully escaped to prevent injection.
 #'
 #' @param text Character string with markdown formatting
 #' @return Character string with Typst content block syntax
@@ -441,54 +545,26 @@ escape_typst_string <- function(s) {
 #' **Supported Markdown Syntax:**
 #' - `**bold text**` -> `#strong[bold text]`
 #' - `*italic text*` -> `#emph[italic text]`
-#' - Newlines (`\n`) -> Typst line breaks (`\`)
+#' - `` `code` `` -> `#raw("code")`
+#' - Newlines -> Typst line breaks (`\`)
+#' - Bullet lists -> Typst list items (`- item`)
 #'
-#' **Usage:**
-#' Text parameters that should support rich text (title, analysis) use this
-#' function and are passed as Typst content blocks `[...]` instead of strings.
+#' **Security:**
+#' All Typst markup characters (`#`, `$`, `@`, `_`, `*`, `[`, `]`, `<`, `>`,
+#' `` ` ``, `~`, `^`, `\`) in plain text are escaped. AST parsing prevents
+#' injection via malformed markdown edge cases.
 #'
 #' @examples
 #' \dontrun{
-#' # Bold text
 #' markdown_to_typst("This is **important**")
 #' # Returns: "This is #strong[important]"
 #'
-#' # Italic text
-#' markdown_to_typst("This is *emphasized*")
-#' # Returns: "This is #emph[emphasized]"
-#'
-#' # Mixed formatting
-#' markdown_to_typst("Write a title or\n**conclude what the chart shows**")
-#' # Returns: "Write a title or\ #strong[conclude what the chart shows]"
+#' markdown_to_typst("Injection: #import malicious")
+#' # Returns: "Injection: \#import malicious"
 #' }
 markdown_to_typst <- function(text) {
-  if (is.null(text) || length(text) == 0 || nchar(text) == 0) {
+  if (is.null(text) || length(text) == 0 || !nzchar(text)) {
     return("")
   }
-
-  result <- text
-
-  # Escape Typst special characters i bruger-content FØR markdown-konvertering.
-  # Rækkefølge er vigtig: brackets escapes først, derefter konverterer vi
-  # markdown til Typst-markup (som indsætter sine egne uescapede brackets).
-  result <- gsub("<", "\\\\<", result)
-  result <- gsub(">", "\\\\>", result)
-  result <- gsub("@", "\\\\@", result)
-  result <- gsub("\\$", "\\\\$", result)
-  result <- gsub("_", "\\\\_", result)
-  result <- gsub("\\[", "\\\\[", result) # Bracket injection prevention
-  result <- gsub("\\]", "\\\\]", result)
-  result <- gsub("(?<!\\*)#", "\\\\#", result, perl = TRUE)
-
-  # Convert **bold** to #strong[bold] (EFTER escaping - vores brackets er uescaped)
-  result <- gsub("\\*\\*([^*]+)\\*\\*", "#strong[\\1]", result)
-
-  # Convert *italic* to #emph[italic] (single asterisks)
-  # Use negative lookbehind/lookahead to avoid matching ** patterns
-  result <- gsub("(?<!\\*)\\*([^*]+)\\*(?!\\*)", "#emph[\\1]", result, perl = TRUE)
-
-  # Convert \n to Typst line break (backslash + newline)
-  result <- gsub("\\n", "\\\\\n", result)
-
-  return(result)
+  parse_markdown_ast(text)
 }

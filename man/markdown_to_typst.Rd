@@ -13,34 +13,32 @@ markdown_to_typst(text)
 Character string with Typst content block syntax
 }
 \description{
-Converts CommonMark/Marquee-style markdown formatting to Typst content blocks.
-Supports bold (\strong{text}), italic (\emph{text}), and preserves newlines.
+Converts CommonMark markdown to Typst content block markup using an
+AST-based parser (commonmark + xml2). All Typst special characters in
+plain text are fully escaped to prevent injection.
 }
 \details{
 \strong{Supported Markdown Syntax:}
 \itemize{
 \item \verb{**bold text**} -> \verb{#strong[bold text]}
 \item \verb{*italic text*} -> \verb{#emph[italic text]}
-\item Newlines (\verb{\\n}) -> Typst line breaks (\verb{\\})
+\item \code{`code`} -> \verb{#raw("code")}
+\item Newlines -> Typst line breaks (\verb{\\})
+\item Bullet lists -> Typst list items (\code{- item})
 }
 
-\strong{Usage:}
-Text parameters that should support rich text (title, analysis) use this
-function and are passed as Typst content blocks \verb{[...]} instead of strings.
+\strong{Security:}
+All Typst markup characters (\verb{#}, \code{$}, \code{@}, \verb{_}, \code{*}, \code{[}, \verb{]}, \code{<}, \code{>},
+\verb{`}, \code{~}, \code{^}, \verb{\\}) in plain text are escaped. AST parsing prevents
+injection via malformed markdown edge cases.
 }
 \examples{
 \dontrun{
-# Bold text
 markdown_to_typst("This is **important**")
 # Returns: "This is #strong[important]"
 
-# Italic text
-markdown_to_typst("This is *emphasized*")
-# Returns: "This is #emph[emphasized]"
-
-# Mixed formatting
-markdown_to_typst("Write a title or\n**conclude what the chart shows**")
-# Returns: "Write a title or\ #strong[conclude what the chart shows]"
+markdown_to_typst("Injection: #import malicious")
+# Returns: "Injection: \\#import malicious"
 }
 }
 \keyword{internal}
