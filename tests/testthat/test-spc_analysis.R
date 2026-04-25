@@ -189,12 +189,12 @@ test_that("bfh_generate_analysis accepts min_chars and max_chars parameters", {
 })
 
 test_that("bfh_generate_analysis has correct default values", {
-  # Check function defaults
   fn_args <- formals(bfh_generate_analysis)
 
   expect_equal(fn_args$min_chars, 300)
   expect_equal(fn_args$max_chars, 375)
-  expect_equal(fn_args$texts_loader, quote(load_spc_texts))
+  expect_null(fn_args$texts_loader)
+  expect_equal(as.character(fn_args$language), "da")
 })
 
 test_that("bfh_generate_analysis validates min_chars < max_chars", {

@@ -4,10 +4,12 @@
 \alias{bfh_generate_details}
 \title{Generate Details Text for PDF Export}
 \usage{
-bfh_generate_details(x)
+bfh_generate_details(x, language = "da")
 }
 \arguments{
 \item{x}{A \code{bfh_qic_result} object from \code{bfh_qic()}}
+
+\item{language}{Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Default \code{"da"} preserves backward compatibility.}
 }
 \value{
 Character string with formatted details, e.g.:

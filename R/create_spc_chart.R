@@ -44,6 +44,7 @@ NULL
 #' @param caption Plot caption text (default: NULL for no caption)
 #' @param return.data Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result object. If FALSE (default), return bfh_qic_result S3 object. Legacy parameter maintained for backwards compatibility.
 #' @param print.summary \strong{DEPRECATED.} Logical. The summary is now always included in the bfh_qic_result object. Access it via \code{result$summary}. This parameter will be removed in a future version. When TRUE, triggers deprecation warning and returns legacy list(plot, summary) format.
+#' @param language Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Passed through to analysis and label generation. Default \code{"da"} preserves backward compatibility.
 #'
 #' @return
 #' - Default (return.data = FALSE, print.summary = FALSE): \code{bfh_qic_result} S3 object with components:
@@ -476,8 +477,11 @@ bfh_qic <- function(data,
                     subtitle = NULL,
                     caption = NULL,
                     return.data = FALSE,
-                    print.summary = FALSE) {
+                    print.summary = FALSE,
+                    language = "da") {
   agg_fun_supplied <- !missing(agg.fun)
+
+  validate_language(language)
 
   # Validate inputs
   if (!is.data.frame(data)) {
@@ -786,7 +790,8 @@ bfh_qic <- function(data,
     viewport_width = viewport_width_inches,
     viewport_height = viewport_height_inches,
     target_text = target_text,
-    verbose = FALSE
+    verbose = FALSE,
+    language = language
   )
 
   # Always generate summary for inclusion in result object
@@ -797,6 +802,7 @@ bfh_qic <- function(data,
     chart_type = chart_type,
     chart_title = chart_title,
     y_axis_unit = y_axis_unit,
+    language = language,
     target_value = target_value,
     target_text = target_text,
     part = part,

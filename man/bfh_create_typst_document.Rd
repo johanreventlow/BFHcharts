@@ -10,7 +10,8 @@ bfh_create_typst_document(
   metadata,
   spc_stats,
   template = "bfh-diagram",
-  template_path = NULL
+  template_path = NULL,
+  skip_template_copy = FALSE
 )
 }
 \arguments{

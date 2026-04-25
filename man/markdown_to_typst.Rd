@@ -38,7 +38,7 @@ markdown_to_typst("This is **important**")
 # Returns: "This is #strong[important]"
 
 markdown_to_typst("Injection: #import malicious")
-# Returns: "Injection: \\#import malicious"
+# Returns: "Injection: \#import malicious"
 }
 }
 \keyword{internal}

@@ -32,7 +32,8 @@ bfh_qic(
   subtitle = NULL,
   caption = NULL,
   return.data = FALSE,
-  print.summary = FALSE
+  print.summary = FALSE,
+  language = "da"
 )
 }
 \arguments{
@@ -91,6 +92,8 @@ bfh_qic(
 \item{return.data}{Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result object. If FALSE (default), return bfh_qic_result S3 object. Legacy parameter maintained for backwards compatibility.}
 
 \item{print.summary}{\strong{DEPRECATED.} Logical. The summary is now always included in the bfh_qic_result object. Access it via \code{result$summary}. This parameter will be removed in a future version. When TRUE, triggers deprecation warning and returns legacy list(plot, summary) format.}
+
+\item{language}{Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Passed through to analysis and label generation. Default \code{"da"} preserves backward compatibility.}
 }
 \value{
 \itemize{

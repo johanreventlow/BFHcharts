@@ -180,6 +180,22 @@ plot <- create_spc_chart(
 
 **Note:** Customization of hospital colors is handled by the [BFHtheme](https://github.com/your-org/BFHtheme) package. Refer to BFHtheme documentation for advanced theming options.
 
+## Supported Languages
+
+Chart labels, analysis text, and details output are available in Danish (`"da"`, default) and English (`"en"`).
+
+```r
+# English output
+result <- bfh_qic(data, x = month, y = value, chart_type = "p",
+                  language = "en")
+
+bfh_generate_analysis(result, language = "en")
+bfh_generate_details(result, language = "en")
+```
+
+Default is `language = "da"` — existing code without the parameter is unaffected.
+See `TRANSLATORS.md` for instructions on adding a new language.
+
 ## Limitations
 
 - Facettering (`facets`, `nrow`, `ncol`, `scales`) er endnu ikke understøttet i BFHcharts; multi-panel plots kræver manuel opbygning indtil issue #1 løses.
