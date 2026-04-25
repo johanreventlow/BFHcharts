@@ -36,7 +36,9 @@ Imports:
     lemon,
     marquee (>= 0.1.0),
     svglite (>= 2.1.0),
-    grid
+    grid,
+    commonmark (>= 1.9),
+    xml2
 Suggests:
     testthat (>= 3.0.0),
     vdiffr,
