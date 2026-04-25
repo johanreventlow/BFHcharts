@@ -587,7 +587,8 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
     centerline_value = label_config$centerline_value,
     has_frys_column = label_config$has_frys_column,
     has_skift_column = label_config$has_skift_column,
-    verbose = FALSE
+    verbose = FALSE,
+    language = config$language %||% "da"
   )
 
   return(plot_with_labels)

@@ -325,15 +325,14 @@ format_danish_date_short <- function(date) {
 #'
 #' @keywords internal
 #' @noRd
-get_danish_interval_label <- function(interval_type) {
-  switch(interval_type,
-    "daily" = "dag",
-    "weekly" = "uge",
-    "monthly" = "måned",
-    "quarterly" = "kvartal",
-    "yearly" = "år",
-    "periode"  # Default for irregular/unknown
-
-)
+get_danish_interval_label <- function(interval_type, language = "da") {
+  key <- switch(interval_type,
+    "daily" = "labels.interval.daily",
+    "weekly" = "labels.interval.weekly",
+    "monthly" = "labels.interval.monthly",
+    "quarterly" = "labels.interval.quarterly",
+    "yearly" = "labels.interval.yearly",
+    "labels.interval.irregular"
+  )
+  i18n_lookup(key, language)
 }
-

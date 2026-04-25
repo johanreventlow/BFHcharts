@@ -11,7 +11,8 @@ bfh_generate_analysis(
   min_chars = 300,
   max_chars = 375,
   target_tolerance = 0.05,
-  texts_loader = load_spc_texts
+  language = "da",
+  texts_loader = NULL
 )
 }
 \arguments{
@@ -42,8 +43,10 @@ bfh_generate_analysis(
 when \code{target_direction} is unknown (default 0.05 = 5\%). Ignored when the
 user provides \code{metadata$target} with an operator (retning er da kendt).}
 
+\item{language}{Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Default \code{"da"} preserves backward compatibility.}
+
 \item{texts_loader}{Function that returns SPC analysis text templates.
-Defaults to \code{\link[=load_spc_texts]{load_spc_texts()}}. Primarily intended for tests/mocking.}
+Defaults to \code{load_spc_texts(language)}. Primarily intended for tests/mocking.}
 }
 \value{
 Character string with analysis text suitable for PDF export.

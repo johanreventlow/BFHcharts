@@ -252,8 +252,9 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #' @param target_tolerance Fractional tolerance for `at_target` classification
 #'   when `target_direction` is unknown (default 0.05 = 5%). Ignored when the
 #'   user provides `metadata$target` with an operator (retning er da kendt).
+#' @param language Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Default \code{"da"} preserves backward compatibility.
 #' @param texts_loader Function that returns SPC analysis text templates.
-#'   Defaults to [load_spc_texts()]. Primarily intended for tests/mocking.
+#'   Defaults to \code{load_spc_texts(language)}. Primarily intended for tests/mocking.
 #'
 #' @return Character string with analysis text suitable for PDF export.
 #'
@@ -290,10 +291,18 @@ bfh_generate_analysis <- function(x,
                                   min_chars = 300,
                                   max_chars = 375,
                                   target_tolerance = 0.05,
-                                  texts_loader = load_spc_texts) {
+                                  language = "da",
+                                  texts_loader = NULL) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()")
+  }
+
+  validate_language(language)
+
+  # texts_loader = NULL: brug language-aware standard; ellers brug custom loader
+  if (is.null(texts_loader)) {
+    texts_loader <- function() load_spc_texts(language)
   }
 
   # Validate min_chars < max_chars
@@ -334,6 +343,7 @@ bfh_generate_analysis <- function(x,
       min_chars = min_chars,
       max_chars = max_chars,
       target_tolerance = target_tolerance,
+      language = language,
       texts_loader = texts_loader
     )
 
@@ -382,6 +392,7 @@ bfh_generate_analysis <- function(x,
     min_chars = min_chars,
     max_chars = max_chars,
     target_tolerance = target_tolerance,
+    language = language,
     texts_loader = texts_loader
   )
   return(analysis)
@@ -398,7 +409,11 @@ build_fallback_analysis <- function(context,
                                     min_chars = 300,
                                     max_chars = 375,
                                     target_tolerance = 0.05,
-                                    texts_loader = load_spc_texts) {
+                                    language = "da",
+                                    texts_loader = NULL) {
+  if (is.null(texts_loader)) {
+    texts_loader <- function() load_spc_texts(language)
+  }
   spc_stats <- context$spc_stats
   target_value <- context$target_value
   target_direction <- context$target_direction
@@ -464,7 +479,11 @@ build_fallback_analysis <- function(context,
     crossings_actual = spc_stats$crossings_actual,
     crossings_expected = spc_stats$crossings_expected,
     outliers_actual = outliers_for_text,
-    outliers_word = pluralize_da(outliers_n, "observation", "observationer")
+    outliers_word = pluralize_da(
+      outliers_n,
+      i18n_lookup("labels.outliers.singular", language),
+      i18n_lookup("labels.outliers.plural", language)
+    )
   )
 
   # --- 1. Stabilitetstekst ---
@@ -472,7 +491,7 @@ build_fallback_analysis <- function(context,
     cl_fmt <- if (!is.null(centerline) && !is.na(centerline)) {
       format_target_value(centerline, y_axis_unit = context$y_axis_unit)
     } else {
-      "ukendt"
+      i18n_lookup("labels.misc.ukendt", language)
     }
     stability <- pick_text(
       texts$stability$no_variation,
@@ -656,27 +675,8 @@ pad_to_minimum <- function(text, min_chars, n_points, texts, max_chars = Inf) {
 }
 
 
-# Cache-environment for YAML-tekster (indlæses kun én gang per session)
-.spc_text_cache <- new.env(parent = emptyenv())
-
-# Indlæs SPC-analysetekster fra YAML
-load_spc_texts <- function() {
-  if (!is.null(.spc_text_cache$texts)) {
-    return(.spc_text_cache$texts)
-  }
-
-  yaml_path <- system.file("texts", "spc_analysis.yml",
-    package = "BFHcharts"
-  )
-  if (yaml_path == "") {
-    warning("spc_analysis.yml not found, using empty texts")
-    return(list())
-  }
-
-  texts <- yaml::read_yaml(yaml_path)
-  .spc_text_cache$texts <- texts
-  return(texts)
-}
+# load_spc_texts() er nu defineret i R/utils_i18n.R og læser fra
+# inst/i18n/{language}.yaml via load_translations()
 
 
 # Vælg tekstvariant baseret på pladsbudget og erstat {placeholders}.

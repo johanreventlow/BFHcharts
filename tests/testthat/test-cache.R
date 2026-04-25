@@ -29,7 +29,7 @@ test_that("bfh_reset_caches() tømmer alle caches", {
   expect_equal(length(ls(envir = BFHcharts:::.font_cache)), 0L)
   expect_equal(length(ls(envir = BFHcharts:::.marquee_style_cache)), 0L)
   expect_equal(length(ls(envir = BFHcharts:::.quarto_cache)), 0L)
-  expect_equal(length(ls(envir = BFHcharts:::.spc_text_cache)), 0L)
+  expect_equal(length(ls(envir = BFHcharts:::.i18n_cache)), 0L)
 })
 
 test_that("marquee style-cache: identiske lineheights giver kun 1 entry", {

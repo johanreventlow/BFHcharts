@@ -1,0 +1,165 @@
+# BFHcharts i18n — Dansk (da)
+#
+# Struktur:
+#   analysis/  - Analysetekster til bfh_generate_analysis() (migr. fra inst/texts/spc_analysis.yml)
+#   labels/    - Korte etiketter til detaljer, diagrammer og datointerval
+
+# ==============================================================================
+# ANALYSETEKSTER
+# Placeholders: {runs_actual}, {runs_expected}, {crossings_actual},
+#   {crossings_expected}, {outliers_actual}, {outliers_word},
+#   {centerline}, {target}, {n_points}
+# ==============================================================================
+
+analysis:
+
+  stability:
+    no_variation:
+      short: "Niveauet er konstant på {centerline}."
+      standard: "Niveauet er konstant på {centerline}, og processen kan derfor ikke vurderes med statistisk proceskontrol."
+      detailed: "Niveauet er konstant på {centerline}. Da alle datapunkter er identiske, kan processen ikke vurderes med statistisk proceskontrol."
+
+    no_signals:
+      short: "Processen er stabil og forudsigelig."
+      standard: "Processen er stabil og forudsigelig. Variationen er naturlig og uden systematiske ændringer."
+      detailed: "Processen er stabil og forudsigelig. Variationen er naturlig og viser ingen tegn på systematiske ændringer."
+
+    runs_only:
+      short: "Der er tegn på et skift i procesniveauet."
+      standard: "Der er tegn på et skift i procesniveauet. Længste serie ({runs_actual}) overstiger det forventede maksimum ({runs_expected})."
+      detailed: "Der er tegn på et skift i procesniveauet. Længste serie ({runs_actual}) overstiger det forventede maksimum ({runs_expected}), hvilket tyder på en systematisk ændring."
+
+    crossings_only:
+      short: "Datapunkterne grupperer sig omkring centrallinjen."
+      standard: "Datapunkterne grupperer sig omkring centrallinjen. Antallet af krydsninger ({crossings_actual}) er under det forventede minimum ({crossings_expected})."
+      detailed: "Datapunkterne grupperer sig over eller under centrallinjen i stedet for at variere tilfældigt. Antallet af krydsninger ({crossings_actual}) er under det forventede minimum ({crossings_expected})."
+
+    outliers_only:
+      short: "{outliers_actual} {outliers_word} ligger uden for kontrolgrænserne."
+      standard: "{outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne og bør undersøges for særlige årsager."
+      detailed: "{outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne. De bør undersøges for særlige årsager, da de kan skyldes usædvanlige hændelser eller målefejl."
+
+    runs_crossings:
+      short: "Processen viser systematisk ustabilitet."
+      standard: "Processen viser systematisk ustabilitet. Både serielængden ({runs_actual} > {runs_expected}) og antallet af krydsninger ({crossings_actual} < {crossings_expected}) afviger fra det forventede."
+      detailed: "Processen viser systematisk ustabilitet. Både serielængden ({runs_actual} > {runs_expected}) og antallet af krydsninger ({crossings_actual} < {crossings_expected}) afviger fra det forventede og peger på en grundlæggende procesændring."
+
+    runs_outliers:
+      short: "Processen viser et niveauskift og {outliers_actual} {outliers_word} uden for kontrolgrænserne."
+      standard: "Processen viser et niveauskift (serielængde {runs_actual} > {runs_expected}), og {outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne."
+      detailed: "Processen viser et niveauskift (serielængde {runs_actual} > {runs_expected}), og {outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne. Undersøg om niveauskiftet og de afvigende målinger har samme underliggende årsag."
+
+    crossings_outliers:
+      short: "Processen viser gruppering og {outliers_actual} {outliers_word} uden for kontrolgrænserne."
+      standard: "Datapunkterne grupperer sig (krydsninger {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne."
+      detailed: "Datapunkterne grupperer sig omkring centrallinjen (krydsninger {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne. Dette mønster kan indikere skiftende betingelser i processen."
+
+    all_signals:
+      short: "Processen er ustabil med flere samtidige signaler."
+      standard: "Processen er ustabil med flere samtidige signaler: niveauskift og gruppering samt {outliers_actual} af de seneste observationer uden for kontrolgrænserne."
+      detailed: "Processen er ustabil med flere samtidige signaler: niveauskift (serielængde {runs_actual} > {runs_expected}), gruppering omkring centrallinjen (krydsninger {crossings_actual} < {crossings_expected}) samt {outliers_actual} af de seneste observationer uden for kontrolgrænserne. Undersøg fælles og særlige årsager systematisk."
+
+  target:
+    at_target:
+      short: "Niveauet ligger tæt på målet ({target})."
+      standard: "Niveauet ligger tæt på målet ({target})."
+      detailed: "Niveauet ligger tæt på målet ({target}), inden for den tolerance der accepteres som målopfyldelse."
+    over_target:
+      short: "Niveauet ligger over målet ({target})."
+      standard: "Niveauet ligger over målet ({target})."
+      detailed: "Niveauet ligger over målet ({target}); om dette er ønskeligt afhænger af indikatoren."
+    under_target:
+      short: "Niveauet ligger under målet ({target})."
+      standard: "Niveauet ligger under målet ({target})."
+      detailed: "Niveauet ligger under målet ({target}); om dette er ønskeligt afhænger af indikatoren."
+    goal_met:
+      short: "Målet ({target}) er nået."
+      standard: "Niveauet opfylder målet ({target})."
+      detailed: "Niveauet opfylder målet ({target}) og ligger på den ønskede side af målværdien."
+    goal_not_met:
+      short: "Målet ({target}) er endnu ikke nået."
+      standard: "Niveauet opfylder endnu ikke målet ({target})."
+      detailed: "Niveauet opfylder endnu ikke målet ({target}). Den nuværende praksis når det ikke."
+
+  action:
+    stable_at_target:
+      short: "Fortsæt nuværende praksis."
+      standard: "Fortsæt den nuværende praksis og overvåg processen løbende."
+      detailed: "Fortsæt den nuværende praksis og overvåg processen løbende for at fastholde det aktuelle niveau."
+    stable_not_at_target:
+      short: "En målrettet indsats er nødvendig for at nå målet."
+      standard: "Processen er stabil, men når ikke målet. Der kræves en målrettet indsats for at flytte niveauet."
+      detailed: "Processen er stabil, men når ikke målet. Uden en målrettet indsats vil den nuværende praksis fortsætte med at levere det samme niveau."
+    stable_no_target:
+      short: "Overvej at fastsætte et mål for indikatoren."
+      standard: "Overvej at fastsætte et mål for indikatoren, så niveauet kan vurderes."
+      detailed: "Overvej at fastsætte et mål for indikatoren, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres."
+    unstable_at_target:
+      short: "Undersøg årsagerne til variationen."
+      standard: "Selvom målet aktuelt er opfyldt, er processen ustabil. Undersøg årsagerne til variationen."
+      detailed: "Selvom målet aktuelt er opfyldt, er processen ustabil. Undersøg årsagerne til variationen, så det nuværende niveau kan fastholdes."
+    unstable_not_at_target:
+      short: "Identificér og fjern de særlige årsager til variationen."
+      standard: "Prioritér at identificere og fjerne de særlige årsager til variationen, før yderligere tiltag iværksættes."
+      detailed: "Prioritér at identificere og fjerne de særlige årsager til variationen. Først når processen er stabil, kan effekten af nye forbedringstiltag vurderes pålideligt."
+    unstable_no_target:
+      short: "Stabilisér processen først, og fastsæt derefter et mål."
+      standard: "Undersøg årsagerne til variationen. Når processen er stabiliseret, kan et realistisk mål fastsættes."
+      detailed: "Undersøg årsagerne til den usædvanlige variation. Når processen er under kontrol, er det meningsfuldt at fastsætte et realistisk mål og planlægge forbedringsindsatsen."
+    stable_goal_met:
+      short: "Fortsæt den nuværende praksis."
+      standard: "Processen er stabil og opfylder målet. Fortsæt den nuværende praksis og overvåg løbende."
+      detailed: "Processen er stabil og opfylder målet. Fortsæt den nuværende praksis og overvåg løbende, så niveauet kan fastholdes."
+    stable_goal_not_met:
+      short: "En målrettet indsats er nødvendig."
+      standard: "Processen er stabil, men når ikke målet. Der kræves en målrettet indsats for at flytte niveauet i den ønskede retning."
+      detailed: "Processen er stabil, men når ikke målet. Uden en målrettet indsats vil den nuværende praksis fortsætte med at levere samme niveau og dermed ikke opfylde målet."
+    unstable_goal_met:
+      short: "Stabilisér processen for at fastholde målopfyldelsen."
+      standard: "Selvom målet aktuelt er opfyldt, er processen ustabil. Undersøg årsagerne til variationen, så målopfyldelsen kan fastholdes."
+      detailed: "Selvom målet aktuelt er opfyldt, er processen ustabil. Undersøg årsagerne til variationen, så det nuværende niveau kan fastholdes, og målopfyldelsen ikke går tabt."
+    unstable_goal_not_met:
+      short: "Stabilisér processen først, og arbejd derefter mod målet."
+      standard: "Processen er ustabil og opfylder ikke målet. Identificér først de særlige årsager til variationen, før målrettede tiltag iværksættes."
+      detailed: "Processen er ustabil og opfylder ikke målet. Identificér først de særlige årsager til variationen — først når processen er stabil, kan effekten af nye forbedringstiltag mod målet vurderes pålideligt."
+
+  padding:
+    data_points:
+      short: "Vurderingen bygger på {n_points} datapunkter."
+      standard: "Vurderingen bygger på {n_points} datapunkter i den seneste procesperiode."
+    generic:
+      short: "Fortsatte målinger vil vise om mønsteret fastholdes."
+      standard: "Fortsatte målinger vil vise om mønsteret fastholdes, eller om processen udvikler sig."
+
+# ==============================================================================
+# ETIKETTER
+# ==============================================================================
+
+labels:
+
+  interval:
+    daily: "dag"
+    weekly: "uge"
+    monthly: "måned"
+    quarterly: "kvartal"
+    yearly: "år"
+    irregular: "periode"
+
+  outliers:
+    singular: "observation"
+    plural: "observationer"
+
+  details:
+    periode: "Periode"
+    gns: "Gns."
+    seneste: "Seneste"
+    niveau_label: "Nuværende niveau"
+    niveau_unknown: "Nuværende niveau: -"
+
+  chart:
+    current_level: "NUV. NIVEAU"
+    development_goal: "UDVIKLINGSMÅL"
+    baseline: "BASELINE"
+
+  misc:
+    ukendt: "ukendt"
