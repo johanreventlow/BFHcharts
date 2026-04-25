@@ -1,80 +1,97 @@
-#' Export Path Policy Utilities
-#'
-#' Central validation helper for export file paths. Enforces security
-#' constraints (shell metacharacters, path traversal) and optional extension
-#' and root-confinement checks before any file system operation.
-#'
-#' @name utils_path_policy
-#' @keywords internal
-#' @noRd
-NULL
+ALLOWED_EXPORT_EXTENSIONS <- c("png", "pdf", "svg", "typ")
 
-stop_path_policy_error <- function(msg) {
-  cond <- structure(
-    class = c("bfhcharts_path_policy_error", "error", "condition"),
-    list(message = msg, call = sys.call(-1))
-  )
-  stop(cond)
+SHELL_METACHARS_EXPORT <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
+
+#' Validate an export file path
+#'
+#' Checks that `path` is a safe, non-empty character string free of path
+#' traversal components (`..`) and shell metacharacters.  Optionally validates
+#' the file extension and resolves symlinks to verify the resolved path stays
+#' within `allow_root`.
+#'
+#' @param path Character scalar.  The file path to validate.
+#' @param extension Character scalar or `NULL`.  Expected file extension
+#'   (without leading dot, e.g. `"png"`).  Case-insensitive.  If `NULL` no
+#'   extension check is performed.
+#' @param allow_root Character scalar or `NULL`.  If supplied and `normalize`
+#'   is `TRUE`, the resolved path must start with `normalizePath(allow_root)`.
+#' @param ext_action One of `"none"` (default), `"stop"`, or `"warn"`.
+#'   Controls behaviour when `extension` is specified but the path does not end
+#'   with that extension.
+#' @param normalize Logical.  If `TRUE`, call `normalizePath(path,
+#'   mustWork = TRUE)` (the file must already exist) and re-validate the
+#'   resolved path.  Returns the normalized path on success.  Default `FALSE`.
+#'
+#' @return `path` invisibly (normalized when `normalize = TRUE`).
+#'
+#' @keywords internal
+validate_export_path <- function(path,
+                                 extension = NULL,
+                                 allow_root = NULL,
+                                 ext_action = c("none", "stop", "warn"),
+                                 normalize = FALSE) {
+  ext_action <- match.arg(ext_action)
+
+  if (!is.character(path) || length(path) != 1L || nchar(path) == 0L) {
+    stop("path must be a non-empty character string specifying the file path",
+      call. = FALSE
+    )
+  }
+
+  .check_traversal(path)
+  .check_metachars(path)
+
+  if (!is.null(extension)) {
+    if (!extension %in% ALLOWED_EXPORT_EXTENSIONS) {
+      stop(
+        "extension '", extension, "' is not in the allowed export extensions: ",
+        paste(ALLOWED_EXPORT_EXTENSIONS, collapse = ", "),
+        call. = FALSE
+      )
+    }
+    pattern <- paste0("\\.", extension, "$")
+    if (!grepl(pattern, path, ignore.case = TRUE)) {
+      msg <- paste0("path does not have .", extension, " extension: ", basename(path))
+      if (ext_action == "stop") stop(msg, call. = FALSE)
+      if (ext_action == "warn") warning(msg, call. = FALSE)
+    }
+  }
+
+  if (normalize) {
+    resolved <- normalizePath(path, mustWork = TRUE)
+    .check_traversal(resolved)
+    .check_metachars(resolved)
+
+    if (!is.null(allow_root)) {
+      root <- normalizePath(allow_root, mustWork = TRUE)
+      if (!startsWith(resolved, root)) {
+        stop(
+          "path resolves outside the allowed root\n",
+          "  Resolved: ", resolved, "\n",
+          "  Root:     ", root,
+          call. = FALSE
+        )
+      }
+    }
+
+    return(invisible(resolved))
+  }
+
+  invisible(path)
 }
 
-#' Validate and normalise an export file path
-#'
-#' Checks that `path` is a non-empty string free of shell metacharacters and
-#' `..` path-traversal segments, optionally enforces a file extension, and
-#' returns the path normalised to an absolute form. Call sites should assign
-#' the return value so they work with the normalised path downstream.
-#'
-#' @param path Character scalar. File path to validate.
-#' @param extension Character scalar or NULL. Required extension without the
-#'   leading dot, e.g. `"png"`, `"pdf"`, `"typ"`. Case-insensitive. NULL skips
-#'   the extension check.
-#' @param allow_root Character scalar or NULL. When given, the resolved path
-#'   must be inside this directory (guards against symlink-based escape).
-#' @return Normalised absolute character path.
-#' @keywords internal
-validate_export_path <- function(path, extension = NULL, allow_root = NULL) {
-  if (!is.character(path) || length(path) != 1 || !nzchar(path)) {
-    stop_path_policy_error("path must be a non-empty character string")
+.check_traversal <- function(path) {
+  if (grepl("..", path, fixed = TRUE)) {
+    stop(
+      "path cannot contain '..' (path traversal attempt detected)\n",
+      "  Provided path: ", basename(path),
+      call. = FALSE
+    )
   }
+}
 
-  if (grepl("[;|&$`(){}<>\n\r]", path)) {
-    stop_path_policy_error(sprintf("path contains unsafe characters: %s", basename(path)))
+.check_metachars <- function(path) {
+  if (any(vapply(SHELL_METACHARS_EXPORT, function(ch) grepl(ch, path, fixed = TRUE), logical(1L)))) {
+    stop("path contains disallowed unsafe characters", call. = FALSE)
   }
-
-  # Reject '..' segments — split-based to avoid false positives on names like
-  # "..extra" or filenames that happen to contain ".." as a substring
-  segments <- strsplit(path, "[/\\\\]")[[1]]
-  if (any(segments == "..")) {
-    stop_path_policy_error(sprintf("path traversal detected ('..') in: %s", path))
-  }
-
-  # Extension check (before normalization; basename is still the user-provided name)
-  if (!is.null(extension)) {
-    ext <- tolower(tools::file_ext(path))
-    if (ext != tolower(extension)) {
-      stop_path_policy_error(sprintf(
-        "path must have .%s extension (got '%s'): %s",
-        tolower(extension), ext, basename(path)
-      ))
-    }
-  }
-
-  # Normalize: resolve symlinks on the *directory* part with mustWork = FALSE
-  # (the output file typically does not exist yet). Append basename unchanged.
-  norm_dir <- normalizePath(dirname(path), winslash = "/", mustWork = FALSE)
-  normalized <- file.path(norm_dir, basename(path))
-
-  # allow_root: verify the resolved path is inside the permitted tree
-  if (!is.null(allow_root)) {
-    root_norm <- normalizePath(allow_root, winslash = "/", mustWork = FALSE)
-    root_prefix <- paste0(root_norm, "/")
-    if (!startsWith(normalized, root_prefix)) {
-      stop_path_policy_error(sprintf(
-        "path escapes allowed root directory\n  Path: %s\n  Root: %s",
-        normalized, root_norm
-      ))
-    }
-  }
-
-  normalized
 }

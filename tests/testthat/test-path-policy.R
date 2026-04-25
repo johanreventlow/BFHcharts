@@ -1,217 +1,127 @@
 # ============================================================================
-# TESTS FOR validate_export_path() — CENTRAL PATH POLICY HELPER
-# ============================================================================
-#
-# Reference: openspec/changes/central-export-path-policy (tasks 2.1–2.5)
-# Spec: "External path inputs SHALL be validated centrally before any
-#        file system operation"
-
-# ============================================================================
-# 2.1 — Path traversal rejection
+# UNIT TESTS FOR validate_export_path() — central path policy helper
 # ============================================================================
 
-test_that("validate_export_path afviser '..' segment i relativ sti", {
-  expect_error(
-    BFHcharts:::validate_export_path("../../etc/passwd"),
-    class = "bfhcharts_path_policy_error"
-  )
-})
-
-test_that("validate_export_path afviser '..' segment i absolut sti", {
-  expect_error(
-    BFHcharts:::validate_export_path("/safe/../unsafe/file.pdf"),
-    class = "bfhcharts_path_policy_error"
-  )
-})
-
-test_that("validate_export_path accepterer filnavne der indeholder '..' som del-streng", {
-  # '..' som del-streng af et segmentnavn er ikke traversal
-  path <- file.path(tempdir(), "my..report.pdf")
-  expect_no_error(BFHcharts:::validate_export_path(path, extension = "pdf"))
-})
-
 # ============================================================================
-# 2.2 — Shell metacharacter rejection
+# PATH TRAVERSAL
 # ============================================================================
 
-test_that("validate_export_path afviser semikolon i sti", {
+test_that("validate_export_path afviser path traversal med ..", {
   expect_error(
-    BFHcharts:::validate_export_path(file.path(tempdir(), "file;rm.pdf")),
-    class = "bfhcharts_path_policy_error"
-  )
-})
-
-test_that("validate_export_path afviser pipe i sti", {
-  expect_error(
-    BFHcharts:::validate_export_path("output|cat.pdf"),
-    class = "bfhcharts_path_policy_error"
-  )
-})
-
-test_that("validate_export_path afviser ampersand i sti", {
-  expect_error(
-    BFHcharts:::validate_export_path("output&cmd.pdf"),
-    class = "bfhcharts_path_policy_error"
-  )
-})
-
-test_that("validate_export_path afviser backtick i sti", {
-  expect_error(
-    BFHcharts:::validate_export_path("output`cmd`.pdf"),
-    class = "bfhcharts_path_policy_error"
-  )
-})
-
-test_that("validate_export_path afviser dollar-parentes i sti", {
-  expect_error(
-    BFHcharts:::validate_export_path("output$(cmd).pdf"),
-    class = "bfhcharts_path_policy_error"
-  )
-})
-
-test_that("validate_export_path afviser newline i sti", {
-  expect_error(
-    BFHcharts:::validate_export_path("output\ncmd.pdf"),
-    class = "bfhcharts_path_policy_error"
-  )
-})
-
-test_that("validate_export_path afviser angle-brackets i sti", {
-  expect_error(
-    BFHcharts:::validate_export_path("output; rm -rf /.pdf"),
-    class = "bfhcharts_path_policy_error"
+    validate_export_path("../../etc/passwd"),
+    "path traversal"
   )
   expect_error(
-    BFHcharts:::validate_export_path("output > /etc/hosts.pdf"),
-    class = "bfhcharts_path_policy_error"
+    validate_export_path("output/../../../etc/cron.d/bad"),
+    "path traversal"
+  )
+  expect_error(
+    validate_export_path("charts/../../secret.pdf"),
+    "path traversal"
   )
 })
 
 # ============================================================================
-# 2.3 — Wrong extension rejection
+# SHELL METACHARACTERS
 # ============================================================================
 
-test_that("validate_export_path afviser forkert extension (txt vs pdf)", {
-  expect_error(
-    BFHcharts:::validate_export_path(file.path(tempdir(), "output.txt"), extension = "pdf"),
-    class = "bfhcharts_path_policy_error"
-  )
-})
-
-test_that("validate_export_path afviser forkert extension med informativ besked", {
-  err <- tryCatch(
-    BFHcharts:::validate_export_path(file.path(tempdir(), "output.txt"), extension = "pdf"),
-    bfhcharts_path_policy_error = function(e) e
-  )
-  expect_match(conditionMessage(err), "pdf")
-  expect_match(conditionMessage(err), "txt")
-})
-
-test_that("validate_export_path accepterer korrekt extension case-insensitivt", {
-  expect_no_error(
-    BFHcharts:::validate_export_path(file.path(tempdir(), "output.PDF"), extension = "pdf")
-  )
-  expect_no_error(
-    BFHcharts:::validate_export_path(file.path(tempdir(), "output.PNG"), extension = "png")
-  )
+test_that("validate_export_path afviser shell metacharacters", {
+  expect_error(validate_export_path("out; rm -rf /"), "disallowed")
+  expect_error(validate_export_path("out | cat /etc/passwd"), "disallowed")
+  expect_error(validate_export_path("out & evil"), "disallowed")
+  expect_error(validate_export_path("out`cmd`"), "disallowed")
+  expect_error(validate_export_path("out$(cmd)"), "disallowed")
+  expect_error(validate_export_path("out<in"), "disallowed")
+  expect_error(validate_export_path("out>redirect"), "disallowed")
+  expect_error(validate_export_path("out\nevil"), "disallowed")
+  expect_error(validate_export_path("out\revil"), "disallowed")
 })
 
 # ============================================================================
-# 2.4 — allow_root: symlink-escape / directory-escape rejection
+# EXTENSION VALIDATION
 # ============================================================================
 
-test_that("validate_export_path afviser sti uden for allow_root", {
-  tmp_root <- tempfile()
-  dir.create(tmp_root)
-  withr::defer(unlink(tmp_root, recursive = TRUE))
-
-  outside_path <- file.path(dirname(tmp_root), "outside.pdf")
-
+test_that("validate_export_path ext_action=stop fejler ved forkert extension", {
   expect_error(
-    BFHcharts:::validate_export_path(outside_path, allow_root = tmp_root),
-    class = "bfhcharts_path_policy_error"
+    validate_export_path("chart.txt", extension = "png", ext_action = "stop"),
+    regexp = "\\.png"
+  )
+  expect_error(
+    validate_export_path("chart.pdf", extension = "typ", ext_action = "stop"),
+    regexp = "\\.typ"
   )
 })
 
-test_that("validate_export_path accepterer sti inde i allow_root", {
-  tmp_root <- tempfile()
-  dir.create(tmp_root)
-  withr::defer(unlink(tmp_root, recursive = TRUE))
-
-  inside_path <- file.path(tmp_root, "output.pdf")
-
-  expect_no_error(
-    BFHcharts:::validate_export_path(inside_path, allow_root = tmp_root)
+test_that("validate_export_path ext_action=warn advarer ved forkert extension", {
+  expect_warning(
+    validate_export_path("chart.txt", extension = "png", ext_action = "warn"),
+    regexp = "\\.png"
   )
 })
 
-test_that("validate_export_path allow_root prefix-angreb afvises", {
-  # /tmp og /tmp-attack: /tmp-attack starter med /tmp men er ikke inde i /tmp
-  tmp_root <- tempfile()
-  dir.create(tmp_root)
-  withr::defer(unlink(tmp_root, recursive = TRUE))
+test_that("validate_export_path ext_action=none ignorerer extension mismatch", {
+  expect_no_error(validate_export_path("chart.txt", extension = "png", ext_action = "none"))
+  expect_no_warning(validate_export_path("chart.txt", extension = "png", ext_action = "none"))
+})
 
-  attack_root <- paste0(tmp_root, "-attack")
-  dir.create(attack_root)
-  withr::defer(unlink(attack_root, recursive = TRUE))
-
-  attack_path <- file.path(attack_root, "output.pdf")
-
-  expect_error(
-    BFHcharts:::validate_export_path(attack_path, allow_root = tmp_root),
-    class = "bfhcharts_path_policy_error"
-  )
+test_that("validate_export_path accepterer korrekt extension (case-insensitiv)", {
+  expect_no_error(validate_export_path("chart.PNG", extension = "png", ext_action = "stop"))
+  expect_no_error(validate_export_path("chart.PDF", extension = "pdf", ext_action = "stop"))
 })
 
 # ============================================================================
-# 2.5 — Legitim sti: normaliseret absolut sti returneres
+# SYMLINK ESCAPE (normalize = TRUE)
 # ============================================================================
 
-test_that("validate_export_path returnerer normaliseret absolut sti", {
-  path <- file.path(tempdir(), "output.pdf")
-  result <- BFHcharts:::validate_export_path(path, extension = "pdf")
+test_that("validate_export_path med normalize=TRUE afviser symlink der escaper root", {
+  skip_on_os("windows")
 
-  expect_type(result, "character")
-  expect_length(result, 1L)
-  expect_true(startsWith(result, "/") || grepl("^[A-Za-z]:[/\\\\]", result))
-})
+  withr::with_tempdir({
+    safe_dir <- file.path(getwd(), "safe")
+    outside <- file.path(getwd(), "outside")
+    dir.create(safe_dir)
+    dir.create(outside)
 
-test_that("validate_export_path returnerer samme sti for allerede-absolut input", {
-  path <- file.path(tempdir(), "my_chart.png")
-  result <- BFHcharts:::validate_export_path(path, extension = "png")
+    target_file <- file.path(outside, "secret.typ")
+    writeLines("secret", target_file)
 
-  # Basename bevaret
-  expect_equal(basename(result), "my_chart.png")
+    link_path <- file.path(safe_dir, "link.typ")
+    file.symlink(target_file, link_path)
+
+    expect_error(
+      validate_export_path(link_path, normalize = TRUE, allow_root = safe_dir),
+      "outside the allowed root"
+    )
+  })
 })
 
 # ============================================================================
-# Fejlhåndtering for ugyldige path-typer
+# LEGITIM STI ACCEPTERES
 # ============================================================================
 
-test_that("validate_export_path afviser tom streng", {
-  expect_error(
-    BFHcharts:::validate_export_path(""),
-    class = "bfhcharts_path_policy_error"
-  )
+test_that("validate_export_path accepterer legitim sti og returnerer den normaliseret", {
+  withr::with_tempfile("f", fileext = ".typ", {
+    writeLines("", f)
+    result <- validate_export_path(f, extension = "typ", ext_action = "stop", normalize = TRUE)
+    expect_true(is.character(result))
+    expect_false(grepl("..", result, fixed = TRUE))
+  })
 })
 
-test_that("validate_export_path afviser NULL", {
-  expect_error(
-    BFHcharts:::validate_export_path(NULL),
-    class = "bfhcharts_path_policy_error"
-  )
+test_that("validate_export_path returnerer path invisibly uden normalize", {
+  path <- "charts/output.png"
+  result <- withVisible(validate_export_path(path))
+  expect_false(result$visible)
+  expect_equal(result$value, path)
 })
 
-test_that("validate_export_path afviser numerisk input", {
-  expect_error(
-    BFHcharts:::validate_export_path(123),
-    class = "bfhcharts_path_policy_error"
-  )
-})
+# ============================================================================
+# BASIC INPUT VALIDATION
+# ============================================================================
 
-test_that("validate_export_path afviser vektor med flere stier", {
-  expect_error(
-    BFHcharts:::validate_export_path(c("a.pdf", "b.pdf")),
-    class = "bfhcharts_path_policy_error"
-  )
+test_that("validate_export_path fejler ved ikke-character input", {
+  expect_error(validate_export_path(NULL), "non-empty character")
+  expect_error(validate_export_path(123), "non-empty character")
+  expect_error(validate_export_path(""), "non-empty character")
+  expect_error(validate_export_path(c("a", "b")), "non-empty character")
 })

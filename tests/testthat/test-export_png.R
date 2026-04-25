@@ -149,25 +149,25 @@ test_that("bfh_export_png validates output path", {
   # Empty string
   expect_error(
     bfh_export_png(result, ""),
-    "output must be a non-empty character string"
+    "non-empty character string"
   )
 
   # NULL
   expect_error(
     bfh_export_png(result, NULL),
-    "output must be a non-empty character string"
+    "non-empty character string"
   )
 
   # Numeric
   expect_error(
     bfh_export_png(result, 123),
-    "output must be a non-empty character string"
+    "non-empty character string"
   )
 
   # Multiple paths
   expect_error(
     bfh_export_png(result, c("file1.png", "file2.png")),
-    "output must be a non-empty character string"
+    "non-empty character string"
   )
 })
 

@@ -50,6 +50,17 @@
 #'   to the template directory (e.g., \code{<temp_dir>/bfh-template}). Use this
 #'   to copy fonts, images, or other assets into the template directory when they
 #'   are not bundled in BFHcharts (e.g., proprietary fonts in a private package).
+#'   Cannot be combined with \code{batch_session} (pass \code{inject_assets} to
+#'   \code{bfh_create_export_session()} instead).
+#' @param batch_session Optional \code{bfh_export_session} object from
+#'   \code{bfh_create_export_session()}. When provided, the packaged template
+#'   assets are reused from the session tmpdir instead of being copied on every
+#'   call, which eliminates the dominant I/O cost in batch workflows.
+#'   \itemize{
+#'     \item Cannot be combined with \code{template_path} or \code{inject_assets}.
+#'     \item \code{font_path} here overrides \code{session$font_path}.
+#'     \item Close the session with \code{close(session)} after the batch is done.
+#'   }
 #'
 #' @return The input object \code{x} invisibly, enabling pipe chaining
 #'
@@ -135,6 +146,17 @@
 #' bfh_export_pdf(result, "infections_report.pdf",
 #'   metadata = list(department = "ICU")
 #' )
+#'
+#' # Batch export: reuse template assets across multiple exports
+#' departments <- c("ICU", "Medicine", "Surgery")
+#' session <- bfh_create_export_session()
+#' on.exit(close(session))
+#' for (dept in departments) {
+#'   bfh_export_pdf(result, paste0(dept, "_report.pdf"),
+#'     metadata = list(department = dept),
+#'     batch_session = session
+#'   )
+#' }
 #' }
 bfh_export_pdf <- function(x,
                            output,
@@ -147,7 +169,8 @@ bfh_export_pdf <- function(x,
                            analysis_max_chars = 375,
                            dpi = 150,
                            font_path = NULL,
-                           inject_assets = NULL) {
+                           inject_assets = NULL,
+                           batch_session = NULL) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop(
@@ -157,13 +180,7 @@ bfh_export_pdf <- function(x,
     )
   }
 
-  if (!is.character(output) || length(output) != 1 || nchar(output) == 0) {
-    stop("output must be a non-empty character string specifying the PDF file path",
-      call. = FALSE
-    )
-  }
-
-  output <- validate_export_path(output, extension = "pdf")
+  validate_export_path(output, extension = "pdf", ext_action = "stop")
 
   if (!is.list(metadata)) {
     stop("metadata must be a list", call. = FALSE)
@@ -240,6 +257,35 @@ bfh_export_pdf <- function(x,
   }
 
   # ============================================================================
+  # BATCH SESSION VALIDATION
+  # ============================================================================
+  if (!is.null(batch_session)) {
+    if (!inherits(batch_session, "bfh_export_session")) {
+      stop(
+        "batch_session must be a bfh_export_session object from bfh_create_export_session()",
+        call. = FALSE
+      )
+    }
+    if (batch_session$closed()) {
+      stop("batch_session is already closed", call. = FALSE)
+    }
+    if (!is.null(template_path)) {
+      stop(
+        "batch_session cannot be combined with template_path.\n",
+        "  Custom templates are not supported in batch sessions.",
+        call. = FALSE
+      )
+    }
+    if (!is.null(inject_assets)) {
+      stop(
+        "batch_session cannot be combined with inject_assets.\n",
+        "  Pass inject_assets to bfh_create_export_session() instead.",
+        call. = FALSE
+      )
+    }
+  }
+
+  # ============================================================================
   # AUTO-ANALYSIS - Generate analysis text if requested
   # ============================================================================
   if (isTRUE(auto_analysis) && is.null(metadata$analysis)) {
@@ -260,15 +306,20 @@ bfh_export_pdf <- function(x,
   }
 
   # ============================================================================
-  # SECURITY + FILE VALIDATION - Custom template path
+  # SECURITY VALIDATION - Custom template path
+  # All security checks MUST happen BEFORE file system operations or Quarto calls
   # ============================================================================
   if (!is.null(template_path)) {
     if (!is.character(template_path) || length(template_path) != 1) {
       stop("template_path must be a single character string", call. = FALSE)
     }
+    validate_export_path(template_path)
+  }
 
-    validate_export_path(template_path, extension = "typ")
-
+  # ============================================================================
+  # FILE VALIDATION - After security checks pass
+  # ============================================================================
+  if (!is.null(template_path)) {
     if (!file.exists(template_path)) {
       stop(
         "Custom template file not found: ", basename(template_path), "\n",
@@ -276,13 +327,17 @@ bfh_export_pdf <- function(x,
         call. = FALSE
       )
     }
-
-    template_path <- normalizePath(template_path, winslash = "/", mustWork = TRUE)
-
-    # Reject directories (file.exists returns TRUE for directories)
+    template_path <- validate_export_path(template_path, normalize = TRUE)
     if (dir.exists(template_path)) {
       stop(
         "template_path must be a file, not a directory: ", basename(template_path),
+        call. = FALSE
+      )
+    }
+    if (!grepl("\\.typ$", template_path, ignore.case = TRUE)) {
+      stop(
+        "template_path must be a .typ file: ", basename(template_path), "\n",
+        "  Typst templates require the .typ extension.",
         call. = FALSE
       )
     }
@@ -302,31 +357,44 @@ bfh_export_pdf <- function(x,
     )
   }
 
-  # Create temporary directory for intermediate files
-  temp_dir <- tempfile("bfh_pdf_")
+  # Create or reuse temporary directory for intermediate files
+  if (!is.null(batch_session)) {
+    # Batch mode: reuse session tmpdir — template already staged there
+    temp_dir <- batch_session$tmpdir
+    # Register per-export file cleanup only (do NOT unlink session tmpdir)
+    on.exit(
+      {
+        unlink(file.path(temp_dir, "chart.svg"))
+        unlink(file.path(temp_dir, "document.typ"))
+      },
+      add = TRUE
+    )
+  } else {
+    temp_dir <- tempfile("bfh_pdf_")
 
-  # Register cleanup BEFORE dir.create() to ensure cleanup on any error
-  on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
+    # Register cleanup BEFORE dir.create() to ensure cleanup on any error
+    on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
 
-  dir.create(temp_dir, recursive = TRUE)
+    dir.create(temp_dir, recursive = TRUE)
 
-  # Security: Set restrictive permissions (owner-only: rwx------)
-  # Prevents other users from reading sensitive healthcare data in temp files
-  Sys.chmod(temp_dir, mode = "0700", use_umask = FALSE)
+    # Security: Set restrictive permissions (owner-only: rwx------)
+    # Prevents other users from reading sensitive healthcare data in temp files
+    Sys.chmod(temp_dir, mode = "0700", use_umask = FALSE)
 
-  # Security: Verify directory ownership on Unix systems
-  # Prevents TOCTOU attacks where attacker replaces our temp dir
-  if (.Platform$OS.type == "unix") {
-    dir_info <- file.info(temp_dir)
-    current_uid <- suppressWarnings(as.integer(Sys.getenv("UID")))
-    # Only verify if UID is available and valid (not NA or 0)
-    if (length(current_uid) > 0 && !is.na(current_uid) && current_uid > 0) {
-      if (dir_info$uid != current_uid) {
-        unlink(temp_dir, recursive = TRUE)
-        stop(
-          "Temp directory ownership mismatch (possible security issue)",
-          call. = FALSE
-        )
+    # Security: Verify directory ownership on Unix systems
+    # Prevents TOCTOU attacks where attacker replaces our temp dir
+    if (.Platform$OS.type == "unix") {
+      dir_info <- file.info(temp_dir)
+      current_uid <- suppressWarnings(as.integer(Sys.getenv("UID")))
+      # Only verify if UID is available and valid (not NA or 0)
+      if (length(current_uid) > 0 && !is.na(current_uid) && current_uid > 0) {
+        if (dir_info$uid != current_uid) {
+          unlink(temp_dir, recursive = TRUE)
+          stop(
+            "Temp directory ownership mismatch (possible security issue)",
+            call. = FALSE
+          )
+        }
       }
     }
   }
@@ -386,6 +454,9 @@ bfh_export_pdf <- function(x,
   # Merge user metadata with defaults
   metadata_full <- bfh_merge_metadata(metadata, chart_title)
 
+  # Resolve font_path: per-export arg > session default > NULL
+  effective_font_path <- font_path %||% batch_session$font_path
+
   # Create Typst document
   typst_file <- file.path(temp_dir, "document.typ")
   bfh_create_typst_document(
@@ -394,297 +465,28 @@ bfh_export_pdf <- function(x,
     metadata = metadata_full,
     spc_stats = spc_stats,
     template = template,
-    template_path = template_path
+    template_path = template_path,
+    skip_template_copy = !is.null(batch_session)
   )
 
-  # Inject external assets (fonts, images) if callback provided
+  # Inject external assets (fonts, images) if callback provided (single-call mode only)
   if (is.function(inject_assets)) {
     inject_assets(file.path(temp_dir, "bfh-template"))
 
     # Auto-detect font path fra injicerede assets hvis ikke eksplicit angivet
-    if (is.null(font_path)) {
+    if (is.null(effective_font_path)) {
       injected_fonts <- file.path(temp_dir, "bfh-template", "fonts")
       if (dir.exists(injected_fonts)) {
-        font_path <- injected_fonts
+        effective_font_path <- injected_fonts
       }
     }
   }
 
   # Compile to PDF via Quarto (with optional font path)
-  bfh_compile_typst(typst_file, output, font_path = font_path)
+  bfh_compile_typst(typst_file, output, font_path = effective_font_path)
 
   # Return input object invisibly for pipe chaining
   invisible(x)
-}
-
-# ============================================================================
-# SPC STATISTICS AND METADATA
-# ============================================================================
-
-#' Extract SPC Statistics
-#'
-#' S3 generic that extracts statistical process control metrics. The extraction
-#' logic depends on the input type:
-#'
-#' * `data.frame` (typically `bfh_qic_result$summary`): Returns runs and
-#'   crossings from the summary. `outliers_actual` and `outliers_recent_count`
-#'   remain `NULL` because outlier counts require access to `qic_data`.
-#' * `bfh_qic_result`: Returns runs, crossings, and outlier counts. Outliers are
-#'   split into two fields so that the PDF table and the analysis text can be
-#'   driven from consistent — but distinct — numbers.
-#' * `NULL`: Returns an empty stats list (backward compatible).
-#'
-#' Downstream packages should prefer the `bfh_qic_result` method so the PDF
-#' export and any on-screen preview agree on the outlier count.
-#'
-#' @param x Either a data frame (typically `bfh_qic_result$summary`), a
-#'   `bfh_qic_result` object from [bfh_qic()], or `NULL`.
-#'
-#' @return Named list with SPC statistics:
-#' \describe{
-#'   \item{runs_expected}{Expected maximum run length (`længste_løb_max`)}
-#'   \item{runs_actual}{Actual longest run length (`længste_løb`)}
-#'   \item{crossings_expected}{Expected minimum crossings (`antal_kryds_min`)}
-#'   \item{crossings_actual}{Actual number of crossings (`antal_kryds`)}
-#'   \item{outliers_expected}{Expected number of outliers (0 for non-run charts,
-#'     `NULL` otherwise)}
-#'   \item{outliers_actual}{Total number of points outside control limits in the
-#'     latest part (used by the PDF table). `NULL` for `data.frame` input, run
-#'     charts, or when `sigma.signal` is unavailable.}
-#'   \item{outliers_recent_count}{Number of outliers within the last 6
-#'     observations of the latest part (used by the analysis text, so stale
-#'     outliers are not discussed as if they were current). Present only for
-#'     `bfh_qic_result` input on non-run charts.}
-#'   \item{is_run_chart}{Logical indicating run chart. Present only for
-#'     `bfh_qic_result` input.}
-#' }
-#'
-#' @export
-#' @examples
-#' \dontrun{
-#' result <- bfh_qic(data, x = date, y = value, chart_type = "i")
-#'
-#' # Full stats (recommended — populates outliers_actual for the table)
-#' stats <- bfh_extract_spc_stats(result)
-#'
-#' # Backward-compatible summary-only dispatch
-#' stats_summary_only <- bfh_extract_spc_stats(result$summary)
-#' }
-#'
-#' @family utility-functions
-#' @seealso [bfh_qic()] for creating SPC charts
-bfh_extract_spc_stats <- function(x) {
-  UseMethod("bfh_extract_spc_stats")
-}
-
-#' @export
-#' @rdname bfh_extract_spc_stats
-bfh_extract_spc_stats.default <- function(x) {
-  if (is.null(x)) {
-    return(empty_spc_stats())
-  }
-  stop(
-    "bfh_extract_spc_stats(): x must be a data.frame (summary) or a ",
-    "bfh_qic_result object, not a ", paste(class(x), collapse = "/"),
-    call. = FALSE
-  )
-}
-
-#' @export
-#' @rdname bfh_extract_spc_stats
-bfh_extract_spc_stats.data.frame <- function(x) {
-  stats <- empty_spc_stats()
-
-  if (nrow(x) == 0) {
-    return(stats)
-  }
-
-  # Brug seneste part (sidste række) for aktuel proces-statistik
-  row <- x[nrow(x), ]
-
-  # Runs (serielængde)
-  if ("længste_løb_max" %in% names(row)) {
-    stats$runs_expected <- clean_spc_value(row$længste_løb_max)
-  }
-  if ("længste_løb" %in% names(row)) {
-    stats$runs_actual <- clean_spc_value(row$længste_løb)
-  }
-
-  # Crossings (antal kryds)
-  if ("antal_kryds_min" %in% names(row)) {
-    stats$crossings_expected <- clean_spc_value(row$antal_kryds_min)
-  }
-  if ("antal_kryds" %in% names(row)) {
-    stats$crossings_actual <- clean_spc_value(row$antal_kryds)
-  }
-
-  # Outliers kan udledes fra summary, hvis summary-generatoren har tilføjet
-  # aggregerede outlier-kolonner.
-  if ("forventede_outliers" %in% names(row)) {
-    stats$outliers_expected <- clean_spc_value(row$forventede_outliers)
-  } else if ("outliers_expected" %in% names(row)) {
-    stats$outliers_expected <- clean_spc_value(row$outliers_expected)
-  }
-  if ("antal_outliers" %in% names(row)) {
-    stats$outliers_actual <- clean_spc_value(row$antal_outliers)
-  } else if ("outliers_actual" %in% names(row)) {
-    stats$outliers_actual <- clean_spc_value(row$outliers_actual)
-  }
-
-  stats
-}
-
-#' @export
-#' @rdname bfh_extract_spc_stats
-bfh_extract_spc_stats.bfh_qic_result <- function(x) {
-  # Start med runs/crossings fra summary
-  stats <- bfh_extract_spc_stats(x$summary)
-
-  is_run_chart <- identical(x$config$chart_type, "run")
-  stats$is_run_chart <- is_run_chart
-
-  # Run charts har ingen kontrolgrænser → outlier-felter skal være NULL,
-  # selvom format_qic_summary() har tilføjet aggregerede outlier-kolonner.
-  if (is_run_chart) {
-    stats$outliers_expected <- NULL
-    stats$outliers_actual <- NULL
-    stats$outliers_recent_count <- NULL
-    return(stats)
-  }
-
-  if (is.null(x$qic_data) || !"sigma.signal" %in% names(x$qic_data)) {
-    # Uden sigma.signal kan vi ikke tælle outliers; lad felterne forblive NULL
-    # så Typst-templaten skjuler rækken i stedet for at vise "-".
-    return(stats)
-  }
-
-  qd <- x$qic_data
-  if ("part" %in% names(qd)) {
-    latest_part <- max(qd$part, na.rm = TRUE)
-    qd <- qd[qd$part == latest_part, ]
-  }
-
-  stats$outliers_expected <- 0
-
-  # TABEL: total antal outliers i seneste part.
-  stats$outliers_actual <- sum(qd$sigma.signal, na.rm = TRUE)
-
-  # ANALYSETEKST: kun outliers i de seneste 6 obs af seneste part
-  # (ældre outliers vises stadig visuelt i diagrammet, men bør ikke
-  # beskrives som aktuelle i analysen).
-  n_obs <- nrow(qd)
-  recent_start <- max(1, n_obs - 5)
-  stats$outliers_recent_count <- sum(
-    qd$sigma.signal[recent_start:n_obs],
-    na.rm = TRUE
-  )
-
-  stats
-}
-
-# Internal helpers ============================================================
-
-# Returner tom SPC-stats-liste (alle felter NULL).
-# Bruges af data.frame-methoden og default-methoden (for NULL-input).
-empty_spc_stats <- function() {
-  list(
-    runs_expected = NULL,
-    runs_actual = NULL,
-    crossings_expected = NULL,
-    crossings_actual = NULL,
-    outliers_expected = NULL,
-    outliers_actual = NULL
-  )
-}
-
-# Konverter NA, NaN og Inf til NA_real_; returnér NULL for tomme værdier.
-clean_spc_value <- function(x) {
-  if (is.null(x) || length(x) == 0) {
-    return(NULL)
-  }
-  if (is.na(x) || is.nan(x) || is.infinite(x)) {
-    return(NA_real_)
-  }
-  x
-}
-
-#' Merge User Metadata with Defaults
-#'
-#' Merges user-provided metadata with package defaults for PDF generation.
-#' This function is useful for downstream packages that need consistent
-#' metadata handling without depending on BFHcharts internal functions.
-#'
-#' @param metadata Named list with user-provided metadata fields.
-#'   Valid fields: hospital, department, title, analysis, details, author,
-#'   date, data_definition. Other fields are ignored.
-#' @param chart_title Character string with chart title. Used as default
-#'   for metadata$title if not provided by user.
-#'
-#' @return Named list with merged metadata containing:
-#' \describe{
-#'   \item{hospital}{Hospital name (default: "Bispebjerg og Frederiksberg Hospital")}
-#'   \item{department}{Department name (default: NULL)}
-#'   \item{title}{Chart title (from chart_title or metadata)}
-#'   \item{analysis}{Analysis description (default: NULL)}
-#'   \item{details}{Additional details (default: NULL)}
-#'   \item{author}{Author name (default: NULL)}
-#'   \item{date}{Report date (default: Sys.Date())}
-#'   \item{data_definition}{Data definition (default: NULL)}
-#' }
-#'
-#' User-provided values override defaults. Fields not in the default list
-#' are silently ignored.
-#'
-#' @export
-#' @examples
-#' \dontrun{
-#' # Basic usage
-#' metadata <- list(
-#'   department = "Kvalitetsafdeling",
-#'   analysis = "Signifikant fald observeret"
-#' )
-#' merged <- bfh_merge_metadata(metadata, chart_title = "Infektioner")
-#'
-#' # merged$hospital = "Bispebjerg og Frederiksberg Hospital" (default)
-#' # merged$department = "Kvalitetsafdeling" (user override)
-#' # merged$title = "Infektioner" (from chart_title)
-#' }
-#'
-#' @family utility-functions
-#' @seealso [bfh_export_pdf()] for PDF export functionality
-bfh_merge_metadata <- function(metadata, chart_title) {
-  # Parameter validation
-  if (!is.null(metadata) && (!is.list(metadata) || is.data.frame(metadata))) {
-    stop("metadata must be a list or NULL", call. = FALSE)
-  }
-
-  # Define default metadata values
-  defaults <- list(
-    hospital = "Bispebjerg og Frederiksberg Hospital",
-    department = NULL,
-    title = chart_title,
-    analysis = NULL,
-    details = NULL,
-    author = NULL,
-    date = Sys.Date(),
-    data_definition = NULL,
-    footer_content = NULL
-  )
-
-  # Handle NULL metadata
-  if (is.null(metadata)) {
-    return(defaults)
-  }
-
-  # Merge: user values override defaults
-  merged <- defaults
-  for (name in names(metadata)) {
-    if (name %in% names(defaults)) {
-      merged[[name]] <- metadata[[name]]
-    }
-  }
-
-  return(merged)
 }
 
 # ============================================================================
@@ -829,206 +631,4 @@ prepare_plot_for_export <- function(plot, margin_mm = 0) {
   )
 
   return(plot)
-}
-
-
-# ============================================================================
-# AUTO-GENERATED DETAILS
-# ============================================================================
-
-#' Generate Details Text for PDF Export
-#'
-#' Automatically generates a details string based on chart data, including
-#' period range, averages, latest values, and current level (centerline).
-#'
-#' @param x A \code{bfh_qic_result} object from \code{bfh_qic()}
-#'
-#' @return Character string with formatted details, e.g.:
-#'   "Periode: feb. 2019 – mar. 2022 • Gns. måned: 58938/97266 •
-#'    Seneste måned: 60756/88509 • Nuværende niveau: 64,5%"
-#'
-#' @details
-#' **Format:**
-#' - Period range with Danish date formatting
-#' - Average values per interval (numerator/denominator for p/u-charts)
-#' - Latest period values
-#' - Current level (centerline value) with appropriate unit formatting
-#'
-#' **Chart Type Handling:**
-#' - p-chart, u-chart: Shows numerator/denominator (e.g., "58938/97266")
-#' - Other chart types: Shows only the value (e.g., "127")
-#'
-#' **Interval Detection:**
-#' - Uses detect_date_interval() to determine the interval type
-#' - Labels adapt: "måned", "uge", "dag", "kvartal", "år"
-#'
-#' @examples
-#' \dontrun{
-#' result <- bfh_qic(data, x = date, y = value, chart_type = "i")
-#' details <- bfh_generate_details(result)
-#' # "Periode: jan. 2024 – dec. 2024 • Gns. måned: 50 • ..."
-#' }
-#'
-#' @family utility-functions
-#' @seealso [bfh_export_pdf()] for PDF export functionality
-#' @export
-bfh_generate_details <- function(x) {
-  # Validate input
-
-  if (!inherits(x, "bfh_qic_result")) {
-    stop("x must be a bfh_qic_result object from bfh_qic()", call. = FALSE)
-  }
-
-  qic_data <- x$qic_data
-  config <- x$config
-
-  # 1. Detect interval type from x-axis data
-  interval_info <- detect_date_interval(qic_data$x)
-  interval_label <- get_danish_interval_label(interval_info$type)
-
-  # 2. Format period range
-  start_date <- format_danish_date_short(min(qic_data$x, na.rm = TRUE))
-  end_date <- format_danish_date_short(max(qic_data$x, na.rm = TRUE))
-  periode <- sprintf("Periode: %s \u2013 %s", start_date, end_date) # en-dash
-
-  # 3. Calculate averages (numerator/denominator or value only)
-  chart_type <- config$chart_type
-
-  # Check if denominator data is available
-  has_denominator_data <- "y.sum" %in% names(qic_data) &&
-    "n" %in% names(qic_data) &&
-    !all(is.na(qic_data$n))
-
-  # Use numerator/denominator format for:
-  # - p/u-charts (always)
-  # - run charts IF they have denominator data (i.e., created from proportion data)
-  uses_denominator <- (chart_type %in% c("p", "u")) ||
-    (chart_type == "run" && has_denominator_data)
-
-  if (uses_denominator) {
-    # Charts with denominator: show numerator/denominator
-    avg_num <- round(mean(qic_data$y.sum, na.rm = TRUE))
-    avg_den <- round(mean(qic_data$n, na.rm = TRUE))
-    gns <- sprintf(
-      "Gns. %s: %s/%s", interval_label,
-      format(avg_num, big.mark = ".", decimal.mark = ","),
-      format(avg_den, big.mark = ".", decimal.mark = ",")
-    )
-  } else {
-    # Other chart types: show only value
-    avg_val <- round(mean(qic_data$y, na.rm = TRUE))
-    gns <- sprintf(
-      "Gns. %s: %s", interval_label,
-      format(avg_val, big.mark = ".", decimal.mark = ",")
-    )
-  }
-
-  # 4. Get latest period values
-  last_row <- utils::tail(qic_data, 1)
-
-  if (uses_denominator) {
-    last_num <- round(last_row$y.sum)
-    last_den <- round(last_row$n)
-    seneste <- sprintf(
-      "Seneste %s: %s/%s", interval_label,
-      format(last_num, big.mark = ".", decimal.mark = ","),
-      format(last_den, big.mark = ".", decimal.mark = ",")
-    )
-  } else {
-    last_val <- round(last_row$y)
-    seneste <- sprintf(
-      "Seneste %s: %s", interval_label,
-      format(last_val, big.mark = ".", decimal.mark = ",")
-    )
-  }
-
-  # 5. Get current level (centerline value) with proper formatting
-  cl_value <- last_row$cl
-  y_axis_unit <- config$y_axis_unit %||% "count"
-
-  niveau <- format_centerline_for_details(cl_value, y_axis_unit)
-
-  # 6. Combine with bullet separator
-  paste(periode, gns, seneste, niveau, sep = " \u2022 ") # bullet character
-}
-
-#' Format Centerline Value for Details
-#'
-#' Formats the centerline value based on y_axis_unit with appropriate
-#' decimal places and unit suffix.
-#'
-#' @param cl_value Numeric centerline value
-#' @param y_axis_unit Character string: "percent", "count", "rate", etc.
-#'
-#' @return Formatted string, e.g., "Nuværende niveau: 64,5%"
-#'
-#' @keywords internal
-#' @noRd
-format_centerline_for_details <- function(cl_value, y_axis_unit) {
-  if (is.null(cl_value) || is.na(cl_value)) {
-    return("Nuværende niveau: -")
-  }
-
-  formatted <- switch(y_axis_unit,
-    "percent" = {
-      # Percentage: multiply by 100 if needed, show 1 decimal
-      percent_value <- if (cl_value <= 1) cl_value * 100 else cl_value
-      paste0(
-        format(
-          round(percent_value, 1),
-          big.mark = ".",
-          decimal.mark = ",",
-          nsmall = 1,
-          trim = TRUE,
-          scientific = FALSE
-        ),
-        "%"
-      )
-    },
-    "rate" = {
-      # Rate: typically per 1000 or similar, show 1 decimal
-      format(
-        round(cl_value, 1),
-        big.mark = ".",
-        decimal.mark = ",",
-        nsmall = 1,
-        trim = TRUE,
-        scientific = FALSE
-      )
-    },
-    "time" = {
-      # Time: show as-is with 1 decimal
-      format(
-        round(cl_value, 1),
-        big.mark = ".",
-        decimal.mark = ",",
-        nsmall = 1,
-        trim = TRUE,
-        scientific = FALSE
-      )
-    },
-    # Default (count and others): show as integer or 1 decimal
-    {
-      if (cl_value == round(cl_value)) {
-        format(
-          round(cl_value),
-          big.mark = ".",
-          decimal.mark = ",",
-          trim = TRUE,
-          scientific = FALSE
-        )
-      } else {
-        format(
-          round(cl_value, 1),
-          big.mark = ".",
-          decimal.mark = ",",
-          nsmall = 1,
-          trim = TRUE,
-          scientific = FALSE
-        )
-      }
-    }
-  )
-
-  sprintf("Nuværende niveau: %s", formatted)
 }

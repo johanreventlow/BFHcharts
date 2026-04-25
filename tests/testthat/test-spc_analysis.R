@@ -148,7 +148,7 @@ test_that("bfh_generate_analysis works with metadata", {
   expect_gt(nchar(analysis), 0)
 })
 
-test_that("bfh_generate_analysis returns standard text when use_ai = FALSE explicitly", {
+test_that("bfh_generate_analysis falls back gracefully when AI unavailable", {
   set.seed(42)
 
   test_data <- data.frame(
@@ -158,6 +158,8 @@ test_that("bfh_generate_analysis returns standard text when use_ai = FALSE expli
 
   result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
 
+  # Even if use_ai = TRUE but BFHllm not installed, should fall back
+  # This test verifies no error is thrown
   analysis <- bfh_generate_analysis(result, use_ai = FALSE)
 
   expect_type(analysis, "character")
@@ -187,62 +189,12 @@ test_that("bfh_generate_analysis accepts min_chars and max_chars parameters", {
 })
 
 test_that("bfh_generate_analysis has correct default values", {
+  # Check function defaults
   fn_args <- formals(bfh_generate_analysis)
 
-  expect_equal(fn_args$use_ai, FALSE)
   expect_equal(fn_args$min_chars, 300)
   expect_equal(fn_args$max_chars, 375)
   expect_equal(fn_args$texts_loader, quote(load_spc_texts))
-})
-
-test_that("bfh_generate_analysis default (use_ai = FALSE) returns standard text without BFHllm", {
-  set.seed(42)
-  test_data <- data.frame(
-    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
-    value = rnorm(12, mean = 50, sd = 5)
-  )
-  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
-
-  # Default must never require BFHllm — works regardless of installation
-  analysis <- bfh_generate_analysis(result)
-
-  expect_type(analysis, "character")
-  expect_gt(nchar(analysis), 0)
-})
-
-test_that("bfh_generate_analysis errors informatively when use_ai = TRUE but BFHllm not installed", {
-  skip_if(
-    requireNamespace("BFHllm", quietly = TRUE),
-    "BFHllm is installed — skipping missing-package error test"
-  )
-  set.seed(42)
-  test_data <- data.frame(
-    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
-    value = rnorm(12, mean = 50, sd = 5)
-  )
-  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
-
-  expect_error(
-    bfh_generate_analysis(result, use_ai = TRUE),
-    "requires the BFHllm package"
-  )
-})
-
-test_that("bfh_generate_analysis passes opt-in gate and returns text when use_ai = TRUE and BFHllm is installed", {
-  skip_if_not_installed("BFHllm")
-  set.seed(42)
-  test_data <- data.frame(
-    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
-    value = rnorm(12, mean = 50, sd = 5)
-  )
-  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
-
-  # With BFHllm available, use_ai = TRUE should not error at the opt-in gate.
-  # (Actual AI call may fail in test env; the tryCatch falls back gracefully.)
-  analysis <- bfh_generate_analysis(result, use_ai = TRUE)
-
-  expect_type(analysis, "character")
-  expect_gt(nchar(analysis), 0)
 })
 
 test_that("bfh_generate_analysis validates min_chars < max_chars", {

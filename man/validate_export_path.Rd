@@ -2,27 +2,40 @@
 % Please edit documentation in R/utils_path_policy.R
 \name{validate_export_path}
 \alias{validate_export_path}
-\title{Validate and normalise an export file path}
+\title{Validate an export file path}
 \usage{
-validate_export_path(path, extension = NULL, allow_root = NULL)
+validate_export_path(
+  path,
+  extension = NULL,
+  allow_root = NULL,
+  ext_action = c("none", "stop", "warn"),
+  normalize = FALSE
+)
 }
 \arguments{
-\item{path}{Character scalar. File path to validate.}
+\item{path}{Character scalar.  The file path to validate.}
 
-\item{extension}{Character scalar or NULL. Required extension without the
-leading dot, e.g. \code{"png"}, \code{"pdf"}, \code{"typ"}. Case-insensitive. NULL skips
-the extension check.}
+\item{extension}{Character scalar or \code{NULL}.  Expected file extension
+(without leading dot, e.g. \code{"png"}).  Case-insensitive.  If \code{NULL} no
+extension check is performed.}
 
-\item{allow_root}{Character scalar or NULL. When given, the resolved path
-must be inside this directory (guards against symlink-based escape).}
+\item{allow_root}{Character scalar or \code{NULL}.  If supplied and \code{normalize}
+is \code{TRUE}, the resolved path must start with \code{normalizePath(allow_root)}.}
+
+\item{ext_action}{One of \code{"none"} (default), \code{"stop"}, or \code{"warn"}.
+Controls behaviour when \code{extension} is specified but the path does not end
+with that extension.}
+
+\item{normalize}{Logical.  If \code{TRUE}, call \code{normalizePath(path, mustWork = TRUE)} (the file must already exist) and re-validate the
+resolved path.  Returns the normalized path on success.  Default \code{FALSE}.}
 }
 \value{
-Normalised absolute character path.
+\code{path} invisibly (normalized when \code{normalize = TRUE}).
 }
 \description{
-Checks that \code{path} is a non-empty string free of shell metacharacters and
-\code{..} path-traversal segments, optionally enforces a file extension, and
-returns the path normalised to an absolute form. Call sites should assign
-the return value so they work with the normalised path downstream.
+Checks that \code{path} is a safe, non-empty character string free of path
+traversal components (\code{..}) and shell metacharacters.  Optionally validates
+the file extension and resolves symlinks to verify the resolved path stays
+within \code{allow_root}.
 }
 \keyword{internal}

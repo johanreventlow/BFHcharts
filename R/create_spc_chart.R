@@ -723,6 +723,14 @@ bfh_qic <- function(data,
     }
   }
 
+  # Normalize blank axis labels to NULL for robust downstream theming
+  if (is.character(xlab) && length(xlab) == 1 && nchar(trimws(xlab)) == 0) {
+    xlab <- NULL
+  }
+  if (is.character(ylab) && length(ylab) == 1 && nchar(trimws(ylab)) == 0) {
+    ylab <- NULL
+  }
+
   # Create plot configuration
   plot_config <- spc_plot_config(
     chart_type = chart_type,

@@ -244,11 +244,9 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #'   - `chart_title`: Override chart title
 #'   - `y_axis_unit`: Override y-axis unit
 #' @param use_ai Logical. Should AI be used for analysis generation?
-#'   Default `FALSE`. Set `use_ai = TRUE` to opt in to AI-generated analysis.
-#'   **Security note:** `use_ai = TRUE` sends chart data (qic_data, metadata,
-#'   hospital, department) to `BFHllm::bfhllm_spc_suggestion()`, which may
-#'   transmit data to external services. Do not enable in contexts where
-#'   patient-identifiable or sensitive operational data must remain local.
+#'   - `NULL` (default): Auto-detect BFHllm availability
+#'   - `TRUE`: Use AI (requires BFHllm package)
+#'   - `FALSE`: Use standard texts only
 #' @param min_chars Minimum characters in AI-generated output. Default 300.
 #' @param max_chars Maximum characters in AI-generated output. Default 375.
 #' @param target_tolerance Fractional tolerance for `at_target` classification
@@ -260,28 +258,22 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #' @return Character string with analysis text suitable for PDF export.
 #'
 #' @details
-#' AI analysis requires an explicit opt-in (`use_ai = TRUE`). There is no
-#' automatic detection of BFHllm availability — this is by design to prevent
-#' unintended data transmission in healthcare contexts.
+#' When `use_ai = TRUE` and BFHllm is installed, the function:
+#' 1. Builds context from the `bfh_qic_result` and metadata
+#' 2. Calls `BFHllm::bfhllm_spc_suggestion()` for AI-generated analysis
+#' 3. Falls back to standard texts if AI call fails
 #'
-#' When `use_ai = TRUE`:
-#' - BFHllm must be installed (error if not)
-#' - Builds context from the `bfh_qic_result` and metadata
-#' - Calls `BFHllm::bfhllm_spc_suggestion()` for AI-generated analysis
-#' - Falls back to standard texts if AI call fails
-#'
-#' When `use_ai = FALSE` (default):
+#' When `use_ai = FALSE` or BFHllm is not installed:
 #' - Returns Danish standard texts based on Anhøj SPC rules
-#' - No external calls, no package dependencies beyond BFHcharts
 #'
 #' @examples
 #' \dontrun{
 #' result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 #'
-#' # Standard texts (default, no AI)
-#' analysis <- bfh_generate_analysis(result)
+#' # Use standard texts (no AI)
+#' analysis <- bfh_generate_analysis(result, use_ai = FALSE)
 #'
-#' # Explicit AI opt-in (requires BFHllm)
+#' # Use AI if available
 #' analysis <- bfh_generate_analysis(result,
 #'   metadata = list(
 #'     data_definition = "Antal infektioner pr. 1000 patientdage",
@@ -294,7 +286,7 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #' @export
 bfh_generate_analysis <- function(x,
                                   metadata = list(),
-                                  use_ai = FALSE,
+                                  use_ai = NULL,
                                   min_chars = 300,
                                   max_chars = 375,
                                   target_tolerance = 0.05,
@@ -313,13 +305,13 @@ bfh_generate_analysis <- function(x,
   # Byg kontekst
   context <- bfh_build_analysis_context(x, metadata)
 
-  if (use_ai) {
-    if (!requireNamespace("BFHllm", quietly = TRUE)) {
-      stop(
-        "use_ai = TRUE requires the BFHllm package, which is not installed. ",
-        "Install BFHllm or set use_ai = FALSE to use standard texts."
-      )
-    }
+  # Check AI tilgængelighed
+  ai_available <- requireNamespace("BFHllm", quietly = TRUE)
+  if (is.null(use_ai)) {
+    use_ai <- ai_available
+  }
+
+  if (use_ai && ai_available) {
     # === AI-GENERERET ANALYSE ===
 
     # Byg SPC metadata til BFHllm

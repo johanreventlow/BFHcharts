@@ -88,14 +88,7 @@ bfh_export_png <- function(x,
     )
   }
 
-  # Validate output path
-  if (!is.character(output) || length(output) != 1 || nchar(output) == 0) {
-    stop("output must be a non-empty character string specifying the file path",
-      call. = FALSE
-    )
-  }
-
-  output <- validate_export_path(output, extension = "png")
+  validate_export_path(output, extension = "png", ext_action = "warn")
 
   # Validate dimensions
   if (!is.numeric(width_mm) || length(width_mm) != 1 || width_mm <= 0) {
