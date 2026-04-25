@@ -31,6 +31,6 @@
 
 ## 5. Documentation
 
-- [ ] 5.1 Vignette eller README-section: supported languages
-- [ ] 5.2 Guide til at tilføje nyt sprog (TRANSLATORS.md)
+- [x] 5.1 Vignette eller README-section: supported languages
+- [x] 5.2 Guide til at tilføje nyt sprog (TRANSLATORS.md)
 - [x] 5.3 NEWS.md: i18n support (backward-compatible)
