@@ -7,7 +7,7 @@
 bfh_generate_analysis(
   x,
   metadata = list(),
-  use_ai = NULL,
+  use_ai = FALSE,
   min_chars = 300,
   max_chars = 375,
   target_tolerance = 0.05,
@@ -29,11 +29,11 @@ bfh_generate_analysis(
 }}
 
 \item{use_ai}{Logical. Should AI be used for analysis generation?
-\itemize{
-\item \code{NULL} (default): Auto-detect BFHllm availability
-\item \code{TRUE}: Use AI (requires BFHllm package)
-\item \code{FALSE}: Use standard texts only
-}}
+Default \code{FALSE}. Set \code{use_ai = TRUE} to opt in to AI-generated analysis.
+\strong{Security note:} \code{use_ai = TRUE} sends chart data (qic_data, metadata,
+hospital, department) to \code{BFHllm::bfhllm_spc_suggestion()}, which may
+transmit data to external services. Do not enable in contexts where
+patient-identifiable or sensitive operational data must remain local.}
 
 \item{min_chars}{Minimum characters in AI-generated output. Default 300.}
 
@@ -56,26 +56,32 @@ Generates analysis text for PDF export using AI (BFHllm) if available,
 with automatic fallback to Danish standard texts.
 }
 \details{
-When \code{use_ai = TRUE} and BFHllm is installed, the function:
-\enumerate{
+AI analysis requires an explicit opt-in (\code{use_ai = TRUE}). There is no
+automatic detection of BFHllm availability — this is by design to prevent
+unintended data transmission in healthcare contexts.
+
+When \code{use_ai = TRUE}:
+\itemize{
+\item BFHllm must be installed (error if not)
 \item Builds context from the \code{bfh_qic_result} and metadata
 \item Calls \code{BFHllm::bfhllm_spc_suggestion()} for AI-generated analysis
 \item Falls back to standard texts if AI call fails
 }
 
-When \code{use_ai = FALSE} or BFHllm is not installed:
+When \code{use_ai = FALSE} (default):
 \itemize{
 \item Returns Danish standard texts based on Anhøj SPC rules
+\item No external calls, no package dependencies beyond BFHcharts
 }
 }
 \examples{
 \dontrun{
 result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 
-# Use standard texts (no AI)
-analysis <- bfh_generate_analysis(result, use_ai = FALSE)
+# Standard texts (default, no AI)
+analysis <- bfh_generate_analysis(result)
 
-# Use AI if available
+# Explicit AI opt-in (requires BFHllm)
 analysis <- bfh_generate_analysis(result,
   metadata = list(
     data_definition = "Antal infektioner pr. 1000 patientdage",
