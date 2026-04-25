@@ -92,6 +92,6 @@ validate_export_path <- function(path,
 
 .check_metachars <- function(path) {
   if (any(vapply(SHELL_METACHARS_EXPORT, function(ch) grepl(ch, path, fixed = TRUE), logical(1L)))) {
-    stop("path contains disallowed characters", call. = FALSE)
+    stop("path contains unsafe characters", call. = FALSE)
   }
 }
