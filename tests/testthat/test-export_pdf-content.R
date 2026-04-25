@@ -20,7 +20,8 @@
 # ============================================================================
 
 test_that("PDF indeholder chart_title fra bfh_qic config", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
@@ -50,7 +51,8 @@ test_that("PDF indeholder chart_title fra bfh_qic config", {
 # ============================================================================
 
 test_that("PDF indeholder hospital-metadata fra bruger", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
@@ -75,7 +77,8 @@ test_that("PDF indeholder hospital-metadata fra bruger", {
 })
 
 test_that("PDF indeholder department-metadata", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
@@ -102,7 +105,8 @@ test_that("PDF indeholder department-metadata", {
 })
 
 test_that("PDF indeholder author-metadata", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
@@ -127,7 +131,8 @@ test_that("PDF indeholder author-metadata", {
 })
 
 test_that("PDF indeholder data_definition-metadata", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
@@ -159,7 +164,8 @@ test_that("PDF indeholder data_definition-metadata", {
 # ============================================================================
 
 test_that("PDF indeholder SPC centerlinje-værdi fra summary", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
@@ -189,15 +195,18 @@ test_that("PDF indeholder SPC centerlinje-værdi fra summary", {
 })
 
 test_that("PDF indeholder Anhoej-statistik (runs og kryds)", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
   # Dataset med > 20 observationer så Anhøj-statistik er meningsfuld
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
-    value = c(14, 16, 13, 15, 18, 12, 17, 14, 19, 13, 15, 16,
-              17, 15, 18, 14, 13, 17, 16, 15, 14, 17, 16, 15)
+    value = c(
+      14, 16, 13, 15, 18, 12, 17, 14, 19, 13, 15, 16,
+      17, 15, 18, 14, 13, 17, 16, 15, 14, 17, 16, 15
+    )
   )
 
   result <- suppressWarnings(
@@ -235,7 +244,8 @@ test_that("PDF indeholder Anhoej-statistik (runs og kryds)", {
 # ============================================================================
 
 test_that("PDF bevarer danske tegn (æ, ø, å) i titel", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
@@ -256,13 +266,14 @@ test_that("PDF bevarer danske tegn (æ, ø, å) i titel", {
 
   # Hver af de tre specialtegn skal være bevaret
   expect_pdf_contains(temp_file, "æøå")
-  expect_pdf_contains(temp_file, "T.lling")    # tolerance for ligatur-variation
+  expect_pdf_contains(temp_file, "T.lling") # tolerance for ligatur-variation
   expect_pdf_contains(temp_file, "h.ndelser")
   expect_pdf_contains(temp_file, "m.ned")
 })
 
 test_that("PDF bevarer danske tegn i metadata-strings", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
@@ -304,7 +315,8 @@ test_that("PDF bevarer danske tegn i metadata-strings", {
 # ============================================================================
 
 test_that("PDF viser IKKE metadata-felter der ikke er angivet", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_if_not_installed("pdftools")
   skip_on_cran()
 

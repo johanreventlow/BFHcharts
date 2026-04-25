@@ -125,7 +125,9 @@ format_y_axis_percent <- function(y_range = NULL) {
 
   # Bestem accuracy baseret på faktisk break-interval (beregnes dynamisk)
   percent_labels <- function(x) {
-    if (length(x) < 2) return(scales::label_percent(accuracy = 1)(x))
+    if (length(x) < 2) {
+      return(scales::label_percent(accuracy = 1)(x))
+    }
 
     # Beregn mindste interval mellem breaks (i procentpoint)
     intervals <- diff(sort(x)) * 100
@@ -133,11 +135,11 @@ format_y_axis_percent <- function(y_range = NULL) {
 
     # Vælg accuracy der kan skelne alle breaks
     accuracy <- if (min_interval >= 1) {
-      1       # 1%, 2%, 3%
+      1 # 1%, 2%, 3%
     } else if (min_interval >= 0.1) {
-      0.1     # 0.5%, 1.0%, 1.5%
+      0.1 # 0.5%, 1.0%, 1.5%
     } else {
-      0.01    # 0.05%, 0.10%
+      0.01 # 0.05%, 0.10%
     }
 
     scales::label_percent(accuracy = accuracy)(x)

@@ -1,0 +1,87 @@
+#!/bin/bash
+# ==============================================================================
+# pre-commit git hook for BFHcharts
+# ==============================================================================
+# Blokerer direkte commits paa main + koerer lintr/styler paa staged R-filer.
+#
+# Installation:
+#   Rscript dev/install_git_hooks.R --force
+#
+# Bypass (brug sparsomt):
+#   git commit --no-verify                    # Git-native bypass
+#   SKIP_BRANCH_CHECK=1 git commit            # Kun branch-check bypasses
+#
+# Exit koder:
+#   0 = alle checks bestaaet, commit tilladt
+#   1 = commit blokeret (main, lintr-fejl, eller styler aendrede filer)
+# ==============================================================================
+
+# --- Step 0: Block direkte commits paa main ---
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$BRANCH" = "main" ] && [ "${SKIP_BRANCH_CHECK:-0}" != "1" ]; then
+  echo ""
+  echo "✗ Direkte commit paa main er blokeret"
+  echo ""
+  echo "  Brug feature-branch-flowet:"
+  echo "    git checkout -b feat/<navn>      # eller fix/, chore/, docs/"
+  echo "    git commit ..."
+  echo "    git push -u origin <branch>"
+  echo "    # opret PR mod develop via GitHub UI"
+  echo ""
+  echo "  Bypass (undtagelsestilfaelde):"
+  echo "    SKIP_BRANCH_CHECK=1 git commit"
+  echo "    git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+echo "Running pre-commit checks..."
+
+# Find staged R-filer (ekskl. dev/)
+staged_r_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(R|r)$' | grep -v 'dev/')
+
+if [ -z "$staged_r_files" ]; then
+    echo "No R files staged — skipping lint/style"
+    exit 0
+fi
+
+echo "Checking: $staged_r_files"
+
+if ! command -v Rscript &> /dev/null; then
+    echo "Rscript not found — skipping"
+    exit 0
+fi
+
+# Koer lint + style
+Rscript dev/lint_and_style.R $staged_r_files
+exit_code=$?
+
+if [ $exit_code -eq 1 ]; then
+    echo ""
+    echo "COMMIT BLOCKED: Kritiske lintr-fejl fundet."
+    echo "Fix dem og proev igen: Rscript dev/lint_and_style.R"
+    exit 1
+elif [ $exit_code -eq 2 ]; then
+    echo ""
+    echo "Lintr warnings fundet (commit tilladt)."
+fi
+
+# Tjek om styler aendrede STAGED filer
+styler_changed=""
+for f in $staged_r_files; do
+    if [ -f "$f" ] && ! git diff --quiet -- "$f" 2>/dev/null; then
+        styler_changed="$styler_changed $f"
+    fi
+done
+if [ ! -z "$styler_changed" ]; then
+    echo ""
+    echo "Styler har formateret filer:"
+    echo "$styler_changed"
+    echo ""
+    echo "Stage aendringerne og commit igen:"
+    echo "  git add$styler_changed && git commit"
+    exit 1
+fi
+
+echo "Pre-commit checks passed."
+exit 0

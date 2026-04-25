@@ -43,15 +43,17 @@ test_that("spc_plot_config uses default values", {
   expect_null(cfg$chart_title)
 })
 
-test_that("spc_plot_config warns on invalid chart_type", {
-  expect_warning(
+test_that("spc_plot_config errors on invalid chart_type", {
+  expect_error(
     spc_plot_config(chart_type = "invalid_type"),
-    "Invalid chart_type"
+    "Invalid chart_type",
+    class = "bfhcharts_config_error"
   )
 
-  expect_warning(
-    cfg <- spc_plot_config(chart_type = "xyz"),
-    "Valid types are"
+  expect_error(
+    spc_plot_config(chart_type = "xyz"),
+    "Valid types are",
+    class = "bfhcharts_config_error"
   )
 })
 
@@ -66,15 +68,17 @@ test_that("spc_plot_config accepts all valid chart types", {
   }
 })
 
-test_that("spc_plot_config warns on invalid y_axis_unit", {
-  expect_warning(
+test_that("spc_plot_config errors on invalid y_axis_unit", {
+  expect_error(
     spc_plot_config(y_axis_unit = "invalid_unit"),
-    "Invalid y_axis_unit"
+    "Invalid y_axis_unit",
+    class = "bfhcharts_config_error"
   )
 
-  expect_warning(
-    cfg <- spc_plot_config(y_axis_unit = "meters"),
-    "Valid units are"
+  expect_error(
+    spc_plot_config(y_axis_unit = "meters"),
+    "Valid units are",
+    class = "bfhcharts_config_error"
   )
 })
 
@@ -90,16 +94,26 @@ test_that("spc_plot_config accepts all valid y_axis units", {
 })
 
 test_that("spc_plot_config validates target_value is numeric", {
-  # Valid numeric target
   cfg <- spc_plot_config(target_value = 50)
   expect_equal(cfg$target_value, 50)
 
-  # Invalid non-numeric target
-  expect_warning(
-    cfg <- spc_plot_config(target_value = "fifty"),
-    "target_value must be numeric"
+  expect_error(
+    spc_plot_config(target_value = "fifty"),
+    "target_value",
+    class = "bfhcharts_config_error"
   )
-  expect_null(cfg$target_value)
+
+  expect_error(
+    spc_plot_config(target_value = NA_real_),
+    "target_value",
+    class = "bfhcharts_config_error"
+  )
+
+  expect_error(
+    spc_plot_config(target_value = Inf),
+    "target_value",
+    class = "bfhcharts_config_error"
+  )
 })
 
 test_that("print.spc_plot_config displays configuration", {
@@ -155,77 +169,84 @@ test_that("viewport_dims uses default values", {
 })
 
 test_that("viewport_dims validates width is positive", {
-  # Valid width
   vp <- viewport_dims(width = 1000)
   expect_equal(vp$width, 1000)
 
-  # Zero width
-  expect_warning(
-    vp <- viewport_dims(width = 0),
-    "width must be positive"
+  expect_error(
+    viewport_dims(width = 0),
+    "positive",
+    class = "bfhcharts_config_error"
   )
-  expect_null(vp$width)
 
-  # Negative width
-  expect_warning(
-    vp <- viewport_dims(width = -100),
-    "width must be positive"
+  expect_error(
+    viewport_dims(width = -100),
+    "positive",
+    class = "bfhcharts_config_error"
   )
-  expect_null(vp$width)
 
-  # Non-numeric width
-  expect_warning(
-    vp <- viewport_dims(width = "large"),
-    "width must be positive"
+  expect_error(
+    viewport_dims(width = "large"),
+    "positive",
+    class = "bfhcharts_config_error"
   )
-  expect_null(vp$width)
+
+  expect_error(
+    viewport_dims(width = NA_real_),
+    "positive",
+    class = "bfhcharts_config_error"
+  )
 })
 
 test_that("viewport_dims validates height is positive", {
-  # Valid height
   vp <- viewport_dims(height = 600)
   expect_equal(vp$height, 600)
 
-  # Zero height
-  expect_warning(
-    vp <- viewport_dims(height = 0),
-    "height must be positive"
+  expect_error(
+    viewport_dims(height = 0),
+    "positive",
+    class = "bfhcharts_config_error"
   )
-  expect_null(vp$height)
 
-  # Negative height
-  expect_warning(
-    vp <- viewport_dims(height = -50),
-    "height must be positive"
+  expect_error(
+    viewport_dims(height = -50),
+    "positive",
+    class = "bfhcharts_config_error"
   )
-  expect_null(vp$height)
+
+  expect_error(
+    viewport_dims(height = NA_real_),
+    "positive",
+    class = "bfhcharts_config_error"
+  )
 })
 
 test_that("viewport_dims validates base_size is positive", {
-  # Valid base_size
   vp <- viewport_dims(base_size = 16)
   expect_equal(vp$base_size, 16)
 
-  # Zero base_size
-  expect_warning(
-    vp <- viewport_dims(base_size = 0),
-    "base_size must be positive"
+  expect_error(
+    viewport_dims(base_size = 0),
+    "base_size",
+    class = "bfhcharts_config_error"
   )
-  expect_equal(vp$base_size, 14)  # Should default to 14
 
-  # Negative base_size
-  expect_warning(
-    vp <- viewport_dims(base_size = -10),
-    "base_size must be positive"
+  expect_error(
+    viewport_dims(base_size = -10),
+    "base_size",
+    class = "bfhcharts_config_error"
   )
-  expect_equal(vp$base_size, 14)
 
-  # Non-numeric base_size
-  expect_warning(
-    vp <- viewport_dims(base_size = "large"),
-    "base_size must be positive"
+  expect_error(
+    viewport_dims(base_size = "large"),
+    "base_size",
+    class = "bfhcharts_config_error"
   )
-  expect_equal(vp$base_size, 14)
+
+  expect_error(
+    viewport_dims(base_size = NA_real_),
+    "base_size",
+    class = "bfhcharts_config_error"
+  )
 })
 
 test_that("print.viewport_dims displays configuration", {
@@ -286,54 +307,58 @@ test_that("phase_config uses default NULL values", {
 })
 
 test_that("phase_config validates part_positions are positive", {
-  # Valid positions
   pc <- phase_config(part_positions = c(10, 20, 30))
   expect_equal(pc$part_positions, c(10, 20, 30))
 
-  # Single position
   pc <- phase_config(part_positions = 15)
   expect_equal(pc$part_positions, 15)
 
-  # Zero position
-  expect_warning(
-    pc <- phase_config(part_positions = c(10, 0, 20)),
-    "part_positions must be positive"
+  expect_error(
+    phase_config(part_positions = c(10, 0, 20)),
+    "part_positions",
+    class = "bfhcharts_config_error"
   )
-  expect_null(pc$part_positions)
 
-  # Negative position
-  expect_warning(
-    pc <- phase_config(part_positions = c(10, -5)),
-    "part_positions must be positive"
+  expect_error(
+    phase_config(part_positions = c(10, -5)),
+    "part_positions",
+    class = "bfhcharts_config_error"
   )
-  expect_null(pc$part_positions)
 
-  # Non-numeric
-  expect_warning(
-    pc <- phase_config(part_positions = "ten"),
-    "part_positions must be positive"
+  expect_error(
+    phase_config(part_positions = "ten"),
+    "part_positions",
+    class = "bfhcharts_config_error"
   )
-  expect_null(pc$part_positions)
+
+  expect_error(
+    phase_config(part_positions = NA_integer_),
+    "part_positions",
+    class = "bfhcharts_config_error"
+  )
 })
 
 test_that("phase_config validates freeze_position is positive", {
-  # Valid freeze position
   pc <- phase_config(freeze_position = 20)
   expect_equal(pc$freeze_position, 20)
 
-  # Zero freeze position
-  expect_warning(
-    pc <- phase_config(freeze_position = 0),
-    "freeze_position must be a positive integer"
+  expect_error(
+    phase_config(freeze_position = 0),
+    "freeze_position",
+    class = "bfhcharts_config_error"
   )
-  expect_null(pc$freeze_position)
 
-  # Negative freeze position
-  expect_warning(
-    pc <- phase_config(freeze_position = -10),
-    "freeze_position must be a positive integer"
+  expect_error(
+    phase_config(freeze_position = -10),
+    "freeze_position",
+    class = "bfhcharts_config_error"
   )
-  expect_null(pc$freeze_position)
+
+  expect_error(
+    phase_config(freeze_position = NA_real_),
+    "freeze_position",
+    class = "bfhcharts_config_error"
+  )
 })
 
 test_that("print.phase_config displays configuration", {

@@ -186,7 +186,10 @@ grid.cell(
           grid(
             columns: (1fr, 1fr),
             align: bottom,
-            align(left, text(fill: rgb("888888"), size: 6pt, upper[PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")])),
+            align(left, text(fill: rgb("888888"), size: 6pt, [
+              PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")
+              #if author != none { [ · #author] }
+            ])),
             align(right, if footer_content != none { text(fill: rgb("888888"), size: 6pt, upper(footer_content)) })
           )
 

@@ -45,10 +45,14 @@ test_that("bfh_qic run-chart with freeze matches qicharts2 CL baseline", {
 test_that("bfh_qic p-chart control limits match qicharts2 baseline", {
   data <- data.frame(
     period = 1:24,
-    events = c(12, 10, 11, 13, 9, 10, 8, 7, 11, 10, 9, 12,
-               11, 8, 9, 10, 12, 11, 10, 9, 8, 10, 11, 12),
-    n = c(100, 95, 110, 105, 98, 102, 96, 101, 107, 99, 104, 103,
-          97, 108, 100, 102, 106, 98, 101, 99, 103, 105, 100, 96)
+    events = c(
+      12, 10, 11, 13, 9, 10, 8, 7, 11, 10, 9, 12,
+      11, 8, 9, 10, 12, 11, 10, 9, 8, 10, 11, 12
+    ),
+    n = c(
+      100, 95, 110, 105, 98, 102, 96, 101, 107, 99, 104, 103,
+      97, 108, 100, 102, 106, 98, 101, 99, 103, 105, 100, 96
+    )
   )
 
   baseline <- qicharts2::qic(
@@ -125,8 +129,10 @@ test_that("bfh_qic xbar/s with duplicated subgroup x matches qicharts2 baseline"
 test_that("bfh_qic only forwards agg.fun when explicitly supplied", {
   data <- data.frame(
     subgroup = rep(1:8, each = 3),
-    value = c(8, 10, 15, 11, 12, 14, 9, 8, 13, 12, 11, 10,
-              15, 13, 14, 10, 12, 11, 9, 10, 12, 14, 15, 13)
+    value = c(
+      8, 10, 15, 11, 12, 14, 9, 8, 13, 12, 11, 10,
+      15, 13, 14, 10, 12, 11, 9, 10, 12, 14, 15, 13
+    )
   )
 
   # Omitted agg.fun: should match qicharts2 default behavior

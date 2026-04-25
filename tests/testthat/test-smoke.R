@@ -68,4 +68,3 @@ test_that("detect_date_interval() detects weekly data", {
   expect_equal(result$type, "weekly")
   expect_equal(result$median_days, 7)
 })
-

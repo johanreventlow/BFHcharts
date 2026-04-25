@@ -38,7 +38,7 @@ test_that("PNG export pipe workflow works end-to-end", {
 
 test_that("PDF export pipe workflow works end-to-end", {
   skip_if_not_render_test()
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_no_quarto()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
@@ -81,7 +81,7 @@ test_that("PDF export pipe workflow works end-to-end", {
 
 test_that("Multiple exports from same result work", {
   skip_if_not_render_test()
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_no_quarto()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -157,7 +157,7 @@ test_that("PNG export works with different chart types", {
 
 test_that("PDF export works with different chart types", {
   skip_if_not_render_test()
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_no_quarto()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -194,7 +194,7 @@ test_that("PDF export works with different chart types", {
 
 test_that("Title appears in PNG but not in PDF chart image", {
   skip_if_not_render_test()
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_no_quarto()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -239,7 +239,7 @@ test_that("Title appears in PNG but not in PDF chart image", {
 
 test_that("Chained exports preserve result object", {
   skip_if_not_render_test()
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_no_quarto()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -275,7 +275,7 @@ test_that("Chained exports preserve result object", {
 
 test_that("Export works with multi-phase charts", {
   skip_if_not_render_test()
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_no_quarto()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 36),
@@ -294,7 +294,7 @@ test_that("Export works with multi-phase charts", {
       chart_type = "i",
       y_axis_unit = "count",
       chart_title = "Multi-Phase Analysis",
-      part = c(12, 24)  # 3 phases
+      part = c(12, 24) # 3 phases
     )
   )
 
@@ -316,7 +316,7 @@ test_that("Export works with multi-phase charts", {
 
 test_that("Export handles Danish characters in metadata", {
   skip_if_not_render_test()
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_no_quarto()
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -327,8 +327,10 @@ test_that("Export handles Danish characters in metadata", {
 
   # Export with Danish characters
   result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i",
-            chart_title = "Infektioner på Afdelingen") |>
+    bfh_qic(data, month, infections,
+      chart_type = "i",
+      chart_title = "Infektioner på Afdelingen"
+    ) |>
       bfh_export_pdf(
         temp_pdf,
         metadata = list(

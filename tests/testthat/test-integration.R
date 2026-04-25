@@ -25,10 +25,13 @@ test_that("bfh_qic() generates valid run chart", {
 
   # Numerisk verifikation — fanger regressioner i beregning
   # Run-chart CL = median (ikke mean)
-  expect_equal(plot$qic_data$cl[1], median(data$value), tolerance = 1e-6,
-               label = "run-chart centerlinje = median(value)")
+  expect_equal(plot$qic_data$cl[1], median(data$value),
+    tolerance = 1e-6,
+    label = "run-chart centerlinje = median(value)"
+  )
   expect_equal(nrow(plot$qic_data), 12,
-               label = "qic_data har række pr. input-punkt")
+    label = "qic_data har række pr. input-punkt"
+  )
 })
 
 test_that("bfh_qic() generates valid p-chart with denominator", {
@@ -56,8 +59,10 @@ test_that("bfh_qic() generates valid p-chart with denominator", {
 
   # Numerisk: pooled proportion = 60/1200 = 0.05
   p_bar <- sum(data$infections) / sum(data$surgeries)
-  expect_equal(plot$qic_data$cl[1], p_bar, tolerance = 1e-6,
-               label = "p-chart centerlinje = pooled proportion")
+  expect_equal(plot$qic_data$cl[1], p_bar,
+    tolerance = 1e-6,
+    label = "p-chart centerlinje = pooled proportion"
+  )
 })
 
 test_that("bfh_qic() handles phase splits correctly", {
@@ -68,8 +73,8 @@ test_that("bfh_qic() handles phase splits correctly", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
     value = c(
-      rep(c(19, 20, 21), 4),       # Baseline: mean exakt 20
-      rep(c(14, 15, 16), 4)        # Post: mean exakt 15
+      rep(c(19, 20, 21), 4), # Baseline: mean exakt 20
+      rep(c(14, 15, 16), 4) # Post: mean exakt 15
     )
   )
 
@@ -87,13 +92,18 @@ test_that("bfh_qic() handles phase splits correctly", {
 
   # Numerisk: to faser, hver med specifik CL
   expect_equal(nrow(plot$summary), 2,
-               label = "Summary har række pr. fase")
+    label = "Summary har række pr. fase"
+  )
   cl_phase_1 <- unique(plot$qic_data$cl[1:12])
   cl_phase_2 <- unique(plot$qic_data$cl[13:24])
-  expect_equal(cl_phase_1, 20, tolerance = 0.01,
-               label = "Phase 1 CL = baseline mean (20)")
-  expect_equal(cl_phase_2, 15, tolerance = 0.01,
-               label = "Phase 2 CL = post-intervention mean (15)")
+  expect_equal(cl_phase_1, 20,
+    tolerance = 0.01,
+    label = "Phase 1 CL = baseline mean (20)"
+  )
+  expect_equal(cl_phase_2, 15,
+    tolerance = 0.01,
+    label = "Phase 2 CL = post-intervention mean (15)"
+  )
 })
 
 test_that("bfh_spc_plot() works with pre-calculated qic data", {
@@ -165,11 +175,13 @@ test_that("bfh_qic() handles target values correctly", {
   expect_valid_bfh_qic_result(plot)
   # target_value skal bevares i config
   expect_equal(plot$config$target_value, 95,
-               label = "target_value propageret til config")
+    label = "target_value propageret til config"
+  )
   # Target-kolonne i qic_data skal have den angivne værdi
   if ("target" %in% names(plot$qic_data)) {
     expect_true(any(plot$qic_data$target == 95, na.rm = TRUE),
-                info = "qic_data$target indeholder target_value=95")
+      info = "qic_data$target indeholder target_value=95"
+    )
   }
 })
 
@@ -471,7 +483,7 @@ test_that("bfh_qic() handles cl parameter correctly", {
     chart_type = "i",
     y_axis_unit = "count",
     chart_title = "I-Chart with Custom Centerline",
-    cl = 25  # Set custom centerline to 25
+    cl = 25 # Set custom centerline to 25
   )
 
   expect_s3_class(plot, "bfh_qic_result")

@@ -78,4 +78,3 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
 
   return(plot)
 }
-

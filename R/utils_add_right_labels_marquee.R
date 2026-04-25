@@ -102,29 +102,30 @@
 #' @keywords internal
 #' @noRd
 add_right_labels_marquee <- function(
-    p,
-    yA,
-    yB,
-    textA,
-    textB,
-    params = list(
-      label_height_npc = NULL, # Auto-beregnes
-      gap_line = NULL, # Auto-beregnes
-      gap_labels = NULL, # Auto-beregnes
-      pad_top = 0.01,
-      pad_bot = 0.01,
-      pref_pos = c("under", "under"),
-      priority = "A"
-    ),
-    gpA = NULL,
-    gpB = NULL,
-    label_size = 6,
-    viewport_width = NULL,
-    viewport_height = NULL,
-    verbose = TRUE,
-    debug_mode = FALSE,
-    .built_plot = NULL,
-    .mapper = NULL) {
+  p,
+  yA,
+  yB,
+  textA,
+  textB,
+  params = list(
+    label_height_npc = NULL, # Auto-beregnes
+    gap_line = NULL, # Auto-beregnes
+    gap_labels = NULL, # Auto-beregnes
+    pad_top = 0.01,
+    pad_bot = 0.01,
+    pref_pos = c("under", "under"),
+    priority = "A"
+  ),
+  gpA = NULL,
+  gpB = NULL,
+  label_size = 6,
+  viewport_width = NULL,
+  viewport_height = NULL,
+  verbose = TRUE,
+  debug_mode = FALSE,
+  .built_plot = NULL,
+  .mapper = NULL
+) {
   # Resolve default farver i ét opslag (undgår gentagne bfh_cols-kald)
   if (is.null(gpA) || is.null(gpB)) {
     default_cols <- BFHtheme::bfh_cols(c("hospital_blue", "regionh_dark"))
@@ -485,10 +486,10 @@ add_right_labels_marquee <- function(
         # Date-skalaer: trans name er typisk "date" (uden "time")
         # Datetime-skalaer: trans name er typisk "time" eller "hms"
         if (grepl("^date$", tolower(trans_name)) ||
-            (grepl("Date", scale_class) && !grepl("Time|time", scale_class))) {
+          (grepl("Date", scale_class) && !grepl("Time|time", scale_class))) {
           x_is_date <- TRUE
         } else if (grepl("time|hms", tolower(trans_name)) ||
-                   grepl("Time", scale_class)) {
+          grepl("Time", scale_class)) {
           x_is_datetime <- TRUE
         }
       }

@@ -1,6 +1,28 @@
 # BFHcharts 0.8.2
 
+## Breaking changes (internal API)
+
+* **`spc_plot_config()`, `viewport_dims()`, `phase_config()` fejler nu
+  ved ugyldigt input** i stedet for at udsende en advarsel og returnere
+  en coerced/default-værdi. Alle valideringsfejl kaster en condition med
+  class `bfhcharts_config_error`. Dette påvirker kun kode der direkte
+  kalder disse interne constructors — `bfh_qic()` er upåvirket
+  (#harden-config-validation).
+
 ## Interne ændringer
+
+* **Testbarhed af Quarto-pipeline:** `bfh_compile_typst()` og
+  `quarto_available()` accepterer nu `.system2 = system2` og
+  `.quarto_path = NULL` parametre (dependency injection). Produktionskald
+  er uændret; tests kan injicere mocks uden live Quarto-installation
+  (#inject-quarto-system2).
+
+* **Testsuite stabilisering:** Kanoniske skip-helpers tilføjet til
+  `tests/testthat/helper-skips.R`: `skip_if_no_quarto()` og
+  `skip_if_no_mari_font()`. Alle render/PDF-tests migreret fra rå
+  `skip_if_not(quarto_available(), ...)` til `skip_if_not_render_test()` +
+  `skip_if_no_quarto()` — sikrer at `devtools::test()` kører rent uden
+  Quarto installeret og uden render-gate sat (#stabilize-default-test-suite).
 
 * Fjernet biSPCharts-specifik kode fra `chart_types.R` (#119):
   `CHART_TYPES_DA`, `CHART_TYPE_DESCRIPTIONS`, `get_qic_chart_type()`,

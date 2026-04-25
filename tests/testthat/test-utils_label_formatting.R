@@ -72,8 +72,8 @@ test_that("format_percent_contextual handles boundary at 2 percentage points", {
 
 test_that("format_percent_contextual uses Danish comma notation", {
   result <- format_percent_contextual(0.887, target = 0.90)
-  expect_true(grepl(",", result))  # Danish comma
-  expect_false(grepl("\\.", result))  # No English dot
+  expect_true(grepl(",", result)) # Danish comma
+  expect_false(grepl("\\.", result)) # No English dot
 })
 
 test_that("format_percent_contextual handles NA values", {
@@ -313,7 +313,7 @@ test_that("format_y_value produces valid count format", {
 
   # Small numbers: should be formatted with K notation
   result_1234 <- format_y_value(1234, "count")
-  expect_match(result_1234, "K")  # Should become 1.2K
+  expect_match(result_1234, "K") # Should become 1.2K
 
   # K notation (thousands)
   expect_match(format_y_value(1500, "count"), "K")
