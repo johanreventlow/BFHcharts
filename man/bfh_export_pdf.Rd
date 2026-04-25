@@ -14,8 +14,10 @@ bfh_export_pdf(
   use_ai = NULL,
   analysis_min_chars = 300,
   analysis_max_chars = 375,
+  dpi = 150,
   font_path = NULL,
-  inject_assets = NULL
+  inject_assets = NULL,
+  batch_session = NULL
 )
 }
 \arguments{
@@ -63,6 +65,10 @@ Only used when \code{auto_analysis = TRUE}.}
 \item{analysis_max_chars}{Maximum characters for AI-generated analysis. Default 375.
 Only used when \code{auto_analysis = TRUE}.}
 
+\item{dpi}{Resolution passed to \code{ggplot2::ggsave()}. Default 150.
+PDF export currently uses SVG as intermediate format, so this is mainly
+relevant if the plot contains rasterized content.}
+
 \item{font_path}{Optional path to directory containing additional fonts.
 Passed as \code{--font-path} to the Typst compiler. Useful when fonts
 (e.g., Mari) are bundled in a downstream package and not installed
@@ -72,7 +78,19 @@ system-wide on the deployment platform.}
 structure is created but before compilation. Receives one argument: the path
 to the template directory (e.g., \code{<temp_dir>/bfh-template}). Use this
 to copy fonts, images, or other assets into the template directory when they
-are not bundled in BFHcharts (e.g., proprietary fonts in a private package).}
+are not bundled in BFHcharts (e.g., proprietary fonts in a private package).
+Cannot be combined with \code{batch_session} (pass \code{inject_assets} to
+\code{bfh_create_export_session()} instead).}
+
+\item{batch_session}{Optional \code{bfh_export_session} object from
+\code{bfh_create_export_session()}. When provided, the packaged template
+assets are reused from the session tmpdir instead of being copied on every
+call, which eliminates the dominant I/O cost in batch workflows.
+\itemize{
+\item Cannot be combined with \code{template_path} or \code{inject_assets}.
+\item \code{font_path} here overrides \code{session$font_path}.
+\item Close the session with \code{close(session)} after the batch is done.
+}}
 }
 \value{
 The input object \code{x} invisibly, enabling pipe chaining
@@ -158,15 +176,29 @@ bfh_qic(
   )
 
 # Multiple exports from same chart
-result <- bfh_qic(data, month, infections, chart_type = "i",
-                  chart_title = "Infections")
+result <- bfh_qic(data, month, infections,
+  chart_type = "i",
+  chart_title = "Infections"
+)
 
 # PNG for email/presentation
 bfh_export_png(result, "infections.png")
 
 # PDF for official report
 bfh_export_pdf(result, "infections_report.pdf",
-               metadata = list(department = "ICU"))
+  metadata = list(department = "ICU")
+)
+
+# Batch export: reuse template assets across multiple exports
+departments <- c("ICU", "Medicine", "Surgery")
+session <- bfh_create_export_session()
+on.exit(close(session))
+for (dept in departments) {
+  bfh_export_pdf(result, paste0(dept, "_report.pdf"),
+    metadata = list(department = dept),
+    batch_session = session
+  )
+}
 }
 }
 \seealso{

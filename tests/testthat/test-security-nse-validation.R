@@ -104,6 +104,36 @@ test_that("bfh_qic validates n parameter for ratio charts", {
   )
 })
 
+test_that("bfh_qic accepts quoted symbols for programmatic NSE calls", {
+  data <- data.frame(
+    month = 1:12,
+    events = rpois(12, 5),
+    total = rpois(12, 100)
+  )
+
+  expect_no_error({
+    suppressWarnings(
+      bfh_qic(
+        data = data,
+        x = quote(month),
+        y = quote(events),
+        n = quote(total),
+        chart_type = "p"
+      )
+    )
+  })
+
+  expect_error(
+    bfh_qic(
+      data = data,
+      x = quote(month),
+      y = quote(events + 1),
+      chart_type = "run"
+    ),
+    "y must be a simple column name"
+  )
+})
+
 test_that("NSE validation prevents code injection patterns", {
   # The validation happens at the NSE layer where expressions are parsed
   # Our regex validates the deparsed form, catching malicious patterns
@@ -118,13 +148,13 @@ test_that("NSE validation prevents code injection patterns", {
   expect_true({
     # Validate that the regex correctly identifies non-simple patterns
     test_patterns <- c(
-      "system('rm')" = FALSE,  # Contains parentheses - invalid
-      "value" = TRUE,          # Simple name - valid
-      "my_column" = TRUE,      # With underscore - valid
-      "col.name" = TRUE,       # With dot - valid
-      "1col" = FALSE,          # Starts with number - invalid
-      "col name" = FALSE,      # Contains space - invalid
-      "col+1" = FALSE          # Contains operator - invalid
+      "system('rm')" = FALSE, # Contains parentheses - invalid
+      "value" = TRUE, # Simple name - valid
+      "my_column" = TRUE, # With underscore - valid
+      "col.name" = TRUE, # With dot - valid
+      "1col" = FALSE, # Starts with number - invalid
+      "col name" = FALSE, # Contains space - invalid
+      "col+1" = FALSE # Contains operator - invalid
     )
 
     all(sapply(names(test_patterns), function(pattern) {

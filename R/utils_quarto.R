@@ -19,10 +19,13 @@ NULL
 #'
 #' @param min_version Minimum required version as character (default: "1.4.0")
 #' @param use_cache Logical; if TRUE (default), use cached result if available
+#' @param .system2 Dependency-injection hook for system2(). Default is the real
+#'   base::system2. Tests can inject a mock to avoid spawning live Quarto processes.
 #' @return Logical indicating whether Quarto is available and meets version requirement
 #'
 #' @keywords internal
-quarto_available <- function(min_version = "1.4.0", use_cache = TRUE) {
+quarto_available <- function(min_version = "1.4.0", use_cache = TRUE,
+                             .system2 = system2) {
   # Check cache first
   cache_key <- paste0("quarto_", min_version)
   if (use_cache && exists(cache_key, envir = .quarto_cache)) {
@@ -35,7 +38,7 @@ quarto_available <- function(min_version = "1.4.0", use_cache = TRUE) {
   # Try to run quarto --version
   version_output <- tryCatch(
     {
-      system2(quarto_cmd, args = "--version", stdout = TRUE, stderr = TRUE)
+      .system2(quarto_cmd, args = "--version", stdout = TRUE, stderr = TRUE)
     },
     error = function(e) NULL,
     warning = function(w) NULL
@@ -98,17 +101,25 @@ find_quarto <- function() {
   if (.Platform$OS.type == "windows") {
     candidates <- c(
       # RStudio bundled (nyeste layout)
-      file.path(Sys.getenv("ProgramFiles"),
-                "RStudio/resources/app/bin/quarto/bin/quarto.exe"),
+      file.path(
+        Sys.getenv("ProgramFiles"),
+        "RStudio/resources/app/bin/quarto/bin/quarto.exe"
+      ),
       # RStudio aeldre layout
-      file.path(Sys.getenv("ProgramFiles"),
-                "RStudio/bin/quarto/bin/quarto.exe"),
+      file.path(
+        Sys.getenv("ProgramFiles"),
+        "RStudio/bin/quarto/bin/quarto.exe"
+      ),
       # Posit-branded RStudio
-      file.path(Sys.getenv("ProgramFiles"),
-                "Posit/RStudio/resources/app/bin/quarto/bin/quarto.exe"),
+      file.path(
+        Sys.getenv("ProgramFiles"),
+        "Posit/RStudio/resources/app/bin/quarto/bin/quarto.exe"
+      ),
       # Standalone Quarto install
-      file.path(Sys.getenv("LOCALAPPDATA"),
-                "Programs/Quarto/bin/quarto.exe"),
+      file.path(
+        Sys.getenv("LOCALAPPDATA"),
+        "Programs/Quarto/bin/quarto.exe"
+      ),
       file.path(Sys.getenv("ProgramFiles"), "Quarto/bin/quarto.exe")
     )
   } else {
@@ -158,8 +169,10 @@ check_quarto_version <- function(version_string, min_version) {
   # Extract version numbers using regex
   # Matches patterns like "1.4.557", "1.4", "2.0.0" anywhere in the string
   # (handles "Quarto 1.4.557" format as well as plain "1.4.557")
-  version_match <- regmatches(version_string,
-    regexpr("[0-9]+\\.[0-9]+\\.?[0-9]*", version_string))
+  version_match <- regmatches(
+    version_string,
+    regexpr("[0-9]+\\.[0-9]+\\.?[0-9]*", version_string)
+  )
 
   if (length(version_match) == 0 || nchar(version_match) == 0) {
     # If we can't parse version, warn and return FALSE (fail safe)

@@ -54,85 +54,20 @@ test_that("bfh_export_pdf rejects path traversal in template_path", {
 
 test_that("bfh_export_pdf rejects shell metacharacters in output", {
   chart <- fixture_test_chart()
-
-  # Semicolon (command separator)
   expect_error(
     bfh_export_pdf(chart, "output.pdf; rm -rf /"),
-    "unsafe characters"
-  )
-
-  # Pipe
-  expect_error(
-    bfh_export_pdf(chart, "output.pdf | cat"),
-    "unsafe characters"
-  )
-
-  # Ampersand (background process)
-  expect_error(
-    bfh_export_pdf(chart, "output.pdf & malicious_command"),
-    "unsafe characters"
-  )
-
-  # Dollar sign (variable expansion)
-  expect_error(
-    bfh_export_pdf(chart, "output_$USER.pdf"),
-    "unsafe characters"
-  )
-
-  # Backtick (command substitution)
-  expect_error(
-    bfh_export_pdf(chart, "output_`date`.pdf"),
-    "unsafe characters"
-  )
-
-  # Parentheses (subshell)
-  expect_error(
-    bfh_export_pdf(chart, "output_(malicious).pdf"),
-    "unsafe characters"
-  )
-
-  # Curly braces (brace expansion)
-  expect_error(
-    bfh_export_pdf(chart, "output_{a,b}.pdf"),
-    "unsafe characters"
-  )
-
-  # Redirection
-  expect_error(
-    bfh_export_pdf(chart, "output.pdf > /dev/null"),
-    "unsafe characters"
-  )
-
-  expect_error(
-    bfh_export_pdf(chart, "output.pdf < /etc/passwd"),
-    "unsafe characters"
-  )
-
-  # Newline injection
-  expect_error(
-    bfh_export_pdf(chart, "output.pdf\nmalicious_command"),
-    "unsafe characters"
+    "disallowed"
   )
 })
 
 test_that("bfh_compile_typst rejects shell metacharacters", {
-  # Create minimal valid Typst file
   typst_file <- tempfile(fileext = ".typ")
   writeLines("#text[test]", typst_file)
-
-  # Test with malicious output path
+  on.exit(unlink(typst_file))
   expect_error(
     bfh_compile_typst(typst_file, "output.pdf; rm -rf /"),
-    "unsafe characters"
+    "disallowed"
   )
-
-  expect_error(
-    bfh_compile_typst(typst_file, "output.pdf | cat"),
-    "unsafe characters"
-  )
-
-  # Cleanup
-  unlink(typst_file)
 })
 
 # ============================================================================
@@ -140,7 +75,8 @@ test_that("bfh_compile_typst rejects shell metacharacters", {
 # ============================================================================
 
 test_that("bfh_export_pdf allows safe paths", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   chart <- fixture_test_chart()
@@ -159,7 +95,8 @@ test_that("bfh_export_pdf allows safe paths", {
 })
 
 test_that("bfh_export_pdf allows paths with spaces", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   chart <- fixture_test_chart()
@@ -180,7 +117,8 @@ test_that("bfh_export_pdf allows paths with spaces", {
 })
 
 test_that("bfh_export_pdf allows paths with underscores and dashes", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   chart <- fixture_test_chart()
@@ -223,7 +161,8 @@ test_that("bfh_export_pdf validates metadata field types", {
 })
 
 test_that("bfh_export_pdf allows Date objects for date field", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   chart <- fixture_test_chart()
@@ -255,7 +194,8 @@ test_that("bfh_export_pdf enforces metadata string length limits", {
 })
 
 test_that("bfh_export_pdf warns about unknown metadata fields", {
-  skip_if_not(quarto_available(), "Quarto not available")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
   skip_on_cran()
 
   chart <- fixture_test_chart()

@@ -27,4 +27,3 @@ Constructor for the bfh_qic_result S3 class. This class wraps SPC chart
 outputs to enable pipe-compatible export functions while preserving
 backwards-compatible console behavior.
 }
-\keyword{internal}

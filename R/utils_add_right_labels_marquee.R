@@ -3,7 +3,9 @@
 #
 # Extracted from bfh_layout_reference_dev.R POC
 
-# Cache for resolved font family per device-type
+# Cache for resolved font family per (resolved-family, device-type) kombination.
+# Nøgle bruger den BFHtheme-resolvede family (ikke rå arg) så NULL-kald
+# og eksplicitte kald med samme font deler cache-entry korrekt.
 # (systemfonts-registrering != PostScript font database)
 .font_cache <- new.env(parent = emptyenv())
 
@@ -25,14 +27,18 @@
     error = function(e) "other"
   )
 
-  cache_key <- paste0("resolved_", dev_type)
+  # Løs theme-fallback FØR cache-check: nøgle og cached value bruger samme f
+  f <- tryCatch(
+    family %||% BFHtheme::theme_bfh()$text$family %||% "sans",
+    error = function(e) family %||% "sans"
+  )
+  cache_key <- paste0("resolved_", dev_type, "_", f)
   if (exists(cache_key, envir = .font_cache)) {
     return(.font_cache[[cache_key]])
   }
 
   resolved <- tryCatch(
     {
-      f <- family %||% BFHtheme::theme_bfh()$text$family
       if (is.null(f) || length(f) == 0 || nchar(f) == 0) {
         "sans"
       } else if (dev_type == "postscript") {
@@ -102,29 +108,30 @@
 #' @keywords internal
 #' @noRd
 add_right_labels_marquee <- function(
-    p,
-    yA,
-    yB,
-    textA,
-    textB,
-    params = list(
-      label_height_npc = NULL, # Auto-beregnes
-      gap_line = NULL, # Auto-beregnes
-      gap_labels = NULL, # Auto-beregnes
-      pad_top = 0.01,
-      pad_bot = 0.01,
-      pref_pos = c("under", "under"),
-      priority = "A"
-    ),
-    gpA = NULL,
-    gpB = NULL,
-    label_size = 6,
-    viewport_width = NULL,
-    viewport_height = NULL,
-    verbose = TRUE,
-    debug_mode = FALSE,
-    .built_plot = NULL,
-    .mapper = NULL) {
+  p,
+  yA,
+  yB,
+  textA,
+  textB,
+  params = list(
+    label_height_npc = NULL, # Auto-beregnes
+    gap_line = NULL, # Auto-beregnes
+    gap_labels = NULL, # Auto-beregnes
+    pad_top = 0.01,
+    pad_bot = 0.01,
+    pref_pos = c("under", "under"),
+    priority = "A"
+  ),
+  gpA = NULL,
+  gpB = NULL,
+  label_size = 6,
+  viewport_width = NULL,
+  viewport_height = NULL,
+  verbose = TRUE,
+  debug_mode = FALSE,
+  .built_plot = NULL,
+  .mapper = NULL
+) {
   # Resolve default farver i ét opslag (undgår gentagne bfh_cols-kald)
   if (is.null(gpA) || is.null(gpB)) {
     default_cols <- BFHtheme::bfh_cols(c("hospital_blue", "regionh_dark"))
@@ -140,14 +147,10 @@ add_right_labels_marquee <- function(
   scale_factor <- label_size / 6
 
   # PERFORMANCE: Load config ÉN gang i starten
-  placement_cfg <- list()
-  config_available <- FALSE
-
   placement_cfg <- get_label_placement_config()
-  config_available <- TRUE
 
   # Hent marquee_lineheight fra config
-  marquee_lineheight <- if (config_available && !is.null(placement_cfg$marquee_lineheight)) {
+  marquee_lineheight <- if (!is.null(placement_cfg$marquee_lineheight)) {
     placement_cfg$marquee_lineheight
   } else {
     0.9
@@ -157,7 +160,7 @@ add_right_labels_marquee <- function(
   right_aligned_style <- get_right_aligned_marquee_style(lineheight = marquee_lineheight)
 
   # Beregn marquee_size tidligt, så vi kan bruge den til målinger
-  marquee_size_factor <- if (config_available && !is.null(placement_cfg$marquee_size_factor)) {
+  marquee_size_factor <- if (!is.null(placement_cfg$marquee_size_factor)) {
     placement_cfg$marquee_size_factor
   } else {
     6
@@ -405,7 +408,7 @@ add_right_labels_marquee <- function(
 
   # Default parameters
   if (is.null(params$pad_top)) {
-    if (config_available && !is.null(placement_cfg$pad_top)) {
+    if (!is.null(placement_cfg$pad_top)) {
       params$pad_top <- placement_cfg$pad_top
     } else {
       params$pad_top <- 0.01
@@ -413,7 +416,7 @@ add_right_labels_marquee <- function(
   }
 
   if (is.null(params$pad_bot)) {
-    if (config_available && !is.null(placement_cfg$pad_bot)) {
+    if (!is.null(placement_cfg$pad_bot)) {
       params$pad_bot <- placement_cfg$pad_bot
     } else {
       params$pad_bot <- 0.01
@@ -489,10 +492,10 @@ add_right_labels_marquee <- function(
         # Date-skalaer: trans name er typisk "date" (uden "time")
         # Datetime-skalaer: trans name er typisk "time" eller "hms"
         if (grepl("^date$", tolower(trans_name)) ||
-            (grepl("Date", scale_class) && !grepl("Time|time", scale_class))) {
+          (grepl("Date", scale_class) && !grepl("Time|time", scale_class))) {
           x_is_date <- TRUE
         } else if (grepl("time|hms", tolower(trans_name)) ||
-                   grepl("Time", scale_class)) {
+          grepl("Time", scale_class)) {
           x_is_datetime <- TRUE
         }
       }

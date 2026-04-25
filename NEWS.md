@@ -1,6 +1,89 @@
-# BFHcharts 0.8.2
+# BFHcharts 0.8.3
+
+## Nye features
+
+* **Batch eksport-session:** Ny funktion `bfh_create_export_session()` opretter
+  en genanvendelig eksport-session der kopierer Typst-template-assets én gang og
+  deler dem på tværs af multiple `bfh_export_pdf()`-kald. I batch-workflows
+  (N eksporter fra løkke) eliminerer dette den rekursive template-copy der
+  dominerer I/O-cost. Brug: `session <- bfh_create_export_session()`,
+  send `batch_session = session` til hvert `bfh_export_pdf()`-kald, og luk med
+  `close(session)`. `inject_assets`- og `font_path`-argumenter overføres til
+  session-konstruktøren i stedet for til individuelle kald
+  (#reuse-typst-template-assets).
 
 ## Interne ændringer
+
+* **Cache-nøgle reproducerbarhed:** Font-cache i `utils_add_right_labels_marquee.R`
+  nøglede kun på device-type — ikke på fontfamily. Kald som
+  `.resolve_font_family("Arial")` og `.resolve_font_family("Helvetica")` på
+  samme device delte cache-entry (første vinder). Nøgle er nu
+  `dev_type + fontfamily` for at forhindre stale cache ved fontskift.
+  Ny intern helper `bfh_reset_caches()` tømmer alle package-level caches —
+  bruges automatisk i test-setup via `helper-cache.R`
+  (#cache-keying-and-reset).
+
+## Sikkerhed
+
+* **AST-baseret markdown → Typst parser:** `markdown_to_typst()` bruger nu
+  CommonMark AST-parsing (`commonmark` + `xml2`) i stedet for regex-baseret
+  konvertering. Alle Typst markup-tegn (`#`, `$`, `@`, `_`, `*`, `[`, `]`,
+  `<`, `>`, `` ` ``, `~`, `^`, `\`) escapes i plain text-noder, hvilket
+  forhindrer Typst injection via user-supplied strenge (fx AI-analysetekst).
+  Understøttede markdown-elementer: bold, italic, inline code, lister,
+  linjeskift. **Potentielle outputforskelle:** (1) `\n\n` (dobbelt newline)
+  producerer ét Typst-linjeskift i stedet for to — visuelt identisk da
+  Typst collapser consecutive linjeskift; (2) markdown-links
+  `[tekst](url)` renderer nu som synlig tekst alene (ikke bracket-notation);
+  (3) backtick og `*` i plain text escapes — var ikke escaped i den gamle
+  regex-parser (#harden-typst-markdown-parser).
+
+* **Centraliseret path policy for eksport-funktioner:** Duplikeret
+  sti-valideringslogik i `bfh_export_png()`, `bfh_export_pdf()` og
+  `bfh_compile_typst()` er samlet i en ny intern helper
+  `validate_export_path()` i `R/utils_path_policy.R`. Alle tre
+  call-sites anvender nu den samme komplette metacharacter-blacklist
+  (`; | & $ \` ( ) { } < > \n \r`) og det samme path-traversal-check.
+  **Adfærdsændringer:** `bfh_export_png()` afviser nu også `<`, `>`,
+  `\n` og `\r` i stier (tidligere tilladt); `bfh_export_pdf()` kræver
+  nu `.pdf`-extension på output-stien (tidligere ukontrolleret).
+  Ingen ændringer i public API-signaturer
+  (#central-export-path-policy).
+
+# BFHcharts 0.8.2
+
+## Breaking changes (internal API)
+
+* **`spc_plot_config()`, `viewport_dims()`, `phase_config()` fejler nu
+  ved ugyldigt input** i stedet for at udsende en advarsel og returnere
+  en coerced/default-værdi. Alle valideringsfejl kaster en condition med
+  class `bfhcharts_config_error`. Dette påvirker kun kode der direkte
+  kalder disse interne constructors — `bfh_qic()` er upåvirket
+  (#harden-config-validation).
+
+## Interne ændringer
+
+* **Testbarhed af Quarto-pipeline:** `bfh_compile_typst()` og
+  `quarto_available()` accepterer nu `.system2 = system2` og
+  `.quarto_path = NULL` parametre (dependency injection). Produktionskald
+  er uændret; tests kan injicere mocks uden live Quarto-installation
+  (#inject-quarto-system2).
+
+* **Testsuite stabilisering:** Kanoniske skip-helpers tilføjet til
+  `tests/testthat/helper-skips.R`: `skip_if_no_quarto()` og
+  `skip_if_no_mari_font()`. Alle render/PDF-tests migreret fra rå
+  `skip_if_not(quarto_available(), ...)` til `skip_if_not_render_test()` +
+  `skip_if_no_quarto()` — sikrer at `devtools::test()` kører rent uden
+  Quarto installeret og uden render-gate sat (#stabilize-default-test-suite).
+
+* Fjernet biSPCharts-specifik kode fra `chart_types.R` (#119):
+  `CHART_TYPES_DA`, `CHART_TYPE_DESCRIPTIONS`, `get_qic_chart_type()`,
+  `chart_type_requires_denominator()` og `get_chart_description()` var aldrig
+  en del af BFHcharts' pipeline og lå ubrugte i pakken. biSPCharts vedligeholder
+  egne versioner i `R/config_chart_types.R`. Kun `CHART_TYPES_EN` er bibeholdt
+  da den bruges internt til validering af chart-type input.
+
+
 
 * **CI: fuld R CMD check med tests.** Fjernede `--no-tests` workaround fra
   `R-CMD-check.yaml` efter at to pre-existing test-failures blev rettet:

@@ -1,0 +1,139 @@
+#!/bin/bash
+# ==============================================================================
+# pre-push git hook for BFHcharts
+# ==============================================================================
+# Forhindrer at roed test-suite eller lintr-fejl pushes til remote.
+#
+# Installation:
+#   Rscript dev/install_git_hooks.R
+#
+# Bypass (brug sparsomt):
+#   git push --no-verify          # Git-native bypass (alt)
+#   SKIP_PREPUSH=1 git push       # Bypass test/lintr checks
+#   SKIP_BRANCH_CHECK=1 git push  # Bypass branch-check (main)
+#
+# Hurtig vs fuld tilstand:
+#   PREPUSH_MODE=fast git push  # Kun lintr (~1 min)
+#   PREPUSH_MODE=full git push  # Lintr + testthat (default)
+#
+# Exit koder:
+#   0 = alle checks bestaaet, push tilladt
+#   1 = branch-check, lintr eller test fejl, push blokeret
+# ==============================================================================
+
+set -euo pipefail
+
+# --- Step 0: Block direkte push til main ---
+PUSH_REFS=$(cat || true)
+if [ "${SKIP_BRANCH_CHECK:-0}" != "1" ]; then
+  if echo "$PUSH_REFS" | awk '{print $3}' | grep -qx "refs/heads/main"; then
+    echo ""
+    echo "✗ Direkte push til main er blokeret"
+    echo ""
+    echo "  Brug PR-flow via GitHub: feature → develop → main"
+    echo ""
+    echo "  Bypass (undtagelsestilfaelde):"
+    echo "    SKIP_BRANCH_CHECK=1 git push"
+    echo "    git push --no-verify"
+    echo ""
+    exit 1
+  fi
+fi
+
+# Bypass via env-variabel
+if [ "${SKIP_PREPUSH:-0}" = "1" ]; then
+  echo "⚠ SKIP_PREPUSH=1 — springer pre-push checks over"
+  exit 0
+fi
+
+MODE="${PREPUSH_MODE:-full}"
+START_TIME=$(date +%s)
+
+# --- Tjek at Rscript er tilgaengelig ---
+if ! command -v Rscript &>/dev/null; then
+  echo "⚠ Rscript ikke fundet i PATH — pre-push springes over"
+  echo "  Installaer R eller opdater PATH for at aktivere pre-push-checks"
+  exit 0
+fi
+
+# --- Repo root ---
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+echo "════════════════════════════════════════════════════════════════"
+echo " BFHcharts pre-push checks (mode=$MODE)"
+echo "════════════════════════════════════════════════════════════════"
+
+# --- Step 1: lintr ---
+echo ""
+echo "[1/2] Koerer lintr::lint_package() ..."
+LINT_OUTPUT=$(Rscript -e '
+  suppressPackageStartupMessages(library(lintr))
+  lints <- lintr::lint_package()
+  errors <- Filter(function(x) x$type == "error", lints)
+  if (length(errors) > 0) {
+    print(errors)
+    cat(sprintf("\n✗ %d lintr ERROR(s) fundet — push blokeret\n", length(errors)))
+    quit(status = 1)
+  }
+  warnings <- Filter(function(x) x$type == "warning", lints)
+  if (length(warnings) > 0) {
+    cat(sprintf("⚠ %d lintr warnings (ikke blokerende)\n", length(warnings)))
+  }
+  cat("✓ lintr OK\n")
+' 2>&1) || {
+  echo "$LINT_OUTPUT"
+  echo ""
+  echo "✗ lintr fejlede — push blokeret"
+  echo "  Fix lintr-fejl eller brug 'git push --no-verify' til bypass"
+  exit 1
+}
+echo "$LINT_OUTPUT"
+
+# --- Step 2: testthat ---
+echo ""
+if [ "$MODE" = "fast" ]; then
+  echo "[2/2] PREPUSH_MODE=fast — springer testthat over"
+  echo "  Brug PREPUSH_MODE=full for fuld test-suite"
+else
+  echo "[2/2] Koerer testthat-suite ..."
+  Rscript - <<'REOF'
+suppressPackageStartupMessages({ library(devtools); library(testthat) })
+res <- devtools::test(stop_on_failure = FALSE, reporter = testthat::SummaryReporter$new())
+df <- as.data.frame(res)
+fails <- sum(df$failed)
+errs <- sum(df$error == TRUE)
+cat(sprintf("\nResultat: %d pass, %d fail, %d err, %d skip\n",
+  sum(df$passed), fails, errs, sum(df$skipped)))
+if (fails > 0 || errs > 0) {
+  cat("\n✗ Test-suite er roed — push blokeret\n")
+  cat("  Fix testene eller brug SKIP_PREPUSH=1 git push til bypass\n")
+  quit(status = 1)
+}
+cat("✓ Alle tests groenne\n")
+REOF
+  TEST_EXIT=$?
+
+  if [ "$TEST_EXIT" -ne 0 ]; then
+    echo ""
+    echo "✗ Tests fejlede — push blokeret"
+    exit 1
+  fi
+fi
+
+# --- Timing + done ---
+END_TIME=$(date +%s)
+DURATION=$((END_TIME - START_TIME))
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo " ✓ Pre-push OK — varighed: ${DURATION}s (mode=$MODE)"
+echo "════════════════════════════════════════════════════════════════"
+
+if [ "$DURATION" -gt 300 ]; then
+  echo ""
+  echo "⚠ Pre-push tog ${DURATION}s (>5 min target)"
+  echo "  Overvaej PREPUSH_MODE=fast for hurtigere iteration"
+fi
+
+exit 0

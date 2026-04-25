@@ -18,7 +18,9 @@ NULL
 #' @noRd
 safe_max <- function(v) {
   v <- v[!is.na(v)]
-  if (length(v) == 0) return(NA_real_)
+  if (length(v) == 0) {
+    return(NA_real_)
+  }
   max(v)
 }
 
@@ -29,7 +31,9 @@ safe_max <- function(v) {
 #' @noRd
 safe_min <- function(v) {
   v <- v[!is.na(v)]
-  if (length(v) == 0) return(NA_real_)
+  if (length(v) == 0) {
+    return(NA_real_)
+  }
   min(v)
 }
 
@@ -153,7 +157,8 @@ validate_numeric_parameter <- function(value,
         stop(sprintf("%s must be %s", param_name, range_str), call. = FALSE)
       }
       stop(param_msg(sprintf("%s must be between %s and %s", param_name, min, max)),
-           call. = FALSE)
+        call. = FALSE
+      )
     }
   }
 

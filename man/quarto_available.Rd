@@ -4,12 +4,15 @@
 \alias{quarto_available}
 \title{Check if Quarto CLI is Available}
 \usage{
-quarto_available(min_version = "1.4.0", use_cache = TRUE)
+quarto_available(min_version = "1.4.0", use_cache = TRUE, .system2 = system2)
 }
 \arguments{
 \item{min_version}{Minimum required version as character (default: "1.4.0")}
 
 \item{use_cache}{Logical; if TRUE (default), use cached result if available}
+
+\item{.system2}{Dependency-injection hook for system2(). Default is the real
+base::system2. Tests can inject a mock to avoid spawning live Quarto processes.}
 }
 \value{
 Logical indicating whether Quarto is available and meets version requirement

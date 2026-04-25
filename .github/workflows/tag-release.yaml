@@ -1,0 +1,65 @@
+# Auto-tagging workflow for main releases.
+# Triggers efter groenne R-CMD-check runs paa main og opretter
+# det naeste vMAJOR.MINOR.PATCH-tag baseret paa DESCRIPTION + eksisterende tags.
+#
+# Versioning-strategi (se VERSIONING_POLICY.md):
+# - MAJOR.MINOR laeses fra DESCRIPTION (bumpes manuelt i PR)
+# - PATCH auto-inkrementeres pr. merge til main
+# - Hvis ingen tag matcher nuvaerende MAJOR.MINOR: baseline vMAJOR.MINOR.0
+name: tag-release
+
+on:
+  workflow_run:
+    workflows: ["R-CMD-check"]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Compute next tag
+        id: compute
+        run: |
+          set -euo pipefail
+          VERSION=$(grep '^Version:' DESCRIPTION | awk '{print $2}')
+          if [ -z "$VERSION" ]; then
+            echo "FEJL: Kunne ikke laese Version fra DESCRIPTION" >&2
+            exit 1
+          fi
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          git fetch --tags origin
+          HIGHEST=$(git tag -l "v${MAJOR}.${MINOR}.*" \
+                    | grep -E "^v${MAJOR}\.${MINOR}\.[0-9]+$" \
+                    | sed "s/^v${MAJOR}\.${MINOR}\.//" \
+                    | sort -n | tail -1 || true)
+          if [ -z "$HIGHEST" ]; then
+            NEXT_TAG="v${MAJOR}.${MINOR}.0"
+          else
+            NEXT_TAG="v${MAJOR}.${MINOR}.$((HIGHEST + 1))"
+          fi
+          echo "Computed next tag: $NEXT_TAG (from DESCRIPTION $VERSION)"
+          echo "tag=${NEXT_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push annotated tag
+        env:
+          NEXT_TAG: ${{ steps.compute.outputs.tag }}
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$NEXT_TAG" "$COMMIT_SHA" -m "Release $NEXT_TAG"
+          git push origin "$NEXT_TAG"
+          echo "Pushed tag $NEXT_TAG to $COMMIT_SHA"
