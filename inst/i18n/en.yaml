@@ -1,0 +1,160 @@
+# BFHcharts i18n — English (en)
+#
+# Initial English translation. All keys must mirror da.yaml exactly.
+
+# ==============================================================================
+# ANALYSIS TEXTS
+# ==============================================================================
+
+analysis:
+
+  stability:
+    no_variation:
+      short: "The level is constant at {centerline}."
+      standard: "The level is constant at {centerline}. The process cannot be assessed using statistical process control."
+      detailed: "The level is constant at {centerline}. Because all data points are identical, statistical process control cannot be applied."
+
+    no_signals:
+      short: "The process is stable and predictable."
+      standard: "The process is stable and predictable. Variation is natural with no systematic changes."
+      detailed: "The process is stable and predictable. Variation is natural and shows no signs of systematic change."
+
+    runs_only:
+      short: "There are signs of a shift in the process level."
+      standard: "There are signs of a shift in the process level. The longest run ({runs_actual}) exceeds the expected maximum ({runs_expected})."
+      detailed: "There are signs of a shift in the process level. The longest run ({runs_actual}) exceeds the expected maximum ({runs_expected}), suggesting a systematic change."
+
+    crossings_only:
+      short: "Data points cluster around the centre line."
+      standard: "Data points cluster around the centre line. The number of crossings ({crossings_actual}) is below the expected minimum ({crossings_expected})."
+      detailed: "Data points cluster above or below the centre line rather than varying randomly. The number of crossings ({crossings_actual}) is below the expected minimum ({crossings_expected})."
+
+    outliers_only:
+      short: "{outliers_actual} {outliers_word} outside the control limits."
+      standard: "{outliers_actual} of the most recent observations are outside the control limits and should be investigated for special causes."
+      detailed: "{outliers_actual} of the most recent observations are outside the control limits. They should be investigated for special causes, as they may result from unusual events or measurement errors."
+
+    runs_crossings:
+      short: "The process shows systematic instability."
+      standard: "The process shows systematic instability. Both the run length ({runs_actual} > {runs_expected}) and the number of crossings ({crossings_actual} < {crossings_expected}) deviate from expected."
+      detailed: "The process shows systematic instability. Both the run length ({runs_actual} > {runs_expected}) and the number of crossings ({crossings_actual} < {crossings_expected}) deviate from expected, pointing to a fundamental process change."
+
+    runs_outliers:
+      short: "The process shows a level shift and {outliers_actual} {outliers_word} outside the control limits."
+      standard: "The process shows a level shift (run length {runs_actual} > {runs_expected}), and {outliers_actual} of the most recent observations are outside the control limits."
+      detailed: "The process shows a level shift (run length {runs_actual} > {runs_expected}), and {outliers_actual} of the most recent observations are outside the control limits. Investigate whether the level shift and the outlying measurements share a common root cause."
+
+    crossings_outliers:
+      short: "The process shows clustering and {outliers_actual} {outliers_word} outside the control limits."
+      standard: "Data points cluster (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent observations are outside the control limits."
+      detailed: "Data points cluster around the centre line (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent observations are outside the control limits. This pattern may indicate shifting process conditions."
+
+    all_signals:
+      short: "The process is unstable with multiple simultaneous signals."
+      standard: "The process is unstable with multiple simultaneous signals: level shift and clustering, plus {outliers_actual} of the most recent observations outside the control limits."
+      detailed: "The process is unstable with multiple simultaneous signals: level shift (run length {runs_actual} > {runs_expected}), clustering around the centre line (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent observations outside the control limits. Investigate common and special causes systematically."
+
+  target:
+    at_target:
+      short: "The level is close to the target ({target})."
+      standard: "The level is close to the target ({target})."
+      detailed: "The level is close to the target ({target}), within the tolerance accepted as goal achievement."
+    over_target:
+      short: "The level is above the target ({target})."
+      standard: "The level is above the target ({target})."
+      detailed: "The level is above the target ({target}); whether this is desirable depends on the indicator."
+    under_target:
+      short: "The level is below the target ({target})."
+      standard: "The level is below the target ({target})."
+      detailed: "The level is below the target ({target}); whether this is desirable depends on the indicator."
+    goal_met:
+      short: "The target ({target}) has been met."
+      standard: "The level meets the target ({target})."
+      detailed: "The level meets the target ({target}) and is on the desired side of the target value."
+    goal_not_met:
+      short: "The target ({target}) has not yet been met."
+      standard: "The level does not yet meet the target ({target})."
+      detailed: "The level does not yet meet the target ({target}). Current practice does not achieve it."
+
+  action:
+    stable_at_target:
+      short: "Continue current practice."
+      standard: "Continue current practice and monitor the process on an ongoing basis."
+      detailed: "Continue current practice and monitor the process on an ongoing basis to maintain the current level."
+    stable_not_at_target:
+      short: "A targeted effort is needed to reach the goal."
+      standard: "The process is stable but does not meet the target. A targeted effort is required to shift the level."
+      detailed: "The process is stable but does not meet the target. Without a targeted effort, current practice will continue to deliver the same level."
+    stable_no_target:
+      short: "Consider setting a target for the indicator."
+      standard: "Consider setting a target for the indicator so the level can be assessed."
+      detailed: "Consider setting a target for the indicator so the current level can be assessed and the need for improvement can be prioritised."
+    unstable_at_target:
+      short: "Investigate the causes of variation."
+      standard: "Although the target is currently met, the process is unstable. Investigate the causes of variation."
+      detailed: "Although the target is currently met, the process is unstable. Investigate the causes of variation to sustain the current level."
+    unstable_not_at_target:
+      short: "Identify and remove the special causes of variation."
+      standard: "Prioritise identifying and removing the special causes of variation before implementing further measures."
+      detailed: "Prioritise identifying and removing the special causes of variation. Only once the process is stable can the effect of new improvement measures be reliably assessed."
+    unstable_no_target:
+      short: "Stabilise the process first, then set a target."
+      standard: "Investigate the causes of variation. Once the process is stabilised, a realistic target can be set."
+      detailed: "Investigate the causes of unusual variation. Once the process is under control, it is meaningful to set a realistic target and plan improvement efforts."
+    stable_goal_met:
+      short: "Continue current practice."
+      standard: "The process is stable and meets the target. Continue current practice and monitor on an ongoing basis."
+      detailed: "The process is stable and meets the target. Continue current practice and monitor on an ongoing basis to sustain the current level."
+    stable_goal_not_met:
+      short: "A targeted effort is needed."
+      standard: "The process is stable but does not meet the target. A targeted effort is required to shift the level in the desired direction."
+      detailed: "The process is stable but does not meet the target. Without a targeted effort, current practice will continue to deliver the same level and thus fail to meet the target."
+    unstable_goal_met:
+      short: "Stabilise the process to sustain goal achievement."
+      standard: "Although the target is currently met, the process is unstable. Investigate the causes of variation to sustain goal achievement."
+      detailed: "Although the target is currently met, the process is unstable. Investigate the causes of variation so the current level can be sustained and goal achievement is not lost."
+    unstable_goal_not_met:
+      short: "Stabilise the process first, then work towards the target."
+      standard: "The process is unstable and does not meet the target. First identify the special causes of variation before implementing targeted measures."
+      detailed: "The process is unstable and does not meet the target. First identify the special causes of variation — only once the process is stable can the effect of new improvement measures towards the target be reliably assessed."
+
+  padding:
+    data_points:
+      short: "The assessment is based on {n_points} data points."
+      standard: "The assessment is based on {n_points} data points in the most recent process period."
+    generic:
+      short: "Continued measurements will show whether the pattern is sustained."
+      standard: "Continued measurements will show whether the pattern is sustained or the process is developing."
+
+# ==============================================================================
+# LABELS
+# ==============================================================================
+
+labels:
+
+  interval:
+    daily: "day"
+    weekly: "week"
+    monthly: "month"
+    quarterly: "quarter"
+    yearly: "year"
+    irregular: "period"
+
+  outliers:
+    singular: "observation"
+    plural: "observations"
+
+  details:
+    periode: "Period"
+    gns: "Avg."
+    seneste: "Latest"
+    niveau_label: "Current level"
+    niveau_unknown: "Current level: -"
+
+  chart:
+    current_level: "CUR. LEVEL"
+    development_goal: "TARGET"
+    baseline: "BASELINE"
+
+  misc:
+    ukendt: "unknown"

@@ -15,7 +15,7 @@ Tømmer alle package-level cache-environments:
 \item \code{.font_cache}: løste font-families per (fontfamily, device-type)
 \item \code{.marquee_style_cache}: marquee style-objekter per lineheight
 \item \code{.quarto_cache}: Quarto CLI tilgængelighed og sti
-\item \code{.spc_text_cache}: YAML-tekster til SPC-analyse
+\item \code{.i18n_cache}: i18n YAML-tekster per sprog
 }
 }
 \details{

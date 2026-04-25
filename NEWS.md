@@ -1,3 +1,15 @@
+# BFHcharts (development)
+
+## Nye features
+
+* **Internationalisering (i18n):** Ny `language`-parameter (`"da"` eller `"en"`) på
+  `bfh_qic()`, `bfh_generate_analysis()` og `bfh_generate_details()`. Default er
+  `"da"` — alle eksisterende kald er bagudkompatible. Engelsksprogede diagramlabels
+  ("TARGET", "CUR. LEVEL") og analysetekster returneres ved `language = "en"`.
+  Strings er centraliseret i `inst/i18n/da.yaml` og `inst/i18n/en.yaml`.
+  Intern helper `i18n_lookup(key, language)` + language-keyed cache
+  (`.i18n_cache`) med reset via `bfh_reset_caches()` (#i18n-chart-strings).
+
 # BFHcharts 0.8.3
 
 ## Nye features

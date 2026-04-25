@@ -84,7 +84,8 @@ add_spc_labels <- function(
   has_frys_column = FALSE,
   has_skift_column = FALSE,
   verbose = FALSE,
-  debug_mode = FALSE
+  debug_mode = FALSE,
+  language = "da"
 ) {
   # Input validation ----
   if (!inherits(plot, "gg")) {
@@ -193,11 +194,11 @@ add_spc_labels <- function(
   if (!is.na(cl_value)) {
     # Bestem CL header baseret på baseline-logik
     cl_header <- if (!is.null(centerline_value) && !is.na(centerline_value)) {
-      "BASELINE"
+      i18n_lookup("labels.chart.baseline", language)
     } else if (has_frys_column && !has_skift_column) {
-      "BASELINE"
+      i18n_lookup("labels.chart.baseline", language)
     } else {
-      "NUV. NIVEAU"
+      i18n_lookup("labels.chart.current_level", language)
     }
 
     # Kontekstuel præcision for procent: send target hvis tilgængelig
@@ -246,7 +247,7 @@ add_spc_labels <- function(
     }
 
     label_target <- create_responsive_label(
-      header = "UDVIKLINGSMÅL",
+      header = i18n_lookup("labels.chart.development_goal", language),
       value = target_value_text,
       label_size = label_size,
       operator_prefix = target_operator
