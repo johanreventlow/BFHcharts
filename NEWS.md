@@ -1,5 +1,17 @@
 # BFHcharts 0.8.3
 
+## Nye features
+
+* **Batch eksport-session:** Ny funktion `bfh_create_export_session()` opretter
+  en genanvendelig eksport-session der kopierer Typst-template-assets én gang og
+  deler dem på tværs af multiple `bfh_export_pdf()`-kald. I batch-workflows
+  (N eksporter fra løkke) eliminerer dette den rekursive template-copy der
+  dominerer I/O-cost. Brug: `session <- bfh_create_export_session()`,
+  send `batch_session = session` til hvert `bfh_export_pdf()`-kald, og luk med
+  `close(session)`. `inject_assets`- og `font_path`-argumenter overføres til
+  session-konstruktøren i stedet for til individuelle kald
+  (#reuse-typst-template-assets).
+
 ## Interne ændringer
 
 * **Cache-nøgle reproducerbarhed:** Font-cache i `utils_add_right_labels_marquee.R`

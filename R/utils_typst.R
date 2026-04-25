@@ -29,7 +29,8 @@ bfh_create_typst_document <- function(chart_image,
                                       metadata,
                                       spc_stats,
                                       template = "bfh-diagram",
-                                      template_path = NULL) {
+                                      template_path = NULL,
+                                      skip_template_copy = FALSE) {
   # Get output directory (where document.typ will be created)
   output_dir <- dirname(output)
 
@@ -75,19 +76,25 @@ bfh_create_typst_document <- function(chart_image,
       )
     }
 
-    # Copy template directory to output directory
     local_template_dir <- file.path(output_dir, "bfh-template")
-    if (dir.exists(local_template_dir)) {
-      unlink(local_template_dir, recursive = TRUE)
-    }
+    if (!skip_template_copy) {
+      if (dir.exists(local_template_dir)) {
+        unlink(local_template_dir, recursive = TRUE)
+      }
 
-    # Use recursive copy for 5-10x performance improvement
-    success <- file.copy(template_dir, output_dir, recursive = TRUE, overwrite = TRUE)
-    if (!success) {
+      # Use recursive copy for 5-10x performance improvement
+      success <- file.copy(template_dir, output_dir, recursive = TRUE, overwrite = TRUE)
+      if (!success) {
+        stop(
+          "Failed to copy template directory\n",
+          "  Source: ", basename(template_dir), "\n",
+          "  Destination: ", basename(output_dir),
+          call. = FALSE
+        )
+      }
+    } else if (!dir.exists(local_template_dir)) {
       stop(
-        "Failed to copy template directory\n",
-        "  Source: ", basename(template_dir), "\n",
-        "  Destination: ", basename(output_dir),
+        "Template directory not found in session tmpdir: ", local_template_dir,
         call. = FALSE
       )
     }
