@@ -46,7 +46,6 @@ Suggests:
     pdftools (>= 3.3.0),
     withr,
     BFHllm,
-    digest,
     geomtextpath
 Remotes:
     johanreventlow/BFHtheme,
