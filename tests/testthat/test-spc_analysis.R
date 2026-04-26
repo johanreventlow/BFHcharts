@@ -193,8 +193,7 @@ test_that("bfh_generate_analysis accepts min_chars and max_chars parameters", {
 test_that("bfh_generate_analysis has correct default values", {
   fn_args <- formals(bfh_generate_analysis)
 
-  # Security: use_ai default is FALSE (explicit opt-in required)
-  expect_equal(as.character(fn_args$use_ai), "FALSE")
+  expect_false(fn_args$use_ai)
   expect_equal(fn_args$min_chars, 300)
   expect_equal(fn_args$max_chars, 375)
   expect_null(fn_args$texts_loader)
