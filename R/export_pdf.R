@@ -27,13 +27,13 @@
 #' @param auto_analysis Logical. If TRUE and \code{metadata$analysis} is not provided,
 #'   automatically generates analysis text using \code{bfh_generate_analysis()}.
 #'   Default is FALSE for backward compatibility.
-#' @param use_ai Logical or NULL. Controls AI usage for auto-analysis:
+#' @param use_ai Logical. Controls AI usage for auto-analysis:
 #'   \itemize{
-#'     \item \code{NULL} (default): Auto-detect BFHllm availability
-#'     \item \code{TRUE}: Use AI via BFHllm (with fallback to standard texts)
-#'     \item \code{FALSE}: Use standard texts only (no AI)
+#'     \item \code{FALSE} (default): Use standard texts only — no external data sharing
+#'     \item \code{TRUE}: Use AI via BFHllm (requires BFHllm installed; error if not)
 #'   }
-#'   Only used when \code{auto_analysis = TRUE}.
+#'   Only used when \code{auto_analysis = TRUE}. See \code{bfh_generate_analysis()}
+#'   for security policy details.
 #' @param analysis_min_chars Minimum characters for AI-generated analysis. Default 300.
 #'   Only used when \code{auto_analysis = TRUE}.
 #' @param analysis_max_chars Maximum characters for AI-generated analysis. Default 375.
@@ -164,7 +164,7 @@ bfh_export_pdf <- function(x,
                            template = "bfh-diagram",
                            template_path = NULL,
                            auto_analysis = FALSE,
-                           use_ai = NULL,
+                           use_ai = FALSE,
                            analysis_min_chars = 300,
                            analysis_max_chars = 375,
                            dpi = 150,
