@@ -180,6 +180,37 @@ plot <- create_spc_chart(
 
 **Note:** Customization of hospital colors is handled by the [BFHtheme](https://github.com/your-org/BFHtheme) package. Refer to BFHtheme documentation for advanced theming options.
 
+## Batch PDF Export
+
+When generating PDFs for multiple departments or indicators in a loop,
+use `bfh_create_export_session()` to copy the Typst template assets once
+and share them across all exports. This eliminates the recursive
+directory copy that otherwise happens on every `bfh_export_pdf()` call.
+
+```r
+library(BFHcharts)
+
+# Create a session — template assets copied once
+session <- bfh_create_export_session()
+on.exit(close(session))  # Cleanup when done
+
+departments <- c("ICU", "Medicine", "Surgery")
+for (dept in departments) {
+  result <- bfh_qic(dept_data[[dept]], x = month, y = value,
+                    chart_type = "i", chart_title = paste("Quality —", dept))
+  bfh_export_pdf(result,
+                 output = paste0(dept, "_report.pdf"),
+                 metadata = list(department = dept),
+                 batch_session = session)
+}
+# close(session) called automatically via on.exit()
+```
+
+**Notes:**
+- `batch_session` cannot be combined with `template_path` or `inject_assets`.
+- Pass `inject_assets` and `font_path` to `bfh_create_export_session()` instead.
+- Sessions are single-threaded; do not share across parallel workers.
+
 ## Supported Languages
 
 Chart labels, analysis text, and details output are available in Danish (`"da"`, default) and English (`"en"`).
