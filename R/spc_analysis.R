@@ -244,9 +244,13 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #'   - `chart_title`: Override chart title
 #'   - `y_axis_unit`: Override y-axis unit
 #' @param use_ai Logical. Should AI be used for analysis generation?
-#'   - `NULL` (default): Auto-detect BFHllm availability
-#'   - `TRUE`: Use AI (requires BFHllm package)
-#'   - `FALSE`: Use standard texts only
+#'   **Security note:** Default is `FALSE` (explicit opt-in required). AI
+#'   analysis sends `qic_data`, metadata, baseline, department and hospital
+#'   data to `BFHllm::bfhllm_spc_suggestion()`. In healthcare contexts,
+#'   implicit external data processing is unacceptable. Always set
+#'   `use_ai = TRUE` deliberately.
+#'   - `FALSE` (default): Use standard texts only — no external data sharing
+#'   - `TRUE`: Use AI (requires BFHllm package; error if not installed)
 #' @param min_chars Minimum characters in AI-generated output. Default 300.
 #' @param max_chars Maximum characters in AI-generated output. Default 375.
 #' @param target_tolerance Fractional tolerance for `at_target` classification
@@ -259,12 +263,18 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #' @return Character string with analysis text suitable for PDF export.
 #'
 #' @details
+#' **Security policy:** AI analysis is opt-in only (`use_ai = FALSE` by
+#' default). Setting `use_ai = TRUE` requires BFHllm to be installed; an
+#' informative error is raised if it is not. This prevents accidental data
+#' exposure in environments where BFHllm uses network calls, RAG, or
+#' third-party services.
+#'
 #' When `use_ai = TRUE` and BFHllm is installed, the function:
 #' 1. Builds context from the `bfh_qic_result` and metadata
 #' 2. Calls `BFHllm::bfhllm_spc_suggestion()` for AI-generated analysis
 #' 3. Falls back to standard texts if AI call fails
 #'
-#' When `use_ai = FALSE` or BFHllm is not installed:
+#' When `use_ai = FALSE` (default):
 #' - Returns Danish standard texts based on Anhøj SPC rules
 #'
 #' @examples
@@ -287,7 +297,7 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #' @export
 bfh_generate_analysis <- function(x,
                                   metadata = list(),
-                                  use_ai = NULL,
+                                  use_ai = FALSE,
                                   min_chars = 300,
                                   max_chars = 375,
                                   target_tolerance = 0.05,
@@ -314,13 +324,19 @@ bfh_generate_analysis <- function(x,
   # Byg kontekst
   context <- bfh_build_analysis_context(x, metadata)
 
-  # Check AI tilgængelighed
-  ai_available <- requireNamespace("BFHllm", quietly = TRUE)
-  if (is.null(use_ai)) {
-    use_ai <- ai_available
+  # Check AI tilgængelighed — ingen auto-detektion (eksplicit opt-in kræves)
+  if (isTRUE(use_ai)) {
+    if (!requireNamespace("BFHllm", quietly = TRUE)) {
+      stop(
+        "use_ai = TRUE requires the BFHllm package to be installed.\n",
+        "  Install it with: pak::pkg_install(\"BFHllm\")\n",
+        "  Or set use_ai = FALSE to use standard template-based analysis.",
+        call. = FALSE
+      )
+    }
   }
 
-  if (use_ai && ai_available) {
+  if (isTRUE(use_ai)) {
     # === AI-GENERERET ANALYSE ===
 
     # Byg SPC metadata til BFHllm

@@ -17,10 +17,11 @@ make_test_result_for_analysis <- function() {
   data <- fixture_deterministic_chart_data()
   suppressWarnings(
     bfh_qic(data,
-            x = month,
-            y = infections,
-            chart_type = "i",
-            chart_title = "Test Analysis")
+      x = month,
+      y = infections,
+      chart_type = "i",
+      chart_title = "Test Analysis"
+    )
   )
 }
 
@@ -88,7 +89,8 @@ test_that("bfh_generate_analysis(use_ai=TRUE) falder tilbage ved BFHllm-fejl", {
   # Fallback-teksten indeholder typisk "stabil" eller "signal"-sprog
   expect_true(
     grepl("stabil|signal|serie|over|under|m\u00e5l|observation", analysis,
-          ignore.case = TRUE)
+      ignore.case = TRUE
+    )
   )
 })
 
@@ -127,7 +129,7 @@ test_that("bfh_generate_analysis(use_ai=TRUE) falder tilbage ved tom AI-response
   analysis <- bfh_generate_analysis(result, use_ai = TRUE)
 
   expect_type(analysis, "character")
-  expect_gt(nchar(analysis), 0)  # Fallback-tekst (ikke tom)
+  expect_gt(nchar(analysis), 0) # Fallback-tekst (ikke tom)
 })
 
 test_that("bfh_generate_analysis(use_ai=TRUE) falder tilbage ved NULL AI-response", {
@@ -204,25 +206,34 @@ test_that("bfh_generate_analysis(use_ai=TRUE) sender baseline_analysis til BFHll
   # Baseline indeholder fallback-analyse-sprog
   expect_true(
     grepl("stabil|signal|serie|over|under|m\u00e5l|observation",
-          captured_baseline, ignore.case = TRUE)
+      captured_baseline,
+      ignore.case = TRUE
+    )
   )
 })
 
 # ============================================================================
-# AUTO-DETECTION: use_ai = NULL fallback
+# DEFAULT: use_ai = FALSE — aldrig kalder BFHllm uden eksplicit opt-in
 # ============================================================================
 
-test_that("bfh_generate_analysis(use_ai=NULL) bruger BFHllm når tilgængelig", {
+test_that("bfh_generate_analysis(use_ai=FALSE) kalder aldrig BFHllm", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
+  ai_called <- FALSE
 
   testthat::local_mocked_bindings(
-    bfhllm_spc_suggestion = function(...) "AI via auto-detect",
+    bfhllm_spc_suggestion = function(...) {
+      ai_called <<- TRUE
+      "AI output"
+    },
     .package = "BFHllm"
   )
 
-  analysis <- bfh_generate_analysis(result, use_ai = NULL)
+  # Default (use_ai = FALSE) og eksplicit FALSE: begge må ikke kalde BFHllm
+  bfh_generate_analysis(result)
+  expect_false(ai_called, label = "default use_ai = FALSE must not call BFHllm")
 
-  expect_equal(analysis, "AI via auto-detect")
+  bfh_generate_analysis(result, use_ai = FALSE)
+  expect_false(ai_called, label = "explicit use_ai = FALSE must not call BFHllm")
 })
