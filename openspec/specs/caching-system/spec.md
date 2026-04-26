@@ -58,9 +58,6 @@ The `docs/CACHING_SYSTEM.MD` file SHALL include a troubleshooting section with c
   - Root cause explanation
   - Solution with code example
 
-**Implementation:**
-```markdown
-
 ### Requirement: Cache keys SHALL incorporate all inputs affecting cached value
 
 All package-level caches SHALL construct keys from every input that affects the cached value, including font measurement, style resolution, Quarto path, and text grob measurement caches.
