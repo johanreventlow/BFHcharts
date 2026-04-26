@@ -534,8 +534,6 @@ test_that("bfh_qic maps y_axis_unit='percent' to qicharts2's y.percent parameter
     procedures = rep(100, 12)
   )
 
-  # Call with y_axis_unit = "percent"
-  # Font warnings from grid rendering are expected (using regex to suppress them in expect_warning)
   plot <- suppressWarnings(
     bfh_qic(
       data = data,
