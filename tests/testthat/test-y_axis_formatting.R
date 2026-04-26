@@ -14,7 +14,8 @@ test_that("apply_y_axis_formatting validates plot object", {
 
 test_that("apply_y_axis_formatting validates y_axis_unit", {
   data <- data.frame(x = 1:10, y = rnorm(10))
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_point()
+  plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_point()
 
   # NULL y_axis_unit should warn and default to 'count'
   expect_warning(
@@ -32,7 +33,8 @@ test_that("apply_y_axis_formatting validates y_axis_unit", {
 
 test_that("apply_y_axis_formatting applies percent formatting", {
   data <- data.frame(x = 1:10, y = runif(10))
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_point()
+  plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_point()
 
   result <- apply_y_axis_formatting(plot, "percent")
 
@@ -43,7 +45,8 @@ test_that("apply_y_axis_formatting applies percent formatting", {
 
 test_that("apply_y_axis_formatting applies count formatting", {
   data <- data.frame(x = 1:10, y = rpois(10, 1000))
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_point()
+  plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_point()
 
   result <- apply_y_axis_formatting(plot, "count")
 
@@ -53,7 +56,8 @@ test_that("apply_y_axis_formatting applies count formatting", {
 
 test_that("apply_y_axis_formatting uses minimal default y expansion", {
   qic_data <- data.frame(x = 1:3, y = c(40, 50, 60))
-  plot <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_point()
+  plot <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_point()
 
   result <- apply_y_axis_formatting(plot, "count", qic_data)
   y_range <- ggplot2::ggplot_build(result)$layout$panel_params[[1]]$y.range
@@ -63,7 +67,8 @@ test_that("apply_y_axis_formatting uses minimal default y expansion", {
 
 test_that("apply_y_axis_formatting applies rate formatting", {
   data <- data.frame(x = 1:10, y = rnorm(10, 5, 1))
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_point()
+  plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_point()
 
   result <- apply_y_axis_formatting(plot, "rate")
 
@@ -73,7 +78,8 @@ test_that("apply_y_axis_formatting applies rate formatting", {
 
 test_that("apply_y_axis_formatting applies time formatting", {
   qic_data <- data.frame(x = 1:10, y = runif(10, 10, 50))
-  plot <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_point()
+  plot <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_point()
 
   result <- apply_y_axis_formatting(plot, "time", qic_data)
 
@@ -83,7 +89,8 @@ test_that("apply_y_axis_formatting applies time formatting", {
 
 test_that("apply_y_axis_formatting warns on unknown unit", {
   data <- data.frame(x = 1:10, y = rnorm(10))
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_point()
+  plot <- ggplot2::ggplot(data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_point()
 
   # Unknown unit should warn and return plot unchanged
   expect_warning(
@@ -108,7 +115,7 @@ test_that("format_y_axis_percent creates valid scale", {
 
 test_that("format_y_axis_percent uses whole percents for wide range", {
   # Wide range (> 5 percentage points) - should use whole percents
-  wide_range <- c(0.10, 0.90)  # 80 percentage points
+  wide_range <- c(0.10, 0.90) # 80 percentage points
   scale <- format_y_axis_percent(wide_range)
 
   # Test label generation - should NOT show decimals
@@ -118,29 +125,29 @@ test_that("format_y_axis_percent uses whole percents for wide range", {
 
 test_that("format_y_axis_percent uses decimals for narrow range", {
   # Narrow range (< 2 percentage points) - should use decimals
-  narrow_range <- c(0.975, 0.990)  # 1.5 percentage points
+  narrow_range <- c(0.975, 0.990) # 1.5 percentage points
   scale <- format_y_axis_percent(narrow_range)
 
   # Test label generation - should show decimals (scales::label_percent uses English notation)
   labels <- scale$labels(c(0.975, 0.980, 0.985))
-  expect_true(all(grepl("\\.", labels)))  # Decimals present (English notation from scales package)
+  expect_true(all(grepl("\\.", labels))) # Decimals present (English notation from scales package)
   expect_equal(labels, c("97.5%", "98.0%", "98.5%"))
 })
 
 test_that("format_y_axis_percent handles boundary at 2 percentage points", {
   # Just above 2 percentage points - should use whole percents
-  wide_boundary_range <- c(0.90, 0.93)  # 3 percentage points (> 0.02)
+  wide_boundary_range <- c(0.90, 0.93) # 3 percentage points (> 0.02)
   scale_wide <- format_y_axis_percent(wide_boundary_range)
 
   labels_wide <- scale_wide$labels(c(0.91, 0.92))
-  expect_equal(labels_wide, c("91%", "92%"))  # Whole percents
+  expect_equal(labels_wide, c("91%", "92%")) # Whole percents
 
   # Just below 2 percentage points - should use decimals
-  narrow_boundary_range <- c(0.90, 0.915)  # 1.5 percentage points (< 0.02)
+  narrow_boundary_range <- c(0.90, 0.915) # 1.5 percentage points (< 0.02)
   scale_narrow <- format_y_axis_percent(narrow_boundary_range)
 
   labels_narrow <- scale_narrow$labels(c(0.905, 0.910))
-  expect_equal(labels_narrow, c("90.5%", "91.0%"))  # Decimals
+  expect_equal(labels_narrow, c("90.5%", "91.0%")) # Decimals
 })
 
 test_that("format_y_axis_percent handles NULL range", {
@@ -193,13 +200,13 @@ test_that("format_scaled_number uses Danish decimal mark", {
 
 test_that("format_unscaled_number formats integers without decimals", {
   expect_equal(format_unscaled_number(100), "100")
-  expect_equal(format_unscaled_number(1000), "1.000")  # Danish thousand separator
+  expect_equal(format_unscaled_number(1000), "1.000") # Danish thousand separator
   expect_equal(format_unscaled_number(1234567), "1.234.567")
 })
 
 test_that("format_unscaled_number formats decimals with Danish notation", {
   result <- format_unscaled_number(123.5)
-  expect_true(grepl(",", result))  # Comma as decimal mark
+  expect_true(grepl(",", result)) # Comma as decimal mark
   expect_true(grepl("123,5", result))
 })
 
@@ -213,7 +220,7 @@ test_that("format_unscaled_number handles zero and negative values", {
 
   # Negative integers
   expect_equal(format_unscaled_number(-100), "-100")
-  expect_equal(format_unscaled_number(-1000), "-1.000")  # Danish thousand separator
+  expect_equal(format_unscaled_number(-1000), "-1.000") # Danish thousand separator
 
   # Negative decimals with Danish notation
   expect_equal(format_unscaled_number(-123.5), "-123,5")
@@ -276,7 +283,7 @@ test_that("format_y_axis_time handles missing qic_data", {
 })
 
 test_that("format_y_axis_time handles missing y column", {
-  qic_data <- data.frame(x = 1:10)  # No y column
+  qic_data <- data.frame(x = 1:10) # No y column
 
   expect_warning(
     scale <- format_y_axis_time(qic_data),
@@ -286,7 +293,7 @@ test_that("format_y_axis_time handles missing y column", {
 })
 
 test_that("format_y_axis_time producerer komposit-labels for minutter", {
-  qic_data <- data.frame(x = 1:10, y = runif(10, 5, 50))  # < 60 minutes
+  qic_data <- data.frame(x = 1:10, y = runif(10, 5, 50)) # < 60 minutes
 
   scale <- format_y_axis_time(qic_data)
 
@@ -299,7 +306,7 @@ test_that("format_y_axis_time producerer komposit-labels for minutter", {
 })
 
 test_that("format_y_axis_time producerer komposit-labels for timer", {
-  qic_data <- data.frame(x = 1:10, y = runif(10, 100, 500))  # 60-1440 minutes
+  qic_data <- data.frame(x = 1:10, y = runif(10, 100, 500)) # 60-1440 minutes
 
   scale <- format_y_axis_time(qic_data)
 
@@ -309,7 +316,7 @@ test_that("format_y_axis_time producerer komposit-labels for timer", {
 })
 
 test_that("format_y_axis_time producerer komposit-labels for dage", {
-  qic_data <- data.frame(x = 1:10, y = runif(10, 2000, 5000))  # > 1440 minutes
+  qic_data <- data.frame(x = 1:10, y = runif(10, 2000, 5000)) # > 1440 minutes
 
   scale <- format_y_axis_time(qic_data)
 
@@ -397,8 +404,8 @@ test_that("format_time_danish uses Danish labels", {
 })
 
 test_that("format_time_danish uses Danish decimal notation", {
-  result <- format_time_danish(90, "hours")  # 1.5 hours
-  expect_true(grepl("1,5", result))  # Comma as decimal separator
+  result <- format_time_danish(90, "hours") # 1.5 hours
+  expect_true(grepl("1,5", result)) # Comma as decimal separator
 })
 
 # ============================================================================
@@ -447,49 +454,34 @@ test_that("Y-axis formatting works in bfh_qic", {
     value = rnorm(12, 15, 2)
   )
 
-  # Test with count unit
-  # Note: Font warnings from grid graphics rendering are tolerable
-  expect_warning(
-    {
-      plot_count <- bfh_qic(
-        data = data,
-        x = month,
-        y = value,
-        chart_type = "run",
-        y_axis_unit = "count"
-      )
-      expect_s3_class(plot_count, "bfh_qic_result")
-      expect_s3_class(plot_count$plot, "ggplot")
-    },
-    "font family.*not found",
-    all = FALSE
+  plot_count <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count"
   )
+  expect_s3_class(plot_count, "bfh_qic_result")
+  expect_s3_class(plot_count$plot, "ggplot")
 
-  # Test with percent unit
-  expect_warning(
-    {
-      plot_pct <- bfh_qic(
-        data = data,
-        x = month,
-        y = value,
-        chart_type = "run",
-        y_axis_unit = "percent"
-      )
-      expect_s3_class(plot_pct, "bfh_qic_result")
-      expect_s3_class(plot_pct$plot, "ggplot")
-    },
-    "font family.*not found",
-    all = FALSE
+  plot_pct <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "percent"
   )
+  expect_s3_class(plot_pct, "bfh_qic_result")
+  expect_s3_class(plot_pct$plot, "ggplot")
 })
 
 test_that("Count formatting handles edge cases", {
   # Test boundary values for K/M/mia thresholds
   test_values <- c(
-    999,      # Should be unscaled
-    1000,     # Should be 1K
-    999999,   # Should be 999,9K (or 999K if integer)
-    1000000,  # Should be 1M
+    999, # Should be unscaled
+    1000, # Should be 1K
+    999999, # Should be 999,9K (or 999K if integer)
+    1000000, # Should be 1M
     999999999, # Should be 999,9M
     1000000000 # Should be 1 mia.
   )
@@ -502,9 +494,9 @@ test_that("Count formatting handles edge cases", {
   expect_true(all(nchar(labels) > 0))
 
   # Check for expected suffixes at boundaries
-  expect_true(grepl("K", labels[2]))  # 1000
-  expect_true(grepl("M", labels[4]))  # 1000000
-  expect_true(grepl("mia", labels[6]))  # 1000000000
+  expect_true(grepl("K", labels[2])) # 1000
+  expect_true(grepl("M", labels[4])) # 1000000
+  expect_true(grepl("mia", labels[6])) # 1000000000
 })
 
 test_that("All formatters handle NA values consistently", {

@@ -752,8 +752,8 @@ bfh_qic <- function(data,
   viewport <- viewport_dims(base_size = base_size)
 
   # Generate plot using bfh_spc_plot()
-  # Kun undertryk den specifikke ggplot2 datetime-scale warning (harmløs).
-  # Andre warnings propageres til brugeren.
+  # Undertryk harmløse warnings: ggplot2 datetime-scale + BFHtheme proprietær
+  # font (Mari) ikke i PostScript-database — begge er expected behavior.
   plot <- withCallingHandlers(
     bfh_spc_plot(
       qic_data = qic_data,
@@ -762,7 +762,7 @@ bfh_qic <- function(data,
       plot_margin = plot_margin
     ),
     warning = function(w) {
-      if (grepl("numeric|datetime|scale_[xy]_date", conditionMessage(w), ignore.case = TRUE)) {
+      if (grepl("numeric|datetime|scale_[xy]_date|PostScript font database", conditionMessage(w), ignore.case = TRUE)) {
         invokeRestart("muffleWarning")
       }
     }
@@ -782,16 +782,26 @@ bfh_qic <- function(data,
     label_size <- PDF_LABEL_SIZE
   }
 
-  plot <- add_spc_labels(
-    plot = plot,
-    qic_data = qic_data,
-    y_axis_unit = y_axis_unit,
-    label_size = label_size,
-    viewport_width = viewport_width_inches,
-    viewport_height = viewport_height_inches,
-    target_text = target_text,
-    verbose = FALSE,
-    language = language
+  # BFHtheme bruger proprietære fonts (Mari) ikke tilgængelige i alle miljøer.
+  # ggplot_gtable under label placement emitter "font family not found in
+  # PostScript font database" pr. tekstelement — expected behavior, ikke fejl.
+  plot <- withCallingHandlers(
+    add_spc_labels(
+      plot = plot,
+      qic_data = qic_data,
+      y_axis_unit = y_axis_unit,
+      label_size = label_size,
+      viewport_width = viewport_width_inches,
+      viewport_height = viewport_height_inches,
+      target_text = target_text,
+      verbose = FALSE,
+      language = language
+    ),
+    warning = function(w) {
+      if (grepl("PostScript font database", conditionMessage(w), fixed = TRUE)) {
+        invokeRestart("muffleWarning")
+      }
+    }
   )
 
   # Always generate summary for inclusion in result object
