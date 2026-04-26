@@ -51,3 +51,12 @@ test_that("marquee style-cache: forskellige lineheights giver separate entries",
   cache_keys <- ls(envir = BFHcharts:::.marquee_style_cache)
   expect_equal(length(cache_keys), 2L)
 })
+
+test_that("font-cache: sekventielle kald med samme font giver identisk resultat", {
+  bfh_reset_caches()
+
+  result1 <- BFHcharts:::.resolve_font_family("sans")
+  result2 <- BFHcharts:::.resolve_font_family("sans")
+
+  expect_identical(result1, result2)
+})

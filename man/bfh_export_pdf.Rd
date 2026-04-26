@@ -11,7 +11,7 @@ bfh_export_pdf(
   template = "bfh-diagram",
   template_path = NULL,
   auto_analysis = FALSE,
-  use_ai = NULL,
+  use_ai = FALSE,
   analysis_min_chars = 300,
   analysis_max_chars = 375,
   dpi = 150,
@@ -51,13 +51,13 @@ Typst file (.typ). Default is NULL (uses packaged BFH template).}
 automatically generates analysis text using \code{bfh_generate_analysis()}.
 Default is FALSE for backward compatibility.}
 
-\item{use_ai}{Logical or NULL. Controls AI usage for auto-analysis:
+\item{use_ai}{Logical. Controls AI usage for auto-analysis:
 \itemize{
-\item \code{NULL} (default): Auto-detect BFHllm availability
-\item \code{TRUE}: Use AI via BFHllm (with fallback to standard texts)
-\item \code{FALSE}: Use standard texts only (no AI)
+\item \code{FALSE} (default): Use standard texts only — no external data sharing
+\item \code{TRUE}: Use AI via BFHllm (requires BFHllm installed; error if not)
 }
-Only used when \code{auto_analysis = TRUE}.}
+Only used when \code{auto_analysis = TRUE}. See \code{bfh_generate_analysis()}
+for security policy details.}
 
 \item{analysis_min_chars}{Minimum characters for AI-generated analysis. Default 300.
 Only used when \code{auto_analysis = TRUE}.}

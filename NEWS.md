@@ -1,5 +1,17 @@
 # BFHcharts (development)
 
+## Breaking changes
+
+* **`bfh_generate_analysis()` kræver nu eksplicit `use_ai = TRUE` for
+  AI-analyse.** Defaulten er ændret fra `NULL` (auto-detektér BFHllm) til
+  `FALSE` (brug altid standardtekster). I healthcare-kontekst er implicit
+  ekstern databehandling uacceptabel; tidligere kunne BFHllm aktiveres
+  automatisk når pakken var installeret, uden at brugeren vidste det.
+  **Migration:** Kald der ønsker AI-analyse skal sætte `use_ai = TRUE`
+  eksplicit. Kald der allerede sætter `use_ai = FALSE` er uændrede.
+  Det samme gælder `bfh_export_pdf(auto_analysis = TRUE)`, der nu også
+  defaulter til `use_ai = FALSE` (#secure-ai-explicit-opt-in).
+
 ## Nye features
 
 * **Internationalisering (i18n):** Ny `language`-parameter (`"da"` eller `"en"`) på
