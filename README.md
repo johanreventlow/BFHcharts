@@ -86,7 +86,7 @@ create_spc_chart(
   chart_type = "p",
   y_axis_unit = "percent",
   chart_title = "Infection Rate per 100 Surgeries",
-  target_value = 2.0,
+  target_value = 0.02,
   target_text = "↓ Target: 2%"
 )
 
@@ -125,7 +125,7 @@ plot_cfg <- spc_plot_config(
   chart_type = "p",
   y_axis_unit = "percent",
   chart_title = "Custom Infection Rate",
-  target_value = 2.0,
+  target_value = 0.02,
   target_text = "Target: 2%"
 )
 
