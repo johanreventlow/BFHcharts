@@ -145,6 +145,24 @@ entire workflow from raw data to finished plot with intelligent labels.
 \item \code{freeze}: Position to freeze baseline calculation
 }
 
+\strong{Denominator Contract (ratio charts):}
+Ratio chart types (\code{p}, \code{pp}, \code{u}, \code{up}) require a denominator column
+supplied via \code{n}. The content of \code{n} is validated to prevent silently
+misleading rate plots:
+\itemize{
+\item \code{n} must be numeric and finite (no \code{Inf}/\code{-Inf}).
+\item All non-\code{NA} values of \code{n} must be \verb{> 0} (zero/negative denominators
+produce meaningless rates).
+\item For proportion charts (\code{p}, \code{pp}): every row with both \code{y} and \code{n}
+present must satisfy \code{y <= n} (proportion <= 1).
+\item \code{NA} in individual rows of \code{n} is allowed (qicharts2 drops them).
+\item Violations raise an error identifying the offending row number(s) so
+the source data can be inspected. Pre-filter or correct invalid rows
+before calling \code{bfh_qic()}.
+Other chart types (\code{run}, \code{i}, \code{mr}, \code{c}, \code{g}, \code{t}, \code{xbar}, \code{s}) are not
+subject to denominator validation.
+}
+
 \strong{Unit Support (Danish-friendly):}
 Width and height support multiple units for convenience:
 \itemize{
