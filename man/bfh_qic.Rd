@@ -181,6 +181,20 @@ Labels are automatically added to the plot showing:
 \strong{Arrow Symbol Suppression:}
 If \code{target_text} contains arrow symbols (↑ ↓ or < >), the target line will be
 suppressed and only the directional indicator shown at the plot edge.
+
+\strong{Percent Target Contract:}
+When \code{y_axis_unit = "percent"}, \code{target_value} is validated against the scale
+implied by \code{multiply}:
+\itemize{
+\item \code{multiply = 1} (default): \code{target_value} must be in \verb{[0, 1.5]} (proportion)
+\item \code{multiply = 100}: \code{target_value} must be in \verb{[0, 150]} (percent)
+\item \code{multiply = m}: \code{target_value} must be in \verb{[0, m * 1.5]}
+}
+
+The most common error is passing \code{target_value = 2.0} to mean "2\%" when
+\code{multiply = 1} (proportion scale). Use \code{target_value = 0.02} instead, or
+set \code{multiply = 100} to pass percent values directly.
+A 1.5x upper slack permits legitimate stretch targets above 100\%.
 }
 \examples{
 \dontrun{
@@ -212,7 +226,7 @@ plot <- bfh_qic(
   chart_type = "p",
   y_axis_unit = "percent",
   chart_title = "Infection Rate per 100 Surgeries",
-  target_value = 2.0,
+  target_value = 0.02,
   target_text = "↓ Målet: 2\%"
 )
 plot

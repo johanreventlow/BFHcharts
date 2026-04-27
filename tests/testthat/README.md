@@ -137,19 +137,48 @@ covr::report(cov)
 
 ---
 
-## Visuel regression (planlagt — Fase 2 task 7)
+## Visuel regression
 
-Når vdiffr integreres, tilføjes golden images i `tests/testthat/_snaps/` for kanoniske chart-konfigurationer.
+Vdiffr-snapshots beskytter mod utilsigtede visuelle regressioner i BFHcharts' plot-output.
+Golden images er i `tests/testthat/_snaps/visual-regression/`.
 
-**Re-baseline-proces** (kør kun efter manuel visuel review):
+**Tests kræver Mari-fonts** — `skip_if_fonts_unavailable()` skipper hele filen på CI og maskiner uden Mari.
+
+### Snapshot-politik
+
+**`.new.svg` filer commits ALDRIG** — de er temporære review-artefakter (`.gitignore`-listede).
+Når en test fejler, genererer vdiffr en `<name>.new.svg` til sammenligning. Workflows:
 
 ```r
-testthat::snapshot_accept()  # Accept alle diffs
-# eller
-testthat::snapshot_accept("test-visual-regression")  # Kun specifik fil
+# Inspicér alle diffs interaktivt
+vdiffr::manage_cases()
+
+# Accept alle diffs som nye baselines (efter visuel review)
+testthat::snapshot_accept()
+
+# Accept kun visual-regression-filen
+testthat::snapshot_accept("visual-regression")
 ```
 
-Commits der re-baseliner golden images SKAL have dokumenteret begrundelse i commit-besked.
+**Commits der re-baseliner snapshots SKAL dokumentere årsag i commit-beskeden:**
+- BFHtheme version-bump → koordinat-skift er forventede
+- Bevidst layout-ændring → beskriv hvad der ændrede sig
+- Regression-fix → beskriv hvad der var forkert
+
+### Font-warnings
+
+Under visuel regression-kørsel ses typisk `"font family 'Mari' not found in PostScript font database"`.
+Disse er harmlose (ggplot2 falder tilbage til system default) og suppresseres globalt via `setup.R`.
+Genuine warnings propageres stadig — kun den specifikke PostScript-lookup-advarsel undertrykkes.
+
+### Tilføjelse af nye snapshots
+
+```r
+# 1. Tilføj vdiffr::expect_doppelganger() til test-visual-regression.R
+# 2. Kør devtools::test() — første kørsel genererer .svg baseline
+# 3. Verificér snapshot visuelt
+# 4. Commit .svg filen med begrundelse
+```
 
 ---
 
@@ -159,4 +188,4 @@ Commits der re-baseliner golden images SKAL have dokumenteret begrundelse i comm
 - `openspec/changes/strengthen-test-infrastructure/design.md` — tekniske beslutninger (D1-D10)
 - `openspec/changes/strengthen-test-infrastructure/tasks.md` — opgaver og status
 
-**Sidst opdateret:** 2026-04-24
+**Sidst opdateret:** 2026-04-27

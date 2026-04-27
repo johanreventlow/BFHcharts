@@ -1,0 +1,44 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+context: |
+  R package: BFHcharts — SPC chart rendering for healthcare quality improvement.
+  Status: production. Consumer: biSPCharts (Shiny app, formerly SPCify).
+
+  Public API: single function `bfh_qic()`. All complexity hidden internally.
+  Internal API (via `:::`): `bfh_spc_plot()`, `add_spc_labels()`, `apply_y_axis_formatting()`,
+  `calculate_base_size()`, `spc_plot_config()`, `viewport_dims()`, `phase_config()`.
+
+  Tech stack: R (≥4.1.0), ggplot2, BFHtheme (hospital branding), testthat, vdiffr.
+
+  Chart types: p (proportions), u (rates), c (counts), xbar, i (individuals), mr (moving range).
+
+  Anhøj rules: run detection (8+ consecutive points one side of CL = special cause),
+  crossing detection (too few CL crossings = non-random), ±3σ control limits per chart type.
+
+  Naming conventions:
+  - Functions: snake_case, English
+  - Chart implementations: spc_* prefix
+  - Anhøj rule functions: anhoej_* prefix
+  - Utilities: utils_* prefix
+  - Internal comments: Danish; docs/error messages: English
+
+  Testing strategy: ≥90% overall coverage, 100% on exported functions.
+  Visual regression via vdiffr. Test files: tests/testthat/test-{component}.R.
+
+  Breaking changes require: major version bump, deprecation warning first,
+  migration guide, notification to biSPCharts maintainer.
+  Never manually edit NAMESPACE — use devtools::document().
+
+  Cross-repo: BFHcharts owns chart rendering + statistical calculations.
+  biSPCharts owns UI, reactive programming, data preprocessing.
+
+# Per-artifact rules (optional)
+rules:
+  proposal:
+    - State impact on biSPCharts if public API changes
+    - Note if statistical validation is required before implementation
+  tasks:
+    - Include devtools::document() step when roxygen changes are made
+    - Include vdiffr snapshot update step for visual changes

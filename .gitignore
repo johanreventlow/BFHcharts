@@ -44,3 +44,5 @@ tests/testthat/Rplots.pdf
 demo_output/
 # R CMD check output
 ..Rcheck/
+# vdiffr review files (never commit; use testthat::snapshot_accept() to promote)
+tests/testthat/_snaps/**/*.new.svg

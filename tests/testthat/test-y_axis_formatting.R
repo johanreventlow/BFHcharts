@@ -454,6 +454,8 @@ test_that("Y-axis formatting works in bfh_qic", {
     value = rnorm(12, 15, 2)
   )
 
+  # Test with count unit
+  # Font warnings suppresseres globalt via setup.R (PostScript font-registrering)
   plot_count <- bfh_qic(
     data = data,
     x = month,
@@ -464,6 +466,7 @@ test_that("Y-axis formatting works in bfh_qic", {
   expect_s3_class(plot_count, "bfh_qic_result")
   expect_s3_class(plot_count$plot, "ggplot")
 
+  # Test with percent unit
   plot_pct <- bfh_qic(
     data = data,
     x = month,

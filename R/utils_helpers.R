@@ -167,6 +167,74 @@ validate_numeric_parameter <- function(value,
 
 
 # ============================================================================
+# PERCENT TARGET CONTRACT VALIDATION
+# ============================================================================
+
+#' Validate target_value against y_axis_unit scale contract
+#'
+#' Enforces the percent target contract: when `y_axis_unit = "percent"`,
+#' `target_value` must be in the proportion/percent scale implied by `multiply`.
+#'
+#' **Contract:**
+#' - `multiply = 1` (default): `target_value` must be in `[0, 1.5]` (proportion)
+#' - `multiply = 100`: `target_value` must be in `[0, 150]` (percent)
+#' - `multiply = m`: `target_value` must be in `[0, m * 1.5]`
+#'
+#' The 1.5x slack on the upper bound permits legitimate stretch targets above
+#' 100% (e.g., 105%) while still catching the 100x mismatch — the most common
+#' user error where `target_value = 2.0` is passed intending "2%" instead of
+#' the required proportion `0.02` (when `multiply = 1`).
+#'
+#' @param target_value Numeric target value passed to `bfh_qic()`.
+#' @param y_axis_unit Unit type string from `bfh_qic()`.
+#' @param multiply Numeric multiplier from `bfh_qic()`.
+#'
+#' @return Invisibly NULL on success. Stops with error on violation.
+#' @keywords internal
+#' @noRd
+validate_target_for_unit <- function(target_value, y_axis_unit, multiply) {
+  if (is.null(target_value) || !identical(y_axis_unit, "percent")) {
+    return(invisible(NULL))
+  }
+
+  # Negativ check
+  if (target_value < 0) {
+    stop(
+      sprintf(
+        "target_value must be non-negative for y_axis_unit=\"percent\", got: %s",
+        target_value
+      ),
+      call. = FALSE
+    )
+  }
+
+  # Skala check
+  upper_bound <- multiply * 1.5
+  if (target_value > upper_bound) {
+    hint <- if (isTRUE(all.equal(multiply, 1))) {
+      sprintf(
+        "Did you mean target_value = %s? Or set multiply = 100 to pass percent values.",
+        target_value / 100
+      )
+    } else {
+      sprintf(
+        "Expected target_value in [0, %s] for multiply = %s.",
+        upper_bound, multiply
+      )
+    }
+    stop(
+      sprintf(
+        "target_value = %s er uden for forventet skala [0, %s] for y_axis_unit=\"percent\" med multiply = %s. %s",
+        target_value, upper_bound, multiply, hint
+      ),
+      call. = FALSE
+    )
+  }
+
+  invisible(NULL)
+}
+
+# ============================================================================
 # COMMENT DATA EXTRACTION
 # ============================================================================
 

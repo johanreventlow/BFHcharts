@@ -1,6 +1,24 @@
-# BFHcharts 0.8.6
+# BFHcharts 0.9.0
 
 ## Breaking changes
+
+* **`bfh_qic()` validerer nu `target_value` mod y_axis_unit-skalaen.**
+  Når `y_axis_unit = "percent"` (default `multiply = 1`), skal `target_value`
+  være i `[0, 1.5]` (proportion). Negative værdier afvises altid.
+  Den hyppigste fejl: `target_value = 2.0` til at betyde "2%" —
+  brug `target_value = 0.02` eller sæt `multiply = 100`.
+  **Migration:**
+  ```r
+  # Gammel (forkert, plottet target ved 200%):
+  bfh_qic(..., y_axis_unit = "percent", target_value = 2.0)
+
+  # Ny — option A (proportion, default multiply=1):
+  bfh_qic(..., y_axis_unit = "percent", target_value = 0.02)
+
+  # Ny — option B (procent, multiply=100):
+  bfh_qic(..., y_axis_unit = "percent", target_value = 2.0, multiply = 100)
+  ```
+  (#203)
 
 * **`bfh_generate_analysis()` kræver nu eksplicit `use_ai = TRUE` for
   AI-analyse.** Defaulten er ændret fra `NULL` (auto-detektér BFHllm) til
@@ -37,6 +55,12 @@
   (#reuse-typst-template-assets).
 
 ## Interne ændringer
+
+* **Visuel regression stabiliseret:** vdiffr-snapshots re-baselinede efter BFHtheme
+  0.5.0 bump (koordinat-skift fra opdateret font-metrics). Testopsætning registrerer
+  nu Mari og Arial som PostScript/PDF font-aliaser i `setup.R`, hvilket eliminerer
+  ~1600 harmlose "font family not found in PostScript font database" warnings per
+  test-kørsel. `.new.svg` filer tilføjet til `.gitignore` (#209).
 
 * **Cache-nøgle reproducerbarhed:** Font-cache i `utils_add_right_labels_marquee.R`
   nøglede kun på device-type — ikke på fontfamily. Kald som
