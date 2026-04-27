@@ -109,6 +109,18 @@ NULL
 #' If `target_text` contains arrow symbols (↑ ↓ or < >), the target line will be
 #' suppressed and only the directional indicator shown at the plot edge.
 #'
+#' **Percent Target Contract:**
+#' When `y_axis_unit = "percent"`, `target_value` is validated against the scale
+#' implied by `multiply`:
+#' - `multiply = 1` (default): `target_value` must be in `[0, 1.5]` (proportion)
+#' - `multiply = 100`: `target_value` must be in `[0, 150]` (percent)
+#' - `multiply = m`: `target_value` must be in `[0, m * 1.5]`
+#'
+#' The most common error is passing `target_value = 2.0` to mean "2%" when
+#' `multiply = 1` (proportion scale). Use `target_value = 0.02` instead, or
+#' set `multiply = 100` to pass percent values directly.
+#' A 1.5x upper slack permits legitimate stretch targets above 100%.
+#'
 #' @export
 #' @importFrom BFHtheme theme_bfh add_bfh_logo
 #' @examples
@@ -141,7 +153,7 @@ NULL
 #'   chart_type = "p",
 #'   y_axis_unit = "percent",
 #'   chart_title = "Infection Rate per 100 Surgeries",
-#'   target_value = 2.0,
+#'   target_value = 0.02,
 #'   target_text = "↓ Målet: 2%"
 #' )
 #' plot
@@ -671,6 +683,7 @@ bfh_qic <- function(data,
   }
 
   if (!is.null(target_value) && is.numeric(target_value)) {
+    validate_target_for_unit(target_value, y_axis_unit, multiply)
     qic_args$target <- target_value
   }
 

@@ -1,6 +1,24 @@
-# BFHcharts (development)
+# BFHcharts 0.9.0
 
 ## Breaking changes
+
+* **`bfh_qic()` validerer nu `target_value` mod y_axis_unit-skalaen.**
+  Når `y_axis_unit = "percent"` (default `multiply = 1`), skal `target_value`
+  være i `[0, 1.5]` (proportion). Negative værdier afvises altid.
+  Den hyppigste fejl: `target_value = 2.0` til at betyde "2%" —
+  brug `target_value = 0.02` eller sæt `multiply = 100`.
+  **Migration:**
+  ```r
+  # Gammel (forkert, plottet target ved 200%):
+  bfh_qic(..., y_axis_unit = "percent", target_value = 2.0)
+
+  # Ny — option A (proportion, default multiply=1):
+  bfh_qic(..., y_axis_unit = "percent", target_value = 0.02)
+
+  # Ny — option B (procent, multiply=100):
+  bfh_qic(..., y_axis_unit = "percent", target_value = 2.0, multiply = 100)
+  ```
+  (#203)
 
 * **`bfh_generate_analysis()` kræver nu eksplicit `use_ai = TRUE` for
   AI-analyse.** Defaulten er ændret fra `NULL` (auto-detektér BFHllm) til
