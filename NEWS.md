@@ -38,6 +38,12 @@
 
 ## Interne ændringer
 
+* **Visuel regression stabiliseret:** vdiffr-snapshots re-baselinede efter BFHtheme
+  0.5.0 bump (koordinat-skift fra opdateret font-metrics). Testopsætning registrerer
+  nu Mari og Arial som PostScript/PDF font-aliaser i `setup.R`, hvilket eliminerer
+  ~1600 harmlose "font family not found in PostScript font database" warnings per
+  test-kørsel. `.new.svg` filer tilføjet til `.gitignore` (#209).
+
 * **Cache-nøgle reproducerbarhed:** Font-cache i `utils_add_right_labels_marquee.R`
   nøglede kun på device-type — ikke på fontfamily. Kald som
   `.resolve_font_family("Arial")` og `.resolve_font_family("Helvetica")` på

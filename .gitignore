@@ -38,3 +38,5 @@ inst/templates/typst/*/fonts/
 .claude/settings.local.json
 # Test artifacts
 tests/testthat/Rplots.pdf
+# vdiffr review files (never commit; use testthat::snapshot_accept() to promote)
+tests/testthat/_snaps/**/*.new.svg
