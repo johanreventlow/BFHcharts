@@ -80,6 +80,22 @@ NULL
 #' - `part`: Vector of positions where phase splits occur (e.g., `c(12, 24)`)
 #' - `freeze`: Position to freeze baseline calculation
 #'
+#' **Denominator Contract (ratio charts):**
+#' Ratio chart types (`p`, `pp`, `u`, `up`) require a denominator column
+#' supplied via `n`. The content of `n` is validated to prevent silently
+#' misleading rate plots:
+#' - `n` must be numeric and finite (no `Inf`/`-Inf`).
+#' - All non-`NA` values of `n` must be `> 0` (zero/negative denominators
+#'   produce meaningless rates).
+#' - For proportion charts (`p`, `pp`): every row with both `y` and `n`
+#'   present must satisfy `y <= n` (proportion <= 1).
+#' - `NA` in individual rows of `n` is allowed (qicharts2 drops them).
+#' - Violations raise an error identifying the offending row number(s) so
+#'   the source data can be inspected. Pre-filter or correct invalid rows
+#'   before calling `bfh_qic()`.
+#' Other chart types (`run`, `i`, `mr`, `c`, `g`, `t`, `xbar`, `s`) are not
+#' subject to denominator validation.
+#'
 #' **Unit Support (Danish-friendly):**
 #' Width and height support multiple units for convenience:
 #' - **Smart auto-detection** (default, `units = NULL`):
@@ -670,9 +686,21 @@ bfh_qic <- function(data,
   )
 
   # Add optional arguments
+  n_expr <- NULL
   if (!missing(n) && !is.null(substitute(n))) {
-    qic_args$n <- validate_column_name(substitute(n), "n")
+    n_expr <- validate_column_name(substitute(n), "n")
+    qic_args$n <- n_expr
   }
+
+  # Validate denominator content for ratio charts (p/pp/u/up).
+  # Catches n <= 0, Inf, non-numeric, missing-but-required n, and
+  # y > n (proportion contract). Other chart types are skipped.
+  validate_denominator_data(
+    chart_type = chart_type,
+    data = data,
+    y_col = as.character(y_expr),
+    n_col = if (!is.null(n_expr)) as.character(n_expr) else NULL
+  )
 
   if (!is.null(part)) {
     qic_args$part <- part

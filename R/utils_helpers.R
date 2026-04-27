@@ -235,6 +235,113 @@ validate_target_for_unit <- function(target_value, y_axis_unit, multiply) {
 }
 
 # ============================================================================
+# DENOMINATOR CONTENT VALIDATION
+# ============================================================================
+
+#' Validate denominator column content for ratio charts
+#'
+#' Validates the content of the denominator column (`n`) for ratio chart types
+#' (`p`, `pp`, `u`, `up`). Prevents silently misleading rate plots when input
+#' data contains zero, negative, infinite, or proportion-violating denominators.
+#'
+#' **Contract:**
+#' - Ratio charts (`p`, `pp`, `u`, `up`) require `n_col` non-NULL.
+#' - `n` must be numeric.
+#' - `n` must be finite (no `Inf`/`-Inf`).
+#' - All non-`NA` values must satisfy `n > 0`.
+#' - For proportion charts (`p`, `pp`): every row with both `y` and `n` present
+#'   must satisfy `y <= n`.
+#' - `NA` in individual rows of `n` is permitted (qicharts2 drops them).
+#' - All other chart types skip validation.
+#'
+#' **Error format:** Violation messages identify offending row numbers
+#' (1-indexed) so users can locate problematic rows in the source data.
+#'
+#' @param chart_type Character. SPC chart type (e.g., "p", "u", "i").
+#' @param data Data frame passed to `bfh_qic()`.
+#' @param y_col Character. Name of y-axis column in `data`.
+#' @param n_col Character or NULL. Name of denominator column in `data`,
+#'   or NULL if not supplied.
+#'
+#' @return Invisibly NULL on success. Stops with error on violation.
+#' @keywords internal
+#' @noRd
+validate_denominator_data <- function(chart_type, data, y_col, n_col) {
+  RATIO_CHARTS <- c("p", "pp", "u", "up")
+  PROPORTION_CHARTS <- c("p", "pp")
+
+  if (!chart_type %in% RATIO_CHARTS) {
+    return(invisible(NULL))
+  }
+
+  if (is.null(n_col)) {
+    stop(sprintf(
+      "chart_type = \"%s\" requires denominator column `n`. Ratio charts (%s) need n.",
+      chart_type, paste(RATIO_CHARTS, collapse = ", ")
+    ), call. = FALSE)
+  }
+
+  if (!n_col %in% names(data)) {
+    stop(sprintf(
+      "denominator column `%s` not found in data",
+      n_col
+    ), call. = FALSE)
+  }
+  n_data <- data[[n_col]]
+
+  if (!is.numeric(n_data)) {
+    stop(sprintf(
+      "denominator column `%s` must be numeric, got: %s",
+      n_col, class(n_data)[1]
+    ), call. = FALSE)
+  }
+
+  non_na <- !is.na(n_data)
+
+  inf_rows <- which(non_na & is.infinite(n_data))
+  if (length(inf_rows) > 0) {
+    stop(sprintf(
+      "denominator column `%s` contains Inf/-Inf at row(s): %s. Denominators must be finite.",
+      n_col, paste(inf_rows, collapse = ", ")
+    ), call. = FALSE)
+  }
+
+  zero_neg_rows <- which(non_na & is.finite(n_data) & n_data <= 0)
+  if (length(zero_neg_rows) > 0) {
+    stop(sprintf(
+      "denominator column `%s` must be > 0, got %s at row(s): %s",
+      n_col,
+      paste(n_data[zero_neg_rows], collapse = ", "),
+      paste(zero_neg_rows, collapse = ", ")
+    ), call. = FALSE)
+  }
+
+  if (chart_type %in% PROPORTION_CHARTS) {
+    if (!y_col %in% names(data)) {
+      return(invisible(NULL))
+    }
+    y_data <- data[[y_col]]
+    if (!is.numeric(y_data)) {
+      return(invisible(NULL))
+    }
+
+    both_present <- !is.na(y_data) & !is.na(n_data)
+    violation_rows <- which(both_present & y_data > n_data)
+    if (length(violation_rows) > 0) {
+      stop(sprintf(
+        "Proportion chart \"%s\" requires y <= n. Violation at row(s): %s (y = %s, n = %s)",
+        chart_type,
+        paste(violation_rows, collapse = ", "),
+        paste(y_data[violation_rows], collapse = ", "),
+        paste(n_data[violation_rows], collapse = ", ")
+      ), call. = FALSE)
+    }
+  }
+
+  invisible(NULL)
+}
+
+# ============================================================================
 # COMMENT DATA EXTRACTION
 # ============================================================================
 

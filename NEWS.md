@@ -20,6 +20,28 @@
   ```
   (#203)
 
+* **`bfh_qic()` validerer nu indholdet af denominator-kolonnen `n` for
+  ratio-charts (`p`, `pp`, `u`, `up`).** Tidligere blev kun kolonnenavnet
+  syntakstjekket; rækker med `n = 0`, `n < 0`, `n = Inf` eller `y > n`
+  (P-charts) gled igennem og producerede stille misvisende rate-plots
+  (NaN/Inf-værdier, proportioner > 1). Nu rejses en hård fejl med
+  rækkenumre, så brugeren kan inspicere kildedataene.
+  **Kontrakt:**
+  - Ratio-charts (`p`, `pp`, `u`, `up`) kræver `n` ikke-NULL.
+  - `n` skal være numerisk og endelig (ingen `Inf`/`-Inf`).
+  - Alle ikke-`NA` værdier af `n` skal være `> 0`.
+  - For proportion-charts (`p`, `pp`): hver række skal opfylde `y <= n`.
+  - `NA` i enkelt-rækker af `n` er tilladt (qicharts2 dropper dem).
+  - Andre chart-typer (`run`, `i`, `mr`, `c`, `g`, `t`, `xbar`, `s`)
+    valideres ikke.
+
+  **Migration:** Pre-filtrér data inden `bfh_qic()`:
+  ```r
+  data_clean <- data[!is.na(data$denominator) & data$denominator > 0, ]
+  bfh_qic(data_clean, ...)
+  ```
+  (#205)
+
 * **`bfh_generate_analysis()` kræver nu eksplicit `use_ai = TRUE` for
   AI-analyse.** Defaulten er ændret fra `NULL` (auto-detektér BFHllm) til
   `FALSE` (brug altid standardtekster). I healthcare-kontekst er implicit
