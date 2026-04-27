@@ -306,8 +306,8 @@ phase_config <- function(
 #' @param ... Additional arguments (ignored)
 #'
 #' @return Invisibly returns x
-#' @export
-#' @method print phase_config
+#' @keywords internal
+#' @noRd
 print.phase_config <- function(x, ...) {
   cat("Phase Configuration:\n")
   cat("  Part Positions:", if (is.null(x$part_positions)) "NULL" else paste(x$part_positions, collapse = ", "), "\n")

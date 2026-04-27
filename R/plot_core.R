@@ -186,7 +186,7 @@ bfh_spc_plot <- function(qic_data,
   }
 
   # Target line (conditionally suppressed) ----
-  if (!suppress_targetline) {
+  if (!suppress_targetline && !is.null(qic_data$target) && any(!is.na(qic_data$target))) {
     plot_layers <- c(plot_layers, list(
       ggplot2::geom_line(
         ggplot2::aes(y = target, x = x),
