@@ -21,7 +21,9 @@
       suppressWarnings(Sys.setlocale("LC_ALL", loc)),
       error = function(e) ""
     )
-    if (nzchar(res)) return(invisible(res))
+    if (nzchar(res)) {
+      return(invisible(res))
+    }
   }
   invisible(NULL)
 }
@@ -33,9 +35,11 @@ Sys.setenv(TZ = "Europe/Copenhagen")
 # RNGkind: eksplicit pinning så set.seed() giver samme sekvenser på tværs
 # af R-versioner. Default ændrede sig mellem R 3.6 og R 4.0.
 suppressWarnings(
-  RNGkind(kind = "Mersenne-Twister",
-          normal.kind = "Inversion",
-          sample.kind = "Rejection")
+  RNGkind(
+    kind = "Mersenne-Twister",
+    normal.kind = "Inversion",
+    sample.kind = "Rejection"
+  )
 )
 
 # Decimal separator: "." for konsistens (nogle tests kontrollerer print-output)
@@ -43,3 +47,30 @@ options(OutDec = ".")
 
 # Collation: "C" sikrer stabil sort-rækkefølge på tværs af miljøer
 Sys.setlocale("LC_COLLATE", "C")
+
+# Registrer proprietære fonts som aliaser i PostScript- og PDF-font-databaser.
+# BFHtheme bruger Mari-fonts der eksisterer som screen-fonts men ikke er
+# registreret i R's interne font-databaser. Manglende registrering giver
+# ~1600 harmlose "font family '...' not found in PostScript font database"
+# warnings per full test-kørsel (fra grid::C_stringMetric font-metric-lookup).
+# Mapping til Helvetica giver korrekte metrics under SVG/PDF-rendering.
+local({
+  ps_fonts <- grDevices::postscriptFonts()
+  pdf_fonts <- grDevices::pdfFonts()
+  helv_ps <- ps_fonts[["Helvetica"]]
+  helv_pdf <- pdf_fonts[["Helvetica"]]
+  for (fname in c("Mari", "Arial")) {
+    if (!fname %in% names(ps_fonts)) {
+      tryCatch(
+        do.call(grDevices::postscriptFonts, setNames(list(helv_ps), fname)),
+        error = function(e) NULL
+      )
+    }
+    if (!fname %in% names(pdf_fonts)) {
+      tryCatch(
+        do.call(grDevices::pdfFonts, setNames(list(helv_pdf), fname)),
+        error = function(e) NULL
+      )
+    }
+  }
+})
