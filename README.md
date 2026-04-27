@@ -68,7 +68,7 @@ data <- data.frame(
 )
 
 # Example 1: Simple run chart
-create_spc_chart(
+bfh_qic(
   data = data,
   x = month,
   y = infections,
@@ -78,7 +78,7 @@ create_spc_chart(
 )
 
 # Example 2: P-chart with target line
-create_spc_chart(
+bfh_qic(
   data = data,
   x = month,
   y = infections,
@@ -91,7 +91,7 @@ create_spc_chart(
 )
 
 # Example 3: I-chart with intervention (phase split)
-create_spc_chart(
+bfh_qic(
   data = data,
   x = month,
   y = infections,
@@ -144,7 +144,7 @@ BFHcharts integrates with the **BFHtheme** package for consistent hospital brand
 library(BFHtheme)
 
 # Example 1: Use default BFHtheme
-plot <- create_spc_chart(
+plot <- bfh_qic(
   data = data,
   x = month,
   y = infections,
@@ -157,7 +157,7 @@ plot <- create_spc_chart(
 plot <- plot |> BFHtheme::add_bfh_logo()
 
 # Example 3: Apply alternative BFHtheme variants
-plot <- create_spc_chart(
+plot <- bfh_qic(
   data = data,
   x = month,
   y = infections,
@@ -167,7 +167,7 @@ plot <- create_spc_chart(
 ) + BFHtheme::theme_bfh_dark()
 
 # Example 4: Use BFHtheme color palettes
-plot <- create_spc_chart(
+plot <- bfh_qic(
   data = data,
   x = month,
   y = infections,
@@ -233,7 +233,7 @@ See `TRANSLATORS.md` for instructions on adding a new language.
 
 ## Documentation
 
-- Roxygen reference topics, e.g. `?create_spc_chart` or `help(package = "BFHcharts")`
+- Roxygen reference topics, e.g. `?bfh_qic` or `help(package = "BFHcharts")`
 - Architecture notes in [`docs/`](docs/DOCUMENTATION_OVERVIEW.md)
 - Vignettes are planned; links will be added once the articles ship
 

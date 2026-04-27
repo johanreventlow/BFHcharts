@@ -36,7 +36,7 @@
 ```
 BFHcharts/
 ├── R/
-│   ├── create_spc_chart.R     # Main chart function
+│   ├── create_spc_chart.R     # bfh_qic() — main public API
 │   ├── spc_*.R                # Chart type implementations
 │   ├── anhoej_*.R             # Anhøj rules
 │   ├── utils_*.R              # Utilities
@@ -80,9 +80,9 @@ Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `
 ### Chart Generation Pattern
 
 ```r
-create_spc_chart <- function(data, x, y, chart_type = NULL,
-                             notes_column = NULL, target = NULL,
-                             freeze_period = NULL, ...) {
+bfh_qic <- function(data, x, y, chart_type = NULL,
+                    notes_column = NULL, target = NULL,
+                    freeze_period = NULL, ...) {
   # 1. Input validation
   validate_chart_inputs(data, x, y)
 
@@ -185,7 +185,7 @@ Kræver:
 **Consistent Interface:**
 
 ```r
-create_spc_chart(
+bfh_qic(
   data,              # Data frame
   x,                 # X-axis variable name
   y,                 # Y-axis variable name
@@ -201,7 +201,7 @@ create_spc_chart(
 
 ```r
 # Charts returnerer ggplot objects som kan modificeres
-p <- create_spc_chart(data, "date", "value", "p")
+p <- bfh_qic(data, "date", "value", "p")
 
 # Add custom layers
 p <- p +
@@ -218,7 +218,7 @@ p <- p +
 
 ```r
 # Charts skal bruge BFHtheme som default
-create_spc_chart <- function(..., theme = BFHtheme::theme_bfh()) {
+bfh_qic <- function(..., theme = BFHtheme::theme_bfh()) {
   p <- base_plot + theme
 
   # Tilføj hospital branding hvis ønsket
@@ -316,7 +316,7 @@ LCL <- max(0, u_bar - 3 * sqrt(u_bar / n))
 ```r
 test_that("p-chart calculates correct control limits", {
   data <- data.frame(x = 1:10, y = c(0.1, 0.15, 0.12, ...))
-  chart <- create_spc_chart(data, "x", "y", chart_type = "p")
+  chart <- bfh_qic(data, "x", "y", chart_type = "p")
 
   # Verify UCL/LCL calculations
   expect_equal(chart$ucl, expected_ucl, tolerance = 0.001)
