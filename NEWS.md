@@ -1,4 +1,4 @@
-# BFHcharts (development)
+# BFHcharts 0.8.6
 
 ## Breaking changes
 
