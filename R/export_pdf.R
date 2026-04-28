@@ -177,182 +177,21 @@ bfh_export_pdf <- function(x,
                            ignore_system_fonts = TRUE,
                            inject_assets = NULL,
                            batch_session = NULL) {
-  # Input validation
-  if (!inherits(x, "bfh_qic_result")) {
-    stop(
-      "x must be a bfh_qic_result object from bfh_qic().\n",
-      "  Got class: ", paste(class(x), collapse = ", "),
-      call. = FALSE
-    )
-  }
-
-  validate_export_path(output, extension = "pdf", ext_action = "stop")
-
-  if (!is.list(metadata)) {
-    stop("metadata must be a list", call. = FALSE)
-  }
-
-  # ============================================================================
-  # METADATA VALIDATION - Type checking and length limits
-  # ============================================================================
-  known_fields <- c(
-    "hospital", "department", "analysis", "details", "author",
-    "date", "data_definition", "target", "footer_content"
+  # ---- 1. Input-validering (class, metadata, dpi, font_path, session) --------
+  validate_bfh_export_pdf_inputs(
+    x, output, metadata, dpi, font_path, inject_assets, batch_session, template_path
   )
 
-  # Warn about unknown metadata fields (may indicate typos or misuse)
-  unknown_fields <- setdiff(names(metadata), known_fields)
-  if (length(unknown_fields) > 0) {
-    warning(
-      "Unknown metadata fields will be ignored: ",
-      paste(unknown_fields, collapse = ", "),
-      call. = FALSE
-    )
-  }
+  # ---- 2. Metadata (auto-analysis + auto-details) ----------------------------
+  metadata <- prepare_export_metadata(
+    x, metadata, auto_analysis, use_ai, analysis_min_chars, analysis_max_chars
+  )
 
-  # Validate each known field's type and length
-  for (field in names(metadata)) {
-    if (field %in% known_fields) {
-      value <- metadata[[field]]
+  # ---- 3. Security + fil-validering af custom template -----------------------
+  # Alle security-tjek SKAL ske INDEN filsystem-operationer eller Quarto-kald
+  template_path <- validate_template_path(template_path)
 
-      # Type validation: Must be character or NULL (with special cases)
-      if (!is.null(value) && !is.character(value)) {
-        # Special case: date can be Date object
-        if (field == "date" && inherits(value, "Date")) {
-          next # Allow Date objects for date field
-        }
-        # Special case: target can be numeric
-        if (field == "target" && is.numeric(value)) {
-          next # Allow numeric values for target field
-        }
-        stop(
-          "metadata$", field, " must be a character string",
-          if (field == "date") " (or Date object)" else "",
-          if (field == "target") " (or numeric)" else "",
-          "\n  Got: ", class(value)[1],
-          call. = FALSE
-        )
-      }
-
-      # Length validation: Max 10,000 characters to prevent DoS
-      if (is.character(value) && nchar(value) > 10000) {
-        stop(
-          "metadata$", field, " exceeds maximum length of 10,000 characters\n",
-          "  Current length: ", nchar(value),
-          call. = FALSE
-        )
-      }
-    }
-  }
-
-  # ============================================================================
-  # VALIDATE OPTIONAL PARAMETERS - font_path, inject_assets
-  # ============================================================================
-  if (!is.null(inject_assets) && !is.function(inject_assets)) {
-    stop("inject_assets must be a function or NULL", call. = FALSE)
-  }
-
-  if (!is.null(font_path)) {
-    if (!is.character(font_path) || length(font_path) != 1) {
-      stop("font_path must be a single character string or NULL", call. = FALSE)
-    }
-  }
-
-  if (!is.numeric(dpi) || length(dpi) != 1 || is.na(dpi) || dpi <= 0) {
-    stop("dpi must be a single positive numeric value", call. = FALSE)
-  }
-
-  # ============================================================================
-  # BATCH SESSION VALIDATION
-  # ============================================================================
-  if (!is.null(batch_session)) {
-    if (!inherits(batch_session, "bfh_export_session")) {
-      stop(
-        "batch_session must be a bfh_export_session object from bfh_create_export_session()",
-        call. = FALSE
-      )
-    }
-    if (batch_session$closed()) {
-      stop("batch_session is already closed", call. = FALSE)
-    }
-    if (!is.null(template_path)) {
-      stop(
-        "batch_session cannot be combined with template_path.\n",
-        "  Custom templates are not supported in batch sessions.",
-        call. = FALSE
-      )
-    }
-    if (!is.null(inject_assets)) {
-      stop(
-        "batch_session cannot be combined with inject_assets.\n",
-        "  Pass inject_assets to bfh_create_export_session() instead.",
-        call. = FALSE
-      )
-    }
-  }
-
-  # ============================================================================
-  # AUTO-ANALYSIS - Generate analysis text if requested
-  # ============================================================================
-  if (isTRUE(auto_analysis) && is.null(metadata$analysis)) {
-    metadata$analysis <- bfh_generate_analysis(
-      x = x,
-      metadata = metadata,
-      use_ai = use_ai,
-      min_chars = analysis_min_chars,
-      max_chars = analysis_max_chars
-    )
-  }
-
-  # ============================================================================
-  # AUTO-DETAILS - Generate details text if not provided
-  # ============================================================================
-  if (is.null(metadata$details)) {
-    metadata$details <- bfh_generate_details(x)
-  }
-
-  # ============================================================================
-  # SECURITY VALIDATION - Custom template path
-  # All security checks MUST happen BEFORE file system operations or Quarto calls
-  # ============================================================================
-  if (!is.null(template_path)) {
-    if (!is.character(template_path) || length(template_path) != 1) {
-      stop("template_path must be a single character string", call. = FALSE)
-    }
-    validate_export_path(template_path)
-  }
-
-  # ============================================================================
-  # FILE VALIDATION - After security checks pass
-  # ============================================================================
-  if (!is.null(template_path)) {
-    if (!file.exists(template_path)) {
-      stop(
-        "Custom template file not found: ", basename(template_path), "\n",
-        "  Ensure the file exists and the path is correct.",
-        call. = FALSE
-      )
-    }
-    template_path <- validate_export_path(template_path, normalize = TRUE)
-    if (dir.exists(template_path)) {
-      stop(
-        "template_path must be a file, not a directory: ", basename(template_path),
-        call. = FALSE
-      )
-    }
-    if (!grepl("\\.typ$", template_path, ignore.case = TRUE)) {
-      stop(
-        "template_path must be a .typ file: ", basename(template_path), "\n",
-        "  Typst templates require the .typ extension.",
-        call. = FALSE
-      )
-    }
-  }
-
-  # ============================================================================
-  # SYSTEM CHECKS - After all security and file validation
-  # ============================================================================
-  # Check Quarto availability and version
+  # ---- 4. Quarto-tjek --------------------------------------------------------
   if (!quarto_available()) {
     stop(
       "Quarto CLI not found or version too old. PDF export requires Quarto >= 1.4.0.\n",
@@ -363,140 +202,48 @@ bfh_export_pdf <- function(x,
     )
   }
 
-  # Create or reuse temporary directory for intermediate files
+  # ---- 5. Temp-workspace (unikke filnavne per eksport) -----------------------
+  workspace <- prepare_temp_workspace(batch_session)
+  temp_dir <- workspace$temp_dir
+  chart_svg <- workspace$chart_svg
+  typst_file <- workspace$typst_file
+
+  # Registrer cleanup i orchestrator-scope (on.exit ser lokale variable)
   if (!is.null(batch_session)) {
-    # Batch mode: reuse session tmpdir - template already staged there
-    temp_dir <- batch_session$tmpdir
-    # Register per-export file cleanup only (do NOT unlink session tmpdir)
+    # Batch-mode: ryd kun per-eksport filer op (IKKE temp_dir)
     on.exit(
       {
-        unlink(file.path(temp_dir, "chart.svg"))
-        unlink(file.path(temp_dir, "document.typ"))
+        unlink(chart_svg)
+        unlink(typst_file)
       },
       add = TRUE
     )
   } else {
-    temp_dir <- tempfile("bfh_pdf_")
-
-    # Register cleanup BEFORE dir.create() to ensure cleanup on any error
+    # Single-call mode: ryd hele temp_dir op
+    # Registreres efter dir.create() — men prepare_temp_workspace() har
+    # allerede lavet mappen, så vi registrerer her for at fange fejl i trin 6+
     on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
-
-    dir.create(temp_dir, recursive = TRUE)
-
-    # Security: Set restrictive permissions (owner-only: rwx------)
-    # Prevents other users from reading sensitive healthcare data in temp files
-    Sys.chmod(temp_dir, mode = "0700", use_umask = FALSE)
-
-    # Security: Verify directory ownership on Unix systems
-    # Prevents TOCTOU attacks where attacker replaces our temp dir
-    if (.Platform$OS.type == "unix") {
-      dir_info <- file.info(temp_dir)
-      current_uid <- suppressWarnings(as.integer(Sys.getenv("UID")))
-      # Only verify if UID is available and valid (not NA or 0)
-      if (length(current_uid) > 0 && !is.na(current_uid) && current_uid > 0) {
-        if (dir_info$uid != current_uid) {
-          unlink(temp_dir, recursive = TRUE)
-          stop(
-            "Temp directory ownership mismatch (possible security issue)",
-            call. = FALSE
-          )
-        }
-      }
-    }
   }
 
-  # Extract chart title from plot (will be used in Typst template)
-  chart_title <- x$config$chart_title
-  if (is.null(chart_title)) chart_title <- ""
+  # ---- 6. Plot-forberedelse (title strip + label recalc + margin) ------------
+  plot_for_export <- prepare_export_plot(x)
 
-  # Create plot without title for PDF (title goes in Typst template)
-  plot_no_title <- x$plot + ggplot2::labs(title = NULL, subtitle = NULL)
+  # ---- 7. SVG-eksport --------------------------------------------------------
+  export_chart_svg(plot_for_export, chart_svg, dpi)
 
-  # Update the bfh_qic_result object with the title-stripped plot
-  # This is needed for recalculate_labels_for_export()
-  x_for_export <- x
-  x_for_export$plot <- plot_no_title
-
-  # Recalculate label positions for PDF export
-  # - target dimensions (PDF_CHART): used for label POSITIONING (visible chart area)
-  # - font sizing uses fixed PDF_LABEL_SIZE constant (calibrated for 250x140mm)
-  plot_for_export <- recalculate_labels_for_export(
-    x = x_for_export,
-    target_width_mm = PDF_CHART_WIDTH_MM,
-    target_height_mm = PDF_CHART_HEIGHT_MM,
-    label_size = PDF_LABEL_SIZE
-  )
-
-  # Apply PDF-specific theme adjustments (zero margins)
-  plot_for_export <- prepare_plot_for_export(plot_for_export, margin_mm = 0)
-
-  # Export chart to temporary SVG (vector format for sharp rendering in PDF)
-  # Note: ggsave uses PDF_IMAGE dimensions (250x140mm) for the actual image size
-  # while labels were calculated for PDF_CHART dimensions (202x140mm) which
-  # represents the visible area in the Typst template
-  chart_svg <- file.path(temp_dir, "chart.svg")
-  tryCatch(
-    ggplot2::ggsave(
-      filename = chart_svg,
-      plot = plot_for_export,
-      width = PDF_IMAGE_WIDTH_MM / 25.4, # 250mm - original working size
-      height = PDF_IMAGE_HEIGHT_MM / 25.4, # 140mm
-      units = "in",
-      dpi = dpi,
-      device = "svg"
-    ),
-    error = function(e) {
-      stop(
-        "Failed to save chart image\n",
-        "  Error: ", conditionMessage(e),
-        call. = FALSE
-      )
-    }
-  )
-
-  # Extract SPC statistics (including outliers and run chart detection)
+  # ---- 8. SPC-statistik -------------------------------------------------------
   spc_stats <- bfh_extract_spc_stats(x)
 
-  # Merge user metadata with defaults
-  metadata_full <- bfh_merge_metadata(metadata, chart_title)
-
-  # Resolve font_path: per-export arg > session default > NULL
-  effective_font_path <- font_path %||% batch_session$font_path
-
-  # Create Typst document
-  typst_file <- file.path(temp_dir, "document.typ")
-  bfh_create_typst_document(
-    chart_image = chart_svg,
-    output = typst_file,
-    metadata = metadata_full,
-    spc_stats = spc_stats,
-    template = template,
-    template_path = template_path,
-    skip_template_copy = !is.null(batch_session)
+  # ---- 9. Typst-dokument + font_path-opløsning --------------------------------
+  effective_font_path <- compose_typst_document(
+    x, chart_svg, typst_file,
+    metadata, spc_stats, template, template_path,
+    batch_session, font_path, inject_assets
   )
 
-  # Inject external assets (fonts, images) if callback provided (single-call mode only)
-  if (is.function(inject_assets)) {
-    inject_assets(file.path(temp_dir, "bfh-template"))
+  # ---- 10. PDF-kompilering via Quarto ----------------------------------------
+  compile_pdf_via_quarto(typst_file, output, effective_font_path, ignore_system_fonts)
 
-    # Auto-detect font path fra injicerede assets hvis ikke eksplicit angivet
-    if (is.null(effective_font_path)) {
-      injected_fonts <- file.path(temp_dir, "bfh-template", "fonts")
-      if (dir.exists(injected_fonts)) {
-        effective_font_path <- injected_fonts
-      }
-    }
-  }
-
-  # Compile to PDF via Quarto (with optional font path)
-  bfh_compile_typst(
-    typst_file,
-    output,
-    font_path = effective_font_path,
-    ignore_system_fonts = ignore_system_fonts
-  )
-
-  # Return input object invisibly for pipe chaining
   invisible(x)
 }
 
