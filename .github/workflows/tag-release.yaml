@@ -1,11 +1,20 @@
 # Auto-tagging workflow for main releases.
-# Triggers efter groenne R-CMD-check runs paa main og opretter
-# det naeste vMAJOR.MINOR.PATCH-tag baseret paa DESCRIPTION + eksisterende tags.
+# Triggers efter groenne R-CMD-check runs paa main og opretter et
+# vMAJOR.MINOR.PATCH-tag der praecist matcher DESCRIPTION's Version-felt.
 #
 # Versioning-strategi (se VERSIONING_POLICY.md):
-# - MAJOR.MINOR laeses fra DESCRIPTION (bumpes manuelt i PR)
-# - PATCH auto-inkrementeres pr. merge til main
-# - Hvis ingen tag matcher nuvaerende MAJOR.MINOR: baseline vMAJOR.MINOR.0
+# - MAJOR.MINOR.PATCH laeses fra DESCRIPTION (bumpes manuelt i PR)
+# - Tag-navn = "v" + Version fra DESCRIPTION
+# - Hvis tag allerede eksisterer paa samme commit: idempotent skip
+# - Hvis tag allerede eksisterer paa anden commit: workflow fejler
+#   (manuel oprydning kraevet -- typisk symptom paa rebase eller
+#   force-push der har efterladt dangling tag-references, eller
+#   manglende DESCRIPTION-bump i seneste PR)
+#
+# Tidligere version auto-inkrementerede PATCH uafhaengigt af DESCRIPTION,
+# hvilket fik tag og DESCRIPTION ud af sync (fx tag v0.10.3 paa commit med
+# Version: 0.10.1 -- pak's version-resolver fejlede saa downstream-installs
+# med "Can't install dependency BFHcharts@v0.10.3 (>= 0.10.3)").
 name: tag-release
 
 on:
@@ -28,38 +37,54 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
-      - name: Compute next tag
-        id: compute
+      - name: Resolve target tag from DESCRIPTION
+        id: resolve
+        env:
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
+
           VERSION=$(grep '^Version:' DESCRIPTION | awk '{print $2}')
           if [ -z "$VERSION" ]; then
-            echo "FEJL: Kunne ikke laese Version fra DESCRIPTION" >&2
+            echo "::error::Kunne ikke laese Version fra DESCRIPTION"
             exit 1
           fi
-          MAJOR=$(echo "$VERSION" | cut -d. -f1)
-          MINOR=$(echo "$VERSION" | cut -d. -f2)
-          git fetch --tags origin
-          HIGHEST=$(git tag -l "v${MAJOR}.${MINOR}.*" \
-                    | grep -E "^v${MAJOR}\.${MINOR}\.[0-9]+$" \
-                    | sed "s/^v${MAJOR}\.${MINOR}\.//" \
-                    | sort -n | tail -1 || true)
-          if [ -z "$HIGHEST" ]; then
-            NEXT_TAG="v${MAJOR}.${MINOR}.0"
-          else
-            NEXT_TAG="v${MAJOR}.${MINOR}.$((HIGHEST + 1))"
+
+          # Validate semver-format (X.Y.Z med valgfri pre-release/build-suffix)
+          if ! echo "$VERSION" | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?(\+[A-Za-z0-9.-]+)?$"; then
+            echo "::error::DESCRIPTION Version='$VERSION' er ikke gyldig semver"
+            exit 1
           fi
-          echo "Computed next tag: $NEXT_TAG (from DESCRIPTION $VERSION)"
-          echo "tag=${NEXT_TAG}" >> "$GITHUB_OUTPUT"
+
+          TARGET_TAG="v${VERSION}"
+          echo "Target tag: $TARGET_TAG (from DESCRIPTION Version: $VERSION)"
+          echo "tag=${TARGET_TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+          # Tjek om tag allerede eksisterer paa origin
+          git fetch --tags origin
+          if git rev-parse --verify --quiet "refs/tags/${TARGET_TAG}" >/dev/null; then
+            EXISTING_SHA=$(git rev-list -n 1 "$TARGET_TAG")
+            if [ "$EXISTING_SHA" = "$COMMIT_SHA" ]; then
+              echo "Tag $TARGET_TAG findes allerede paa $COMMIT_SHA -- skipper (idempotent)"
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error::Tag $TARGET_TAG eksisterer allerede paa $EXISTING_SHA, men workflow blev udloest paa $COMMIT_SHA. Bump DESCRIPTION Version til naeste utagget vaerdi i en ny PR, eller ryd op i dangling tag manuelt."
+              exit 1
+            fi
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create and push annotated tag
+        if: steps.resolve.outputs.skip == 'false'
         env:
-          NEXT_TAG: ${{ steps.compute.outputs.tag }}
+          TARGET_TAG: ${{ steps.resolve.outputs.tag }}
           COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$NEXT_TAG" "$COMMIT_SHA" -m "Release $NEXT_TAG"
-          git push origin "$NEXT_TAG"
-          echo "Pushed tag $NEXT_TAG to $COMMIT_SHA"
+          git tag -a "$TARGET_TAG" "$COMMIT_SHA" -m "Release $TARGET_TAG"
+          git push origin "$TARGET_TAG"
+          echo "Pushed tag $TARGET_TAG to $COMMIT_SHA"
