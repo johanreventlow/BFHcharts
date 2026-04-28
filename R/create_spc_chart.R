@@ -615,12 +615,7 @@ bfh_qic <- function(data,
 
   # ---- Summary + config ----
   summary_result <- format_qic_summary(qic_data, y_axis_unit = y_axis_unit)
-  label_size <- if (!is.null(vp$width_inches) && !is.null(vp$height_inches)) {
-    compute_label_size_for_viewport(vp$width_inches, vp$height_inches)
-  } else {
-    PDF_LABEL_SIZE
-  }
-  config <- list(
+  config <- build_bfh_qic_config(
     chart_type = chart_type,
     chart_title = chart_title,
     y_axis_unit = y_axis_unit,
@@ -633,14 +628,8 @@ bfh_qic <- function(data,
     cl = cl,
     multiply = multiply,
     agg.fun = agg.fun,
-    label_config = list(
-      centerline_value = cl,
-      has_frys_column = !is.null(freeze),
-      has_skift_column = !is.null(part),
-      original_viewport_width = vp$width_inches,
-      original_viewport_height = vp$height_inches,
-      original_label_size = label_size
-    )
+    viewport_width_inches = vp$width_inches,
+    viewport_height_inches = vp$height_inches
   )
 
   # ---- Return-routing ----

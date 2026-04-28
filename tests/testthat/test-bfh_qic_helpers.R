@@ -452,9 +452,8 @@ test_that("compute_viewport_base_size beregner responsiv base_size naar ikke ang
   )
   # base_size bør vaere beregnet via calculate_base_size() — og afvige fra default 14
   expect_false(is.null(result$base_size))
-  # Resultatet er calculate_base_size(10, 6) — kontrollér at det adskiller sig fra det
-  # user-angivne default (14) og er numerisk
-  expect_false(identical(result$base_size, 14))
+  # calculate_base_size(10, 6) er deterministisk — forvent eksakt vaerdi
+  expect_equal(result$base_size, calculate_base_size(10, 6))
   expect_true(is.numeric(result$base_size))
 })
 
@@ -488,4 +487,78 @@ test_that("compute_viewport_base_size bevarer ikke-tomme akse-labels", {
   )
   expect_equal(result$xlab, "Maaned")
   expect_equal(result$ylab, "Antal")
+})
+
+# ============================================================================
+# build_bfh_qic_config()
+# ============================================================================
+
+call_config <- function(chart_type = "i",
+                        chart_title = NULL,
+                        y_axis_unit = "count",
+                        language = "da",
+                        target_value = NULL,
+                        target_text = NULL,
+                        part = NULL,
+                        freeze = NULL,
+                        exclude = NULL,
+                        cl = NULL,
+                        multiply = 1,
+                        agg.fun = NULL,
+                        viewport_width_inches = NULL,
+                        viewport_height_inches = NULL) {
+  build_bfh_qic_config(
+    chart_type = chart_type,
+    chart_title = chart_title,
+    y_axis_unit = y_axis_unit,
+    language = language,
+    target_value = target_value,
+    target_text = target_text,
+    part = part,
+    freeze = freeze,
+    exclude = exclude,
+    cl = cl,
+    multiply = multiply,
+    agg.fun = agg.fun,
+    viewport_width_inches = viewport_width_inches,
+    viewport_height_inches = viewport_height_inches
+  )
+}
+
+test_that("build_bfh_qic_config returnerer liste med korrekte topniveaufelter", {
+  result <- call_config()
+  expect_type(result, "list")
+  expect_true("chart_type" %in% names(result))
+  expect_true("y_axis_unit" %in% names(result))
+  expect_true("label_config" %in% names(result))
+})
+
+test_that("build_bfh_qic_config label_config har korrekte underfelter", {
+  result <- call_config()
+  lc <- result$label_config
+  expect_true("centerline_value" %in% names(lc))
+  expect_true("has_frys_column" %in% names(lc))
+  expect_true("has_skift_column" %in% names(lc))
+  expect_true("original_label_size" %in% names(lc))
+})
+
+test_that("build_bfh_qic_config has_frys_column er TRUE naar freeze angivet", {
+  result <- call_config(freeze = 6L)
+  expect_true(result$label_config$has_frys_column)
+})
+
+test_that("build_bfh_qic_config has_skift_column er TRUE naar part angivet", {
+  result <- call_config(part = 5L)
+  expect_true(result$label_config$has_skift_column)
+})
+
+test_that("build_bfh_qic_config bruger PDF_LABEL_SIZE naar viewport er NULL", {
+  result <- call_config(viewport_width_inches = NULL, viewport_height_inches = NULL)
+  expect_equal(result$label_config$original_label_size, BFHcharts:::PDF_LABEL_SIZE)
+})
+
+test_that("build_bfh_qic_config beregner label_size naar viewport kendes", {
+  result <- call_config(viewport_width_inches = 10, viewport_height_inches = 6)
+  expected <- compute_label_size_for_viewport(10, 6)
+  expect_equal(result$label_config$original_label_size, expected)
 })

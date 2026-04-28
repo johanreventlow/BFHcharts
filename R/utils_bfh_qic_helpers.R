@@ -555,3 +555,73 @@ apply_spc_labels_to_export <- function(plot,
     }
   )
 }
+
+# ============================================================================
+# BYGG KONFIGURATIONSLISTE
+# ============================================================================
+
+#' Byg bfh_qic() konfigurationsliste
+#'
+#' Samler chart-parametre og label-konfiguration til et enkelt config-objekt
+#' der returneres som del af bfh_qic()-output.
+#'
+#' @param chart_type Charttype-streng
+#' @param chart_title Plottitel eller NULL
+#' @param y_axis_unit Y-akse enhed
+#' @param language Sprogkode
+#' @param target_value Maalvaerdi eller NULL
+#' @param target_text Maaltekst eller NULL
+#' @param part Fase-positioner eller NULL
+#' @param freeze Freeze-position eller NULL
+#' @param exclude Ekskluderingspositioner eller NULL
+#' @param cl Brugerdefineret centerlinje eller NULL
+#' @param multiply Multiplikator
+#' @param agg.fun Normaliseret aggregeringsfunktionsstreng eller NULL
+#' @param viewport_width_inches Plotbredde i inches eller NULL
+#' @param viewport_height_inches Plothøjde i inches eller NULL
+#' @return Liste med chart-konfiguration inkl. label_config
+#' @keywords internal
+#' @noRd
+build_bfh_qic_config <- function(chart_type,
+                                 chart_title,
+                                 y_axis_unit,
+                                 language,
+                                 target_value,
+                                 target_text,
+                                 part,
+                                 freeze,
+                                 exclude,
+                                 cl,
+                                 multiply,
+                                 agg.fun,
+                                 viewport_width_inches,
+                                 viewport_height_inches) {
+  label_size <- if (!is.null(viewport_width_inches) && !is.null(viewport_height_inches)) {
+    compute_label_size_for_viewport(viewport_width_inches, viewport_height_inches)
+  } else {
+    PDF_LABEL_SIZE
+  }
+
+  list(
+    chart_type = chart_type,
+    chart_title = chart_title,
+    y_axis_unit = y_axis_unit,
+    language = language,
+    target_value = target_value,
+    target_text = target_text,
+    part = part,
+    freeze = freeze,
+    exclude = exclude,
+    cl = cl,
+    multiply = multiply,
+    agg.fun = agg.fun,
+    label_config = list(
+      centerline_value = cl,
+      has_frys_column = !is.null(freeze),
+      has_skift_column = !is.null(part),
+      original_viewport_width = viewport_width_inches,
+      original_viewport_height = viewport_height_inches,
+      original_label_size = label_size
+    )
+  )
+}
