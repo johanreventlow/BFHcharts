@@ -70,20 +70,25 @@ bfh_create_export_session <- function(font_path = NULL, inject_assets = NULL) {
 
   closed <- FALSE
 
-  session <- list(
-    tmpdir = tmpdir,
-    template_ready = TRUE,
-    font_path = font_path,
-    closed = function() closed,
-    close = function() {
-      if (!closed) {
-        unlink(tmpdir, recursive = TRUE)
-        closed <<- TRUE
-      }
-      invisible(NULL)
+  # Brug environment (ikke list) for at reg.finalizer() virker —
+  # R tillader kun finalizers på environments og external pointers.
+  session <- new.env(parent = emptyenv())
+  session$tmpdir <- tmpdir
+  session$template_ready <- TRUE
+  session$font_path <- font_path
+  session$closed <- function() closed
+  session$close <- function() {
+    if (!closed) {
+      unlink(tmpdir, recursive = TRUE)
+      closed <<- TRUE
     }
-  )
+    invisible(NULL)
+  }
   class(session) <- "bfh_export_session"
+
+  # Session-finalizer: garanterer cleanup ved GC selv uden eksplicit close()
+  reg.finalizer(session, function(s) s$close(), onexit = TRUE)
+
   session
 }
 

@@ -325,3 +325,109 @@ test_that("batch export produces same page count as single-call export", {
   pages_batch <- pdftools::pdf_length(out_batch)
   expect_equal(pages_single, pages_batch)
 })
+
+# ============================================================================
+# HARDENING TESTS - race-safety (Issue #213)
+# ============================================================================
+
+test_that("bfh_create_export_session returns environment (not list)", {
+  skip_if(!dir.exists(
+    system.file("templates/typst/bfh-template", package = "BFHcharts")
+  ), "template not installed")
+
+  session <- bfh_create_export_session()
+  on.exit(close(session))
+
+  # Environment, ikke list — nødvendigt for reg.finalizer()
+  expect_true(is.environment(session))
+  expect_s3_class(session, "bfh_export_session")
+})
+
+test_that("bfh_create_export_session accesses fields via $ som forventet", {
+  skip_if(!dir.exists(
+    system.file("templates/typst/bfh-template", package = "BFHcharts")
+  ), "template not installed")
+
+  session <- bfh_create_export_session()
+  on.exit(close(session))
+
+  # Alle felter tilgængelige via $ (som med liste)
+  expect_true(is.character(session$tmpdir))
+  expect_true(session$template_ready)
+  expect_false(session$closed())
+})
+
+test_that("prepare_temp_workspace returnerer unikke SVG-filnavne per eksport", {
+  skip_if(!dir.exists(
+    system.file("templates/typst/bfh-template", package = "BFHcharts")
+  ), "template not installed")
+
+  session <- bfh_create_export_session()
+  on.exit(close(session))
+
+  # To på hinanden følgende workspace-kald skal give UNIKKE filnavne
+  ws1 <- BFHcharts:::prepare_temp_workspace(session)
+  ws2 <- BFHcharts:::prepare_temp_workspace(session)
+
+  expect_false(ws1$chart_svg == ws2$chart_svg)
+  expect_false(ws1$typst_file == ws2$typst_file)
+
+  # Begge SVG-filnavne skal matche tempfile-mønsteret
+  expect_match(basename(ws1$chart_svg), "^chart-")
+  expect_match(basename(ws2$chart_svg), "^chart-")
+
+  # Begge .typ-filnavne skal matche tempfile-mønsteret
+  expect_match(basename(ws1$typst_file), "^document-")
+  expect_match(basename(ws2$typst_file), "^document-")
+})
+
+test_that("prepare_temp_workspace i single-call mode giver unikke navne", {
+  # Kald uden batch_session: ny temp-mappe per kald og unikke filnavne
+  ws1 <- BFHcharts:::prepare_temp_workspace(NULL)
+  ws2 <- BFHcharts:::prepare_temp_workspace(NULL)
+
+  on.exit({
+    unlink(ws1$temp_dir, recursive = TRUE)
+    unlink(ws2$temp_dir, recursive = TRUE)
+  })
+
+  # Temp-mapper er unikke
+  expect_false(ws1$temp_dir == ws2$temp_dir)
+
+  # Filnavne er unikke
+  expect_false(ws1$chart_svg == ws2$chart_svg)
+  expect_false(ws1$typst_file == ws2$typst_file)
+})
+
+test_that("on.exit cleanup rydder per-eksport filer op ved fejl (crash recovery)", {
+  skip_if(!dir.exists(
+    system.file("templates/typst/bfh-template", package = "BFHcharts")
+  ), "template not installed")
+
+  session <- bfh_create_export_session()
+  on.exit(close(session))
+
+  # Simuler et mislykkedes export ved at sende et ugyldigt plot-objekt
+  # bfh_export_pdf() bør fejle og on.exit bør køre cleanup
+  bad_result <- list(
+    plot = NULL,
+    config = list(chart_title = "Test"),
+    summary = NULL
+  )
+  class(bad_result) <- "bfh_qic_result"
+
+  # Tæl filer i session-tmpdir inden forsøget
+  files_before <- length(list.files(session$tmpdir, recursive = TRUE))
+
+  tryCatch(
+    bfh_export_pdf(bad_result, tempfile(fileext = ".pdf"), batch_session = session),
+    error = function(e) NULL
+  )
+
+  # Per-eksport SVG/typ filer skal være ryddet op (ikke ophobet i tmpdir)
+  files_after <- length(list.files(session$tmpdir, recursive = TRUE))
+  expect_lte(files_after, files_before)
+
+  # Template-mappen skal stadig eksistere (ikke slettet som per-eksport fil)
+  expect_true(dir.exists(file.path(session$tmpdir, "bfh-template")))
+})

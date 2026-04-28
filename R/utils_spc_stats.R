@@ -140,14 +140,22 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
 
   stats$outliers_actual <- sum(qd$sigma.signal, na.rm = TRUE)
 
-  # outliers_recent_count daekker kun seneste 6 obs - aeldre outliers vises
-  # visuelt i diagrammet men beskrives ikke som aktuelle i analyseteksten.
+  # outliers_recent_count daekker kun seneste RECENT_OBS_WINDOW obs - aeldre
+  # outliers vises visuelt i diagrammet men beskrives ikke som aktuelle i
+  # analyseteksten. effective_window = min(RECENT_OBS_WINDOW, n_obs) haandterer
+  # korte serier korrekt og eksponeres til i18n-skabeloner.
   n_obs <- nrow(qd)
-  recent_start <- max(1, n_obs - 5)
-  stats$outliers_recent_count <- sum(
-    qd$sigma.signal[recent_start:n_obs],
-    na.rm = TRUE
-  )
+  effective_window <- min(RECENT_OBS_WINDOW, n_obs)
+  stats$effective_window <- effective_window
+  if (effective_window > 0L) {
+    recent_start <- n_obs - effective_window + 1L
+    stats$outliers_recent_count <- sum(
+      qd$sigma.signal[recent_start:n_obs],
+      na.rm = TRUE
+    )
+  } else {
+    stats$outliers_recent_count <- 0L
+  }
 
   stats
 }

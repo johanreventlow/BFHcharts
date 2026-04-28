@@ -81,9 +81,11 @@ validate_export_path <- function(path,
 }
 
 .check_traversal <- function(path) {
-  if (grepl("..", path, fixed = TRUE)) {
+  parts <- strsplit(path, "[/\\\\]")[[1]]
+  if (any(parts == "..")) {
     stop(
-      "path cannot contain '..' (path traversal attempt detected)\n",
+      "path traversal attempt detected:",
+      " '..' is not allowed as a path component\n",
       "  Provided path: ", basename(path),
       call. = FALSE
     )

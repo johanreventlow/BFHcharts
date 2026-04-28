@@ -129,26 +129,95 @@ test_that("format_qic_summary runder korrekt for rate", {
 # VARIABLE KONTROLGRÆNSER (P/U-CHARTS)
 # =============================================================================
 
-test_that("format_qic_summary inkluderer kontrolgrænser ved konstante grænser", {
+test_that("format_qic_summary inkluderer skalare kontrolgrænser ved konstante grænser", {
   qic_data <- fixture_qicharts_summary_data()
-  # Konstante grænser (I-chart)
+  # Konstante grænser (I-chart) — fixture bruger rep(35, n) og rep(65, n)
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
+  # Backward-compat: skalare kolonner til stede
   expect_true("nedre_kontrolgrænse" %in% names(result))
   expect_true("øvre_kontrolgrænse" %in% names(result))
+  # Flag sættes til TRUE
+  expect_true("kontrolgrænser_konstante" %in% names(result))
+  expect_true(all(result$kontrolgrænser_konstante))
+  # Min/max kolonner fraværende ved konstante grænser
+  expect_false("nedre_kontrolgrænse_min" %in% names(result))
+  expect_false("nedre_kontrolgrænse_max" %in% names(result))
+  expect_false("øvre_kontrolgrænse_min" %in% names(result))
+  expect_false("øvre_kontrolgrænse_max" %in% names(result))
 })
 
-test_that("format_qic_summary ekskluderer kontrolgrænser ved variable grænser", {
+test_that("format_qic_summary eksponerer min/max ved variable grænser", {
   qic_data <- fixture_qicharts_summary_data()
-  # Simuler variable grænser (som p/u-charts har)
+  # Simuler variable grænser (som p/u-charts har med varierende nævner)
   qic_data$lcl <- seq(30, 40, length.out = 24)
   qic_data$ucl <- seq(60, 70, length.out = 24)
 
   result <- format_qic_summary(qic_data, y_axis_unit = "percent")
 
-  # Variable grænser skal udelades (misvisende at vise én værdi)
+  # Flag sættes til FALSE
+  expect_true("kontrolgrænser_konstante" %in% names(result))
+  expect_false(any(result$kontrolgrænser_konstante))
+  # Min/max kolonner tilstede
+  expect_true("nedre_kontrolgrænse_min" %in% names(result))
+  expect_true("nedre_kontrolgrænse_max" %in% names(result))
+  expect_true("øvre_kontrolgrænse_min" %in% names(result))
+  expect_true("øvre_kontrolgrænse_max" %in% names(result))
+  # Skalare kolonner fraværende (misvisende at vise én værdi)
   expect_false("nedre_kontrolgrænse" %in% names(result))
   expect_false("øvre_kontrolgrænse" %in% names(result))
+  # Min < max (grænser varierer)
+  expect_lt(result$nedre_kontrolgrænse_min, result$nedre_kontrolgrænse_max)
+  expect_lt(result$øvre_kontrolgrænse_min, result$øvre_kontrolgrænse_max)
+})
+
+test_that("format_qic_summary: variable grænser giver korrekte min/max-værdier", {
+  qic_data <- fixture_qicharts_summary_data()
+  # Sæt præcise grænser for nem verifikation
+  qic_data$lcl <- seq(30, 40, length.out = 24)
+  qic_data$ucl <- seq(60, 70, length.out = 24)
+
+  result <- format_qic_summary(qic_data, y_axis_unit = "percent")
+
+  # Min og max skal svare til de faktiske min/max i data (2 decimaler for percent)
+  expect_equal(result$nedre_kontrolgrænse_min, round(30, 2))
+  expect_equal(result$nedre_kontrolgrænse_max, round(40, 2))
+  expect_equal(result$øvre_kontrolgrænse_min, round(60, 2))
+  expect_equal(result$øvre_kontrolgrænse_max, round(70, 2))
+})
+
+test_that("format_qic_summary: p-chart med konstant n → konstante grænser", {
+  # P-chart med samme nævner giver identiske kontrolgrænser
+  qic_data <- fixture_qicharts_summary_data()
+  # lcl/ucl er allerede konstante i fixture (rep(35,n) og rep(65,n))
+  result <- format_qic_summary(qic_data, y_axis_unit = "percent")
+
+  expect_true(all(result$kontrolgrænser_konstante))
+  expect_true("nedre_kontrolgrænse" %in% names(result))
+  expect_true("øvre_kontrolgrænse" %in% names(result))
+})
+
+test_that("format_qic_summary: multi-fase med variable grænser → flag per row korrekt", {
+  qic_data <- fixture_qicharts_summary_data(n = 24, parts = 2)
+  # Fase 1: konstante grænser; fase 2: variable grænser
+  # Men Option A: global beslutning → mindst én variabel → min/max for alle
+  qic_data$lcl[13:24] <- seq(28, 38, length.out = 12)
+  qic_data$ucl[13:24] <- seq(62, 72, length.out = 12)
+
+  result <- format_qic_summary(qic_data, y_axis_unit = "count")
+
+  expect_equal(nrow(result), 2)
+  # Fase 1 er konstant, fase 2 er variabel
+  expect_true(result$kontrolgrænser_konstante[1])
+  expect_false(result$kontrolgrænser_konstante[2])
+  # Global beslutning: mindst én variabel → min/max kolonner for alle
+  expect_true("nedre_kontrolgrænse_min" %in% names(result))
+  expect_true("nedre_kontrolgrænse_max" %in% names(result))
+  expect_false("nedre_kontrolgrænse" %in% names(result))
+  # Fase 1 (konstant) → min == max
+  expect_equal(result$nedre_kontrolgrænse_min[1], result$nedre_kontrolgrænse_max[1])
+  # Fase 2 (variabel) → min < max
+  expect_lt(result$nedre_kontrolgrænse_min[2], result$nedre_kontrolgrænse_max[2])
 })
 
 # =============================================================================
