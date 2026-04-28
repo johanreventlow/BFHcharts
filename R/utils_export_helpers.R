@@ -192,33 +192,30 @@ validate_template_path <- function(template_path) {
 #' @noRd
 prepare_temp_workspace <- function(batch_session) {
   if (!is.null(batch_session)) {
-    # Batch-mode: genbrug session-tmpdir; unikke filnavne per eksport
     temp_dir <- batch_session$tmpdir
-    chart_svg <- tempfile(pattern = "chart-", tmpdir = temp_dir, fileext = ".svg")
-    typst_file <- tempfile(pattern = "document-", tmpdir = temp_dir, fileext = ".typ")
-  } else {
-    # Single-call mode: ny temp-mappe per eksport
-    temp_dir <- tempfile("bfh_pdf_")
-    chart_svg <- tempfile(pattern = "chart-", tmpdir = temp_dir, fileext = ".svg")
-    typst_file <- tempfile(pattern = "document-", tmpdir = temp_dir, fileext = ".typ")
+    return(list(
+      temp_dir   = temp_dir,
+      chart_svg  = tempfile(pattern = "chart-", tmpdir = temp_dir, fileext = ".svg"),
+      typst_file = tempfile(pattern = "document-", tmpdir = temp_dir, fileext = ".typ")
+    ))
+  }
 
-    dir.create(temp_dir, recursive = TRUE)
+  temp_dir <- tempfile("bfh_pdf_")
+  chart_svg <- tempfile(pattern = "chart-", tmpdir = temp_dir, fileext = ".svg")
+  typst_file <- tempfile(pattern = "document-", tmpdir = temp_dir, fileext = ".typ")
 
-    # Sikkerhed: restriktive rettigheder (kun ejer: rwx------)
-    Sys.chmod(temp_dir, mode = "0700", use_umask = FALSE)
+  dir.create(temp_dir, recursive = TRUE)
 
-    # Sikkerhed: verificer ejerskab på Unix (TOCTOU-beskyttelse)
-    if (.Platform$OS.type == "unix") {
-      dir_info <- file.info(temp_dir)
-      current_uid <- suppressWarnings(as.integer(Sys.getenv("UID")))
-      if (length(current_uid) > 0 && !is.na(current_uid) && current_uid > 0) {
-        if (dir_info$uid != current_uid) {
-          unlink(temp_dir, recursive = TRUE)
-          stop(
-            "Temp directory ownership mismatch (possible security issue)",
-            call. = FALSE
-          )
-        }
+  # Forhindrer andre processer adgang til eksportens midlertidige filer
+  Sys.chmod(temp_dir, mode = "0700", use_umask = FALSE)
+
+  if (.Platform$OS.type == "unix") {
+    dir_info <- file.info(temp_dir)
+    current_uid <- suppressWarnings(as.integer(Sys.getenv("UID")))
+    if (length(current_uid) > 0 && !is.na(current_uid) && current_uid > 0) {
+      if (dir_info$uid != current_uid) {
+        unlink(temp_dir, recursive = TRUE)
+        stop("Temp directory ownership mismatch (possible security issue)", call. = FALSE)
       }
     }
   }
