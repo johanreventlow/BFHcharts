@@ -1,3 +1,16 @@
+# BFHcharts 0.10.0
+
+## Breaking changes
+
+* **`bfh_export_pdf()` og `bfh_compile_typst()` ignorerer nu system-fonts som
+  default (`ignore_system_fonts = TRUE`).** Tidligere faldt Typst tilbage til
+  system-installerede font-varianter selv når `font_path` var sat, hvilket
+  kunne resultere i forkert weight (fx Mari Heavy med metadata
+  `style=Heavy,Regular` matchede regular-weight). Det giver nu konsistent
+  rendering på tværs af dev-maskiner og cloud-deployment.
+  **Migration:** Hvis eksisterende kode er afhængig af system-fonts ved
+  Typst-render, sæt `ignore_system_fonts = FALSE` eksplicit. (#227)
+
 # BFHcharts 0.9.0
 
 ## Breaking changes

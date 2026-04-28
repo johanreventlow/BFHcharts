@@ -176,6 +176,13 @@ bfh_create_typst_document <- function(chart_image,
 #' @param font_path Optional path to directory containing additional fonts.
 #'   Passed as \code{--font-path} to the Typst compiler. Useful when fonts
 #'   are not installed system-wide (e.g., on cloud deployment platforms).
+#' @param ignore_system_fonts Logical. If \code{TRUE} (default), passes
+#'   \code{--ignore-system-fonts} to Typst, ensuring only fonts from
+#'   \code{font_path} are used. Prevents system-installed font variants
+#'   (e.g., Mari Heavy with metadata \code{style=Heavy,Regular}) from
+#'   leaking into the rendered PDF and causing inconsistent weights between
+#'   dev machines and cloud deployment. Set to \code{FALSE} only if relying
+#'   on system fonts is intentional.
 #' @param .system2 Dependency-injection hook for \code{system2()}. Default is
 #'   the real \code{base::system2}. Tests can inject a mock to avoid spawning
 #'   live Quarto processes.
@@ -187,6 +194,7 @@ bfh_create_typst_document <- function(chart_image,
 #'
 #' @keywords internal
 bfh_compile_typst <- function(typst_file, output, font_path = NULL,
+                              ignore_system_fonts = TRUE,
                               .system2 = system2, .quarto_path = NULL) {
   if (!file.exists(typst_file)) {
     stop("Typst file not found: ", typst_file, call. = FALSE)
@@ -219,6 +227,9 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   compile_args <- c("typst", "compile", shQuote(typst_file), shQuote(output))
   if (!is.null(font_path)) {
     compile_args <- c(compile_args, "--font-path", shQuote(font_path))
+  }
+  if (isTRUE(ignore_system_fonts)) {
+    compile_args <- c(compile_args, "--ignore-system-fonts")
   }
 
   # Use quarto typst compile (not quarto render which expects .qmd files)
