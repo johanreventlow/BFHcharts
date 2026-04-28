@@ -499,7 +499,8 @@ build_fallback_analysis <- function(context,
       outliers_n,
       i18n_lookup("labels.outliers.singular", language),
       i18n_lookup("labels.outliers.plural", language)
-    )
+    ),
+    effective_window = spc_stats$effective_window %||% RECENT_OBS_WINDOW
   )
 
   # --- 1. Stabilitetstekst ---

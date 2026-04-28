@@ -81,3 +81,10 @@ PDF_CHART_HEIGHT_MM <- 109
 # This ensures consistent, readable labels regardless of how the chart was created
 # Value of 6 is calibrated for the PDF template dimensions
 PDF_LABEL_SIZE <- 6
+
+# ============================================================================
+# SPC ANALYSIS CONSTANTS
+# ============================================================================
+
+# Vindue for seneste observationer i outlier-tæller (6 er standard i SPC-litteraturen)
+RECENT_OBS_WINDOW <- 6L
