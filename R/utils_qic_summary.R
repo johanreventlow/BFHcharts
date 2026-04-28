@@ -19,7 +19,33 @@ NULL
 #' @param qic_data Data frame from qicharts2::qic(..., return.data = TRUE)
 #' @param y_axis_unit Unit type for appropriate rounding ("count", "percent", "rate", "time")
 #'
-#' @return Data frame with Danish column names and formatted values
+#' @return Data frame with Danish column names and formatted values.
+#'   One row per phase (part). Columns present depend on chart type:
+#'
+#'   **Always present:**
+#'   - `fase` — phase number (integer)
+#'   - `antal_observationer` — total observations per phase
+#'   - `anvendelige_observationer` — usable observations per phase
+#'   - `laengste_loeb`, `laengste_loeb_max` — run-length statistics
+#'   - `antal_kryds`, `antal_kryds_min` — crossing-count statistics
+#'   - `loebelaengde_signal`, `sigma_signal` — Anhøj + sigma signals (logical)
+#'   - `centerlinje` — center line value
+#'
+#'   **Control limit columns (if lcl/ucl present in qic_data):**
+#'   - `kontrolgraenser_konstante` — logical, TRUE if control limits are
+#'     identical for all observations within this phase. FALSE for p/u-charts
+#'     with varying denominators.
+#'
+#'   *When ALL phases have constant limits* (e.g. I-charts, C-charts):
+#'   - `nedre_kontrolgraense` — scalar lower control limit per phase
+#'   - `oevre_kontrolgraense` — scalar upper control limit per phase
+#'
+#'   *When ANY phase has variable limits* (e.g. P-charts with varying n):
+#'   - `nedre_kontrolgraense_min` / `nedre_kontrolgraense_max` — range of LCL
+#'   - `oevre_kontrolgraense_min` / `oevre_kontrolgraense_max` — range of UCL
+#'
+#'   Run charts (no lcl/ucl) receive no control limit columns at all.
+#'
 #' @keywords internal
 #' @noRd
 #'
@@ -29,7 +55,7 @@ NULL
 #' - n.obs -> antal_observationer
 #' - n.useful -> anvendelige_observationer
 #' - cl -> centerlinje
-#' - lcl / ucl -> nedre_kontrolgraense / oevre_kontrolgraense
+#' - lcl / ucl -> se @return for kontrolgraense-kolonner
 #' - runs.signal -> loebelaengde_signal
 #' - sigma.signal -> sigma_signal
 #'
@@ -37,6 +63,13 @@ NULL
 #' - Control limits: 2 decimals for percent/rate, 1 decimal for count/time
 #' - Counts: integers
 #' - Signals: converted to logical (TRUE/FALSE)
+#'
+#' **Control limits constancy:**
+#' Constancy is checked per phase using `round(x, decimal_places + 2)` to
+#' handle floating-point drift in qicharts2 output. A global column-branch
+#' decision is made: if all phases are constant, scalar columns are used
+#' (backward compatible); if any phase is variable, min/max columns are used
+#' for all phases (with min == max for phases that happen to be constant).
 #'
 #' @examples
 #' \dontrun{
@@ -140,24 +173,61 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     formatted$centerlinje <- round(raw_summary$cl, decimal_places)
   }
 
-  # Only include lcl/ucl if they are constant across observations
-  # For p/u charts, control limits vary per observation based on denominator
-  # so showing a single value is misleading
+  # Ekspon\u00e9r kontrolgr\u00e6nser med konstans-flag og min/max ved variable gr\u00e6nser.
+  #
+  # P/U-charts har variable gr\u00e6nser (afh\u00e6nger af n\u00e6vner per observation).
+  # Logik (Option A \u2014 column-level branch):
+  #   - Alle faser konstante \u2192 bevar skalare nedre/\u00f8vre_kontrolgr\u00e6nse (backward compat)
+  #                             + kontrolgr\u00e6nser_konstante = TRUE per row
+  #   - Mindst \u00e9n fase variabel \u2192 ekspon\u00e9r min/max kolonner for alle r\u00e6kker
+  #                                + kontrolgr\u00e6nser_konstante = FALSE per row (TRUE kun
+  #                                  for rent konstante faser, se nedenfor)
+  #
+  # Run charts (ingen lcl/ucl) f\u00e5r ingen kontrolgr\u00e6nse-kolonner overhovedet.
   if ("lcl" %in% names(raw_summary) && "ucl" %in% names(raw_summary)) {
-    # Check if control limits are constant by comparing unique values
-    # within each part (phase)
-    lcl_constant <- all(vapply(split(qic_data$lcl, qic_data$part), function(x) {
-      length(unique(round(x, decimal_places + 2))) <= 1
-    }, logical(1)))
-    ucl_constant <- all(vapply(split(qic_data$ucl, qic_data$part), function(x) {
-      length(unique(round(x, decimal_places + 2))) <= 1
-    }, logical(1)))
+    # Beregn konstans per fase (brug samme afrundingspr\u00e6cision som eksisterende kode)
+    round_prec <- decimal_places + 2
 
-    if (lcl_constant && ucl_constant) {
+    part_key <- as.character(raw_summary$part)
+    lcl_split <- split(qic_data$lcl, qic_data$part)
+    ucl_split <- split(qic_data$ucl, qic_data$part)
+
+    # Er gr\u00e6nser konstante inden for den p\u00e5g\u00e6ldende fase?
+    lcl_const_per_part <- vapply(part_key, function(p) {
+      length(unique(round(lcl_split[[p]], round_prec))) <= 1
+    }, logical(1))
+    ucl_const_per_part <- vapply(part_key, function(p) {
+      length(unique(round(ucl_split[[p]], round_prec))) <= 1
+    }, logical(1))
+
+    # Per-row flag: TRUE kun hvis BEGGE lcl og ucl er konstante i den fase
+    part_konstant <- lcl_const_per_part & ucl_const_per_part
+
+    # Global beslutning: er ALLE faser konstante?
+    alle_konstante <- all(part_konstant)
+
+    # Tilf\u00f8j per-row flag
+    formatted[["kontrolgr\u00e6nser_konstante"]] <- part_konstant
+
+    if (alle_konstante) {
+      # Backward-compat: bevar skalare kolonner (\u00e9n v\u00e6rdi per fase)
       formatted[["nedre_kontrolgr\u00e6nse"]] <- round(raw_summary$lcl, decimal_places)
       formatted[["\u00f8vre_kontrolgr\u00e6nse"]] <- round(raw_summary$ucl, decimal_places)
+    } else {
+      # Variable gr\u00e6nser: ekspon\u00e9r min/max per fase
+      formatted[["nedre_kontrolgr\u00e6nse_min"]] <- vapply(part_key, function(p) {
+        round(min(lcl_split[[p]], na.rm = TRUE), decimal_places)
+      }, numeric(1))
+      formatted[["nedre_kontrolgr\u00e6nse_max"]] <- vapply(part_key, function(p) {
+        round(max(lcl_split[[p]], na.rm = TRUE), decimal_places)
+      }, numeric(1))
+      formatted[["\u00f8vre_kontrolgr\u00e6nse_min"]] <- vapply(part_key, function(p) {
+        round(min(ucl_split[[p]], na.rm = TRUE), decimal_places)
+      }, numeric(1))
+      formatted[["\u00f8vre_kontrolgr\u00e6nse_max"]] <- vapply(part_key, function(p) {
+        round(max(ucl_split[[p]], na.rm = TRUE), decimal_places)
+      }, numeric(1))
     }
-    # If not constant, don't include them in summary
   }
 
   # Optionally add 95% limits if present
