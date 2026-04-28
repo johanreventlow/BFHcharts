@@ -2,12 +2,20 @@
 
 ## Interne aendringer
 
+<<<<<<< HEAD
 * **Filomdoebning: `R/create_spc_chart.R` -> `R/bfh_qic.R`.** Funktionen
   blev omdoebt fra `create_spc_chart()` til `bfh_qic()` i v0.2.0, men
   filnavnet blev aldrig opdateret. Ingen API-paavirkning -- kun navigation
   forbedret. Live docs (`README.md`, `CLAUDE.md`, `AGENTS.md`,
   `tests/testthat/README.md`, pending OpenSpec-changes) opdateret til
   at referere det korrekte sti. (#217, #204)
+
+* **Repository-hygiene:** Fjernet `geomtextpath` fra `Suggests` (ubrugt --
+  kun en stale TODO-kommentar i `R/plot_core.R` refererede pakken). Fjernet
+  tracked dev-scripts (`demo_*.R`, `pdf_export_forsoeg.R`,
+  `test_labels.R`, `test_date_formatting_debug.R`,
+  `09_medicinsikker_*.R`) og `CLAUDE.md.backup`. Strammet `.gitignore`
+  med `*.backup` og generic `BFHcharts_*.tar.gz`. (#215)
 
 # BFHcharts 0.10.4
 

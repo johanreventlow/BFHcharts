@@ -164,8 +164,6 @@ bfh_spc_plot <- function(qic_data,
         fill = cols$very_light_blue,
         alpha = 0.5
       ),
-      # TODO: Genaktiver geom_textline naar geomtextpath cold-start (~3s) er loest
-      # Se BFHcharts #88
       ggplot2::geom_line(
         ggplot2::aes(y = ucl, x = x, group = part),
         inherit.aes = FALSE,

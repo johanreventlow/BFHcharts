@@ -62,7 +62,7 @@ Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `
 - `calculate_base_size()` - Responsive font size calculation
 
 *Configuration objects:*
-- `spc_plot_config()`, `viewport_dims()`, `phase_config()` - Config abstractions
+- `spc_plot_config()`, `viewport_dims()` - Config abstractions
 - Kun brugt internt af `bfh_qic()`
 
 *Constants:*

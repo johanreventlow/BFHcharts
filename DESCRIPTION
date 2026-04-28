@@ -46,8 +46,7 @@ Suggests:
     covr,
     pdftools (>= 3.3.0),
     withr,
-    BFHllm,
-    geomtextpath
+    BFHllm
 Remotes:
     johanreventlow/BFHtheme,
     johanreventlow/BFHllm

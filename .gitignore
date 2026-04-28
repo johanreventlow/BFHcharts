@@ -47,4 +47,6 @@ demo_output/
 # vdiffr review files (never commit; use testthat::snapshot_accept() to promote)
 tests/testthat/_snaps/**/*.new.svg
 BFHcharts.Rcheck/
-BFHcharts_0.9.0.tar.gz
+BFHcharts_*.tar.gz
+# Backup files
+*.backup
