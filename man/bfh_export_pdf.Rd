@@ -16,6 +16,7 @@ bfh_export_pdf(
   analysis_max_chars = 375,
   dpi = 150,
   font_path = NULL,
+  ignore_system_fonts = TRUE,
   inject_assets = NULL,
   batch_session = NULL
 )
@@ -73,6 +74,12 @@ relevant if the plot contains rasterized content.}
 Passed as \code{--font-path} to the Typst compiler. Useful when fonts
 (e.g., Mari) are bundled in a downstream package and not installed
 system-wide on the deployment platform.}
+
+\item{ignore_system_fonts}{Logical. If \code{TRUE} (default), passes
+\code{--ignore-system-fonts} to Typst so only fonts from \code{font_path}
+(or bundled template fonts) are used. Prevents inconsistent rendering
+when developers have additional Mari variants (e.g., Mari Heavy)
+installed system-wide. See \code{\link{bfh_compile_typst}} for details.}
 
 \item{inject_assets}{Optional callback function called after Typst template
 structure is created but before compilation. Receives one argument: the path

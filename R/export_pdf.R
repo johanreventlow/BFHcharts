@@ -45,6 +45,11 @@
 #'   Passed as \code{--font-path} to the Typst compiler. Useful when fonts
 #'   (e.g., Mari) are bundled in a downstream package and not installed
 #'   system-wide on the deployment platform.
+#' @param ignore_system_fonts Logical. If \code{TRUE} (default), passes
+#'   \code{--ignore-system-fonts} to Typst so only fonts from \code{font_path}
+#'   (or bundled template fonts) are used. Prevents inconsistent rendering
+#'   when developers have additional Mari variants (e.g., Mari Heavy)
+#'   installed system-wide. See \code{\link{bfh_compile_typst}} for details.
 #' @param inject_assets Optional callback function called after Typst template
 #'   structure is created but before compilation. Receives one argument: the path
 #'   to the template directory (e.g., \code{<temp_dir>/bfh-template}). Use this
@@ -169,6 +174,7 @@ bfh_export_pdf <- function(x,
                            analysis_max_chars = 375,
                            dpi = 150,
                            font_path = NULL,
+                           ignore_system_fonts = TRUE,
                            inject_assets = NULL,
                            batch_session = NULL) {
   # Input validation
@@ -483,7 +489,12 @@ bfh_export_pdf <- function(x,
   }
 
   # Compile to PDF via Quarto (with optional font path)
-  bfh_compile_typst(typst_file, output, font_path = effective_font_path)
+  bfh_compile_typst(
+    typst_file,
+    output,
+    font_path = effective_font_path,
+    ignore_system_fonts = ignore_system_fonts
+  )
 
   # Return input object invisibly for pipe chaining
   invisible(x)
