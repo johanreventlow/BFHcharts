@@ -29,20 +29,20 @@ NULL
 #' @examples
 #' \dontrun{
 #' # Centimeters (Danish standard)
-#' convert_to_inches(25, 15, "cm")  # → 9.84 × 5.91 inches
+#' convert_to_inches(25, 15, "cm") # -> 9.84 x 5.91 inches
 #'
 #' # Millimeters
-#' convert_to_inches(250, 150, "mm")  # → 9.84 × 5.91 inches
+#' convert_to_inches(250, 150, "mm") # -> 9.84 x 5.91 inches
 #'
 #' # Pixels (web/Shiny)
-#' convert_to_inches(800, 600, "px", dpi = 96)  # → 8.33 × 6.25 inches
+#' convert_to_inches(800, 600, "px", dpi = 96) # -> 8.33 x 6.25 inches
 #'
 #' # Inches (legacy)
-#' convert_to_inches(10, 6, "in")  # → 10 × 6 inches
+#' convert_to_inches(10, 6, "in") # -> 10 x 6 inches
 #'
 #' # Smart auto-detection
-#' convert_to_inches(25, 15, NULL)  # → Auto-detects cm
-#' convert_to_inches(800, 600, NULL)  # → Auto-detects px
+#' convert_to_inches(25, 15, NULL) # -> Auto-detects cm
+#' convert_to_inches(800, 600, NULL) # -> Auto-detects px
 #' }
 convert_to_inches <- function(width, height, units = NULL, dpi = 96) {
   # Validate inputs
@@ -115,9 +115,9 @@ convert_to_inches <- function(width, height, units = NULL, dpi = 96) {
 #'
 #' @examples
 #' \dontrun{
-#' smart_convert_to_inches(800, 600)  # → Detects pixels
-#' smart_convert_to_inches(25, 15)    # → Detects cm
-#' smart_convert_to_inches(10, 6)     # → Detects inches
+#' smart_convert_to_inches(800, 600) # -> Detects pixels
+#' smart_convert_to_inches(25, 15) # -> Detects cm
+#' smart_convert_to_inches(10, 6) # -> Detects inches
 #' }
 smart_convert_to_inches <- function(width, height, dpi = 96) {
   # Heuristic detection based on magnitude
@@ -125,11 +125,11 @@ smart_convert_to_inches <- function(width, height, dpi = 96) {
   max_dim <- max(width, height)
 
   detected_unit <- if (max_dim > 100) {
-    "px"  # Typical pixel ranges: 600-2000
+    "px" # Typical pixel ranges: 600-2000
   } else if (max_dim > 10) {
-    "cm"  # Typical cm ranges: 15-40
+    "cm" # Typical cm ranges: 15-40
   } else {
-    "in"  # Typical inch ranges: 6-16 (legacy compatibility)
+    "in" # Typical inch ranges: 6-16 (legacy compatibility)
   }
 
   # Convert using detected unit

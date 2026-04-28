@@ -105,7 +105,7 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
 
 #' Format Y-Axis for Percentage Data
 #'
-#' Range-aware precision: viser decimaler når y-aksen spænder < 5 procentpoint.
+#' Range-aware precision: viser decimaler naar y-aksen spaender < 5 procentpoint.
 #'
 #' @param y_range numeric(2) y-akse range, eller NULL
 #' @return ggplot2 scale layer
@@ -123,7 +123,7 @@ format_y_axis_percent <- function(y_range = NULL) {
     sort(unique(b))
   }
 
-  # Bestem accuracy baseret på faktisk break-interval (beregnes dynamisk)
+  # Bestem accuracy baseret paa faktisk break-interval (beregnes dynamisk)
   percent_labels <- function(x) {
     if (length(x) < 2) {
       return(scales::label_percent(accuracy = 1)(x))
@@ -133,7 +133,7 @@ format_y_axis_percent <- function(y_range = NULL) {
     intervals <- diff(sort(x)) * 100
     min_interval <- min(intervals[intervals > 0])
 
-    # Vælg accuracy der kan skelne alle breaks
+    # Vaelg accuracy der kan skelne alle breaks
     accuracy <- if (min_interval >= 1) {
       1 # 1%, 2%, 3%
     } else if (min_interval >= 0.1) {
@@ -156,9 +156,9 @@ format_y_axis_percent <- function(y_range = NULL) {
 #'
 #' Intelligent scaling:
 #' - < 1,000: Standard notation with thousand separator
-#' - ≥ 1,000: K notation (e.g., "1,5K")
-#' - ≥ 1,000,000: M notation (e.g., "2,3M")
-#' - ≥ 1,000,000,000: mia. notation (e.g., "1,2 mia.")
+#' - At least 1,000: K notation (e.g., "1,5K")
+#' - At least 1,000,000: M notation (e.g., "2,3M")
+#' - At least 1,000,000,000: mia. notation (e.g., "1,2 mia.")
 #'
 #' @return ggplot2 scale layer
 #' @keywords internal
@@ -167,8 +167,8 @@ format_y_axis_count <- function() {
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
     labels = function(x, ...) {
-      # format_count_danish() er scalar — vektorisér via map_chr for at
-      # håndtere ggplot2's vektor-input af breakpoints.
+      # format_count_danish() er scalar - vektoriser via map_chr for at
+      # haandtere ggplot2's vektor-input af breakpoints.
       purrr::map_chr(x, format_count_danish)
     }
   )
@@ -183,8 +183,8 @@ format_y_axis_rate <- function() {
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
     labels = function(x, ...) {
-      # format_rate_danish() er scalar — vektorisér via map_chr for at
-      # håndtere ggplot2's vektor-input af breakpoints.
+      # format_rate_danish() er scalar - vektoriser via map_chr for at
+      # haandtere ggplot2's vektor-input af breakpoints.
       purrr::map_chr(x, format_rate_danish)
     }
   )
@@ -193,13 +193,13 @@ format_y_axis_rate <- function() {
 #' Format Y-Axis for Time Data (Composite Format: "1t 30m", "2d 4t")
 #'
 #' Producerer tids-naturlige tick-breaks via `time_breaks()` og komposit
-#' label-format via `format_time_composite()`. Input antages at være i
+#' label-format via `format_time_composite()`. Input antages at vaere i
 #' minutter (kanonisk intern enhed).
 #'
 #' Erstatter tidligere "0,6666667 timer"-style formatering med kompakte
-#' labels som `"45m"`, `"1t 30m"` og `"2d 13t"` — samme format som
+#' labels som `"45m"`, `"1t 30m"` og `"2d 13t"` - samme format som
 #' data-punkt labels, hvilket sikrer visuel konsistens mellem y-aksen
-#' og pilene fra centrallinje/target til deres værdier.
+#' og pilene fra centrallinje/target til deres vaerdier.
 #'
 #' @param qic_data QIC data frame with y column (time values in minutes)
 #'
@@ -214,7 +214,7 @@ format_y_axis_time <- function(qic_data) {
     ))
   }
 
-  # Tids-naturlige tick-breaks baseret på data-range (target_n = 5 som default)
+  # Tids-naturlige tick-breaks baseret paa data-range (target_n = 5 som default)
   breaks <- time_breaks(qic_data$y)
 
   BFHtheme::scale_y_continuous_bfh(

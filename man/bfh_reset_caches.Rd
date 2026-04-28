@@ -10,16 +10,16 @@ bfh_reset_caches()
 invisible(NULL)
 }
 \description{
-Tømmer alle package-level cache-environments:
+Toemmer alle package-level cache-environments:
 \itemize{
-\item \code{.font_cache}: løste font-families per (fontfamily, device-type)
+\item \code{.font_cache}: loeste font-families per (fontfamily, device-type)
 \item \code{.marquee_style_cache}: marquee style-objekter per lineheight
-\item \code{.quarto_cache}: Quarto CLI tilgængelighed og sti
+\item \code{.quarto_cache}: Quarto CLI tilgaengelighed og sti
 \item \code{.i18n_cache}: i18n YAML-tekster per sprog
 }
 }
 \details{
-Bruges primært i testmiljø for at sikre reproducerbare resultater
-på tværs af tests der ændrer fonts eller Quarto-konfiguration.
+Bruges primaert i testmiljoe for at sikre reproducerbare resultater
+paa tvaers af tests der aendrer fonts eller Quarto-konfiguration.
 }
 \keyword{internal}

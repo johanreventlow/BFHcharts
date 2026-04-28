@@ -63,6 +63,6 @@ bfh_merge_metadata <- function(metadata, chart_title) {
     return(defaults)
   }
 
-  # intersect sikrer ukendte felter i metadata ikke lækker igennem
+  # intersect sikrer ukendte felter i metadata ikke laekker igennem
   utils::modifyList(defaults, metadata[intersect(names(metadata), names(defaults))])
 }

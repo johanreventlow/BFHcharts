@@ -13,8 +13,8 @@ bfh_generate_details(x, language = "da")
 }
 \value{
 Character string with formatted details, e.g.:
-"Periode: feb. 2019 – mar. 2022 • Gns. måned: 58938/97266 •
-Seneste måned: 60756/88509 • Nuværende niveau: 64,5\%"
+"Periode: feb. 2019 - mar. 2022 * Gns. maaned: 58938/97266 *
+Seneste maaned: 60756/88509 * Nuvaerende niveau: 64,5\%"
 }
 \description{
 Automatically generates a details string based on chart data, including
@@ -38,14 +38,14 @@ period range, averages, latest values, and current level (centerline).
 \strong{Interval Detection:}
 \itemize{
 \item Uses detect_date_interval() to determine the interval type
-\item Labels adapt: "måned", "uge", "dag", "kvartal", "år"
+\item Labels adapt: "maaned", "uge", "dag", "kvartal", "aar"
 }
 }
 \examples{
 \dontrun{
 result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 details <- bfh_generate_details(result)
-# "Periode: jan. 2024 – dec. 2024 • Gns. måned: 50 • ..."
+# "Periode: jan. 2024 - dec. 2024 * Gns. maaned: 50 * ..."
 }
 
 }

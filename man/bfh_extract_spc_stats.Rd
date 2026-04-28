@@ -22,8 +22,8 @@ bfh_extract_spc_stats(x)
 \value{
 Named list with SPC statistics:
 \describe{
-\item{runs_expected}{Expected maximum run length (\code{længste_løb_max})}
-\item{runs_actual}{Actual longest run length (\code{længste_løb})}
+\item{runs_expected}{Expected maximum run length (\code{laengste_loeb_max})}
+\item{runs_actual}{Actual longest run length (\code{laengste_loeb})}
 \item{crossings_expected}{Expected minimum crossings (\code{antal_kryds_min})}
 \item{crossings_actual}{Actual number of crossings (\code{antal_kryds})}
 \item{outliers_expected}{Expected number of outliers (0 for non-run charts,
@@ -50,7 +50,7 @@ crossings from the summary. \code{outliers_actual} and \code{outliers_recent_cou
 remain \code{NULL} because outlier counts require access to \code{qic_data}.
 \item \code{bfh_qic_result}: Returns runs, crossings, and outlier counts. Outliers are
 split into two fields so that the PDF table and the analysis text can be
-driven from consistent — but distinct — numbers.
+driven from consistent - but distinct - numbers.
 \item \code{NULL}: Returns an empty stats list (backward compatible).
 }
 
@@ -61,7 +61,7 @@ export and any on-screen preview agree on the outlier count.
 \dontrun{
 result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 
-# Full stats (recommended — populates outliers_actual for the table)
+# Full stats (recommended - populates outliers_actual for the table)
 stats <- bfh_extract_spc_stats(result)
 
 # Backward-compatible summary-only dispatch

@@ -1,31 +1,31 @@
 # utils_label_formatting.R
-# Delt formatering af y-akse værdier for konsistens mellem labels og akser
+# Delt formatering af y-akse vaerdier for konsistens mellem labels og akser
 #
-# Sikrer at labels formateres PRÆCIS som y-aksen for alle enhedstyper
+# Sikrer at labels formateres PRAECIS som y-aksen for alle enhedstyper
 #
 # NOTE: This file delegates to canonical formatting functions in:
 # - R/utils_number_formatting.R (count, rate formatting)
 # - R/utils_time_formatting.R (time formatting)
 
-#' Formatér procent med kontekstuel præcision
+#' Formater procent med kontekstuel praecision
 #'
-#' Viser decimaler kun når værdien er tæt på target (inden for threshold).
-#' Bruges til centerline-labels hvor præcision er vigtig nær målet.
+#' Viser decimaler kun naar vaerdien er taet paa target (inden for threshold).
+#' Bruges til centerline-labels hvor praecision er vigtig naer maalet.
 #'
-#' @param val numeric værdi (0-1 skala, f.eks. 0.887 for 88.7%)
-#' @param target numeric target værdi (0-1 skala), eller NULL
+#' @param val numeric vaerdi (0-1 skala, f.eks. 0.887 for 88.7%)
+#' @param target numeric target vaerdi (0-1 skala), eller NULL
 #' @param threshold numeric afstand i procentpoint hvor decimaler vises (default 0.02 = 2%)
 #' @return character formateret string med dansk notation
 #'
 #' @details
 #' Logik:
 #' - Hvis target er NULL eller val er > threshold fra target: hele procent ("89%")
-#' - Hvis val er <= threshold fra target: én decimal med dansk komma ("88,7%")
+#' - Hvis val er <= threshold fra target: en decimal med dansk komma ("88,7%")
 #'
 #' @examples
 #' \dontrun{
 #' format_percent_contextual(0.887, target = 0.90)
-#' # Returns: "88,7%" (tæt på target)
+#' # Returns: "88,7%" (taet paa target)
 #'
 #' format_percent_contextual(0.634, target = 0.90)
 #' # Returns: "63%" (langt fra target)
@@ -62,33 +62,33 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
     return(paste0(round(pct), "%"))
   }
 
-  # Tæt på target: vis én decimal med dansk komma (altid nsmall=1 for konsistens)
+  # Taet paa target: vis en decimal med dansk komma (altid nsmall=1 for konsistens)
   formatted <- format(round(pct, 1), decimal.mark = ",", nsmall = 1)
   return(paste0(formatted, "%"))
 }
 
-#' Formatér y-akse værdi til display string
+#' Formater y-akse vaerdi til display string
 #'
-#' Formaterer numeriske værdier til display strings der matcher y-akse formatting.
-#' Understøtter flere enhedstyper: count, percent, rate, time.
+#' Formaterer numeriske vaerdier til display strings der matcher y-akse formatting.
+#' Understoetter flere enhedstyper: count, percent, rate, time.
 #'
-#' @param val numeric værdi at formatere
+#' @param val numeric vaerdi at formatere
 #' @param y_unit character enhedstype ("count", "percent", "rate", "time", eller andet)
 #' @param y_range numeric(2) y-akse range. Legacy-parameter bibeholdt for
 #'   bagudkompatibilitet; ignoreres for `"time"` (komposit-format
 #'   auto-detekterer minutter/timer/dage) og bruges kun som signatur-
 #'   placeholder for andre enheder.
-#' @param target numeric target værdi for kontekstuel præcision (kun for "percent")
+#' @param target numeric target vaerdi for kontekstuel praecision (kun for "percent")
 #' @return character formateret string
 #'
 #' @details
 #' Formatering per enhedstype:
 #' - **count**: K/M/mia notation for store tal, dansk decimal/tusind separator
 #' - **percent**: scales::label_percent() formatering
-#' - **rate**: dansk decimal notation, decimaler kun hvis nødvendigt
-#' - **time**: komposit-format (`"30m"`, `"1t 30m"`, `"2d 13t"`) — samme
-#'   format som y-aksen, så pile fra CL/target til akse-labels rammer
-#'   præcis samme tekst.
+#' - **rate**: dansk decimal notation, decimaler kun hvis noedvendigt
+#' - **time**: komposit-format (`"30m"`, `"1t 30m"`, `"2d 13t"`) - samme
+#'   format som y-aksen, saa pile fra CL/target til akse-labels rammer
+#'   praecis samme tekst.
 #' - **default**: dansk decimal notation
 #'
 #' This function delegates to canonical implementations in:
@@ -117,11 +117,11 @@ format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
   }
 
   if (!is.numeric(val)) {
-    warning("format_y_value: val skal være numerisk, modtog: ", class(val))
+    warning("format_y_value: val skal v\u00e6re numerisk, modtog: ", class(val))
     return(as.character(val))
   }
 
-  # Percent formatting - kontekstuel præcision når target er sat
+  # Percent formatting - kontekstuel praecision naar target er sat
   if (y_unit == "percent") {
     return(format_percent_contextual(val, target = target))
   }
@@ -137,7 +137,7 @@ format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
   }
 
   # Time formatting - komposit-format ("30m", "1t 30m", "2d 13t")
-  # y_range ignoreres bevidst: komposit-formatet håndterer selv
+  # y_range ignoreres bevidst: komposit-formatet haandterer selv
   # minutter/timer/dage via componentopdeling.
   if (y_unit == "time") {
     return(format_time_composite(val))

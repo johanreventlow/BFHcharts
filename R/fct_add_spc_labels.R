@@ -8,30 +8,30 @@
 #'
 #' Returnerer label_size proportionelt skaleret fra PDF-referencen
 #' (label_size=6 ved 191.4mm bredde). Bruger bredde-baseret skalering,
-#' da labels er horisontal tekst og læsbarhed afhænger af tilgængelig bredde.
+#' da labels er horisontal tekst og laesbarhed afhaenger af tilgaengelig bredde.
 #'
 #' @param viewport_width_inches Viewport bredde i inches
-#' @param viewport_height_inches Viewport højde i inches (ubrugt, bevaret for API-kompatibilitet)
+#' @param viewport_height_inches Viewport hoejde i inches (ubrugt, bevaret for API-kompatibilitet)
 #' @return Numerisk label_size
 #'
 #' @keywords internal
 #' @noRd
 compute_label_size_for_viewport <- function(viewport_width_inches,
                                             viewport_height_inches) {
-  # Bredde-baseret skalering: labels er horisontal tekst — deres læsbarhed
-  # afhænger af tilgængelig bredde, ikke højde. At gøre et chart højere
-  # bør give mere plads til data, ikke større labels/gaps.
+  # Bredde-baseret skalering: labels er horisontal tekst - deres laesbarhed
+  # afhaenger af tilgaengelig bredde, ikke hoejde. At goere et chart hoejere
+  # boer give mere plads til data, ikke stoerre labels/gaps.
   pdf_width_inches <- PDF_CHART_WIDTH_MM / 25.4
   label_size <- PDF_LABEL_SIZE * viewport_width_inches / pdf_width_inches
-  # Cap: max label_size = 20 (sikrer value_size ≤ 100pt ved default value_pt=30)
+  # Cap: max label_size = 20 (sikrer value_size <= 100pt ved default value_pt=30)
   min(label_size, 20)
 }
 
 
 #' Add SPC labels to plot using advanced placement system
 #'
-#' Wrapper funktion der tilføjer CL og Target labels til SPC plot
-#' ved hjælp af NPC-baseret collision avoidance system.
+#' Wrapper funktion der tilfoejer CL og Target labels til SPC plot
+#' ved hjaelp af NPC-baseret collision avoidance system.
 #'
 #' @param plot ggplot object (SPC plot uden labels)
 #' @param qic_data data.frame fra qicharts2::qic() med columns: cl, target, part
@@ -39,19 +39,19 @@ compute_label_size_for_viewport <- function(viewport_width_inches,
 #' @param label_size numeric base font size for responsive sizing (default 6)
 #' @param viewport_width numeric viewport width in inches (optional, for precise placement)
 #' @param viewport_height numeric viewport height in inches (optional, for precise placement)
-#' @param target_text character original målværdi text from user input (optional, for operator parsing)
+#' @param target_text character original maalvaerdi text from user input (optional, for operator parsing)
 #' @param centerline_value numeric centerline value from user input (optional, for BASELINE label logic)
 #' @param has_frys_column logical TRUE if Frys column is selected (optional, for BASELINE label logic)
 #' @param has_skift_column logical TRUE if Skift column is selected (optional, for BASELINE label logic)
 #' @param verbose logical print placement warnings (default FALSE)
 #' @param debug_mode logical add visual debug annotations (default FALSE)
-#' @return ggplot object med tilføjede labels
+#' @return ggplot object med tilfoejede labels
 #'
 #' @details
 #' Funktionen:
-#' 1. Ekstraherer CL værdi fra seneste part i qic_data
-#' 2. Ekstraherer Target værdi fra qic_data
-#' 3. Formaterer værdier baseret på y_axis_unit
+#' 1. Ekstraherer CL vaerdi fra seneste part i qic_data
+#' 2. Ekstraherer Target vaerdi fra qic_data
+#' 3. Formaterer vaerdier baseret paa y_axis_unit
 #' 4. Opretter responsive marquee-formaterede labels
 #' 5. Kalder add_right_labels_marquee() med intelligent collision avoidance
 #'
@@ -89,11 +89,11 @@ add_spc_labels <- function(
 ) {
   # Input validation ----
   if (!inherits(plot, "gg")) {
-    stop("plot skal være et ggplot object")
+    stop("plot skal v\u00e6re et ggplot object")
   }
 
   if (!is.data.frame(qic_data)) {
-    stop("qic_data skal være en data.frame")
+    stop("qic_data skal v\u00e6re en data.frame")
   }
 
   # Validate y_axis_unit
@@ -140,9 +140,9 @@ add_spc_labels <- function(
   )
 
   # Label_size auto-scaling:
-  # Primær sti (bfh_qic med dimensioner, export): label_size er allerede korrekt
-  # beregnet via compute_label_size_for_viewport() — ingen skalering nødvendig.
-  # Legacy sti (Shiny preview, ingen viewport): beregn fra åben device.
+  # Primaer sti (bfh_qic med dimensioner, export): label_size er allerede korrekt
+  # beregnet via compute_label_size_for_viewport() - ingen skalering noedvendig.
+  # Legacy sti (Shiny preview, ingen viewport): beregn fra aaben device.
   if (is.null(viewport_width) && is.null(viewport_height)) {
     if (device_info$open && !is.na(device_info$width) && !is.na(device_info$height)) {
       label_size <- compute_label_size_for_viewport(
@@ -158,10 +158,10 @@ add_spc_labels <- function(
     NULL
   }
 
-  # Ekstrahér CL værdi fra seneste part ----
-  # INTENTIONEL ASYMMETRI: CL hentes fra seneste part (centerlinjen ændres ved
-  # faseovergange), mens target hentes som første non-NA (target er typisk
-  # konstant og sat af brugeren uafhængigt af faser).
+  # Ekstraher CL vaerdi fra seneste part ----
+  # INTENTIONEL ASYMMETRI: CL hentes fra seneste part (centerlinjen aendres ved
+  # faseovergange), mens target hentes som foerste non-NA (target er typisk
+  # konstant og sat af brugeren uafhaengigt af faser).
   cl_value <- NA_real_
   if (!is.null(qic_data$cl) && any(!is.na(qic_data$cl))) {
     if ("part" %in% names(qic_data)) {
@@ -177,22 +177,22 @@ add_spc_labels <- function(
     }
   }
 
-  # Ekstrahér Target værdi ----
+  # Ekstraher Target vaerdi ----
   target_value <- NA_real_
   if (!is.null(qic_data$target) && any(!is.na(qic_data$target))) {
     target_value <- qic_data$target[!is.na(qic_data$target)][1]
   }
 
-  # Valider at vi har mindst én værdi ----
+  # Valider at vi har mindst en vaerdi ----
   if (is.na(cl_value) && is.na(target_value)) {
-    warning("Ingen CL eller Target værdier fundet i qic_data. Returnerer plot uændret.")
+    warning("Ingen CL eller Target v\u00e6rdier fundet i qic_data. Returnerer plot u\u00e6ndret.")
     return(plot)
   }
 
-  # Formatér labels ----
+  # Formater labels ----
   label_cl <- NULL
   if (!is.na(cl_value)) {
-    # Bestem CL header baseret på baseline-logik
+    # Bestem CL header baseret paa baseline-logik
     cl_header <- if (!is.null(centerline_value) && !is.na(centerline_value)) {
       i18n_lookup("labels.chart.baseline", language)
     } else if (has_frys_column && !has_skift_column) {
@@ -201,7 +201,7 @@ add_spc_labels <- function(
       i18n_lookup("labels.chart.current_level", language)
     }
 
-    # Kontekstuel præcision for procent: send target hvis tilgængelig
+    # Kontekstuel praecision for procent: send target hvis tilgaengelig
     target_for_precision <- if (y_axis_unit == "percent" && !is.na(target_value)) {
       target_value
     } else {
@@ -221,8 +221,8 @@ add_spc_labels <- function(
 
   if (!is.na(target_value)) {
     if (!is.null(target_text) && nchar(trimws(target_text)) > 0) {
-      # Struktureret parsing: operator og value separeres, så sanitizeren
-      # aldrig ser rå <, >, >=, <= (de er allerede Unicode-symboler).
+      # Struktureret parsing: operator og value separeres, saa sanitizeren
+      # aldrig ser raa <, >, >=, <= (de er allerede Unicode-symboler).
       # Operatoren bypasser sanitizeren via operator_prefix parameter.
       parsed <- parse_target_input(target_text)
       has_arrow <- parsed$is_arrow
@@ -254,11 +254,11 @@ add_spc_labels <- function(
     )
   }
 
-  # Build plot og mapper én gang - genbrug til arrow-placering + labels
+  # Build plot og mapper en gang - genbrug til arrow-placering + labels
   built_plot <- ggplot2::ggplot_build(plot)
   shared_mapper <- npc_mapper_from_built(built_plot, original_plot = plot)
 
-  # Håndter pil-positioning via NPC panel bounds (ikke rå data-ekstremer,
+  # Haandter pil-positioning via NPC panel bounds (ikke raa data-ekstremer,
   # som afviger ved axis expansion eller manuelle limits)
   if (has_arrow) {
     inset_npc <- 0.01
@@ -270,7 +270,7 @@ add_spc_labels <- function(
     target_value <- arrow_y_position
   }
 
-  # Håndter edge case: kun én label ----
+  # Haandter edge case: kun en label ----
   if (is.null(label_cl) || is.na(cl_value)) {
     yA <- target_value
     yB <- NA_real_
@@ -290,9 +290,9 @@ add_spc_labels <- function(
 
   # Placer labels med advanced placement system ----
 
-  # Boundary-aware pref_pos: Når begge linjer er nær bund/top af plottet,
-  # spred labels ved at placere den nederste "under" og den øverste "over".
-  # Når kun én linje er nær kanten, foretruk den side med mest plads.
+  # Boundary-aware pref_pos: Naar begge linjer er naer bund/top af plottet,
+  # spred labels ved at placere den nederste "under" og den oeverste "over".
+  # Naar kun en linje er naer kanten, foretruk den side med mest plads.
   boundary_threshold <- 0.30
   pref_A <- "under"
   pref_B <- "under"
@@ -307,7 +307,7 @@ add_spc_labels <- function(
       both_near_top <- npc_A > (1 - boundary_threshold) && npc_B > (1 - boundary_threshold)
 
       if (both_near_bottom) {
-        # Spred: nederste label under sin linje, øverste over sin linje
+        # Spred: nederste label under sin linje, oeverste over sin linje
         if (npc_A <= npc_B) {
           pref_A <- "under"
           pref_B <- "over"
@@ -316,7 +316,7 @@ add_spc_labels <- function(
           pref_B <- "under"
         }
       } else if (both_near_top) {
-        # Spred: øverste label over sin linje, nederste under sin linje
+        # Spred: oeverste label over sin linje, nederste under sin linje
         if (npc_A >= npc_B) {
           pref_A <- "over"
           pref_B <- "under"
@@ -325,18 +325,18 @@ add_spc_labels <- function(
           pref_B <- "over"
         }
       } else {
-        # Én linje nær kanten: send den mod kanten (ind i expansion-zonen),
-        # og den anden linje den modsatte vej — det spreder labels maksimalt.
+        # En linje naer kanten: send den mod kanten (ind i expansion-zonen),
+        # og den anden linje den modsatte vej - det spreder labels maksimalt.
         if (npc_A < boundary_threshold) {
-          pref_A <- "under" # CL nær bund → under (ind i expansion)
-          pref_B <- "over" # Target → over (væk fra CL)
+          pref_A <- "under" # CL n\u00e6r bund -> under (ind i expansion)
+          pref_B <- "over" # Target -> over (v\u00e6k fra CL)
         } else if (npc_B < boundary_threshold) {
           pref_B <- "under"
           pref_A <- "over"
         }
         if (npc_A > (1 - boundary_threshold)) {
-          pref_A <- "over" # CL nær top → over (ind i expansion)
-          pref_B <- "under" # Target → under (væk fra CL)
+          pref_A <- "over" # CL n\u00e6r top -> over (ind i expansion)
+          pref_B <- "under" # Target -> under (v\u00e6k fra CL)
         } else if (npc_B > (1 - boundary_threshold)) {
           pref_B <- "over"
           pref_A <- "under"
