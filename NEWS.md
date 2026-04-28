@@ -1,5 +1,19 @@
 # BFHcharts 0.10.5 (development)
 
+## Bug fixes
+
+* **Eliminer "font family not found in PostScript font database" warnings
+  i production.** Mari/Arial registreres nu som Helvetica-aliaser i
+  `grDevices::postscriptFonts()` og `grDevices::pdfFonts()` ved package
+  load (ny `.onLoad()` i `R/zzz.R`). Tidligere blev registreringen kun
+  udfoert i test-setup -- production-kald af `bfh_qic()` og
+  `ggplot2::ggsave()` producerede ~40-50 harmlose PostScript-warnings per
+  kald (fra `grid::C_stringMetric` font-metric-lookup). Registreringen er
+  konservativ: eksisterende Mari/Arial-registreringer (fx via
+  systemfonts) overskrives ikke. Den interne
+  `.muffle_expected_warnings()` helper bevares som defense-in-depth for
+  datetime/numeric scale warnings. (#202)
+
 ## Interne aendringer
 
 * **Filomdoebning: `R/create_spc_chart.R` -> `R/bfh_qic.R`.** Funktionen
