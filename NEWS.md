@@ -1,3 +1,16 @@
+# BFHcharts 0.10.1
+
+## Bug fixes
+
+* **PDF-eksport: gendan fast analyse-rakke-hojde i Typst-template (52.8mm,
+  26.4mm, 1fr).** Commit 8ff53b1 (#160) skiftede 2. raekke til `auto` for
+  dynamisk hojde, men det fjernede den visuelle luft mellem analyse-tekst og
+  PERIODE-linjen ved korte analyser (SPC-PDF lookede mere kramped end
+  oprindeligt design). Den faste 26.4mm gendanner det oprindelige spacing.
+  Lange analyser, der overskrider 26.4mm, faldt tidligere udenfor og
+  haandteres bedst ved at korte analyse-teksten ned -- ikke ved at lade row
+  flyde. (Reverts #160)
+
 # BFHcharts 0.10.0
 
 ## Breaking changes
