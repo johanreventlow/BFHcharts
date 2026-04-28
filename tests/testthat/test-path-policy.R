@@ -116,6 +116,32 @@ test_that("validate_export_path returnerer path invisibly uden normalize", {
 })
 
 # ============================================================================
+# TRAVERSAL: KOMPONENT-BASERET CHECK (regression for #214)
+# ============================================================================
+
+test_that(".check_traversal accepterer '..' som del af filnavn (ikke komponent)", {
+  # Disse skal IKKE afvises — '..' er del af filnavnet, ikke en path-komponent
+  expect_no_error(validate_export_path("report..v2.pdf"))
+  expect_no_error(validate_export_path("..hidden.pdf"))
+  expect_no_error(validate_export_path("data..backup.csv"))
+  expect_no_error(validate_export_path("analyse..final.pdf"))
+})
+
+test_that(".check_traversal afviser '..' som selvstændig path-komponent", {
+  expect_error(validate_export_path("../etc/passwd"), "traversal")
+  expect_error(validate_export_path("output/../secret.pdf"), "traversal")
+  expect_error(validate_export_path("../../sensitive.pdf"), "traversal")
+  expect_error(validate_export_path("subdir/.."), "traversal")
+  expect_error(validate_export_path("subdir/../child.pdf"), "traversal")
+})
+
+test_that(".check_traversal håndterer Windows backslash-separator", {
+  # strsplit splitter på både / og \ — '\..\' erkendes som traversal-komponent
+  # på alle platforme
+  expect_error(validate_export_path("subdir\\..\\child.pdf"), "traversal")
+})
+
+# ============================================================================
 # BASIC INPUT VALIDATION
 # ============================================================================
 
