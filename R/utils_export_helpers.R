@@ -192,15 +192,15 @@ validate_template_path <- function(template_path) {
 #' @noRd
 prepare_temp_workspace <- function(batch_session) {
   if (!is.null(batch_session)) {
-    # Batch-mode: genbrug session-tmpdir; statiske filnavne (samme som single-call)
+    # Batch-mode: genbrug session-tmpdir; unikke filnavne per eksport
     temp_dir <- batch_session$tmpdir
-    chart_svg <- file.path(temp_dir, "chart.svg")
-    typst_file <- file.path(temp_dir, "document.typ")
+    chart_svg <- tempfile(pattern = "chart-", tmpdir = temp_dir, fileext = ".svg")
+    typst_file <- tempfile(pattern = "document-", tmpdir = temp_dir, fileext = ".typ")
   } else {
     # Single-call mode: ny temp-mappe per eksport
     temp_dir <- tempfile("bfh_pdf_")
-    chart_svg <- file.path(temp_dir, "chart.svg")
-    typst_file <- file.path(temp_dir, "document.typ")
+    chart_svg <- tempfile(pattern = "chart-", tmpdir = temp_dir, fileext = ".svg")
+    typst_file <- tempfile(pattern = "document-", tmpdir = temp_dir, fileext = ".typ")
 
     dir.create(temp_dir, recursive = TRUE)
 

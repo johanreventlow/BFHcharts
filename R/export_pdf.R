@@ -202,7 +202,7 @@ bfh_export_pdf <- function(x,
     )
   }
 
-  # ---- 5. Temp-workspace (midlertidigt arbejdsmappe + filnavne) --------------
+  # ---- 5. Temp-workspace (unikke filnavne per eksport) -----------------------
   workspace <- prepare_temp_workspace(batch_session)
   temp_dir <- workspace$temp_dir
   chart_svg <- workspace$chart_svg
