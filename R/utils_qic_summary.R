@@ -152,6 +152,8 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   has_sigma_signal <- "sigma.signal" %in% names(qic_data) &&
     any(!is.na(qic_data$sigma.signal))
 
+  part_key <- as.character(raw_summary$part)
+
   if (has_sigma_signal) {
     if ("part" %in% names(qic_data)) {
       outliers_by_part <- vapply(
@@ -159,7 +161,6 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
         function(x) sum(x, na.rm = TRUE),
         integer(1)
       )
-      part_key <- as.character(raw_summary$part)
       formatted$forventede_outliers <- unname(as.integer(rep(0L, length(part_key))))
       formatted$antal_outliers <- unname(as.integer(outliers_by_part[part_key]))
     } else {
@@ -173,22 +174,10 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     formatted$centerlinje <- round(raw_summary$cl, decimal_places)
   }
 
-  # Ekspon\u00e9r kontrolgr\u00e6nser med konstans-flag og min/max ved variable gr\u00e6nser.
-  #
-  # P/U-charts har variable gr\u00e6nser (afh\u00e6nger af n\u00e6vner per observation).
-  # Logik (Option A \u2014 column-level branch):
-  #   - Alle faser konstante \u2192 bevar skalare nedre/\u00f8vre_kontrolgr\u00e6nse (backward compat)
-  #                             + kontrolgr\u00e6nser_konstante = TRUE per row
-  #   - Mindst \u00e9n fase variabel \u2192 ekspon\u00e9r min/max kolonner for alle r\u00e6kker
-  #                                + kontrolgr\u00e6nser_konstante = FALSE per row (TRUE kun
-  #                                  for rent konstante faser, se nedenfor)
-  #
-  # Run charts (ingen lcl/ucl) f\u00e5r ingen kontrolgr\u00e6nse-kolonner overhovedet.
   if ("lcl" %in% names(raw_summary) && "ucl" %in% names(raw_summary)) {
-    # Beregn konstans per fase (brug samme afrundingspr\u00e6cision som eksisterende kode)
+    # +2 afrundingspr\u00e6cision matcher eksisterende kode \u2014 d\u00e6mper float-drift fra qicharts2
     round_prec <- decimal_places + 2
 
-    part_key <- as.character(raw_summary$part)
     lcl_split <- split(qic_data$lcl, qic_data$part)
     ucl_split <- split(qic_data$ucl, qic_data$part)
 
