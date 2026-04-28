@@ -32,9 +32,8 @@
 #' )
 #'
 #' viewport <- viewport_dims(width = 800, height = 600, base_size = 14)
-#' phases <- phase_config(show_phases = FALSE)
 #'
-#' plot <- bfh_spc_plot(qic_data, plot_cfg, viewport, phases)
+#' plot <- bfh_spc_plot(qic_data, plot_cfg, viewport)
 #' ```
 #'
 #' @name config_objects
@@ -237,80 +236,5 @@ print.viewport_dims <- function(x, ...) {
   cat("  Width:", if (is.null(x$width)) "Auto" else paste(x$width, "px"), "\n")
   cat("  Height:", if (is.null(x$height)) "Auto" else paste(x$height, "px"), "\n")
   cat("  Base Size:", x$base_size, "\n")
-  invisible(x)
-}
-
-# ============================================================================
-# PHASE CONFIGURATION
-# ============================================================================
-
-#' Create Phase Configuration
-#'
-#' Creates a configuration object for phase/shift handling in SPC charts.
-#' Currently reserved for biSPCharts integration - not used in the
-#' BFHcharts pipeline.
-#'
-#' @param part_positions Integer vector of row positions where phase changes occur (optional)
-#' @param freeze_position Integer row position where baseline should be frozen (optional)
-#'
-#' @return List with class "phase_config"
-#'
-#' @details
-#' This object controls phase separation and control limit freezing.
-#'
-#' **Phase Handling**:
-#' - `part_positions` specifies row numbers where new phases begin
-#' - `freeze_position` locks the baseline calculation up to a specific row
-#' - These are passed directly to qicharts2::qic()
-#'
-#' @keywords internal
-#' @noRd
-#' @examples
-#' # No phases
-#' phases <- phase_config()
-#'
-#' # Phase shift at row 20
-#' phases <- phase_config(part_positions = 20)
-#'
-#' # Multiple phases with frozen baseline
-#' phases <- phase_config(
-#'   part_positions = c(15, 30, 45),
-#'   freeze_position = 15
-#' )
-phase_config <- function(
-  part_positions = NULL,
-  freeze_position = NULL
-) {
-  # Validation
-  if (!is.null(part_positions)) {
-    if (!is.numeric(part_positions) || any(is.na(part_positions)) ||
-      any(part_positions <= 0)) {
-      stop_config_error("part_positions must be positive integers or NULL")
-    }
-  }
-
-  if (!is.null(freeze_position)) assert_positive_scalar(freeze_position, "freeze_position")
-
-  structure(
-    list(
-      part_positions = part_positions,
-      freeze_position = freeze_position
-    ),
-    class = "phase_config"
-  )
-}
-
-#' Print Phase Configuration
-#'
-#' @param x Phase configuration object
-#' @param ... Additional arguments (ignored)
-#'
-#' @return Invisibly returns x
-#' @keywords internal
-#' @noRd
-print.phase_config <- function(x, ...) {
-  cat("Phase Configuration:\n")
-  cat("  Part Positions:", if (is.null(x$part_positions)) "NULL" else paste(x$part_positions, collapse = ", "), "\n")
-  cat("  Freeze Position:", if (is.null(x$freeze_position)) "NULL" else x$freeze_position, "\n")
   invisible(x)
 }
