@@ -31,8 +31,8 @@ analysis:
 
     outliers_only:
       short: "{outliers_actual} {outliers_word} outside the control limits."
-      standard: "{outliers_actual} of the most recent observations are outside the control limits and should be investigated for special causes."
-      detailed: "{outliers_actual} of the most recent observations are outside the control limits. They should be investigated for special causes, as they may result from unusual events or measurement errors."
+      standard: "{outliers_actual} of the most recent {effective_window} observations are outside the control limits and should be investigated for special causes."
+      detailed: "{outliers_actual} of the most recent {effective_window} observations are outside the control limits. They should be investigated for special causes, as they may result from unusual events or measurement errors."
 
     runs_crossings:
       short: "The process shows systematic instability."
@@ -41,18 +41,18 @@ analysis:
 
     runs_outliers:
       short: "The process shows a level shift and {outliers_actual} {outliers_word} outside the control limits."
-      standard: "The process shows a level shift (run length {runs_actual} > {runs_expected}), and {outliers_actual} of the most recent observations are outside the control limits."
-      detailed: "The process shows a level shift (run length {runs_actual} > {runs_expected}), and {outliers_actual} of the most recent observations are outside the control limits. Investigate whether the level shift and the outlying measurements share a common root cause."
+      standard: "The process shows a level shift (run length {runs_actual} > {runs_expected}), and {outliers_actual} of the most recent {effective_window} observations are outside the control limits."
+      detailed: "The process shows a level shift (run length {runs_actual} > {runs_expected}), and {outliers_actual} of the most recent {effective_window} observations are outside the control limits. Investigate whether the level shift and the outlying measurements share a common root cause."
 
     crossings_outliers:
       short: "The process shows clustering and {outliers_actual} {outliers_word} outside the control limits."
-      standard: "Data points cluster (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent observations are outside the control limits."
-      detailed: "Data points cluster around the centre line (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent observations are outside the control limits. This pattern may indicate shifting process conditions."
+      standard: "Data points cluster (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent {effective_window} observations are outside the control limits."
+      detailed: "Data points cluster around the centre line (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent {effective_window} observations are outside the control limits. This pattern may indicate shifting process conditions."
 
     all_signals:
       short: "The process is unstable with multiple simultaneous signals."
-      standard: "The process is unstable with multiple simultaneous signals: level shift and clustering, plus {outliers_actual} of the most recent observations outside the control limits."
-      detailed: "The process is unstable with multiple simultaneous signals: level shift (run length {runs_actual} > {runs_expected}), clustering around the centre line (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent observations outside the control limits. Investigate common and special causes systematically."
+      standard: "The process is unstable with multiple simultaneous signals: level shift and clustering, plus {outliers_actual} of the most recent {effective_window} observations outside the control limits."
+      detailed: "The process is unstable with multiple simultaneous signals: level shift (run length {runs_actual} > {runs_expected}), clustering around the centre line (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent {effective_window} observations outside the control limits. Investigate common and special causes systematically."
 
   target:
     at_target:

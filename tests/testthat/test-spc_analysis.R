@@ -627,8 +627,9 @@ test_that("build_fallback_analysis bruger ental ved 1 outlier", {
   ctx <- fixture_analysis_context(spc_stats = stats)
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   # Grammatisk korrekt dansk: enten "1 observation ligger" (direkte) eller
-  # "1 af de seneste observationer ligger" (flertal i "af de seneste"-konstruktion).
-  expect_match(txt, "1 observation\\b|1 af de seneste observationer")
+  # "1 af de seneste [N] observationer ligger" (flertal i "af de seneste"-konstruktion,
+  # muligvis med et vinduesantal indskudt).
+  expect_match(txt, "1 observation\\b|1 af de seneste \\d* ?observationer")
   # Må ikke indeholde "1 observationer" som direkte konstruktion
   expect_false(grepl("\\b1 observationer\\b", txt))
 })
@@ -642,8 +643,9 @@ test_that("build_fallback_analysis bruger flertal ved 3 outliers", {
   ctx <- fixture_analysis_context(spc_stats = stats)
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   # Grammatisk korrekt dansk: enten "3 observationer" (direkte) eller
-  # "3 af de seneste observationer" (flertal i "af de seneste"-konstruktion).
-  expect_match(txt, "3 observationer|3 af de seneste observationer")
+  # "3 af de seneste [N] observationer" (flertal i "af de seneste"-konstruktion,
+  # muligvis med et vinduesantal indskudt).
+  expect_match(txt, "3 observationer|3 af de seneste \\d* ?observationer")
   # Må aldrig bruge ental efter tal > 1
   expect_false(grepl("\\b3 observation\\b", txt))
 })

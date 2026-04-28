@@ -8,7 +8,7 @@
 # ANALYSETEKSTER
 # Placeholders: {runs_actual}, {runs_expected}, {crossings_actual},
 #   {crossings_expected}, {outliers_actual}, {outliers_word},
-#   {centerline}, {target}, {n_points}
+#   {effective_window}, {centerline}, {target}, {n_points}
 # ==============================================================================
 
 analysis:
@@ -36,8 +36,8 @@ analysis:
 
     outliers_only:
       short: "{outliers_actual} {outliers_word} ligger uden for kontrolgrænserne."
-      standard: "{outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne og bør undersøges for særlige årsager."
-      detailed: "{outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne. De bør undersøges for særlige årsager, da de kan skyldes usædvanlige hændelser eller målefejl."
+      standard: "{outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne og bør undersøges for særlige årsager."
+      detailed: "{outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne. De bør undersøges for særlige årsager, da de kan skyldes usædvanlige hændelser eller målefejl."
 
     runs_crossings:
       short: "Processen viser systematisk ustabilitet."
@@ -46,18 +46,18 @@ analysis:
 
     runs_outliers:
       short: "Processen viser et niveauskift og {outliers_actual} {outliers_word} uden for kontrolgrænserne."
-      standard: "Processen viser et niveauskift (serielængde {runs_actual} > {runs_expected}), og {outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne."
-      detailed: "Processen viser et niveauskift (serielængde {runs_actual} > {runs_expected}), og {outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne. Undersøg om niveauskiftet og de afvigende målinger har samme underliggende årsag."
+      standard: "Processen viser et niveauskift (serielængde {runs_actual} > {runs_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne."
+      detailed: "Processen viser et niveauskift (serielængde {runs_actual} > {runs_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne. Undersøg om niveauskiftet og de afvigende målinger har samme underliggende årsag."
 
     crossings_outliers:
       short: "Processen viser gruppering og {outliers_actual} {outliers_word} uden for kontrolgrænserne."
-      standard: "Datapunkterne grupperer sig (krydsninger {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne."
-      detailed: "Datapunkterne grupperer sig omkring centrallinjen (krydsninger {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste observationer ligger uden for kontrolgrænserne. Dette mønster kan indikere skiftende betingelser i processen."
+      standard: "Datapunkterne grupperer sig (krydsninger {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne."
+      detailed: "Datapunkterne grupperer sig omkring centrallinjen (krydsninger {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne. Dette mønster kan indikere skiftende betingelser i processen."
 
     all_signals:
       short: "Processen er ustabil med flere samtidige signaler."
-      standard: "Processen er ustabil med flere samtidige signaler: niveauskift og gruppering samt {outliers_actual} af de seneste observationer uden for kontrolgrænserne."
-      detailed: "Processen er ustabil med flere samtidige signaler: niveauskift (serielængde {runs_actual} > {runs_expected}), gruppering omkring centrallinjen (krydsninger {crossings_actual} < {crossings_expected}) samt {outliers_actual} af de seneste observationer uden for kontrolgrænserne. Undersøg fælles og særlige årsager systematisk."
+      standard: "Processen er ustabil med flere samtidige signaler: niveauskift og gruppering samt {outliers_actual} af de seneste {effective_window} observationer uden for kontrolgrænserne."
+      detailed: "Processen er ustabil med flere samtidige signaler: niveauskift (serielængde {runs_actual} > {runs_expected}), gruppering omkring centrallinjen (krydsninger {crossings_actual} < {crossings_expected}) samt {outliers_actual} af de seneste {effective_window} observationer uden for kontrolgrænserne. Undersøg fælles og særlige årsager systematisk."
 
   target:
     at_target:
