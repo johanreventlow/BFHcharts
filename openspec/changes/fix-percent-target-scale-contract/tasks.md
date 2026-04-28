@@ -1,7 +1,7 @@
 ## 1. Validation infrastructure
 
 - [x] 1.1 Add internal helper `validate_target_for_unit()` in `R/utils_helpers.R`
-- [x] 1.2 Wire validation call into `bfh_qic()` after numeric validation, before `qic_args$target` assignment (`R/create_spc_chart.R:673`)
+- [x] 1.2 Wire validation call into `bfh_qic()` after numeric validation, before `qic_args$target` assignment (`R/bfh_qic.R:673`)
 - [x] 1.3 Document threshold rationale (1.5x slack on upper bound) in helper Roxygen
 - [x] 1.4 Run `devtools::document()` to update man pages
 
@@ -21,7 +21,7 @@
 
 ## 3. Documentation
 
-- [x] 3.1 Add Roxygen `@details` section "Percent Target Contract" to `bfh_qic()` (`R/create_spc_chart.R`)
+- [x] 3.1 Add Roxygen `@details` section "Percent Target Contract" to `bfh_qic()` (`R/bfh_qic.R`)
 - [x] 3.2 Update `README.md`: change `target_value = 2.0` → `target_value = 0.02` in P-chart example
 - [x] 3.3 Add NEWS.md entry under `## Breaking changes` for v0.9.0 with migration snippet
 

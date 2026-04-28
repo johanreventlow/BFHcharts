@@ -94,7 +94,7 @@ Tests der kræver Mari-fonts (BFHtheme) bruger `skip_if_fonts_unavailable()` (ek
 Aktuelt er 1-til-1 mapping mellem `R/<module>.R` og `tests/testthat/test-<module>.R`:
 
 ```
-R/create_spc_chart.R       ↔ tests/testthat/test-bfh_qic_*.R + test-integration.R
+R/bfh_qic.R                ↔ tests/testthat/test-bfh_qic_*.R + test-integration.R
 R/spc_analysis.R           ↔ tests/testthat/test-spc_analysis.R
 R/plot_core.R              ↔ tests/testthat/test-plot_core.R
 R/export_pdf.R             ↔ tests/testthat/test-export_pdf*.R

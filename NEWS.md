@@ -1,3 +1,14 @@
+# BFHcharts 0.10.5 (development)
+
+## Interne aendringer
+
+* **Filomdoebning: `R/create_spc_chart.R` -> `R/bfh_qic.R`.** Funktionen
+  blev omdoebt fra `create_spc_chart()` til `bfh_qic()` i v0.2.0, men
+  filnavnet blev aldrig opdateret. Ingen API-paavirkning -- kun navigation
+  forbedret. Live docs (`README.md`, `CLAUDE.md`, `AGENTS.md`,
+  `tests/testthat/README.md`, pending OpenSpec-changes) opdateret til
+  at referere det korrekte sti. (#217, #204)
+
 # BFHcharts 0.10.4
 
 ## Interne aendringer

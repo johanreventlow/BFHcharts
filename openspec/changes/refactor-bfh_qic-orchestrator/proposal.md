@@ -1,6 +1,6 @@
 ## Why
 
-`bfh_qic()` in `R/create_spc_chart.R:453-834` is 380 lines combining:
+`bfh_qic()` in `R/bfh_qic.R:453-834` is 380 lines combining:
 - NSE column-name validation
 - Numeric parameter validation (×7 calls)
 - `qic_args` construction
@@ -33,7 +33,7 @@ Both code reviews (Codex #5 + Claude #4) identified this as HIGH severity for ma
 - Public function signature unchanged
 - All existing tests continue to pass
 - Add unit tests for each helper in isolation
-- Update `R/create_spc_chart.R` Roxygen with reference to the orchestration map
+- Update `R/bfh_qic.R` Roxygen with reference to the orchestration map
 
 ## Impact
 
@@ -41,7 +41,7 @@ Both code reviews (Codex #5 + Claude #4) identified this as HIGH severity for ma
 - `code-organization` — ADDED requirement: orchestrator-helper separation pattern for primary entry points
 
 **Affected code:**
-- `R/create_spc_chart.R` — orchestrator reduced to ≤ 80 lines
+- `R/bfh_qic.R` — orchestrator reduced to ≤ 80 lines
 - `R/utils_bfh_qic_helpers.R` — extended with new helpers (or split into multiple files if grows large)
 - `tests/testthat/test-bfh_qic_helpers.R` — extended with helper-isolation tests
 

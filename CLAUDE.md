@@ -36,7 +36,7 @@
 ```
 BFHcharts/
 ├── R/
-│   ├── create_spc_chart.R     # bfh_qic() — main public API
+│   ├── bfh_qic.R              # bfh_qic() — main public API
 │   ├── spc_*.R                # Chart type implementations
 │   ├── anhoej_*.R             # Anhøj rules
 │   ├── utils_*.R              # Utilities

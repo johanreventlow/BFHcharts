@@ -579,7 +579,7 @@ vdiffr::expect_doppelganger("name", plot, writer = "svg")
 
 | Fil | Ansvar | Vigtige funktioner |
 |-----|--------|-------------------|
-| **create_spc_chart.R** | Public API | `bfh_qic()` |
+| **bfh_qic.R** | Public API | `bfh_qic()` |
 | **plot_core.R** | Core plotting logic | `bfh_spc_plot()` |
 | **plot_enhancements.R** | Plot enhancements | Target lines, labels, annotations |
 | **themes.R** | ggplot2 themes | `bfh_theme()`, color palettes |

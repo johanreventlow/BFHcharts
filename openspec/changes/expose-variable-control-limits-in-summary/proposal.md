@@ -35,7 +35,7 @@ Both reviews flagged this. Codex called it "correct defensive behavior". I disag
 **Affected code:**
 - `R/utils_qic_summary.R:139-154` — replace silent drop with min/max + constant-flag columns
 - `tests/testthat/test-utils_qic_summary.R` — extend with variable-limit tests
-- `R/create_spc_chart.R` — update Roxygen `@return` description for `result$summary`
+- `R/bfh_qic.R` — update Roxygen `@return` description for `result$summary`
 
 **Non-breaking:** existing callers reading `nedre_kontrolgrænse`/`øvre_kontrolgrænse` continue to work for constant cases. New columns are additive. Pre-1.0 → MINOR bump (safe additive).
 
