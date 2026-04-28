@@ -59,6 +59,15 @@ NULL
 #' - Both TRUE: list(data = data.frame, summary = data.frame) (deprecated, will warn)
 #'
 #' @details
+#' **Helper map (interne orkestreringsfunktioner):**
+#' - `validate_bfh_qic_inputs()` — al input-validering (type, bounds, NSE, denominator, target)
+#' - `build_qic_args()` — konstruerer argument-liste til `qicharts2::qic()`
+#' - `invoke_qicharts2()` — kalder `do.call(qicharts2::qic, ...)` + `add_anhoej_signal()`
+#' - `compute_viewport_base_size()` — enhedskonvertering, responsiv `base_size`, label-normalisering
+#' - `render_bfh_plot()` — plot_config + viewport + `bfh_spc_plot()` med warning-suppression
+#' - `apply_spc_labels_to_export()` — label_size-beregning + `add_spc_labels()` med warning-suppression
+#' - `build_bfh_qic_return()` — returværdi-routing (S3 vs. legacy paths)
+#'
 #' **Chart Types:**
 #' - **run**: Run chart (no control limits)
 #' - **i**: I-chart (individuals)
@@ -507,349 +516,106 @@ bfh_qic <- function(data,
                     return.data = FALSE,
                     print.summary = FALSE,
                     language = "da") {
+  # ---- NSE + missing() flags kapteres FOERST i bfh_qic()-scopet ----
+  # substitute(), missing() og parent.frame() er scope-sensitive:
+  # de SKAL evalueres her, ikke inde i helpers.
   agg_fun_supplied <- !missing(agg.fun)
+  base_size_supplied <- !missing(base_size)
+  qic_envir <- parent.frame()
 
+  x_expr <- validate_column_name_expr(substitute(x), "x")
+  y_expr <- validate_column_name_expr(substitute(y), "y")
+  n_expr <- if (!missing(n) && !is.null(substitute(n))) {
+    validate_column_name_expr(substitute(n), "n")
+  } else {
+    NULL
+  }
+
+  # ---- Valider alle inputs (inkl. language) ----
   validate_language(language)
-
-  # Validate inputs
-  if (!is.data.frame(data)) {
-    stop("data must be a data frame")
-  }
-
-  # Validate chart type (CHART_TYPES_EN er single source of truth)
-  if (!chart_type %in% CHART_TYPES_EN) {
-    stop(sprintf(
-      "chart_type must be one of: %s",
-      paste(CHART_TYPES_EN, collapse = ", ")
-    ))
-  }
-
-  # Validate y_axis_unit
-  valid_units <- c("count", "percent", "rate", "time")
-  if (!y_axis_unit %in% valid_units) {
-    stop(sprintf(
-      "y_axis_unit must be one of: %s",
-      paste(valid_units, collapse = ", ")
-    ))
-  }
-
-  # SECURITY: Validate column names are simple identifiers
-  # Prevents NSE injection attacks where malicious code could be passed
-  validate_column_name <- function(col_expr, param_name) {
-    # Understoet baade direkte symboler (month) og quoted symboler (quote(month))
-    # til programmatisk brug via do.call/list-argumenter.
-    normalized_expr <- col_expr
-    if (is.call(col_expr) &&
-      identical(col_expr[[1]], as.name("quote")) &&
-      length(col_expr) == 2) {
-      normalized_expr <- col_expr[[2]]
-    }
-
-    col_str <- deparse(col_expr)
-    # Allow only simple identifiers: letters, numbers, dots, underscores
-    # No parentheses, operators, or function calls
-    valid_pattern <- "^[a-zA-Z][a-zA-Z0-9._]*$"
-    if (!is.symbol(normalized_expr) || !grepl(valid_pattern, as.character(normalized_expr))) {
-      stop(sprintf(
-        "%s must be a simple column name, got: %s\nAvoid special characters, spaces, or expressions",
-        param_name, col_str
-      ), call. = FALSE)
-    }
-
-    as.name(as.character(normalized_expr))
-  }
-
-  # Validate x and y column names
-  x_expr <- validate_column_name(substitute(x), "x")
-  y_expr <- validate_column_name(substitute(y), "y")
-
-  # SECURITY: Validate numeric parameters for bounds and sanity
-  # Prevents DoS attacks via memory exhaustion or crashes
-  # Using centralized validate_numeric_parameter() function to reduce code duplication
-  validate_numeric_parameter(
-    part, "part",
-    min = 1, max = nrow(data),
-    allow_null = TRUE,
-    context = sprintf("1-%d", nrow(data))
-  )
-
-  validate_numeric_parameter(
-    freeze, "freeze",
-    min = 1, max = nrow(data),
-    allow_null = TRUE,
-    context = sprintf("1-%d", nrow(data))
-  )
-
-  validate_numeric_parameter(
-    base_size, "base_size",
-    min = 1, max = 100,
-    allow_null = FALSE,
-    len = 1
-  )
-
-  validate_numeric_parameter(
-    width, "width",
-    min = 0.1, max = 3000, # Allow up to 3000 for pixels (typical: 600-2000px)
-    allow_null = TRUE,
-    len = 1
-  )
-
-  validate_numeric_parameter(
-    height, "height",
-    min = 0.1, max = 3000, # Allow up to 3000 for pixels (typical: 600-2000px)
-    allow_null = TRUE,
-    len = 1
-  )
-
-  validate_numeric_parameter(
-    exclude, "exclude",
-    min = 1, max = nrow(data),
-    allow_null = TRUE,
-    context = sprintf("1-%d", nrow(data))
-  )
-
-  validate_numeric_parameter(
-    cl, "cl",
-    min = -Inf, max = Inf,
-    allow_null = TRUE,
-    len = 1
-  )
-
-  validate_numeric_parameter(
-    multiply, "multiply",
-    min = 0.1, max = 1000,
-    allow_null = FALSE,
-    len = 1
-  )
-
-  # Validate agg.fun parameter (kun naar bruger eksplicit har angivet argumentet)
-  if (agg_fun_supplied) {
-    agg.fun <- match.arg(agg.fun)
-  } else {
-    agg.fun <- NULL
-  }
-
-  # Validate return.data parameter
-  if (!is.logical(return.data) || length(return.data) != 1 || is.na(return.data)) {
-    stop("return.data must be TRUE or FALSE", call. = FALSE)
-  }
-
-  # Validate print.summary parameter
-  if (!is.logical(print.summary) || length(print.summary) != 1 || is.na(print.summary)) {
-    stop("print.summary must be TRUE or FALSE", call. = FALSE)
-  }
-
-  # Validate plot_margin parameter
-  if (!is.null(plot_margin)) {
-    # Check if it's a margin object (from ggplot2::margin())
-    if (inherits(plot_margin, "ggplot2::margin") || inherits(plot_margin, "margin")) {
-      # margin() object - trust that user used it correctly
-      # Note: margin objects are grid::unit objects, cannot be compared with > or <
-    } else if (is.numeric(plot_margin)) {
-      # Numeric vector - validate length and values
-      if (length(plot_margin) != 4) {
-        stop(
-          "plot_margin must be either:\n",
-          "  - A numeric vector of length 4: c(top, right, bottom, left) in mm\n",
-          "  - A margin object: margin(t, r, b, l, unit = '...')",
-          call. = FALSE
-        )
-      }
-      if (any(plot_margin < 0)) {
-        stop("plot_margin values must be non-negative", call. = FALSE)
-      }
-      if (any(plot_margin > 100)) {
-        warning(
-          "plot_margin values > 100mm detected. This may result in very large margins.\n",
-          "Consider using smaller values or checking your input.",
-          call. = FALSE
-        )
-      }
-    } else {
-      stop(
-        "plot_margin must be either:\n",
-        "  - A numeric vector of length 4: c(top, right, bottom, left) in mm\n",
-        "  - A margin object: margin(t, r, b, l, unit = '...')\n",
-        "Got: ", class(plot_margin)[1],
-        call. = FALSE
-      )
-    }
-  }
-
-  # Build qicharts2::qic() arguments using NSE
-  qic_args <- list(
+  agg.fun <- validate_bfh_qic_inputs(
     data = data,
-    x = x_expr,
-    y = y_expr,
-    chart = chart_type,
-    return.data = TRUE
-  )
-
-  # Add optional arguments
-  n_expr <- NULL
-  if (!missing(n) && !is.null(substitute(n))) {
-    n_expr <- validate_column_name(substitute(n), "n")
-    qic_args$n <- n_expr
-  }
-
-  # Validate denominator content for ratio charts (p/pp/u/up).
-  # Catches n <= 0, Inf, non-numeric, missing-but-required n, and
-  # y > n (proportion contract). Other chart types are skipped.
-  validate_denominator_data(
     chart_type = chart_type,
-    data = data,
-    y_col = as.character(y_expr),
-    n_col = if (!is.null(n_expr)) as.character(n_expr) else NULL
+    y_axis_unit = y_axis_unit,
+    part = part,
+    freeze = freeze,
+    base_size = base_size,
+    width = width,
+    height = height,
+    exclude = exclude,
+    cl = cl,
+    multiply = multiply,
+    agg_fun_supplied = agg_fun_supplied,
+    agg.fun = agg.fun,
+    return.data = return.data,
+    print.summary = print.summary,
+    plot_margin = plot_margin,
+    target_value = target_value,
+    y_expr_char = as.character(y_expr),
+    n_expr_char = if (!is.null(n_expr)) as.character(n_expr) else NULL
   )
 
-  if (!is.null(part)) {
-    qic_args$part <- part
-  }
+  # ---- Byg qic_args + kald qicharts2 ----
+  qic_args <- build_qic_args(
+    data = data,
+    x_expr = x_expr,
+    y_expr = y_expr,
+    n_expr = n_expr,
+    chart_type = chart_type,
+    part = part,
+    freeze = freeze,
+    target_value = target_value,
+    notes = notes,
+    exclude = exclude,
+    cl = cl,
+    multiply = multiply,
+    agg.fun = agg.fun,
+    y_axis_unit = y_axis_unit
+  )
+  qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
 
-  if (!is.null(freeze)) {
-    qic_args$freeze <- freeze
-  }
+  # ---- Viewport + responsiv base_size ----
+  vp <- compute_viewport_base_size(
+    width = width,
+    height = height,
+    units = units,
+    dpi = dpi,
+    base_size = base_size,
+    base_size_supplied = base_size_supplied,
+    xlab = xlab,
+    ylab = ylab
+  )
 
-  if (!is.null(target_value) && is.numeric(target_value)) {
-    validate_target_for_unit(target_value, y_axis_unit, multiply)
-    qic_args$target <- target_value
-  }
-
-  if (!is.null(notes)) {
-    qic_args$notes <- notes
-  }
-
-  if (!is.null(exclude)) {
-    qic_args$exclude <- exclude
-  }
-
-  if (!is.null(cl)) {
-    qic_args$cl <- cl
-  }
-
-  if (!is.null(multiply) && multiply != 1) {
-    qic_args$multiply <- multiply
-  }
-
-  if (agg_fun_supplied) {
-    qic_args$agg.fun <- agg.fun
-  }
-
-  # Map y_axis_unit to qicharts2's y.percent parameter
-  # This enables percentage formatting (75% instead of 0.75) for compatible chart types
-  if (!is.null(y_axis_unit) && y_axis_unit == "percent") {
-    qic_args$y.percent <- TRUE
-  }
-
-  # Execute qicharts2::qic() to get calculation results
-  qic_data <- do.call(qicharts2::qic, qic_args, envir = parent.frame())
-
-  # Post-process: Normaliser anhoej.signal via dedikeret helper
-  qic_data <- add_anhoej_signal(qic_data)
-
-  # Convert width/height to inches using unit conversion
-  # Supports cm, mm, in, px with smart auto-detection
-  if (!is.null(width) && !is.null(height)) {
-    conversion_result <- convert_to_inches(width, height, units, dpi)
-    width_inches <- conversion_result$width_inches
-    height_inches <- conversion_result$height_inches
-  } else {
-    width_inches <- NULL
-    height_inches <- NULL
-  }
-
-  # Calculate responsive base_size if viewport dimensions provided
-  # Uses geometric mean approach: sqrt(width x height) / divisor
-  if (!is.null(width_inches) && !is.null(height_inches)) {
-    calculated_base_size <- calculate_base_size(width_inches, height_inches)
-    # Use calculated size unless user explicitly provided base_size
-    if (missing(base_size)) {
-      base_size <- calculated_base_size
-    }
-  }
-
-  # Normalize blank axis labels to NULL for robust downstream theming
-  if (is.character(xlab) && length(xlab) == 1 && nchar(trimws(xlab)) == 0) {
-    xlab <- NULL
-  }
-  if (is.character(ylab) && length(ylab) == 1 && nchar(trimws(ylab)) == 0) {
-    ylab <- NULL
-  }
-
-  # Create plot configuration
-  plot_config <- spc_plot_config(
+  # ---- Render plot ----
+  plot <- render_bfh_plot(
+    qic_data = qic_data,
     chart_type = chart_type,
     y_axis_unit = y_axis_unit,
     chart_title = chart_title,
     target_value = target_value,
     target_text = target_text,
-    ylab = ylab,
-    xlab = xlab,
+    ylab = vp$ylab,
+    xlab = vp$xlab,
     subtitle = subtitle,
-    caption = caption
+    caption = caption,
+    base_size = vp$base_size,
+    plot_margin = plot_margin
   )
 
-  # Create viewport configuration
-  viewport <- viewport_dims(base_size = base_size)
-
-  # Generate plot using bfh_spc_plot()
-  # Undertryk harmloese warnings: ggplot2 datetime-scale + BFHtheme proprietaer
-  # font (Mari) ikke i PostScript-database - begge er expected behavior.
-  plot <- withCallingHandlers(
-    bfh_spc_plot(
-      qic_data = qic_data,
-      plot_config = plot_config,
-      viewport = viewport,
-      plot_margin = plot_margin
-    ),
-    warning = function(w) {
-      if (grepl("numeric|datetime|scale_[xy]_date|PostScript font database", conditionMessage(w), ignore.case = TRUE)) {
-        invokeRestart("muffleWarning")
-      }
-    }
+  # ---- Tilfoej SPC labels ----
+  plot <- apply_spc_labels_to_export(
+    plot = plot,
+    qic_data = qic_data,
+    y_axis_unit = y_axis_unit,
+    viewport_width_inches = vp$width_inches,
+    viewport_height_inches = vp$height_inches,
+    target_text = target_text,
+    language = language
   )
 
-  # Use converted dimensions for viewport
-  # This enables precise label placement even without open graphics device
-  viewport_width_inches <- width_inches
-  viewport_height_inches <- height_inches
-
-  # Responsive label sizing forankret til PDF golden standard
-  if (!is.null(viewport_width_inches) && !is.null(viewport_height_inches)) {
-    label_size <- compute_label_size_for_viewport(
-      viewport_width_inches, viewport_height_inches
-    )
-  } else {
-    label_size <- PDF_LABEL_SIZE
-  }
-
-  # BFHtheme bruger proprietaere fonts (Mari) ikke tilgaengelige i alle miljoeer.
-  # ggplot_gtable under label placement emitter "font family not found in
-  # PostScript font database" pr. tekstelement - expected behavior, ikke fejl.
-  plot <- withCallingHandlers(
-    add_spc_labels(
-      plot = plot,
-      qic_data = qic_data,
-      y_axis_unit = y_axis_unit,
-      label_size = label_size,
-      viewport_width = viewport_width_inches,
-      viewport_height = viewport_height_inches,
-      target_text = target_text,
-      verbose = FALSE,
-      language = language
-    ),
-    warning = function(w) {
-      if (grepl("PostScript font database", conditionMessage(w), fixed = TRUE)) {
-        invokeRestart("muffleWarning")
-      }
-    }
-  )
-
-  # Always generate summary for inclusion in result object
+  # ---- Summary + config ----
   summary_result <- format_qic_summary(qic_data, y_axis_unit = y_axis_unit)
-
-  # Build config object with original parameters
-  config <- list(
+  config <- build_bfh_qic_config(
     chart_type = chart_type,
     chart_title = chart_title,
     y_axis_unit = y_axis_unit,
@@ -862,18 +628,11 @@ bfh_qic <- function(data,
     cl = cl,
     multiply = multiply,
     agg.fun = agg.fun,
-    # Label placement metadata for PDF export recalculation
-    label_config = list(
-      centerline_value = cl,
-      has_frys_column = !is.null(freeze),
-      has_skift_column = !is.null(part),
-      original_viewport_width = width_inches,
-      original_viewport_height = height_inches,
-      original_label_size = label_size
-    )
+    viewport_width_inches = vp$width_inches,
+    viewport_height_inches = vp$height_inches
   )
 
-  # Return-routing via dedikeret helper (inkl. legacy warnings)
+  # ---- Return-routing ----
   build_bfh_qic_return(
     qic_data = qic_data,
     plot = plot,

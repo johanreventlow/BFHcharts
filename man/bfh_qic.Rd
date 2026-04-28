@@ -118,6 +118,17 @@ BFH-styled visualization and automatic label placement. Handles the
 entire workflow from raw data to finished plot with intelligent labels.
 }
 \details{
+\strong{Helper map (interne orkestreringsfunktioner):}
+\itemize{
+\item \code{validate_bfh_qic_inputs()} — al input-validering (type, bounds, NSE, denominator, target)
+\item \code{build_qic_args()} — konstruerer argument-liste til \code{qicharts2::qic()}
+\item \code{invoke_qicharts2()} — kalder \code{do.call(qicharts2::qic, ...)} + \code{add_anhoej_signal()}
+\item \code{compute_viewport_base_size()} — enhedskonvertering, responsiv \code{base_size}, label-normalisering
+\item \code{render_bfh_plot()} — plot_config + viewport + \code{bfh_spc_plot()} med warning-suppression
+\item \code{apply_spc_labels_to_export()} — label_size-beregning + \code{add_spc_labels()} med warning-suppression
+\item \code{build_bfh_qic_return()} — returværdi-routing (S3 vs. legacy paths)
+}
+
 \strong{Chart Types:}
 \itemize{
 \item \strong{run}: Run chart (no control limits)
