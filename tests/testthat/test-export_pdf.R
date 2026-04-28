@@ -695,7 +695,10 @@ test_that("bfh template uses none for optional metadata and SPC defaults", {
   expect_no_match(template, "outliers_actual: 0", fixed = TRUE)
 })
 
-test_that("bfh template uses auto height for analysis row", {
+test_that("bfh template uses fixed 26.4mm height for analysis row", {
+  # Reverter PR #160's auto-row til fast 26.4mm for at gendanne den
+  # visuelle luft mellem analyse-tekst og PERIODE-linjen i SPC-PDF.
+  # Lange analyser (>26.4mm) skal kortes ned i UI'en.
   template_file <- system.file(
     "templates/typst/bfh-template/bfh-template.typ",
     package = "BFHcharts"
@@ -705,8 +708,8 @@ test_that("bfh template uses auto height for analysis row", {
 
   template <- paste(readLines(template_file), collapse = "\n")
 
-  expect_match(template, "rows: (52.8mm, auto, 1fr)", fixed = TRUE)
-  expect_no_match(template, "rows: (52.8mm, 26.4mm, 1fr)", fixed = TRUE)
+  expect_match(template, "rows: (52.8mm, 26.4mm, 1fr)", fixed = TRUE)
+  expect_no_match(template, "rows: (52.8mm, auto, 1fr)", fixed = TRUE)
 })
 
 test_that("bfh_export_pdf validates custom template_path", {
