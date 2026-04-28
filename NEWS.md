@@ -1,3 +1,23 @@
+# BFHcharts 0.10.4
+
+## Interne aendringer
+
+* **Auto-tag-workflow respekterer nu DESCRIPTION's Version-felt direkte.**
+  Tidligere auto-inkrementerede `tag-release.yaml` PATCH baseret paa
+  eksisterende tags uafhaengigt af DESCRIPTION, hvilket fik tag og
+  pakke-version ud af sync (fx blev tag `v0.10.3` oprettet paa commit med
+  `Version: 0.10.1`, saa pak's version-resolver afviste downstream-installs
+  med `Can't install dependency BFHcharts@v0.10.3 (>= 0.10.3)`).
+  Workflow bruger nu `v` + DESCRIPTION's Version som tag-navn og fejler
+  hvis tag allerede eksisterer paa anden commit. Konsekvens: udvikler
+  skal manuelt bumpe DESCRIPTION i hver release-PR for at faa et nyt tag.
+  (Fixer regression introduceret i tidligere commit der tilfoejede
+  auto-PATCH-increment.)
+
+* **Spring v0.10.2 og v0.10.3.** Disse tags blev auto-genereret med
+  forkert DESCRIPTION-version (0.10.0 og 0.10.1 hhv.) -- v0.10.4 er
+  foerste version hvor tag matcher pakke-version igen.
+
 # BFHcharts 0.10.1
 
 ## Bug fixes
