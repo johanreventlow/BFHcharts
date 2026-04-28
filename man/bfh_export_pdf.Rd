@@ -16,6 +16,7 @@ bfh_export_pdf(
   analysis_max_chars = 375,
   dpi = 150,
   font_path = NULL,
+  ignore_system_fonts = TRUE,
   inject_assets = NULL,
   batch_session = NULL
 )
@@ -31,8 +32,8 @@ bfh_export_pdf(
 \item \code{department}: Department/unit name (optional)
 \item \code{analysis}: Analysis text with findings (optional)
 \item \code{details}: Period info, averages (auto-generated if not provided).
-Auto-generated format: "Periode: feb. 2019 – mar. 2022 • Gns. måned: 58938/97266 •
-Seneste måned: 60756/88509 • Nuværende niveau: 64,5\\%"
+Auto-generated format: "Periode: feb. 2019 - mar. 2022 * Gns. maaned: 58938/97266 *
+Seneste maaned: 60756/88509 * Nuvaerende niveau: 64,5\\%"
 \item \code{author}: Author name (optional)
 \item \code{date}: Report date (default: Sys.Date())
 \item \code{data_definition}: Data definition text (optional)
@@ -53,7 +54,7 @@ Default is FALSE for backward compatibility.}
 
 \item{use_ai}{Logical. Controls AI usage for auto-analysis:
 \itemize{
-\item \code{FALSE} (default): Use standard texts only — no external data sharing
+\item \code{FALSE} (default): Use standard texts only - no external data sharing
 \item \code{TRUE}: Use AI via BFHllm (requires BFHllm installed; error if not)
 }
 Only used when \code{auto_analysis = TRUE}. See \code{bfh_generate_analysis()}
@@ -73,6 +74,12 @@ relevant if the plot contains rasterized content.}
 Passed as \code{--font-path} to the Typst compiler. Useful when fonts
 (e.g., Mari) are bundled in a downstream package and not installed
 system-wide on the deployment platform.}
+
+\item{ignore_system_fonts}{Logical. If \code{TRUE} (default), passes
+\code{--ignore-system-fonts} to Typst so only fonts from \code{font_path}
+(or bundled template fonts) are used. Prevents inconsistent rendering
+when developers have additional Mari variants (e.g., Mari Heavy)
+installed system-wide. See \code{\link{bfh_compile_typst}} for details.}
 
 \item{inject_assets}{Optional callback function called after Typst template
 structure is created but before compilation. Receives one argument: the path
@@ -134,7 +141,7 @@ Typst templates for hospital branding. Requires Quarto CLI for compilation.
 \itemize{
 \item Automatically extracted from bfh_qic_result$summary
 \item Displayed in SPC table on PDF
-\item Includes: runs (serielængde), crossings (antal kryds), outliers
+\item Includes: runs (serielaengde), crossings (antal kryds), outliers
 }
 
 \strong{Auto-Generated Details:}
@@ -171,7 +178,7 @@ bfh_qic(
       hospital = "BFH",
       department = "Kvalitetsafdeling",
       analysis = "Signifikant fald observeret efter intervention",
-      data_definition = "Antal hospital-erhvervede infektioner per måned"
+      data_definition = "Antal hospital-erhvervede infektioner per maaned"
     )
   )
 

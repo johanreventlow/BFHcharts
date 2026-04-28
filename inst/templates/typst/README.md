@@ -45,7 +45,7 @@ The `bfh_export_pdf()` function uses this template automatically. You can also u
 ### Font Availability
 
 The template includes Mari font files in `bfh-template/fonts/`:
-- `Mari.otf`, `Mari Bold.otf`, `Mari Light.otf`, etc.
+- `Mari.otf`, `Mari-Bold.otf`, `Mari-Light.otf`, etc.
 - Arial font files (ARIAL.TTF, ARIALBD.TTF, etc.)
 
 Fonts are automatically loaded by Typst from the template directory.
@@ -91,7 +91,7 @@ To customize the template:
 ### Logo Assets
 
 Available in `bfh-template/images/`:
-- `Logo_Bispebjerg_og Frederiksberg_RGB.png` - Main logo
+- `Logo_Bispebjerg_og_Frederiksberg_RGB.png` - Main logo
 - `Hospital_Maerke_RGB_A1_str.png` - Hospital mark
 - Other variations for different contexts
 

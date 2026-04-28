@@ -25,13 +25,13 @@ NULL
 #'
 #' @details
 #' **Column Translations:**
-#' - part → fase
-#' - n.obs → antal_observationer
-#' - n.useful → anvendelige_observationer
-#' - cl → centerlinje
-#' - lcl / ucl → nedre_kontrolgrænse / øvre_kontrolgrænse
-#' - runs.signal → løbelængde_signal
-#' - sigma.signal → sigma_signal
+#' - part -> fase
+#' - n.obs -> antal_observationer
+#' - n.useful -> anvendelige_observationer
+#' - cl -> centerlinje
+#' - lcl / ucl -> nedre_kontrolgraense / oevre_kontrolgraense
+#' - runs.signal -> loebelaengde_signal
+#' - sigma.signal -> sigma_signal
 #'
 #' **Rounding Rules:**
 #' - Control limits: 2 decimals for percent/rate, 1 decimal for count/time
@@ -50,30 +50,37 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   }
 
   # Define summary columns to extract
-  summary_cols <- c('facet1', 'facet2', 'part', 'n.obs', 'n.useful',
-                    'longest.run', 'longest.run.max', 'n.crossings', 'n.crossings.min',
-                    'runs.signal', 'cl', 'lcl', 'ucl', 'sigma.signal')
+  summary_cols <- c(
+    "facet1", "facet2", "part", "n.obs", "n.useful",
+    "longest.run", "longest.run.max", "n.crossings", "n.crossings.min",
+    "runs.signal", "cl", "lcl", "ucl", "sigma.signal"
+  )
 
   # Check which columns exist (run charts don't have lcl/ucl)
   available_cols <- intersect(summary_cols, names(qic_data))
 
   # Extract unique summary rows per part
-  # Use split + per-part aggregation for correct Anhøj statistics
+  # Use split + per-part aggregation for correct Anhoej statistics
   if ("part" %in% names(qic_data)) {
     parts <- split(qic_data[, available_cols, drop = FALSE], qic_data$part)
     raw_summary <- dplyr::bind_rows(lapply(parts, function(x) {
       row <- x[1, , drop = FALSE]
-      # Genberegn Anhøj-stats per part (qicharts2 beregner globalt)
-      if ("longest.run" %in% names(x))
+      # Genberegn Anhoej-stats per part (qicharts2 beregner globalt)
+      if ("longest.run" %in% names(x)) {
         row$longest.run <- safe_max(x$longest.run)
-      if ("longest.run.max" %in% names(x))
+      }
+      if ("longest.run.max" %in% names(x)) {
         row$longest.run.max <- safe_max(x$longest.run.max)
-      if ("n.crossings" %in% names(x))
+      }
+      if ("n.crossings" %in% names(x)) {
         row$n.crossings <- safe_max(x$n.crossings)
-      if ("n.crossings.min" %in% names(x))
+      }
+      if ("n.crossings.min" %in% names(x)) {
         row$n.crossings.min <- safe_max(x$n.crossings.min)
-      if ("runs.signal" %in% names(x))
+      }
+      if ("runs.signal" %in% names(x)) {
         row$runs.signal <- any(x$runs.signal, na.rm = TRUE)
+      }
       row
     }))
   } else {
@@ -87,7 +94,7 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     "rate" = 2,
     "count" = 1,
     "time" = 1,
-    2  # default
+    2 # default
   )
 
   # Create formatted summary with Danish column names
@@ -98,14 +105,14 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     stringsAsFactors = FALSE
   )
 
-  # Add Anhøj rules statistics
-  formatted$længste_løb <- as.integer(raw_summary$longest.run)
-  formatted$længste_løb_max <- as.integer(raw_summary$longest.run.max)
+  # Add Anhoej rules statistics
+  formatted[["l\u00e6ngste_l\u00f8b"]] <- as.integer(raw_summary$longest.run)
+  formatted[["l\u00e6ngste_l\u00f8b_max"]] <- as.integer(raw_summary$longest.run.max)
   formatted$antal_kryds <- as.integer(raw_summary$n.crossings)
   formatted$antal_kryds_min <- as.integer(raw_summary$n.crossings.min)
 
   # Add signals as logical values
-  formatted$løbelængde_signal <- as.logical(raw_summary$runs.signal)
+  formatted[["l\u00f8bel\u00e6ngde_signal"]] <- as.logical(raw_summary$runs.signal)
   formatted$sigma_signal <- as.logical(raw_summary$sigma.signal)
 
   # Add aggregated outlier counts per part when sigma.signal is available.
@@ -147,16 +154,16 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     }, logical(1)))
 
     if (lcl_constant && ucl_constant) {
-      formatted$nedre_kontrolgrænse <- round(raw_summary$lcl, decimal_places)
-      formatted$øvre_kontrolgrænse <- round(raw_summary$ucl, decimal_places)
+      formatted[["nedre_kontrolgr\u00e6nse"]] <- round(raw_summary$lcl, decimal_places)
+      formatted[["\u00f8vre_kontrolgr\u00e6nse"]] <- round(raw_summary$ucl, decimal_places)
     }
     # If not constant, don't include them in summary
   }
 
   # Optionally add 95% limits if present
   if ("lcl.95" %in% names(raw_summary) && "ucl.95" %in% names(raw_summary)) {
-    formatted$nedre_kontrolgrænse_95 <- round(raw_summary$lcl.95, decimal_places)
-    formatted$øvre_kontrolgrænse_95 <- round(raw_summary$ucl.95, decimal_places)
+    formatted[["nedre_kontrolgr\u00e6nse_95"]] <- round(raw_summary$lcl.95, decimal_places)
+    formatted[["\u00f8vre_kontrolgr\u00e6nse_95"]] <- round(raw_summary$ucl.95, decimal_places)
   }
 
   # Add facet columns if present

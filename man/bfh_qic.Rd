@@ -145,14 +145,32 @@ entire workflow from raw data to finished plot with intelligent labels.
 \item \code{freeze}: Position to freeze baseline calculation
 }
 
+\strong{Denominator Contract (ratio charts):}
+Ratio chart types (\code{p}, \code{pp}, \code{u}, \code{up}) require a denominator column
+supplied via \code{n}. The content of \code{n} is validated to prevent silently
+misleading rate plots:
+\itemize{
+\item \code{n} must be numeric and finite (no \code{Inf}/\code{-Inf}).
+\item All non-\code{NA} values of \code{n} must be \verb{> 0} (zero/negative denominators
+produce meaningless rates).
+\item For proportion charts (\code{p}, \code{pp}): every row with both \code{y} and \code{n}
+present must satisfy \code{y <= n} (proportion <= 1).
+\item \code{NA} in individual rows of \code{n} is allowed (qicharts2 drops them).
+\item Violations raise an error identifying the offending row number(s) so
+the source data can be inspected. Pre-filter or correct invalid rows
+before calling \code{bfh_qic()}.
+Other chart types (\code{run}, \code{i}, \code{mr}, \code{c}, \code{g}, \code{t}, \code{xbar}, \code{s}) are not
+subject to denominator validation.
+}
+
 \strong{Unit Support (Danish-friendly):}
 Width and height support multiple units for convenience:
 \itemize{
 \item \strong{Smart auto-detection} (default, \code{units = NULL}):
 \itemize{
-\item Values > 100 → pixels (e.g., \code{width = 800} → 800px)
-\item Values 10-100 → centimeters (e.g., \code{width = 25} → 25cm)
-\item Values < 10 → inches (e.g., \code{width = 10} → 10in, legacy)
+\item Values > 100 -> pixels (e.g., \code{width = 800} -> 800px)
+\item Values 10-100 -> centimeters (e.g., \code{width = 25} -> 25cm)
+\item Values < 10 -> inches (e.g., \code{width = 10} -> 10in, legacy)
 }
 \item \strong{Explicit units} (\code{units = "cm"}, \code{"mm"}, \code{"in"}, \code{"px"}):
 \itemize{
@@ -165,7 +183,7 @@ Width and height support multiple units for convenience:
 
 \strong{Responsive Typography:}
 When \code{width} and \code{height} are provided, \code{base_size} is automatically
-calculated using geometric mean: \verb{sqrt(width × height) / 3.5}
+calculated using geometric mean: \verb{sqrt(width x height) / 3.5}
 This ensures fonts scale proportionally with plot size.
 Override by explicitly setting \code{base_size}.
 
@@ -179,7 +197,7 @@ Labels are automatically added to the plot showing:
 }
 
 \strong{Arrow Symbol Suppression:}
-If \code{target_text} contains arrow symbols (↑ ↓ or < >), the target line will be
+If \code{target_text} contains arrow symbols (up down or < >), the target line will be
 suppressed and only the directional indicator shown at the plot edge.
 
 \strong{Percent Target Contract:}
@@ -227,7 +245,7 @@ plot <- bfh_qic(
   y_axis_unit = "percent",
   chart_title = "Infection Rate per 100 Surgeries",
   target_value = 0.02,
-  target_text = "↓ Målet: 2\%"
+  target_text = "down Maalet: 2\%"
 )
 plot
 
@@ -262,28 +280,28 @@ plot <- bfh_qic(
 plot
 
 # Example 5: Responsive typography with viewport dimensions
-# Small plot (6×4 inches) → base_size ≈ 14pt
+# Small plot (6x4 inches) -> base_size ~= 14pt
 plot_small <- bfh_qic(
   data = data, x = month, y = infections,
   chart_type = "i", y_axis_unit = "count",
   chart_title = "Small Plot - Auto Scaled Typography",
-  width = 6, height = 4 # Auto: base_size ≈ 14pt
+  width = 6, height = 4 # Auto: base_size ~= 14pt
 )
 
-# Medium plot (10×6 inches) → base_size ≈ 22pt
+# Medium plot (10x6 inches) -> base_size ~= 22pt
 plot_medium <- bfh_qic(
   data = data, x = month, y = infections,
   chart_type = "i", y_axis_unit = "count",
   chart_title = "Medium Plot - Auto Scaled Typography",
-  width = 10, height = 6 # Auto: base_size ≈ 22pt
+  width = 10, height = 6 # Auto: base_size ~= 22pt
 )
 
-# Large plot (16×9 inches) → base_size ≈ 34pt
+# Large plot (16x9 inches) -> base_size ~= 34pt
 plot_large <- bfh_qic(
   data = data, x = month, y = infections,
   chart_type = "i", y_axis_unit = "count",
   chart_title = "Large Plot - Auto Scaled Typography",
-  width = 16, height = 9 # Auto: base_size ≈ 34pt
+  width = 16, height = 9 # Auto: base_size ~= 34pt
 )
 
 # Override auto-scaling with explicit base_size
@@ -331,7 +349,7 @@ plot_multiply <- bfh_qic(
   chart_type = "i",
   y_axis_unit = "percent",
   chart_title = "Proportions Converted to Percentages",
-  multiply = 100 # Convert 0.01 → 1\%
+  multiply = 100 # Convert 0.01 -> 1\%
 )
 
 # Example 9: Custom centerline (cl parameter)
@@ -388,7 +406,7 @@ plot_labels <- bfh_qic(
   y_axis_unit = "count",
   chart_title = "Hospital-Acquired Infections",
   ylab = "Antal infektioner",
-  xlab = "Måned",
+  xlab = "Maaned",
   subtitle = "Kirurgisk afdeling - 2024",
   caption = "Data: EPJ system | Analyse: Kvalitetsafdelingen"
 )
@@ -489,8 +507,8 @@ result$plot
 # Access the summary statistics (Danish column names)
 print(result$summary)
 # Columns: fase, antal_observationer, anvendelige_observationer,
-#          centerlinje, nedre_kontrolgrænse, øvre_kontrolgrænse,
-#          længste_løb, antal_kryds, løbelængde_signal, sigma_signal
+#          centerlinje, nedre_kontrolgraense, oevre_kontrolgraense,
+#          laengste_loeb, antal_kryds, loebelaengde_signal, sigma_signal
 
 # Example 21: Get both raw data and summary
 result <- bfh_qic(

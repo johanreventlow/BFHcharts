@@ -45,7 +45,7 @@ covr::package_coverage()
 
 ```r
 # Eksempel: Input validation pattern
-create_spc_chart <- function(data, x, y, chart_type = "run", ...) {
+bfh_qic <- function(data, x, y, chart_type = "run", ...) {
   # Input validation
   stopifnot(
     "data must be a data.frame" = is.data.frame(data),
@@ -108,7 +108,7 @@ Undtagelse: Simple operationer (`git status`, `git diff`, `git log`)
 ### 3.1 R Package Structure
 
 **File organization i `/R/`:**
-* `plot_core.R` – Core plotting functions (bfh_spc_plot, create_spc_chart)
+* `plot_core.R` – Core plotting functions (bfh_spc_plot)
 * `plot_enhancements.R` – Plot enhancement layers (target lines, labels, etc.)
 * `themes.R` – ggplot2 theme functions (bfh_theme)
 * `chart_types.R` – Chart type definitions og mappings
@@ -135,9 +135,9 @@ Undtagelse: Simple operationer (`git status`, `git diff`, `git log`)
 #'
 #' @examples
 #' \dontrun{
-#' create_spc_chart(data = my_data, x = date, y = count, chart_type = "run")
+#' bfh_qic(data = my_data, x = date, y = count, chart_type = "run")
 #' }
-create_spc_chart <- function(data, x, y, chart_type = "run", ...) {
+bfh_qic <- function(data, x, y, chart_type = "run", ...) {
   # Implementation
 }
 ```
@@ -252,26 +252,26 @@ devtools::document()
 
 **Unit tests:**
 ```r
-test_that("create_spc_chart validates input data", {
+test_that("bfh_qic validates input data", {
   # Arrange
   invalid_data <- list(not = "a dataframe")
 
   # Act & Assert
   expect_error(
-    create_spc_chart(data = invalid_data, x = date, y = count),
+    bfh_qic(data = invalid_data, x = date, y = count),
     "data must be a data.frame"
   )
 })
 
-test_that("create_spc_chart returns ggplot object", {
+test_that("bfh_qic returns bfh_qic_result object", {
   # Arrange
   data <- data.frame(date = 1:10, count = rnorm(10))
 
   # Act
-  result <- create_spc_chart(data = data, x = date, y = count)
+  result <- bfh_qic(data = data, x = date, y = count)
 
   # Assert
-  expect_s3_class(result, "ggplot")
+  expect_s3_class(result, "bfh_qic_result")
 })
 ```
 
@@ -579,7 +579,8 @@ vdiffr::expect_doppelganger("name", plot, writer = "svg")
 
 | Fil | Ansvar | Vigtige funktioner |
 |-----|--------|-------------------|
-| **plot_core.R** | Core plotting logic | `create_spc_chart()`, `bfh_spc_plot()` |
+| **create_spc_chart.R** | Public API | `bfh_qic()` |
+| **plot_core.R** | Core plotting logic | `bfh_spc_plot()` |
 | **plot_enhancements.R** | Plot enhancements | Target lines, labels, annotations |
 | **themes.R** | ggplot2 themes | `bfh_theme()`, color palettes |
 | **chart_types.R** | Chart type definitions | Chart type mappings, validering |

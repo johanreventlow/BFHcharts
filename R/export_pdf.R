@@ -11,8 +11,8 @@
 #'     \item \code{department}: Department/unit name (optional)
 #'     \item \code{analysis}: Analysis text with findings (optional)
 #'     \item \code{details}: Period info, averages (auto-generated if not provided).
-#'       Auto-generated format: "Periode: feb. 2019 – mar. 2022 • Gns. måned: 58938/97266 •
-#'       Seneste måned: 60756/88509 • Nuværende niveau: 64,5\%"
+#'       Auto-generated format: "Periode: feb. 2019 - mar. 2022 * Gns. maaned: 58938/97266 *
+#'       Seneste maaned: 60756/88509 * Nuvaerende niveau: 64,5\%"
 #'     \item \code{author}: Author name (optional)
 #'     \item \code{date}: Report date (default: Sys.Date())
 #'     \item \code{data_definition}: Data definition text (optional)
@@ -29,7 +29,7 @@
 #'   Default is FALSE for backward compatibility.
 #' @param use_ai Logical. Controls AI usage for auto-analysis:
 #'   \itemize{
-#'     \item \code{FALSE} (default): Use standard texts only — no external data sharing
+#'     \item \code{FALSE} (default): Use standard texts only - no external data sharing
 #'     \item \code{TRUE}: Use AI via BFHllm (requires BFHllm installed; error if not)
 #'   }
 #'   Only used when \code{auto_analysis = TRUE}. See \code{bfh_generate_analysis()}
@@ -45,6 +45,11 @@
 #'   Passed as \code{--font-path} to the Typst compiler. Useful when fonts
 #'   (e.g., Mari) are bundled in a downstream package and not installed
 #'   system-wide on the deployment platform.
+#' @param ignore_system_fonts Logical. If \code{TRUE} (default), passes
+#'   \code{--ignore-system-fonts} to Typst so only fonts from \code{font_path}
+#'   (or bundled template fonts) are used. Prevents inconsistent rendering
+#'   when developers have additional Mari variants (e.g., Mari Heavy)
+#'   installed system-wide. See \code{\link{bfh_compile_typst}} for details.
 #' @param inject_assets Optional callback function called after Typst template
 #'   structure is created but before compilation. Receives one argument: the path
 #'   to the template directory (e.g., \code{<temp_dir>/bfh-template}). Use this
@@ -90,7 +95,7 @@
 #' **SPC Statistics:**
 #' - Automatically extracted from bfh_qic_result$summary
 #' - Displayed in SPC table on PDF
-#' - Includes: runs (serielængde), crossings (antal kryds), outliers
+#' - Includes: runs (serielaengde), crossings (antal kryds), outliers
 #'
 #' **Auto-Generated Details:**
 #' - If \code{metadata$details} is not provided, details are auto-generated
@@ -129,7 +134,7 @@
 #'       hospital = "BFH",
 #'       department = "Kvalitetsafdeling",
 #'       analysis = "Signifikant fald observeret efter intervention",
-#'       data_definition = "Antal hospital-erhvervede infektioner per måned"
+#'       data_definition = "Antal hospital-erhvervede infektioner per maaned"
 #'     )
 #'   )
 #'
@@ -169,6 +174,7 @@ bfh_export_pdf <- function(x,
                            analysis_max_chars = 375,
                            dpi = 150,
                            font_path = NULL,
+                           ignore_system_fonts = TRUE,
                            inject_assets = NULL,
                            batch_session = NULL) {
   # Input validation
@@ -359,7 +365,7 @@ bfh_export_pdf <- function(x,
 
   # Create or reuse temporary directory for intermediate files
   if (!is.null(batch_session)) {
-    # Batch mode: reuse session tmpdir — template already staged there
+    # Batch mode: reuse session tmpdir - template already staged there
     temp_dir <- batch_session$tmpdir
     # Register per-export file cleanup only (do NOT unlink session tmpdir)
     on.exit(
@@ -483,7 +489,12 @@ bfh_export_pdf <- function(x,
   }
 
   # Compile to PDF via Quarto (with optional font path)
-  bfh_compile_typst(typst_file, output, font_path = effective_font_path)
+  bfh_compile_typst(
+    typst_file,
+    output,
+    font_path = effective_font_path,
+    ignore_system_fonts = ignore_system_fonts
+  )
 
   # Return input object invisibly for pipe chaining
   invisible(x)
@@ -569,7 +580,7 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
   config <- x$config
   label_config <- config$label_config
 
-  # Beregn label_size: brug eksplicit værdi eller beregn fra target-dimensioner
+  # Beregn label_size: brug eksplicit vaerdi eller beregn fra target-dimensioner
   new_label_size <- label_size %||% compute_label_size_for_viewport(
     target_width_inches, target_height_inches
   )

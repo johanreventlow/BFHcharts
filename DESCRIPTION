@@ -1,6 +1,6 @@
 Package: BFHcharts
 Title: SPC Visualization for Healthcare Quality Improvement
-Version: 0.9.0
+Version: 0.10.0
 Authors@R: c(
     person(
       "Johan", "Reventlow",
@@ -13,7 +13,7 @@ Description: A modern R package for creating Statistical Process Control (SPC)
     provides beautiful, publication-ready SPC visualizations with configurable
     themes and multi-organizational branding support. Inspired by BBC's bbplot
     design philosophy.
-License: GPL-3
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
@@ -21,7 +21,7 @@ SystemRequirements: Quarto CLI (>= 1.4.0) for PDF export via Typst templates
 URL: https://github.com/johanreventlow/BFHcharts
 BugReports: https://github.com/johanreventlow/BFHcharts/issues
 Depends:
-    R (>= 4.0.0)
+    R (>= 4.1.0)
 Imports:
     BFHtheme (>= 0.5.0),
     ggplot2 (>= 3.4.0),
@@ -35,10 +35,11 @@ Imports:
     yaml,
     lemon,
     marquee (>= 0.1.0),
-    svglite (>= 2.1.0),
     grid,
     commonmark (>= 1.9),
-    xml2
+    xml2,
+    systemfonts,
+    rlang
 Suggests:
     testthat (>= 3.0.0),
     vdiffr,

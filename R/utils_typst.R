@@ -176,6 +176,13 @@ bfh_create_typst_document <- function(chart_image,
 #' @param font_path Optional path to directory containing additional fonts.
 #'   Passed as \code{--font-path} to the Typst compiler. Useful when fonts
 #'   are not installed system-wide (e.g., on cloud deployment platforms).
+#' @param ignore_system_fonts Logical. If \code{TRUE} (default), passes
+#'   \code{--ignore-system-fonts} to Typst, ensuring only fonts from
+#'   \code{font_path} are used. Prevents system-installed font variants
+#'   (e.g., Mari Heavy with metadata \code{style=Heavy,Regular}) from
+#'   leaking into the rendered PDF and causing inconsistent weights between
+#'   dev machines and cloud deployment. Set to \code{FALSE} only if relying
+#'   on system fonts is intentional.
 #' @param .system2 Dependency-injection hook for \code{system2()}. Default is
 #'   the real \code{base::system2}. Tests can inject a mock to avoid spawning
 #'   live Quarto processes.
@@ -187,6 +194,7 @@ bfh_create_typst_document <- function(chart_image,
 #'
 #' @keywords internal
 bfh_compile_typst <- function(typst_file, output, font_path = NULL,
+                              ignore_system_fonts = TRUE,
                               .system2 = system2, .quarto_path = NULL) {
   if (!file.exists(typst_file)) {
     stop("Typst file not found: ", typst_file, call. = FALSE)
@@ -196,7 +204,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   validate_export_path(typst_file)
   validate_export_path(output)
 
-  # Validér font_path hvis angivet
+  # Valider font_path hvis angivet
   if (!is.null(font_path)) {
     if (!is.character(font_path) || length(font_path) != 1) {
       stop("font_path must be a single character string", call. = FALSE)
@@ -220,6 +228,9 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   if (!is.null(font_path)) {
     compile_args <- c(compile_args, "--font-path", shQuote(font_path))
   }
+  if (isTRUE(ignore_system_fonts)) {
+    compile_args <- c(compile_args, "--ignore-system-fonts")
+  }
 
   # Use quarto typst compile (not quarto render which expects .qmd files)
   quarto_cmd <- .quarto_path %||% get_quarto_path()
@@ -242,7 +253,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   # Check exit status
   exit_status <- attr(result, "status")
   if (!is.null(exit_status) && exit_status != 0) {
-    # Begræns output for at undgå lækage af filsystem-stier i fejlbeskeder
+    # Begraens output for at undgaa laekage af filsystem-stier i fejlbeskeder
     safe_output <- substr(paste(result, collapse = "\n"), 1, 500)
     stop(
       "Quarto compilation failed with exit code ", exit_status, "\n",
@@ -273,7 +284,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
 #' @return Character vector with Typst content
 #' @keywords internal
 build_typst_content <- function(chart_image, metadata, spc_stats, template, template_file) {
-  # Validér template-identifier mod injection
+  # Valider template-identifier mod injection
 
   if (!grepl("^[a-zA-Z][a-zA-Z0-9_-]*$", template)) {
     stop("template must be a valid Typst identifier (letters, numbers, hyphens, underscores)",
@@ -337,7 +348,7 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
     )
   }
 
-  # SPC statistics — send "?" for NA (vises i tabel), udelad kun NULL
+  # SPC statistics - send "?" for NA (vises i tabel), udelad kun NULL
   spc_val <- function(x) {
     if (is.null(x)) {
       return(NULL)
@@ -419,7 +430,7 @@ escape_typst_string <- function(s) {
 #' Escape Plain Text for Typst Content Blocks
 #'
 #' Escapes all Typst markup characters in plain text so they render literally.
-#' Must be applied to text nodes only — do not apply to generated Typst markup.
+#' Must be applied to text nodes only - do not apply to generated Typst markup.
 #'
 #' @param s Character string to escape
 #' @return Escaped string safe for Typst content blocks
@@ -428,7 +439,7 @@ escape_typst_text <- function(s) {
   if (is.null(s) || !nzchar(s)) {
     return(s %||% "")
   }
-  # Backslash MUST be escaped first — all others introduce a leading backslash
+  # Backslash MUST be escaped first - all others introduce a leading backslash
   s <- gsub("\\", "\\\\", s, fixed = TRUE)
   s <- gsub("#", "\\#", s, fixed = TRUE)
   s <- gsub("$", "\\$", s, fixed = TRUE)
@@ -487,7 +498,7 @@ walk_typst_node <- function(node) {
     code_block = sprintf('#raw(block: true, "%s")', escape_typst_raw(xml2::xml_text(node))),
     softbreak = "\\\n",
     linebreak = "\\\n",
-    # Link: render visible text only — hyperlinks are not supported in Typst content blocks
+    # Link: render visible text only - hyperlinks are not supported in Typst content blocks
     link = {
       kids <- xml2::xml_children(node)
       paste(vapply(kids, walk_typst_node, character(1)), collapse = "")
@@ -497,7 +508,7 @@ walk_typst_node <- function(node) {
       kids <- xml2::xml_children(node)
       paste(vapply(kids, walk_typst_node, character(1)), collapse = "")
     },
-    # Raw HTML: escape content for Typst — strip trailing newline added by CommonMark
+    # Raw HTML: escape content for Typst - strip trailing newline added by CommonMark
     html_block = escape_typst_text(trimws(xml2::xml_text(node), which = "right")),
     html_inline = escape_typst_text(xml2::xml_text(node)),
     list = {

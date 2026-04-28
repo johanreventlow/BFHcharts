@@ -1,13 +1,13 @@
 #' Reset alle interne caches i BFHcharts
 #'
-#' Tømmer alle package-level cache-environments:
-#' - `.font_cache`: løste font-families per (fontfamily, device-type)
+#' Toemmer alle package-level cache-environments:
+#' - `.font_cache`: loeste font-families per (fontfamily, device-type)
 #' - `.marquee_style_cache`: marquee style-objekter per lineheight
-#' - `.quarto_cache`: Quarto CLI tilgængelighed og sti
+#' - `.quarto_cache`: Quarto CLI tilgaengelighed og sti
 #' - `.i18n_cache`: i18n YAML-tekster per sprog
 #'
-#' Bruges primært i testmiljø for at sikre reproducerbare resultater
-#' på tværs af tests der ændrer fonts eller Quarto-konfiguration.
+#' Bruges primaert i testmiljoe for at sikre reproducerbare resultater
+#' paa tvaers af tests der aendrer fonts eller Quarto-konfiguration.
 #'
 #' @return invisible(NULL)
 #' @keywords internal

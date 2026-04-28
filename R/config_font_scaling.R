@@ -5,7 +5,7 @@
 
 #' Responsive Font Scaling Configuration
 #'
-#' Controls how base_size scales based on viewport dimensions (width × height).
+#' Controls how base_size scales based on viewport dimensions (width x height).
 #'
 #' @details
 #' **Formula:**
@@ -15,24 +15,24 @@
 #' ```
 #'
 #' **Geometric Mean Approach:**
-#' Using `sqrt(width × height)` provides balanced scaling based on both
+#' Using `sqrt(width x height)` provides balanced scaling based on both
 #' dimensions. This ensures fonts scale intuitively with overall plot size,
 #' not just one dimension.
 #'
 #' **Parameters:**
-#' - `divisor`: Lower value = larger fonts (e.g., 40 → ~40% larger than 56)
+#' - `divisor`: Lower value = larger fonts (e.g., 40 -> ~40% larger than 56)
 #' - `min_size`: Minimum font size regardless of viewport
 #' - `max_size`: Maximum font size even on large screens
 #'
 #' **Examples (divisor = 3.5):**
-#' - 6×4 inch plot: diagonal = 4.90 → base_size = 14.0pt
-#' - 10×6 inch plot: diagonal = 7.75 → base_size = 22.1pt
-#' - 14×8 inch plot: diagonal = 10.58 → base_size = 30.2pt
+#' - 6x4 inch plot: diagonal = 4.90 -> base_size = 14.0pt
+#' - 10x6 inch plot: diagonal = 7.75 -> base_size = 22.1pt
+#' - 14x8 inch plot: diagonal = 10.58 -> base_size = 30.2pt
 #'
 #' **Typical Use Cases:**
-#' - Web display: 8×5 inches (diagonal 6.02 → base_size 17.2pt)
-#' - Print output: 10×6 inches (diagonal 7.75 → base_size 22.1pt)
-#' - Presentation: 16×9 inches (diagonal 12.04 → base_size 34.4pt)
+#' - Web display: 8x5 inches (diagonal 6.02 -> base_size 17.2pt)
+#' - Print output: 10x6 inches (diagonal 7.75 -> base_size 22.1pt)
+#' - Presentation: 16x9 inches (diagonal 12.04 -> base_size 34.4pt)
 #'
 #' @format Named list with scaling parameters:
 #' \describe{
@@ -49,8 +49,8 @@
 #' FONT_SCALING_CONFIG
 #'
 #' # Calculate base_size for specific viewport
-#' width <- 10  # inches
-#' height <- 6  # inches
+#' width <- 10 # inches
+#' height <- 6 # inches
 #' diagonal <- sqrt(width * height)
 #' base_size <- max(
 #'   FONT_SCALING_CONFIG$min_size,
@@ -58,9 +58,9 @@
 #' )
 #' }
 FONT_SCALING_CONFIG <- list(
-  divisor = 3.5,  # Viewport diagonal divisor (lower = larger fonts)
-  min_size = 8,   # Minimum base_size in points
-  max_size = 48   # Maximum base_size in points
+  divisor = 3.5, # Viewport diagonal divisor (lower = larger fonts)
+  min_size = 8, # Minimum base_size in points
+  max_size = 48 # Maximum base_size in points
 )
 
 #' Calculate Responsive Base Size from Viewport Dimensions
@@ -74,7 +74,7 @@ FONT_SCALING_CONFIG <- list(
 #' @return Numeric base_size in points
 #'
 #' @details
-#' Uses geometric mean approach: `sqrt(width × height) / divisor`
+#' Uses geometric mean approach: `sqrt(width x height) / divisor`
 #'
 #' This provides balanced scaling that considers both dimensions,
 #' ensuring typography scales proportionally with plot area.
@@ -97,7 +97,7 @@ FONT_SCALING_CONFIG <- list(
 #' }
 calculate_base_size <- function(width, height, config = FONT_SCALING_CONFIG) {
   if (is.null(width) || is.null(height) || is.na(width) || is.na(height)) {
-    return(14)  # Default fallback
+    return(14) # Default fallback
   }
 
   # Geometric mean of dimensions

@@ -98,7 +98,7 @@ bfh_spc_plot <- function(qic_data,
     ))
   }
 
-  # Cache BFHtheme farver (undgår gentagne opslag)
+  # Cache BFHtheme farver (undgaar gentagne opslag)
   color_keys <- c(
     "hospital_blue",
     "regionh_grey",
@@ -120,7 +120,7 @@ bfh_spc_plot <- function(qic_data,
     qic_data$anhoej.signal <- FALSE
   }
 
-  # Beregn punktfarve baseret på sigma.signal (outliers faar hospital_blue)
+  # Beregn punktfarve baseret paa sigma.signal (outliers faar hospital_blue)
   if ("sigma.signal" %in% names(qic_data)) {
     qic_data$point_colour <- ifelse(
       !is.na(qic_data$sigma.signal) & qic_data$sigma.signal == TRUE,
@@ -166,7 +166,7 @@ bfh_spc_plot <- function(qic_data,
         fill = cols$very_light_blue,
         alpha = 0.5
       ),
-      # TODO: Genaktiver geom_textline når geomtextpath cold-start (~3s) er løst
+      # TODO: Genaktiver geom_textline naar geomtextpath cold-start (~3s) er loest
       # Se BFHcharts #88
       ggplot2::geom_line(
         ggplot2::aes(y = ucl, x = x, group = part),
@@ -321,6 +321,6 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
   } else if (is.numeric(x_col)) {
     apply_numeric_x_axis(plot)
   } else {
-    plot # Unknown type → return unchanged
+    plot # Unknown type \u2192 return unchanged
   }
 }

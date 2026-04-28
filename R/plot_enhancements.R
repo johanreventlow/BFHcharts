@@ -35,7 +35,7 @@ add_plot_enhancements <- function(plot,
                                   comment_size = 6,
                                   suppress_targetline = FALSE,
                                   line_positions = NULL) {
-  # Cache BFHtheme farver (undgår gentagne opslag)
+  # Cache BFHtheme farver (undgaar gentagne opslag)
   color_keys <- c("hospital_blue", "regionh_grey", "regionh_dark")
   bfh_colors <- BFHtheme::bfh_cols(color_keys)
   cols <- list(
@@ -156,7 +156,7 @@ add_plot_enhancements <- function(plot,
 
     x_range <- range(qic_data$x, na.rm = TRUE)
 
-    # Konverter x_range til numerisk for placement (håndter Date/POSIXct)
+    # Konverter x_range til numerisk for placement (haandter Date/POSIXct)
     if (inherits(x_range, c("Date", "POSIXct", "POSIXt"))) {
       x_range_num <- as.numeric(x_range)
       comment_data_num <- comment_data
@@ -166,7 +166,7 @@ add_plot_enhancements <- function(plot,
       comment_data_num <- comment_data
     }
 
-    # Forbered datapunkter for processlinje-undgåelse
+    # Forbered datapunkter for processlinje-undgaaelse
     data_points_num <- data.frame(
       x = if (inherits(qic_data$x, c("Date", "POSIXct", "POSIXt"))) {
         as.numeric(qic_data$x)
@@ -236,7 +236,12 @@ add_plot_enhancements <- function(plot,
           plot <- plot +
             ggplot2::geom_segment(
               data = straight,
-              ggplot2::aes(x = arrow_x, y = arrow_y, xend = end_x, yend = end_y),
+              ggplot2::aes(
+                x = .data$arrow_x,
+                y = .data$arrow_y,
+                xend = .data$end_x,
+                yend = .data$end_y
+              ),
               colour = cols$grey,
               linewidth = 0.3,
               arrow = grid::arrow(length = grid::unit(1.5, "mm"), type = "closed"),
@@ -244,13 +249,18 @@ add_plot_enhancements <- function(plot,
             )
         }
 
-        # Buede pile (diagonale labels) - geom_curve kræver én curvature per lag
+        # Buede pile (diagonale labels) - geom_curve kraever en curvature per lag
         curved <- arrow_data[arrow_data$curvature != 0, ]
         for (cr in seq_len(nrow(curved))) {
           plot <- plot +
             ggplot2::geom_curve(
               data = curved[cr, ],
-              ggplot2::aes(x = arrow_x, y = arrow_y, xend = end_x, yend = end_y),
+              ggplot2::aes(
+                x = .data$arrow_x,
+                y = .data$arrow_y,
+                xend = .data$end_x,
+                yend = .data$end_y
+              ),
               colour = cols$grey,
               linewidth = 0.3,
               curvature = curved$curvature[cr],
@@ -264,7 +274,11 @@ add_plot_enhancements <- function(plot,
       plot <- plot +
         ggplot2::geom_text(
           data = label_data,
-          ggplot2::aes(x = label_x, y = label_y, label = label_text),
+          ggplot2::aes(
+            x = .data$label_x,
+            y = .data$label_y,
+            label = .data$label_text
+          ),
           size = comment_size,
           family = .resolve_font_family(),
           colour = cols$dark_grey,

@@ -1,3 +1,16 @@
+# BFHcharts 0.10.0
+
+## Breaking changes
+
+* **`bfh_export_pdf()` og `bfh_compile_typst()` ignorerer nu system-fonts som
+  default (`ignore_system_fonts = TRUE`).** Tidligere faldt Typst tilbage til
+  system-installerede font-varianter selv når `font_path` var sat, hvilket
+  kunne resultere i forkert weight (fx Mari Heavy med metadata
+  `style=Heavy,Regular` matchede regular-weight). Det giver nu konsistent
+  rendering på tværs af dev-maskiner og cloud-deployment.
+  **Migration:** Hvis eksisterende kode er afhængig af system-fonts ved
+  Typst-render, sæt `ignore_system_fonts = FALSE` eksplicit. (#227)
+
 # BFHcharts 0.9.0
 
 ## Breaking changes
@@ -19,6 +32,28 @@
   bfh_qic(..., y_axis_unit = "percent", target_value = 2.0, multiply = 100)
   ```
   (#203)
+
+* **`bfh_qic()` validerer nu indholdet af denominator-kolonnen `n` for
+  ratio-charts (`p`, `pp`, `u`, `up`).** Tidligere blev kun kolonnenavnet
+  syntakstjekket; rækker med `n = 0`, `n < 0`, `n = Inf` eller `y > n`
+  (P-charts) gled igennem og producerede stille misvisende rate-plots
+  (NaN/Inf-værdier, proportioner > 1). Nu rejses en hård fejl med
+  rækkenumre, så brugeren kan inspicere kildedataene.
+  **Kontrakt:**
+  - Ratio-charts (`p`, `pp`, `u`, `up`) kræver `n` ikke-NULL.
+  - `n` skal være numerisk og endelig (ingen `Inf`/`-Inf`).
+  - Alle ikke-`NA` værdier af `n` skal være `> 0`.
+  - For proportion-charts (`p`, `pp`): hver række skal opfylde `y <= n`.
+  - `NA` i enkelt-rækker af `n` er tilladt (qicharts2 dropper dem).
+  - Andre chart-typer (`run`, `i`, `mr`, `c`, `g`, `t`, `xbar`, `s`)
+    valideres ikke.
+
+  **Migration:** Pre-filtrér data inden `bfh_qic()`:
+  ```r
+  data_clean <- data[!is.na(data$denominator) & data$denominator > 0, ]
+  bfh_qic(data_clean, ...)
+  ```
+  (#205)
 
 * **`bfh_generate_analysis()` kræver nu eksplicit `use_ai = TRUE` for
   AI-analyse.** Defaulten er ændret fra `NULL` (auto-detektér BFHllm) til

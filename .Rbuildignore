@@ -25,3 +25,14 @@
 ^Rplots\.pdf$
 ^tests/testthat/Rplots\.pdf$
 ^\.claude$
+^\.claude/
+^\.worktrees$
+^\.worktrees/
+^dev$
+^dev/
+^.*\.xcf$
+^[^/]+\.pdf$
+^.*\.DS_Store$
+^BFHLLM_INTEGRATION\.md$
+^TRANSLATORS\.md$
+^CLAUDE\.md\.backup$

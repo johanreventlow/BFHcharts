@@ -14,6 +14,6 @@ Escaped string safe for Typst content blocks
 }
 \description{
 Escapes all Typst markup characters in plain text so they render literally.
-Must be applied to text nodes only — do not apply to generated Typst markup.
+Must be applied to text nodes only - do not apply to generated Typst markup.
 }
 \keyword{internal}

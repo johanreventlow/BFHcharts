@@ -8,7 +8,7 @@
 #' objects** that group related configuration into logical units.
 #'
 #' **Benefits**:
-#' - Reduced function signatures (15 params → 3-5 params)
+#' - Reduced function signatures (15 params -> 3-5 params)
 #' - Logical parameter grouping (easier to understand)
 #' - Easier to extend (add fields without changing signatures)
 #' - Self-documenting code (object names describe purpose)
@@ -247,7 +247,7 @@ print.viewport_dims <- function(x, ...) {
 #' Create Phase Configuration
 #'
 #' Creates a configuration object for phase/shift handling in SPC charts.
-#' Currently reserved for biSPCharts integration — not used in the
+#' Currently reserved for biSPCharts integration - not used in the
 #' BFHcharts pipeline.
 #'
 #' @param part_positions Integer vector of row positions where phase changes occur (optional)

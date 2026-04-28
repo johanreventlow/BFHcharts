@@ -19,7 +19,7 @@ uanset hvilke signal-kolonner der er til stede.
 }
 \details{
 Fallback-priority:
-\code{anhoej.signal} → \code{anhoej.signals} → \code{runs.signal | crossings.signal}
-→ \code{runs.signal} → \code{FALSE}
+\code{anhoej.signal} -> \code{anhoej.signals} -> \code{runs.signal | crossings.signal}
+-> \code{runs.signal} -> \code{FALSE}
 }
 \keyword{internal}

@@ -41,7 +41,7 @@ for (dept in departments) {
 
 \strong{Limitations:}
 \itemize{
-\item Session is single-threaded sequential only — do not share across parallel workers.
+\item Session is single-threaded sequential only - do not share across parallel workers.
 \item Not compatible with \code{template_path} (custom templates).
 \item Pass \code{inject_assets} here, not to individual \code{bfh_export_pdf()} calls.
 }

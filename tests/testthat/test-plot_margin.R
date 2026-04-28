@@ -123,8 +123,10 @@ test_that("asymmetric margins bevares præcist (t/r/b/l adskilt)", {
 
 test_that("plot_margin fungerer med alle chart-typer (deterministisk data)", {
   df <- fixture_numeric_data()
-  # Deterministisk denominator (ingen RNG) for p/u-chart cases
+  # Deterministisk denominator (ingen RNG) for p/u-chart cases.
+  # Clamp y til [0, n] så proportion-kontrakten (y <= n) holder for p-charts.
   df$n <- rep(100L, nrow(df))
+  df$y <- pmin(pmax(round(df$y), 0L), df$n)
 
   chart_types <- c("run", "i", "p", "c", "u")
 
@@ -153,7 +155,8 @@ test_that("plot_margin fungerer med alle chart-typer (deterministisk data)", {
     expect_valid_bfh_qic_result(plot)
     # Margin skal være exact c(5,5,5,5) for hver chart-type
     expect_plot_margin(plot$plot, c(5, 5, 5, 5),
-                       tolerance = 0.01)
+      tolerance = 0.01
+    )
   }
 })
 
@@ -170,7 +173,7 @@ test_that("plot_margin validation rejects wrong length", {
       x = x,
       y = y,
       chart_type = "i",
-      plot_margin = c(5, 5)  # Only 2 values
+      plot_margin = c(5, 5) # Only 2 values
     ),
     "numeric vector of length 4"
   )
@@ -233,7 +236,7 @@ test_that("plot_margin validation rejects wrong type", {
       x = x,
       y = y,
       chart_type = "i",
-      plot_margin = "10mm"  # String instead of numeric/margin
+      plot_margin = "10mm" # String instead of numeric/margin
     ),
     "must be either"
   )
