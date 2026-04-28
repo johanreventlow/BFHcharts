@@ -3,9 +3,9 @@
 # ==============================================================================
 
 
-#' Mål panel højde fra gtable
+#' Maal panel hoejde fra gtable
 #'
-#' Kernefunktion der måler panel højde fra en pre-built gtable.
+#' Kernefunktion der maaler panel hoejde fra en pre-built gtable.
 #' Bruges direkte af add_right_labels_marquee() med en allerede bygget gtable.
 #'
 #' @keywords internal
@@ -31,10 +31,10 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
     panel_row$b, panel_row$r
   )
 
-  # Hvis device_ready = TRUE, brug allerede-aktiv device (caller har åbnet den)
-  # Ellers åbn en off-screen Cairo PDF device for measurements
+  # Hvis device_ready = TRUE, brug allerede-aktiv device (caller har aabnet den)
+  # Ellers aabn en off-screen Cairo PDF device for measurements
   if (!device_ready) {
-    # Gem den nuværende device
+    # Gem den nuvaerende device
     current_dev <- grDevices::dev.cur()
 
     temp_file <- tempfile(fileext = ".pdf")
@@ -83,12 +83,12 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
       grid::seekViewport(panel_vp_name)
     },
     error = function(e) {
-      # Fallback: prøv generisk "panel" navn
+      # Fallback: proev generisk "panel" navn
       grid::seekViewport("panel")
     }
   )
 
-  # Mål højde i current (panel) viewport
+  # Maal hoejde i current (panel) viewport
   panel_height <- grid::convertHeight(
     grid::unit(1, "npc"),
     "inches",
@@ -101,9 +101,9 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
   return(panel_height)
 }
 
-#' INTERN: Mål label højde med aktiv device (ingen device management)
+#' INTERN: Maal label hoejde med aktiv device (ingen device management)
 #'
-#' Forventer at en graphics device allerede er åben.
+#' Forventer at en graphics device allerede er aaben.
 #'
 #' @keywords internal
 #' @noRd
@@ -149,7 +149,7 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
       grid::grobHeight(g_rendered)
     },
     error = function(e) {
-      # Fallback til direkte måling hvis makeContent fejler
+      # Fallback til direkte maaling hvis makeContent fejler
       tryCatch(
         grid::grobHeight(g),
         error = function(e2) {
@@ -170,7 +170,7 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
     # message(sprintf(
   }
 
-  # Safety margin fra config (altid tilgængelig i pakken)
+  # Safety margin fra config (altid tilgaengelig i pakken)
   cfg <- get_label_placement_config()
   value <- cfg[["height_safety_margin"]]
   safety_margin <- if (is.null(value)) 1.05 else value
@@ -195,7 +195,7 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
   if (h_npc > 0.5 && !is.null(panel_height_inches)) {
     warning(
       sprintf(
-        "Label optager %.1f%% af panel højde (%.2f inches). ",
+        "Label optager %.1f%% af panel h\u00f8jde (%.2f inches). ",
         h_npc * 100, panel_height_inches
       )
     )

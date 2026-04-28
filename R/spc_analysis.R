@@ -8,22 +8,22 @@
 # Interne helpers (resolve_target, pluralize_da, ensure_within_max)
 # ---------------------------------------------------------------------------
 
-# Parse metadata$target til numerisk værdi + optional retning.
-# Genbruger parse_target_input() fra utils_label_helpers.R for at undgå
+# Parse metadata$target til numerisk vaerdi + optional retning.
+# Genbruger parse_target_input() fra utils_label_helpers.R for at undgaa
 # duplikeret parser-logik. Returnerer altid en liste med value/direction/display.
 #
 # Direction-mapping:
-#   >=, ≥, ↑  → "higher" (higher is better)
-#   <=, ≤, ↓  → "lower"  (lower is better)
-#   >, <      → "higher" / "lower" (når efterfulgt af tal)
-#   ingen op. → NULL (værdineutral)
+#   >=, >=, up  -> "higher" (higher is better)
+#   <=, <=, down  -> "lower"  (lower is better)
+#   >, <      -> "higher" / "lower" (naar efterfulgt af tal)
+#   ingen op. -> NULL (vaerdineutral)
 resolve_target <- function(target_input) {
   empty <- list(value = NA_real_, direction = NULL, display = "")
   if (is.null(target_input)) {
     return(empty)
   }
 
-  # Numerisk input: bagudkompatibelt — ingen retning
+  # Numerisk input: bagudkompatibelt - ingen retning
   if (is.numeric(target_input)) {
     return(list(value = as.numeric(target_input), direction = NULL, display = ""))
   }
@@ -33,9 +33,9 @@ resolve_target <- function(target_input) {
     return(empty)
   }
 
-  # Normalisér Unicode-operatorer til ASCII før parsing, så parse_target_input()
-  # (der er testet mod ASCII-input fra chart-labels) kan genbruges uændret.
-  # ≤ → <=, ≥ → >=, ↑ → >, ↓ → <
+  # Normaliser Unicode-operatorer til ASCII foer parsing, saa parse_target_input()
+  # (der er testet mod ASCII-input fra chart-labels) kan genbruges uaendret.
+  # <= -> <=, >= -> >=, up -> >, down -> <
   normalized <- target_input
   normalized <- gsub("\U2264", "<=", normalized)
   normalized <- gsub("\U2265", ">=", normalized)
@@ -54,8 +54,8 @@ resolve_target <- function(target_input) {
     NULL
   )
 
-  # Ekstraher numerisk værdi fra value-delen.
-  # Accepterer både dansk komma og engelsk punktum som decimaltegn.
+  # Ekstraher numerisk vaerdi fra value-delen.
+  # Accepterer baade dansk komma og engelsk punktum som decimaltegn.
   raw_value <- parsed$value
   clean <- gsub(",", ".", raw_value)
   clean <- gsub("[^0-9.\\-]", "", clean)
@@ -66,7 +66,7 @@ resolve_target <- function(target_input) {
 }
 
 
-# Vælg ental eller flertal ud fra n. n == 1 → singular, alt andet → plural.
+# Vaelg ental eller flertal ud fra n. n == 1 -> singular, alt andet -> plural.
 # NA og NULL behandles som flertal (neutral default).
 pluralize_da <- function(n, singular, plural) {
   if (is.null(n) || length(n) == 0 || is.na(n)) {
@@ -76,8 +76,8 @@ pluralize_da <- function(n, singular, plural) {
 }
 
 
-# Garantér at tekst ikke overskrider max_chars. Trim ved sidste sætnings- eller
-# klausulgrænse (punktum, komma) før grænsen. Undgå at klippe midt i et ord.
+# Garanter at tekst ikke overskrider max_chars. Trim ved sidste saetnings- eller
+# klausulgraense (punktum, komma) foer graensen. Undgaa at klippe midt i et ord.
 ensure_within_max <- function(text, max_chars) {
   if (is.null(text) || is.na(text)) {
     return("")
@@ -88,7 +88,7 @@ ensure_within_max <- function(text, max_chars) {
 
   cut <- substr(text, 1, max_chars)
 
-  # Prøv først at trimme ved sidste punktum-grænse
+  # Proev foerst at trimme ved sidste punktum-graense
   last_period <- max(
     gregexpr("\\.\\s", cut, perl = TRUE)[[1]],
     gregexpr("\\.$", cut, perl = TRUE)[[1]]
@@ -113,7 +113,7 @@ ensure_within_max <- function(text, max_chars) {
     return(trimmed)
   }
 
-  # Fallback (ord uden spaces): hård trim
+  # Fallback (ord uden spaces): haard trim
   substr(text, 1, max_chars)
 }
 
@@ -163,7 +163,7 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
   # Resolve target-input til value + retning (genbruger parse_target_input)
   target_info <- resolve_target(metadata$target)
 
-  # Udtræk SPC statistikker (inkl. outliers fra qic_data)
+  # Udtraek SPC statistikker (inkl. outliers fra qic_data)
   spc_stats <- bfh_extract_spc_stats(x)
 
   # Detect om der er signaler (sikker mod NULL og NA)
@@ -178,7 +178,7 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
       has_signals <- TRUE
     }
   }
-  # has_signals skal afspejle om AKTUELLE signaler eksisterer — brug samme
+  # has_signals skal afspejle om AKTUELLE signaler eksisterer - brug samme
   # recent-count som analyseteksten (fallback til outliers_actual hvis ukendt).
   outliers_for_flag <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
   if (is_valid_scalar(outliers_for_flag) && outliers_for_flag > 0) {
@@ -213,7 +213,7 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
       NA_real_
     },
 
-    # Anhøj statistikker
+    # Anhoej statistikker
     spc_stats = spc_stats,
     has_signals = has_signals,
 
@@ -249,7 +249,7 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #'   data to `BFHllm::bfhllm_spc_suggestion()`. In healthcare contexts,
 #'   implicit external data processing is unacceptable. Always set
 #'   `use_ai = TRUE` deliberately.
-#'   - `FALSE` (default): Use standard texts only — no external data sharing
+#'   - `FALSE` (default): Use standard texts only - no external data sharing
 #'   - `TRUE`: Use AI (requires BFHllm package; error if not installed)
 #' @param min_chars Minimum characters in AI-generated output. Default 300.
 #' @param max_chars Maximum characters in AI-generated output. Default 375.
@@ -275,7 +275,7 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #' 3. Falls back to standard texts if AI call fails
 #'
 #' When `use_ai = FALSE` (default):
-#' - Returns Danish standard texts based on Anhøj SPC rules
+#' - Returns Danish standard texts based on Anhoej SPC rules
 #'
 #' @examples
 #' \dontrun{
@@ -324,7 +324,7 @@ bfh_generate_analysis <- function(x,
   # Byg kontekst
   context <- bfh_build_analysis_context(x, metadata)
 
-  # Check AI tilgængelighed — ingen auto-detektion (eksplicit opt-in kræves)
+  # Check AI tilgaengelighed - ingen auto-detektion (eksplicit opt-in kraeves)
   if (isTRUE(use_ai)) {
     if (!requireNamespace("BFHllm", quietly = TRUE)) {
       stop(
@@ -373,7 +373,7 @@ bfh_generate_analysis <- function(x,
       department = context$department %||% "",
       n_points = context$n_points,
       centerline = context$centerline,
-      # Fagligt korrekt baseline-analyse baseret p\u00e5 Anh\u00f8j-regler
+      # Fagligt korrekt baseline-analyse baseret paa Anhoej-regler
       baseline_analysis = baseline_analysis
     )
 
@@ -417,10 +417,10 @@ bfh_generate_analysis <- function(x,
 
 # Intern funktion: Byg komplet fallback-analysetekst
 # Allokerer tegnbudget til stability/target/action dele
-# og vælger passende variant for hver del. Når context$target_direction
-# er non-NULL (udledt fra fx "<= 2,5"), bruges retningsbevidst mål-
-# vurdering (goal_met/goal_not_met) i stedet for værdineutral
-# at/over/under. ensure_within_max garanterer max_chars-grænsen.
+# og vaelger passende variant for hver del. Naar context$target_direction
+# er non-NULL (udledt fra fx "<= 2,5"), bruges retningsbevidst maal-
+# vurdering (goal_met/goal_not_met) i stedet for vaerdineutral
+# at/over/under. ensure_within_max garanterer max_chars-graensen.
 build_fallback_analysis <- function(context,
                                     min_chars = 300,
                                     max_chars = 375,
@@ -445,9 +445,9 @@ build_fallback_analysis <- function(context,
     is_valid_scalar(spc_stats$crossings_expected) &&
     spc_stats$crossings_actual < spc_stats$crossings_expected
 
-  # Brug recent_count (seneste 6 obs) så analyseteksten kun beskriver AKTUELLE
-  # outliers. Fald tilbage til outliers_actual når kun summary-baserede stats
-  # er tilgængelige.
+  # Brug recent_count (seneste 6 obs) saa analyseteksten kun beskriver AKTUELLE
+  # outliers. Fald tilbage til outliers_actual naar kun summary-baserede stats
+  # er tilgaengelige.
   outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
   has_outliers <- is_valid_scalar(outliers_for_text) &&
     outliers_for_text > 0
@@ -463,7 +463,7 @@ build_fallback_analysis <- function(context,
     is.na(spc_stats$crossings_actual)
   no_variation <- runs_missing && crossings_missing
 
-  # --- Target-tilstand (afgør budget-fordelingen) ---
+  # --- Target-tilstand (afgoer budget-fordelingen) ---
   has_target <- !is.null(target_value) && !is.na(target_value) &&
     is.numeric(target_value) &&
     !is.null(centerline) && !is.na(centerline)
@@ -485,8 +485,8 @@ build_fallback_analysis <- function(context,
     stop("texts_loader must be a function", call. = FALSE)
   }
   texts <- texts_loader()
-  # outliers_actual i placeholder_data bruger recent_count-værdien, så YAML-
-  # skabelonernes {outliers_actual} placeholder også følger "seneste 6 obs"-
+  # outliers_actual i placeholder_data bruger recent_count-vaerdien, saa YAML-
+  # skabelonernes {outliers_actual} placeholder ogsaa foelger "seneste 6 obs"-
   # reglen. outliers_word giver korrekt dansk ental/flertal for 1 vs n.
   outliers_n <- if (is_valid_scalar(outliers_for_text)) outliers_for_text else 0L
   placeholder_data <- list(
@@ -538,13 +538,13 @@ build_fallback_analysis <- function(context,
     )
   }
 
-  # --- 2. Målvurdering ---
+  # --- 2. Maalvurdering ---
   target_text <- ""
-  at_target <- FALSE # bruges af værdineutral action-sti
+  at_target <- FALSE # bruges af v\u00e6rdineutral action-sti
   goal_met <- FALSE # bruges af retningsbevidst action-sti
 
   if (has_target) {
-    # Foretræk display-streng fra input (fx "<= 2,5"), ellers format numerisk
+    # Foretraek display-streng fra input (fx "<= 2,5"), ellers format numerisk
     display_target <- if (!is.null(context$target_display) &&
       nzchar(context$target_display)) {
       context$target_display
@@ -554,8 +554,8 @@ build_fallback_analysis <- function(context,
 
     if (!is.null(target_direction)) {
       # === RETNINGSBEVIDST LOGIK ===
-      # "higher" → CL skal være >= target for at opfylde målet.
-      # "lower"  → CL skal være <= target.
+      # "higher" -> CL skal vaere >= target for at opfylde maalet.
+      # "lower"  -> CL skal vaere <= target.
       goal_met <- switch(target_direction,
         "higher" = centerline >= target_value,
         "lower"  = centerline <= target_value,
@@ -567,7 +567,7 @@ build_fallback_analysis <- function(context,
         budget = target_budget
       )
     } else {
-      # === VÆRDINEUTRAL LOGIK (bagudkompatibel) ===
+      # === VAERDINEUTRAL LOGIK (bagudkompatibel) ===
       tolerance <- max(abs(target_value) * target_tolerance, 0.01)
       if (abs(centerline - target_value) <= tolerance) {
         target_text <- pick_text(texts$target$at_target,
@@ -602,7 +602,7 @@ build_fallback_analysis <- function(context,
       "unstable_goal_not_met"
     }
   } else if (has_target) {
-    # Værdineutrale action-keys (bagudkompatible)
+    # Vaerdineutrale action-keys (bagudkompatible)
     action_key <- if (is_stable && at_target) {
       "stable_at_target"
     } else if (is_stable && !at_target) {
@@ -617,12 +617,12 @@ build_fallback_analysis <- function(context,
   }
   action <- pick_text(texts$action[[action_key]], budget = action_budget)
 
-  # --- Kombinér ---
+  # --- Kombiner ---
   parts <- c(stability, target_text, action)
   parts <- parts[nchar(parts) > 0]
   text <- paste(parts, collapse = " ")
 
-  # --- Garantér max_chars-grænsen (trim ved sætnings-/klausulgrænse) ---
+  # --- Garanter max_chars-graensen (trim ved saetnings-/klausulgraense) ---
   text <- ensure_within_max(text, max_chars)
 
   # --- Padding hvis under minimum ---
@@ -632,15 +632,15 @@ build_fallback_analysis <- function(context,
 }
 
 
-# Formatér målværdi til visning
-# y_axis_unit bruges til at afgøre om værdien skal vises som procent
+# Formater maalvaerdi til visning
+# y_axis_unit bruges til at afgoere om vaerdien skal vises som procent
 format_target_value <- function(x, y_axis_unit = NULL) {
   if (is.null(x) || is.na(x)) {
     return("")
   }
 
   # Konverter proportion til procent hvis relevant
-  # x i [0, 1] → proportion, multiplicer med 100. x > 1 → allerede procent.
+  # x i [0, 1] -> proportion, multiplicer med 100. x > 1 -> allerede procent.
   if (!is.null(y_axis_unit) && y_axis_unit == "percent") {
     if (x >= 0 && x <= 1) {
       return(paste0(round(x * 100), "%"))
@@ -657,14 +657,14 @@ format_target_value <- function(x, y_axis_unit = NULL) {
 }
 
 
-# Tilføj padding-tekst hvis teksten er under minimumlængde.
-# max_chars sikrer at padding ikke sprænger det absolutte loft.
+# Tilfoej padding-tekst hvis teksten er under minimumlaengde.
+# max_chars sikrer at padding ikke spraenger det absolutte loft.
 pad_to_minimum <- function(text, min_chars, n_points, texts, max_chars = Inf) {
   if (nchar(text) >= min_chars) {
     return(text)
   }
 
-  # Plads til padding: respektér både min og max
+  # Plads til padding: respekter baade min og max
   available <- max_chars - nchar(text) - 1L # -1 for space-separator
 
   if (!is.null(n_points) && !is.na(n_points) && available > 0) {
@@ -691,12 +691,12 @@ pad_to_minimum <- function(text, min_chars, n_points, texts, max_chars = Inf) {
 }
 
 
-# load_spc_texts() er nu defineret i R/utils_i18n.R og læser fra
+# load_spc_texts() er nu defineret i R/utils_i18n.R og laeser fra
 # inst/i18n/{language}.yaml via load_translations()
 
 
-# Vælg tekstvariant baseret på pladsbudget og erstat {placeholders}.
-# Named variants (short/standard/detailed): vælg længste der passer.
+# Vaelg tekstvariant baseret paa pladsbudget og erstat {placeholders}.
+# Named variants (short/standard/detailed): vaelg laengste der passer.
 # Bagudkompatibel med gammelt format (liste af strenge).
 pick_text <- function(variants, data = list(), budget = Inf) {
   if (length(variants) == 0) {
@@ -710,7 +710,7 @@ pick_text <- function(variants, data = list(), budget = Inf) {
   }
 
   # Nyt format: named list (short, standard, detailed)
-  # Prøv fra længst til kortest, vælg den længste der passer i budgettet
+  # Proev fra laengst til kortest, vaelg den laengste der passer i budgettet
   candidates <- c("detailed", "standard", "short")
   for (candidate in candidates) {
     if (!is.null(variants[[candidate]])) {
@@ -721,7 +721,7 @@ pick_text <- function(variants, data = list(), budget = Inf) {
     }
   }
 
-  # Fallback: korteste tilgængelige variant (selv hvis den overstiger budget)
+  # Fallback: korteste tilgaengelige variant (selv hvis den overstiger budget)
   available <- intersect(rev(candidates), names(variants))
   if (length(available) > 0) {
     return(substitute_placeholders(variants[[available[1]]], data))
@@ -731,7 +731,7 @@ pick_text <- function(variants, data = list(), budget = Inf) {
 }
 
 
-# Erstat {placeholders} med faktiske værdier i en tekststreng
+# Erstat {placeholders} med faktiske vaerdier i en tekststreng
 substitute_placeholders <- function(text, data = list()) {
   for (key in names(data)) {
     text <- gsub(

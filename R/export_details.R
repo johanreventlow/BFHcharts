@@ -7,8 +7,8 @@
 #' @param language Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Default \code{"da"} preserves backward compatibility.
 #'
 #' @return Character string with formatted details, e.g.:
-#'   "Periode: feb. 2019 – mar. 2022 • Gns. måned: 58938/97266 •
-#'    Seneste måned: 60756/88509 • Nuværende niveau: 64,5%"
+#'   "Periode: feb. 2019 - mar. 2022 * Gns. maaned: 58938/97266 *
+#'    Seneste maaned: 60756/88509 * Nuvaerende niveau: 64,5%"
 #'
 #' @details
 #' **Format:**
@@ -23,13 +23,13 @@
 #'
 #' **Interval Detection:**
 #' - Uses detect_date_interval() to determine the interval type
-#' - Labels adapt: "måned", "uge", "dag", "kvartal", "år"
+#' - Labels adapt: "maaned", "uge", "dag", "kvartal", "aar"
 #'
 #' @examples
 #' \dontrun{
 #' result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 #' details <- bfh_generate_details(result)
-#' # "Periode: jan. 2024 – dec. 2024 • Gns. måned: 50 • ..."
+#' # "Periode: jan. 2024 - dec. 2024 * Gns. maaned: 50 * ..."
 #' }
 #'
 #' @family utility-functions
@@ -51,7 +51,7 @@ bfh_generate_details <- function(x, language = "da") {
   start_date <- format_danish_date_short(min(qic_data$x, na.rm = TRUE))
   end_date <- format_danish_date_short(max(qic_data$x, na.rm = TRUE))
   periode <- sprintf(
-    "%s: %s – %s",
+    "%s: %s \u2013 %s",
     i18n_lookup("labels.details.periode", language), start_date, end_date
   )
 
@@ -61,7 +61,7 @@ bfh_generate_details <- function(x, language = "da") {
     "n" %in% names(qic_data) &&
     !all(is.na(qic_data$n))
 
-  # run charts med nævnerdata viser brøk, ligesom p/u-charts
+  # run charts med naevnerdata viser broek, ligesom p/u-charts
   uses_denominator <- (chart_type %in% c("p", "u")) ||
     (chart_type == "run" && has_denominator_data)
 
@@ -107,7 +107,7 @@ bfh_generate_details <- function(x, language = "da") {
 
   niveau <- format_centerline_for_details(cl_value, y_axis_unit, language)
 
-  paste(periode, gns, seneste, niveau, sep = " • ")
+  paste(periode, gns, seneste, niveau, sep = " \u2022 ")
 }
 
 #' Format Centerline Value for Details
@@ -118,7 +118,7 @@ bfh_generate_details <- function(x, language = "da") {
 #' @param cl_value Numeric centerline value
 #' @param y_axis_unit Character string: "percent", "count", "rate", etc.
 #'
-#' @return Formatted string, e.g., "Nuværende niveau: 64,5%"
+#' @return Formatted string, e.g., "Nuvaerende niveau: 64,5%"
 #'
 #' @keywords internal
 #' @noRd
@@ -129,7 +129,7 @@ format_centerline_for_details <- function(cl_value, y_axis_unit, language = "da"
 
   formatted <- switch(y_axis_unit,
     "percent" = {
-      # cl_value kan være 0–1 (proportion) eller 0–100 (pct) afhængigt af kilde
+      # cl_value kan vaere 0-1 (proportion) eller 0-100 (pct) afhaengigt af kilde
       percent_value <- if (cl_value <= 1) cl_value * 100 else cl_value
       paste0(
         format(

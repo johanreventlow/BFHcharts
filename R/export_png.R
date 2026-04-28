@@ -16,7 +16,7 @@
 #' **Dimension Handling:**
 #' - Dimensions are specified in millimeters (Danish/European standard)
 #' - Internally converted to inches for ggplot2::ggsave()
-#' - Default 200mm × 120mm ≈ 7.87" × 4.72" (common presentation size)
+#' - Default 200mm x 120mm ~= 7.87" x 4.72" (common presentation size)
 #'
 #' **Resolution (DPI):**
 #' - 300 DPI (default): High quality for print and presentations
@@ -136,7 +136,7 @@ bfh_export_png <- function(x,
   }
 
   # Genberegn labels for PNG target-dimensioner
-  # Labels fra bfh_qic() var positioneret for dens viewport — ikke nødvendigvis
+  # Labels fra bfh_qic() var positioneret for dens viewport - ikke noedvendigvis
   # de samme dimensioner som PNG-eksporten. Ligesom PDF-eksporten stripper og
   # genanvender vi labels med de korrekte target-dimensioner.
   plot <- recalculate_labels_for_export(

@@ -99,9 +99,9 @@ NULL
 #' **Unit Support (Danish-friendly):**
 #' Width and height support multiple units for convenience:
 #' - **Smart auto-detection** (default, `units = NULL`):
-#'   - Values > 100 → pixels (e.g., `width = 800` → 800px)
-#'   - Values 10-100 → centimeters (e.g., `width = 25` → 25cm)
-#'   - Values < 10 → inches (e.g., `width = 10` → 10in, legacy)
+#'   - Values > 100 -> pixels (e.g., `width = 800` -> 800px)
+#'   - Values 10-100 -> centimeters (e.g., `width = 25` -> 25cm)
+#'   - Values < 10 -> inches (e.g., `width = 10` -> 10in, legacy)
 #' - **Explicit units** (`units = "cm"`, `"mm"`, `"in"`, `"px"`):
 #'   - Centimeters: `width = 25, height = 15, units = "cm"` (Danish standard)
 #'   - Millimeters: `width = 250, height = 150, units = "mm"`
@@ -110,7 +110,7 @@ NULL
 #'
 #' **Responsive Typography:**
 #' When `width` and `height` are provided, `base_size` is automatically
-#' calculated using geometric mean: `sqrt(width × height) / 3.5`
+#' calculated using geometric mean: `sqrt(width x height) / 3.5`
 #' This ensures fonts scale proportionally with plot size.
 #' Override by explicitly setting `base_size`.
 #'
@@ -122,7 +122,7 @@ NULL
 #' - Provide `width` and `height` for optimal label sizing and placement
 #'
 #' **Arrow Symbol Suppression:**
-#' If `target_text` contains arrow symbols (↑ ↓ or < >), the target line will be
+#' If `target_text` contains arrow symbols (up down or < >), the target line will be
 #' suppressed and only the directional indicator shown at the plot edge.
 #'
 #' **Percent Target Contract:**
@@ -170,7 +170,7 @@ NULL
 #'   y_axis_unit = "percent",
 #'   chart_title = "Infection Rate per 100 Surgeries",
 #'   target_value = 0.02,
-#'   target_text = "↓ Målet: 2%"
+#'   target_text = "down Maalet: 2%"
 #' )
 #' plot
 #'
@@ -205,28 +205,28 @@ NULL
 #' plot
 #'
 #' # Example 5: Responsive typography with viewport dimensions
-#' # Small plot (6×4 inches) → base_size ≈ 14pt
+#' # Small plot (6x4 inches) -> base_size ~= 14pt
 #' plot_small <- bfh_qic(
 #'   data = data, x = month, y = infections,
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Small Plot - Auto Scaled Typography",
-#'   width = 6, height = 4 # Auto: base_size ≈ 14pt
+#'   width = 6, height = 4 # Auto: base_size ~= 14pt
 #' )
 #'
-#' # Medium plot (10×6 inches) → base_size ≈ 22pt
+#' # Medium plot (10x6 inches) -> base_size ~= 22pt
 #' plot_medium <- bfh_qic(
 #'   data = data, x = month, y = infections,
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Medium Plot - Auto Scaled Typography",
-#'   width = 10, height = 6 # Auto: base_size ≈ 22pt
+#'   width = 10, height = 6 # Auto: base_size ~= 22pt
 #' )
 #'
-#' # Large plot (16×9 inches) → base_size ≈ 34pt
+#' # Large plot (16x9 inches) -> base_size ~= 34pt
 #' plot_large <- bfh_qic(
 #'   data = data, x = month, y = infections,
 #'   chart_type = "i", y_axis_unit = "count",
 #'   chart_title = "Large Plot - Auto Scaled Typography",
-#'   width = 16, height = 9 # Auto: base_size ≈ 34pt
+#'   width = 16, height = 9 # Auto: base_size ~= 34pt
 #' )
 #'
 #' # Override auto-scaling with explicit base_size
@@ -274,7 +274,7 @@ NULL
 #'   chart_type = "i",
 #'   y_axis_unit = "percent",
 #'   chart_title = "Proportions Converted to Percentages",
-#'   multiply = 100 # Convert 0.01 → 1%
+#'   multiply = 100 # Convert 0.01 -> 1%
 #' )
 #'
 #' # Example 9: Custom centerline (cl parameter)
@@ -331,7 +331,7 @@ NULL
 #'   y_axis_unit = "count",
 #'   chart_title = "Hospital-Acquired Infections",
 #'   ylab = "Antal infektioner",
-#'   xlab = "Måned",
+#'   xlab = "Maaned",
 #'   subtitle = "Kirurgisk afdeling - 2024",
 #'   caption = "Data: EPJ system | Analyse: Kvalitetsafdelingen"
 #' )
@@ -432,8 +432,8 @@ NULL
 #' # Access the summary statistics (Danish column names)
 #' print(result$summary)
 #' # Columns: fase, antal_observationer, anvendelige_observationer,
-#' #          centerlinje, nedre_kontrolgrænse, øvre_kontrolgrænse,
-#' #          længste_løb, antal_kryds, løbelængde_signal, sigma_signal
+#' #          centerlinje, nedre_kontrolgraense, oevre_kontrolgraense,
+#' #          laengste_loeb, antal_kryds, loebelaengde_signal, sigma_signal
 #'
 #' # Example 21: Get both raw data and summary
 #' result <- bfh_qic(
@@ -536,7 +536,7 @@ bfh_qic <- function(data,
   # SECURITY: Validate column names are simple identifiers
   # Prevents NSE injection attacks where malicious code could be passed
   validate_column_name <- function(col_expr, param_name) {
-    # Understøt både direkte symboler (month) og quoted symboler (quote(month))
+    # Understoet baade direkte symboler (month) og quoted symboler (quote(month))
     # til programmatisk brug via do.call/list-argumenter.
     normalized_expr <- col_expr
     if (is.call(col_expr) &&
@@ -622,7 +622,7 @@ bfh_qic <- function(data,
     len = 1
   )
 
-  # Validate agg.fun parameter (kun når bruger eksplicit har angivet argumentet)
+  # Validate agg.fun parameter (kun naar bruger eksplicit har angivet argumentet)
   if (agg_fun_supplied) {
     agg.fun <- match.arg(agg.fun)
   } else {
@@ -759,7 +759,7 @@ bfh_qic <- function(data,
   }
 
   # Calculate responsive base_size if viewport dimensions provided
-  # Uses geometric mean approach: sqrt(width × height) / divisor
+  # Uses geometric mean approach: sqrt(width x height) / divisor
   if (!is.null(width_inches) && !is.null(height_inches)) {
     calculated_base_size <- calculate_base_size(width_inches, height_inches)
     # Use calculated size unless user explicitly provided base_size
@@ -793,8 +793,8 @@ bfh_qic <- function(data,
   viewport <- viewport_dims(base_size = base_size)
 
   # Generate plot using bfh_spc_plot()
-  # Undertryk harmløse warnings: ggplot2 datetime-scale + BFHtheme proprietær
-  # font (Mari) ikke i PostScript-database — begge er expected behavior.
+  # Undertryk harmloese warnings: ggplot2 datetime-scale + BFHtheme proprietaer
+  # font (Mari) ikke i PostScript-database - begge er expected behavior.
   plot <- withCallingHandlers(
     bfh_spc_plot(
       qic_data = qic_data,
@@ -823,9 +823,9 @@ bfh_qic <- function(data,
     label_size <- PDF_LABEL_SIZE
   }
 
-  # BFHtheme bruger proprietære fonts (Mari) ikke tilgængelige i alle miljøer.
+  # BFHtheme bruger proprietaere fonts (Mari) ikke tilgaengelige i alle miljoeer.
   # ggplot_gtable under label placement emitter "font family not found in
-  # PostScript font database" pr. tekstelement — expected behavior, ikke fejl.
+  # PostScript font database" pr. tekstelement - expected behavior, ikke fejl.
   plot <- withCallingHandlers(
     add_spc_labels(
       plot = plot,

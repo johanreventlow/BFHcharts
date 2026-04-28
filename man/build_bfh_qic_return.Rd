@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_bfh_qic_helpers.R
 \name{build_bfh_qic_return}
 \alias{build_bfh_qic_return}
-\title{Byg bfh_qic() returværdi}
+\title{Byg bfh_qic() returvaerdi}
 \usage{
 build_bfh_qic_return(
   qic_data,
@@ -14,7 +14,7 @@ build_bfh_qic_return(
 )
 }
 \arguments{
-\item{qic_data}{data.frame med rå qic-beregninger}
+\item{qic_data}{data.frame med raa qic-beregninger}
 
 \item{plot}{ggplot2-objekt}
 
@@ -27,11 +27,11 @@ build_bfh_qic_return(
 \item{print.summary}{logical}
 }
 \value{
-Én af: \code{bfh_qic_result} S3-objekt (default), \code{qic_data} data.frame,
+En af: \code{bfh_qic_result} S3-objekt (default), \code{qic_data} data.frame,
 \code{list(plot, summary)}, eller \code{list(data, summary)}
 }
 \description{
-Håndterer alle fire returkombinationer af \code{return.data} og \code{print.summary},
+Haandterer alle fire returkombinationer af \code{return.data} og \code{print.summary},
 inkl. deprecation-warnings for legacy paths.
 }
 \keyword{internal}

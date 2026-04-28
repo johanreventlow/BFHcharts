@@ -4,13 +4,13 @@
 # Extracted from bfh_layout_reference_dev.R POC
 
 # Cache for resolved font family per (resolved-family, device-type) kombination.
-# Nøgle bruger den BFHtheme-resolvede family (ikke rå arg) så NULL-kald
+# Noegle bruger den BFHtheme-resolvede family (ikke raa arg) saa NULL-kald
 # og eksplicitte kald med samme font deler cache-entry korrekt.
 # (systemfonts-registrering != PostScript font database)
 .font_cache <- new.env(parent = emptyenv())
 
 .resolve_font_family <- function(family = NULL) {
-  # Detektér device-type: "cairo", "postscript" eller "other"
+  # Detekter device-type: "cairo", "postscript" eller "other"
   dev_type <- tryCatch(
     {
       dev_name <- names(grDevices::dev.cur())
@@ -27,7 +27,7 @@
     error = function(e) "other"
   )
 
-  # Løs theme-fallback FØR cache-check: nøgle og cached value bruger samme f
+  # Loes theme-fallback FOER cache-check: noegle og cached value bruger samme f
   f <- tryCatch(
     family %||% BFHtheme::theme_bfh()$text$family %||% "sans",
     error = function(e) family %||% "sans"
@@ -60,7 +60,7 @@
         ))
         if (!f %in% available) {
           warning(sprintf(
-            "[FONT_FALLBACK] Font '%s' ikke registreret på systemet - bruger 'sans'",
+            "[FONT_FALLBACK] Font '%s' ikke registreret p\u00e5 systemet - bruger 'sans'",
             f
           ))
           "sans"
@@ -80,12 +80,12 @@
 
 #' Add right-aligned marquee labels med NPC-baseret placering
 #'
-#' Anvender marquee::geom_marquee for at placere to-linje labels ved højre kant
+#' Anvender marquee::geom_marquee for at placere to-linje labels ved hoejre kant
 #' med intelligent collision avoidance.
 #'
 #' @param p ggplot object
-#' @param yA numeric(1) y-værdi (data units) for label A (CL)
-#' @param yB numeric(1) y-værdi (data units) for label B (Target)
+#' @param yA numeric(1) y-vaerdi (data units) for label A (CL)
+#' @param yB numeric(1) y-vaerdi (data units) for label B (Target)
 #' @param textA,textB character marquee markup strings
 #' @param params list of placement parameters
 #' @param gpA,gpB grid::gpar styling
@@ -100,9 +100,9 @@
 #'
 #' @details
 #' Funktionen benytter `marquee::geom_marquee()` til to-linjers tekster og
-#' forventer, at `get_label_placement_config()` er tilgængelig for at hente
+#' forventer, at `get_label_placement_config()` er tilgaengelig for at hente
 #' cache'et placerings-setup. Hvis viewport-dimensioner (`viewport_width`,
-#' `viewport_height`) gives, anvendes de til præcise grob-målinger; ellers falder
+#' `viewport_height`) gives, anvendes de til praecise grob-maalinger; ellers falder
 #' funktionen tilbage til aktivt grafisk device.
 #'
 #' @keywords internal
@@ -132,7 +132,7 @@ add_right_labels_marquee <- function(
   .built_plot = NULL,
   .mapper = NULL
 ) {
-  # Resolve default farver i ét opslag (undgår gentagne bfh_cols-kald)
+  # Resolve default farver i et opslag (undgaar gentagne bfh_cols-kald)
   if (is.null(gpA) || is.null(gpB)) {
     default_cols <- BFHtheme::bfh_cols(c("hospital_blue", "regionh_dark"))
     if (is.null(gpA)) {
@@ -143,10 +143,10 @@ add_right_labels_marquee <- function(
     }
   }
 
-  # Beregn responsive størrelser baseret på label_size (baseline = 6)
+  # Beregn responsive stoerrelser baseret paa label_size (baseline = 6)
   scale_factor <- label_size / 6
 
-  # PERFORMANCE: Load config ÉN gang i starten
+  # PERFORMANCE: Load config EN gang i starten
   placement_cfg <- get_label_placement_config()
 
   # Hent marquee_lineheight fra config
@@ -159,7 +159,7 @@ add_right_labels_marquee <- function(
   # PERFORMANCE: Hent cached right-aligned style
   right_aligned_style <- get_right_aligned_marquee_style(lineheight = marquee_lineheight)
 
-  # Beregn marquee_size tidligt, så vi kan bruge den til målinger
+  # Beregn marquee_size tidligt, saa vi kan bruge den til maalinger
   marquee_size_factor <- if (!is.null(placement_cfg$marquee_size_factor)) {
     placement_cfg$marquee_size_factor
   } else {
@@ -174,11 +174,11 @@ add_right_labels_marquee <- function(
     ggplot2::ggplot_build(p)
   }
 
-  # Gem device-state FØR ggplot_gtable (som kan åbne side-effect devices)
+  # Gem device-state FOER ggplot_gtable (som kan aabne side-effect devices)
   pre_gtable_devs <- grDevices::dev.list()
   gtable <- ggplot2::ggplot_gtable(built_plot)
 
-  # Luk evt. side-effect devices åbnet af ggplot_gtable
+  # Luk evt. side-effect devices aabnet af ggplot_gtable
   post_gtable_devs <- grDevices::dev.list()
   leaked_devs <- setdiff(post_gtable_devs, pre_gtable_devs)
   if (length(leaked_devs) > 0) {
@@ -194,10 +194,10 @@ add_right_labels_marquee <- function(
     )
   }
 
-  # Detektér device størrelse for korrekt panel height measurement
+  # Detekter device stoerrelse for korrekt panel height measurement
   # STRATEGI:
-  # 1. Hvis viewport dimensions provided → brug dem (åbn temporary device hvis nødvendigt)
-  # 2. Ellers → detektér existing device (fallback for legacy callers)
+  # 1. Hvis viewport dimensions provided -> brug dem (aabn temporary device hvis noedvendigt)
+  # 2. Ellers -> detekter existing device (fallback for legacy callers)
 
   device_size <- NULL
   temp_device_opened <- FALSE
@@ -206,7 +206,7 @@ add_right_labels_marquee <- function(
     # STRATEGY 1: Viewport dimensions provided (PRIMARY PATH)
     if (verbose) {
       message(sprintf(
-        "[VIEWPORT_STRATEGY] Using provided viewport dimensions: %.2f × %.2f inches",
+        "[VIEWPORT_STRATEGY] Using provided viewport dimensions: %.2f x %.2f inches",
         viewport_width, viewport_height
       ))
     }
@@ -235,7 +235,7 @@ add_right_labels_marquee <- function(
       temp_dev_num <- grDevices::dev.cur()
       temp_device_opened <- TRUE
 
-      # on.exit lukker specifikt den device vi åbnede (ikke blot current device)
+      # on.exit lukker specifikt den device vi aabnede (ikke blot current device)
       on.exit(
         {
           if (temp_device_opened && temp_dev_num %in% grDevices::dev.list()) {
@@ -300,7 +300,7 @@ add_right_labels_marquee <- function(
   if (verbose) {
     if (device_size$actual) {
       message(sprintf(
-        "Device size: %.2f × %.2f inches (ACTUAL measurements)",
+        "Device size: %.2f x %.2f inches (ACTUAL measurements)",
         device_size$width, device_size$height
       ))
     } else {
@@ -308,11 +308,11 @@ add_right_labels_marquee <- function(
     }
   }
 
-  # Mål panel højde med faktisk device størrelse (kun hvis device er klar)
+  # Maal panel hoejde med faktisk device stoerrelse (kun hvis device er klar)
   panel_height_inches <- NULL
 
   if (device_size$actual) {
-    # Faktiske målinger tilgængelige - mål panel height
+    # Faktiske maalinger tilgaengelige - maal panel height
     panel_height_inches <- tryCatch(
       {
         measure_panel_height_from_gtable(
@@ -337,7 +337,7 @@ add_right_labels_marquee <- function(
       ))
     }
   } else {
-    # Ingen faktiske device dimensioner - kan ikke måle panel height
+    # Ingen faktiske device dimensioner - kan ikke maale panel height
     if (verbose) {
       message("[PANEL_HEIGHT] Cannot measure without actual device size - skipping measurement")
     }
@@ -345,7 +345,7 @@ add_right_labels_marquee <- function(
 
   # Auto-beregn label_height
   if (is.null(params$label_height_npc)) {
-    # VIGTIGT: Hvis device ikke er klar (actual=FALSE), er estimater unøjagtige
+    # VIGTIGT: Hvis device ikke er klar (actual=FALSE), er estimater unoejagtige
     if (!device_size$actual && verbose) {
       warning(
         "[LABEL_HEIGHT] Estimating label heights without actual device measurements - ",
@@ -371,9 +371,9 @@ add_right_labels_marquee <- function(
     height_A <- heights[[1]]
     height_B <- heights[[2]]
 
-    # FIX: Ignorer empty labels ved valg af højde til gap calculation
+    # FIX: Ignorer empty labels ved valg af hoejde til gap calculation
     # Hvis textB er tom (kun CL label), brug kun height_A
-    # Dette sikrer at gap er baseret på faktisk synlig label højde
+    # Dette sikrer at gap er baseret paa faktisk synlig label hoejde
     textA_is_empty <- is.null(textA) || nchar(trimws(textA)) == 0
     textB_is_empty <- is.null(textB) || nchar(trimws(textB)) == 0
 
@@ -381,10 +381,10 @@ add_right_labels_marquee <- function(
       # Ingen labels - brug fallback
       params$label_height_npc <- height_A
     } else if (textB_is_empty) {
-      # Kun textA - brug height_A uanset størrelse
+      # Kun textA - brug height_A uanset stoerrelse
       params$label_height_npc <- height_A
     } else if (textA_is_empty) {
-      # Kun textB - brug height_B uanset størrelse
+      # Kun textB - brug height_B uanset stoerrelse
       params$label_height_npc <- height_B
     } else {
       # Begge labels - brug max
@@ -429,7 +429,7 @@ add_right_labels_marquee <- function(
   # Build mapper
   mapper <- if (!is.null(.mapper)) .mapper else npc_mapper_from_built(built_plot, original_plot = p)
 
-  # Konverter y-værdier til NPC
+  # Konverter y-vaerdier til NPC
   yA_npc <- if (!is.na(yA)) mapper$y_to_npc(yA) else NA_real_
   yB_npc <- if (!is.na(yB)) mapper$y_to_npc(yB) else NA_real_
 
@@ -469,13 +469,13 @@ add_right_labels_marquee <- function(
     yB_data <- NA_real_
   }
 
-  # Hent x-koordinater og detektér type
+  # Hent x-koordinater og detekter type
   x_range <- built_plot$layout$panel_params[[1]]$x.range
   x_max_value <- x_range[2]
 
-  # Detektér om x-aksen er Date, POSIXct/datetime, eller numerisk
-  # CRITICAL: Efter ggplot_build() er temporal værdier transformeret til plain numeric.
-  # Vi skelner Date fra POSIXct for at undgå unødvendig POSIXct-coercion på Date-skalaer
+  # Detekter om x-aksen er Date, POSIXct/datetime, eller numerisk
+  # CRITICAL: Efter ggplot_build() er temporal vaerdier transformeret til plain numeric.
+  # Vi skelner Date fra POSIXct for at undgaa unoedvendig POSIXct-coercion paa Date-skalaer
   # (som kan introducere timezone/DST-forskydninger).
   x_is_date <- FALSE
   x_is_datetime <- FALSE
@@ -506,7 +506,7 @@ add_right_labels_marquee <- function(
   )
 
   if (x_is_date && !is.null(x_scale)) {
-    # Date path: konvertér direkte til Date (ingen timezone involveret)
+    # Date path: konverter direkte til Date (ingen timezone involveret)
     if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
       x_max <- x_scale$trans$inverse(x_max_value)
       if (!inherits(x_max, "Date")) {
@@ -527,7 +527,7 @@ add_right_labels_marquee <- function(
       x_max <- as.POSIXct(x_max_value, origin = "1970-01-01", tz = tz)
     }
   } else {
-    # Numerisk x-akse - brug værdi direkte
+    # Numerisk x-akse - brug vaerdi direkte
     x_max <- x_max_value
   }
 
@@ -580,7 +580,7 @@ add_right_labels_marquee <- function(
       ))
   }
 
-  # Tilføj labels (marquee_size already calculated above)
+  # Tilfoej labels (marquee_size already calculated above)
   result <- p
   if (nrow(label_data) > 0) {
     font_family <- .resolve_font_family()
@@ -597,7 +597,7 @@ add_right_labels_marquee <- function(
         inherit.aes = FALSE
       )
 
-    # marquee geom bruger color aesthetic — undgå duplicate scale warning
+    # marquee geom bruger color aesthetic - undgaa duplicate scale warning
     has_colour_scale <- any(vapply(result$scales$scales, function(s) {
       "colour" %in% s$aesthetics
     }, logical(1)))
@@ -606,8 +606,8 @@ add_right_labels_marquee <- function(
     }
   }
 
-  # Normal-path cleanup: luk specifik device og markér som lukket
-  # (on.exit håndterer error-path; vi sætter flag til FALSE så on.exit er no-op)
+  # Normal-path cleanup: luk specifik device og marker som lukket
+  # (on.exit haandterer error-path; vi saetter flag til FALSE saa on.exit er no-op)
   if (temp_device_opened && exists("temp_dev_num")) {
     if (temp_dev_num %in% grDevices::dev.list()) {
       tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)

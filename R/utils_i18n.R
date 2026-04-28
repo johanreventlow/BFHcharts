@@ -1,4 +1,4 @@
-# Package-level cache for i18n oversættelser
+# Package-level cache for i18n oversaettelser
 .i18n_cache <- new.env(parent = emptyenv())
 
 
@@ -12,7 +12,7 @@ validate_language <- function(language) {
 }
 
 
-#' Indlæs oversættelser fra inst/i18n/{language}.yaml
+#' Indlaes oversaettelser fra inst/i18n/{language}.yaml
 #'
 #' Cacher resultatet per sprog i \code{.i18n_cache}.
 #' Falder tilbage til dansk hvis filen ikke findes.
@@ -39,12 +39,12 @@ load_translations <- function(language = "da") {
 }
 
 
-#' Slå i18n-nøgle op (punktum-separeret sti)
+#' Slaa i18n-noegle op (punktum-separeret sti)
 #'
-#' Eksempel: \code{i18n_lookup("labels.interval.monthly", "en")} → \code{"month"}.
-#' Falder tilbage til "da" hvis nøglen mangler i target-sproget.
+#' Eksempel: \code{i18n_lookup("labels.interval.monthly", "en")} -> \code{"month"}.
+#' Falder tilbage til "da" hvis noeglen mangler i target-sproget.
 #'
-#' @param key Punktum-separeret nøglesti, fx \code{"labels.details.periode"}.
+#' @param key Punktum-separeret noeglesti, fx \code{"labels.details.periode"}.
 #' @param language Sprogkode, \code{"da"} eller \code{"en"}.
 #'
 #' @keywords internal
@@ -72,7 +72,7 @@ i18n_lookup <- function(key, language = "da") {
 #'
 #' Returnerer \code{analysis}-sektionen af i18n-filen, som har samme
 #' struktur som det gamle \code{inst/texts/spc_analysis.yml}
-#' (stability, target, action, padding på øverste niveau).
+#' (stability, target, action, padding paa oeverste niveau).
 #'
 #' @param language Sprogkode, \code{"da"} eller \code{"en"}.
 #'

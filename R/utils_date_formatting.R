@@ -66,12 +66,12 @@ detect_date_interval <- function(dates, debug = FALSE) {
 
   median_interval <- median(intervals, na.rm = TRUE)
 
-  # Guard: identiske datoer (median=0) → insufficient data
+  # Guard: identiske datoer (median=0) -> insufficient data
   if (median_interval == 0) {
     return(insufficient_response(length(sorted_dates)))
   }
 
-  # Guard: kun ét interval (2 datapunkter) → var() giver NA, antag perfekt konsistens
+  # Guard: kun et interval (2 datapunkter) -> var() giver NA, antag perfekt konsistens
   if (length(intervals) < 2) {
     consistency <- 1
   } else {
@@ -82,7 +82,7 @@ detect_date_interval <- function(dates, debug = FALSE) {
 
   timespan_days <- as.numeric(max(sorted_dates) - min(sorted_dates))
 
-  # Klassificer interval type baseret på median
+  # Klassificer interval type baseret paa median
   interval_type <- if (median_interval <= 1) {
     "daily"
   } else if (median_interval <= 10) {
@@ -139,7 +139,7 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
   n_obs <- interval_info$n_obs
   timespan_days <- interval_info$timespan_days
 
-  # Formatering matrix baseret på interval type og antal observationer
+  # Formatering matrix baseret paa interval type og antal observationer
   config <- switch(interval_type,
     daily = {
       if (n_obs < 30) {
@@ -177,7 +177,7 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
           n_breaks = min(n_obs, 24)
         )
       } else {
-        # For mange uger - skift til månedlig visning
+        # For mange uger - skift til maanedlig visning
         list(
           use_smart_labels = TRUE,
           labels = scales::label_date_short(format = c("%Y", "%b", "", "")),
@@ -188,11 +188,11 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
     },
     monthly = {
       if (n_obs < 12) {
-        # Intelligent måneds-formatering med scales::label_date_short()
+        # Intelligent maaneds-formatering med scales::label_date_short()
         list(
           use_smart_labels = TRUE,
           labels = scales::label_date_short(
-            format = c("%Y", "%b", "", ""), # År først, så måneder
+            format = c("%Y", "%b", "", ""), # \u00c5r f\u00f8rst, s\u00e5 m\u00e5neder
             sep = "\n"
           ),
           breaks = "1 month",
@@ -206,7 +206,7 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
           n_breaks = 8
         )
       } else {
-        # For mange måneder - vis år og måned
+        # For mange maaneder - vis aar og maaned
         list(
           use_smart_labels = TRUE,
           labels = scales::label_date_short(

@@ -1,3 +1,6 @@
+#' @importFrom rlang .data
+NULL
+
 # Global variables for NSE in ggplot2/dplyr
 # Suppresses R CMD check NOTEs about "no visible binding"
 
@@ -23,17 +26,17 @@ utils::globalVariables(c(
 # LABEL SIZING CONSTANTS
 # ============================================================================
 
-# Line extension factor — hvor langt CL/target forlænges forbi sidste datapunkt
+# Line extension factor - hvor langt CL/target forlaenges forbi sidste datapunkt
 LINE_EXTENSION_FACTOR <- 0.20
 
-# Default y-axis expansion for chart scales — holdes lav for at minimere
+# Default y-axis expansion for chart scales - holdes lav for at minimere
 # tom whitespace. Boundary labels kan stadig udvide skalaen dynamisk.
 Y_AXIS_BASE_EXPANSION_MULT <- 0.05
 
-# Y-axis expansion multiplier — matcher ggplot2 expansion(mult = ...)
+# Y-axis expansion multiplier - matcher ggplot2 expansion(mult = ...)
 Y_AXIS_EXPANSION_MULT <- 0.25
 
-# Arrow endpoint padding — afstand fra datapunkt i normaliserede koordinater
+# Arrow endpoint padding - afstand fra datapunkt i normaliserede koordinater
 ARROW_PADDING_NORM <- 0.03
 
 # ============================================================================
@@ -53,11 +56,11 @@ ARROW_PADDING_NORM <- 0.03
 PDF_IMAGE_WIDTH_MM <- 191.4
 PDF_IMAGE_HEIGHT_MM <- 109
 
-# NOTE: Chart width/height matcher image dimensions i den nuværende Typst-layout.
+# NOTE: Chart width/height matcher image dimensions i den nuvaerende Typst-layout.
 # Vi beholder separate konstanter for semantisk tydelighed:
 # - PDF_IMAGE_* bruges ved eksport-rendering (ggsave output)
 # - PDF_CHART_* bruges ved label-placement beregninger
-# Hvis template-layout divergerer i fremtiden, kan de ændres uafhængigt.
+# Hvis template-layout divergerer i fremtiden, kan de aendres uafhaengigt.
 
 # Target dimensions for label placement calculation (in mm)
 # These represent the actual visible chart area in the Typst template

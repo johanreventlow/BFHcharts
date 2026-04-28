@@ -38,7 +38,7 @@ round_to_interval_start <- function(date, interval_type) {
   } else if (interval_type == "weekly") {
     lubridate::floor_date(date, unit = "week")
   } else {
-    date  # daily or unknown → no rounding
+    date # daily or unknown \u2192 no rounding
   }
 }
 
@@ -52,8 +52,8 @@ round_to_interval_start <- function(date, interval_type) {
 #' @noRd
 calculate_base_interval_secs <- function(interval_type) {
   switch(interval_type,
-    "daily" = 24 * 60 * 60,      # 86400 seconds
-    "weekly" = 7 * 24 * 60 * 60,   # 604800 seconds
+    "daily" = 24 * 60 * 60, # 86400 seconds
+    "weekly" = 7 * 24 * 60 * 60, # 604800 seconds
     "monthly" = 30 * 24 * 60 * 60, # 2592000 seconds (approximate)
     NULL
   )
@@ -71,17 +71,17 @@ calculate_base_interval_secs <- function(interval_type) {
 #' @noRd
 calculate_interval_multiplier <- function(potential_breaks, interval_type) {
   if (potential_breaks <= 15) {
-    return(1)  # No multiplier needed
+    return(1) # No multiplier needed
   }
 
   # Define multiplier candidates per interval type
   multipliers <- switch(interval_type,
     "weekly" = c(2, 4, 13),
     "monthly" = c(3, 6, 12),
-    c(2, 4, 8)  # daily or fallback
+    c(2, 4, 8) # daily or fallback
   )
 
-  # Find smallest multiplier that reduces breaks to ≤15
+  # Find smallest multiplier that reduces breaks to <=15
   for (m in multipliers) {
     if (potential_breaks / m <= 15) {
       return(m)
@@ -95,7 +95,7 @@ calculate_interval_multiplier <- function(potential_breaks, interval_type) {
 #' Calculate Date Breaks for X-Axis
 #'
 #' Computes optimal break points for temporal x-axes based on data range
-#' and interval type. Applies multipliers for dense data to keep ≤15 breaks.
+#' and interval type. Applies multipliers for dense data to keep <=15 breaks.
 #'
 #' @param data_x_min POSIXct minimum x value
 #' @param data_x_max POSIXct maximum x value
@@ -105,11 +105,11 @@ calculate_interval_multiplier <- function(potential_breaks, interval_type) {
 #' @keywords internal
 #' @noRd
 calculate_date_breaks <- function(data_x_min, data_x_max, interval_type,
-                                   format_config) {
+                                  format_config) {
   base_interval_secs <- calculate_base_interval_secs(interval_type)
 
   if (is.null(base_interval_secs)) {
-    # Unknown interval type → return NULL (caller will use breaks_pretty)
+    # Unknown interval type -> return NULL (caller will use breaks_pretty)
     return(NULL)
   }
 
@@ -126,20 +126,28 @@ calculate_date_breaks <- function(data_x_min, data_x_max, interval_type,
     rounded_start <- round_to_interval_start(data_x_min, "monthly")
     rounded_end <- lubridate::ceiling_date(data_x_max, unit = "month")
     interval_months <- round(as.numeric(interval_size) / (30 * 24 * 60 * 60))
-    extended_end <- seq(rounded_end, by = paste(interval_months, "months"),
-                       length.out = 2)[2]
-    breaks_posix <- seq(from = rounded_start, to = extended_end,
-                        by = paste(interval_months, "months"))
+    extended_end <- seq(rounded_end,
+      by = paste(interval_months, "months"),
+      length.out = 2
+    )[2]
+    breaks_posix <- seq(
+      from = rounded_start, to = extended_end,
+      by = paste(interval_months, "months")
+    )
   } else if (interval_type == "weekly") {
     rounded_start <- round_to_interval_start(data_x_min, "weekly")
     rounded_end <- lubridate::ceiling_date(data_x_max, unit = "week")
-    breaks_posix <- seq(from = rounded_start, to = rounded_end + interval_size,
-                        by = interval_size)
+    breaks_posix <- seq(
+      from = rounded_start, to = rounded_end + interval_size,
+      by = interval_size
+    )
   } else {
     # daily
     rounded_start <- round_to_interval_start(data_x_min, interval_type)
-    breaks_posix <- seq(from = rounded_start, to = data_x_max + interval_size,
-                        by = interval_size)
+    breaks_posix <- seq(
+      from = rounded_start, to = data_x_max + interval_size,
+      by = interval_size
+    )
   }
 
   # Filter to data range and ensure first break exists
@@ -174,9 +182,11 @@ apply_temporal_x_axis <- function(plot, x_col, data_x_min, data_x_max) {
 
   # Calculate breaks if we have format config with breaks enabled
   if (!is.null(format_config$breaks) ||
-      (!is.null(format_config$use_smart_labels) && format_config$use_smart_labels)) {
-    breaks_posix <- calculate_date_breaks(data_x_min, data_x_max,
-                                          interval_info$type, format_config)
+    (!is.null(format_config$use_smart_labels) && format_config$use_smart_labels)) {
+    breaks_posix <- calculate_date_breaks(
+      data_x_min, data_x_max,
+      interval_info$type, format_config
+    )
 
     if (!is.null(breaks_posix)) {
       # Apply scale with calculated breaks

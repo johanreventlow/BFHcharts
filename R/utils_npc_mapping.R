@@ -11,9 +11,9 @@
 # FEATURES:
 # - Ingen overlaps mellem labels eller med linjer
 # - Multi-level collision avoidance (3 niveauer)
-# - Auto-adaptive parametre baseret på font sizes
+# - Auto-adaptive parametre baseret paa font sizes
 # - Device-independent (NPC koordinater 0-1)
-# - Robust på tværs af ggplot2 versioner
+# - Robust paa tvaers af ggplot2 versioner
 # - Edge case handling (sammenfaldende linjer, bounds violations)
 #
 # DEPENDENCIES:
@@ -73,52 +73,52 @@
 # HELPER FUNCTIONS
 # ==============================================================================
 
-#' Clamp værdi til interval `[0, 1]`
+#' Clamp vaerdi til interval `[0, 1]`
 #'
-#' @param x Numerisk værdi eller vektor
-#' @return Værdi begrænset til `[0, 1]`
+#' @param x Numerisk vaerdi eller vektor
+#' @return Vaerdi begraenset til `[0, 1]`
 #' @keywords internal
 #' @noRd
 clamp01 <- function(x) {
   # Input validation
   if (is.null(x) || length(x) == 0) {
-    stop("clamp01: x må ikke være NULL eller tom")
+    stop("clamp01: x m\u00e5 ikke v\u00e6re NULL eller tom")
   }
 
   if (!is.numeric(x)) {
-    stop("clamp01: x skal være numerisk, modtog: ", class(x)[1])
+    stop("clamp01: x skal v\u00e6re numerisk, modtog: ", class(x)[1])
   }
 
   if (any(!is.finite(x[!is.na(x)]))) {
-    warning("clamp01: Ikke-finite værdier (Inf/-Inf) detekteret")
+    warning("clamp01: Ikke-finite v\u00e6rdier (Inf/-Inf) detekteret")
     x[!is.finite(x)] <- NA_real_
   }
 
   pmax(0, pmin(1, x))
 }
 
-#' Clamp værdi til custom bounds interval
+#' Clamp vaerdi til custom bounds interval
 #'
 #' Bruges til at sikre at labels respekterer panel padding (pad_top/pad_bot)
-#' også ved flip-scenarios.
+#' ogsaa ved flip-scenarios.
 #'
-#' @param x Numerisk værdi eller vektor
-#' @param low_bound Nedre grænse
-#' @param high_bound Øvre grænse
-#' @return Værdi begrænset til `[low_bound, high_bound]`
+#' @param x Numerisk vaerdi eller vektor
+#' @param low_bound Nedre graense
+#' @param high_bound OEvre graense
+#' @return Vaerdi begraenset til `[low_bound, high_bound]`
 #' @keywords internal
 #' @noRd
 clamp_to_bounds <- function(x, low_bound, high_bound) {
   # Input validation
   if (is.null(x) || length(x) == 0) {
-    stop("clamp_to_bounds: x må ikke være NULL eller tom")
+    stop("clamp_to_bounds: x m\u00e5 ikke v\u00e6re NULL eller tom")
   }
 
   if (!is.numeric(x) || !is.numeric(low_bound) || !is.numeric(high_bound)) {
-    stop("clamp_to_bounds: Alle parametre skal være numeriske")
+    stop("clamp_to_bounds: Alle parametre skal v\u00e6re numeriske")
   }
 
-  # Når labels er større end panelet kan bounds invertere - returner midtpunktet
+  # Naar labels er stoerre end panelet kan bounds invertere - returner midtpunktet
   if (low_bound >= high_bound) {
     return(rep((low_bound + high_bound) / 2, length(x)))
   }
@@ -133,15 +133,15 @@ clamp_to_bounds <- function(x, low_bound, high_bound) {
 
 #' Opret NPC mapper fra ggplot object
 #'
-#' Denne funktion bygger ggplot og udtræker scale information for at konvertere
+#' Denne funktion bygger ggplot og udtraeker scale information for at konvertere
 #' mellem data-koordinater og NPC (Normalized Parent Coordinates, 0-1).
 #'
 #' @param p ggplot object
 #' @param panel Panel nummer (default = 1)
 #'
 #' @return List med:
-#'   - `y_to_npc`: function(y_data) → NPC
-#'   - `npc_to_y`: function(npc) → y_data
+#'   - `y_to_npc`: function(y_data) -> NPC
+#'   - `npc_to_y`: function(npc) -> y_data
 #'   - `limits`: c(ymin, ymax)
 #'   - `trans_name`: transformation navn (fx "identity", "log10")
 #'
@@ -153,7 +153,7 @@ clamp_to_bounds <- function(x, low_bound, high_bound) {
 #'
 #' @param built_plot ggplot_built object fra ggplot2::ggplot_build()
 #' @param panel Panel index (default 1)
-#' @param original_plot Optional: Original ggplot object (kun nødvendigt for fallback scale extraction)
+#' @param original_plot Optional: Original ggplot object (kun noedvendigt for fallback scale extraction)
 #'
 #' @return List med y_to_npc og npc_to_y funktioner
 #'
@@ -162,12 +162,12 @@ clamp_to_bounds <- function(x, low_bound, high_bound) {
 npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
   # Validate built plot object
   if (is.null(built_plot) || !inherits(built_plot, "ggplot_built")) {
-    stop("npc_mapper_from_built: built_plot skal være et ggplot_built object")
+    stop("npc_mapper_from_built: built_plot skal v\u00e6re et ggplot_built object")
   }
 
   # Validate panel parameter
   if (!is.numeric(panel) || length(panel) != 1 || panel < 1 || panel != floor(panel)) {
-    stop("npc_mapper_from_built: panel skal være et positivt heltal, modtog: ", panel)
+    stop("npc_mapper_from_built: panel skal v\u00e6re et positivt heltal, modtog: ", panel)
   }
 
   if (is.null(built_plot$layout) || is.null(built_plot$layout$panel_params)) {
@@ -182,7 +182,7 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
     ))
   }
 
-  # Prøv forskellige metoder til at få panel params (robust på tværs af ggplot2 versioner)
+  # Proev forskellige metoder til at faa panel params (robust paa tvaers af ggplot2 versioner)
   pp <- tryCatch(
     {
       built_plot$layout$panel_params[[panel]]
@@ -201,13 +201,13 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
     stop("Kunne ikke hente panel parameters fra built plot. Tjek ggplot2 version.")
   }
 
-  # Udtræk limits og transformation
+  # Udtraek limits og transformation
   get_scale_info <- function(pp, original_plot) {
     lims <- NULL
     trans <- NULL
     trans_name <- "identity"
 
-    # Prøv struktureret y scale i panel params
+    # Proev struktureret y scale i panel params
     if (!is.null(pp$y) && !is.null(pp$y$range)) {
       lims <- tryCatch(pp$y$range$range, error = function(e) NULL)
       trans <- tryCatch(pp$y$trans, error = function(e) NULL)
@@ -220,7 +220,7 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
       lims <- pp$y.range
     }
 
-    # Fallback til original plot scale (hvis tilgængeligt)
+    # Fallback til original plot scale (hvis tilgaengeligt)
     if (is.null(lims) && !is.null(original_plot)) {
       y_scales <- Filter(function(s) "y" %in% s$aesthetics, original_plot$scales$scales)
       if (length(y_scales) > 0) {
@@ -273,7 +273,7 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
     ))
   }
 
-  # Y-data → NPC mapper
+  # Y-data -> NPC mapper
   y_to_npc <- function(y) {
     if (any(is.na(y))) {
       result <- rep(NA_real_, length(y))
@@ -286,7 +286,7 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
     (info$trans(y) - y0) / y_range_trans
   }
 
-  # NPC → Y-data inverse mapper
+  # NPC -> Y-data inverse mapper
   npc_to_y <- function(npc) {
     if (any(is.na(npc))) {
       result <- rep(NA_real_, length(npc))

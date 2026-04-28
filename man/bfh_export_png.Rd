@@ -30,7 +30,7 @@ workflows.
 \itemize{
 \item Dimensions are specified in millimeters (Danish/European standard)
 \item Internally converted to inches for ggplot2::ggsave()
-\item Default 200mm × 120mm ≈ 7.87" × 4.72" (common presentation size)
+\item Default 200mm x 120mm ~= 7.87" x 4.72" (common presentation size)
 }
 
 \strong{Resolution (DPI):}

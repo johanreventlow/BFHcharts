@@ -30,7 +30,7 @@
 #' }
 #'
 #' **Limitations:**
-#' - Session is single-threaded sequential only — do not share across parallel workers.
+#' - Session is single-threaded sequential only - do not share across parallel workers.
 #' - Not compatible with \code{template_path} (custom templates).
 #' - Pass \code{inject_assets} here, not to individual \code{bfh_export_pdf()} calls.
 #'

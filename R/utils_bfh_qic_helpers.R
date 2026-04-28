@@ -1,7 +1,7 @@
 # ============================================================================
 # INTERNE HELPERS TIL bfh_qic()
 # ============================================================================
-# Disse helpers isolerer Anhøj signal-postprocessering og return-routing
+# Disse helpers isolerer Anhoej signal-postprocessering og return-routing
 # fra bfh_qic()-kroppen. Se openspec/changes/refactor-extract-bfh-qic-helpers.
 
 #' Normaliser anhoej.signal i qic_data
@@ -10,8 +10,8 @@
 #' uanset hvilke signal-kolonner der er til stede.
 #'
 #' Fallback-priority:
-#' `anhoej.signal` → `anhoej.signals` → `runs.signal | crossings.signal`
-#' → `runs.signal` → `FALSE`
+#' `anhoej.signal` -> `anhoej.signals` -> `runs.signal | crossings.signal`
+#' -> `runs.signal` -> `FALSE`
 #'
 #' @param qic_data data.frame fra `qicharts2::qic()`, eller NULL
 #' @return qic_data med normaliseret `anhoej.signal` (logical, aldrig NA),
@@ -36,7 +36,7 @@ add_anhoej_signal <- function(qic_data) {
     qic_data$anhoej.signal <- rep(FALSE, nrow(qic_data))
   }
 
-  # Downstream kræver altid TRUE/FALSE — aldrig NA
+  # Downstream kraever altid TRUE/FALSE - aldrig NA
   qic_data$anhoej.signal <- ifelse(
     is.na(qic_data$anhoej.signal), FALSE, qic_data$anhoej.signal
   )
@@ -44,18 +44,18 @@ add_anhoej_signal <- function(qic_data) {
   qic_data
 }
 
-#' Byg bfh_qic() returværdi
+#' Byg bfh_qic() returvaerdi
 #'
-#' Håndterer alle fire returkombinationer af `return.data` og `print.summary`,
+#' Haandterer alle fire returkombinationer af `return.data` og `print.summary`,
 #' inkl. deprecation-warnings for legacy paths.
 #'
-#' @param qic_data data.frame med rå qic-beregninger
+#' @param qic_data data.frame med raa qic-beregninger
 #' @param plot ggplot2-objekt
 #' @param summary_result data.frame med SPC-summary
 #' @param config liste med konfigurationsparametre
 #' @param return.data logical
 #' @param print.summary logical
-#' @return Én af: `bfh_qic_result` S3-objekt (default), `qic_data` data.frame,
+#' @return En af: `bfh_qic_result` S3-objekt (default), `qic_data` data.frame,
 #'   `list(plot, summary)`, eller `list(data, summary)`
 #' @keywords internal
 build_bfh_qic_return <- function(qic_data, plot, summary_result, config,

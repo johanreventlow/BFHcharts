@@ -11,7 +11,7 @@ NULL
 # SAFE AGGREGATION
 # ============================================================================
 
-#' Safe Max — returnerer NA_real_ i stedet for -Inf når alle værdier er NA
+#' Safe Max - returnerer NA_real_ i stedet for -Inf naar alle vaerdier er NA
 #' @param v Numerisk vektor
 #' @return Numerisk skalar
 #' @keywords internal
@@ -24,7 +24,7 @@ safe_max <- function(v) {
   max(v)
 }
 
-#' Safe Min — returnerer NA_real_ i stedet for Inf når alle værdier er NA
+#' Safe Min - returnerer NA_real_ i stedet for Inf naar alle vaerdier er NA
 #' @param v Numerisk vektor
 #' @return Numerisk skalar
 #' @keywords internal
@@ -56,15 +56,15 @@ is_valid_scalar <- function(x) {
   !is.null(x) && length(x) > 0 && !is.na(x[1])
 }
 
-#' Check om numerisk værdi effektivt er heltal (tolerance-baseret)
+#' Check om numerisk vaerdi effektivt er heltal (tolerance-baseret)
 #'
-#' Central helper for heltalsdetektion på tværs af formatteringsfunktioner.
-#' Undgår duplikeret `all.equal(..., round(...))` logik.
+#' Central helper for heltalsdetektion paa tvaers af formatteringsfunktioner.
+#' Undgaar duplikeret `all.equal(..., round(...))` logik.
 #'
 #' @param x Numeric skalar.
 #' @param tolerance Numerisk tolerance til floating-point sammenligning.
 #'
-#' @return Logical. TRUE hvis `x` er numerisk og inden for tolerance af nærmeste heltal.
+#' @return Logical. TRUE hvis `x` er numerisk og inden for tolerance af naermeste heltal.
 #' @keywords internal
 #' @noRd
 is_effective_integer <- function(x, tolerance = 1e-10) {
@@ -98,7 +98,7 @@ validate_numeric_parameter <- function(value,
                                        len = NULL,
                                        allow_null = TRUE,
                                        context = NULL) {
-  # Parameter-specifikke fejlbeskeder (DRY — defineret én gang)
+  # Parameter-specifikke fejlbeskeder (DRY - defineret en gang)
   PARAM_MESSAGES <- list(
     multiply = "multiply must be a single positive number",
     cl = "cl must be a single numeric value"
@@ -181,7 +181,7 @@ validate_numeric_parameter <- function(value,
 #' - `multiply = m`: `target_value` must be in `[0, m * 1.5]`
 #'
 #' The 1.5x slack on the upper bound permits legitimate stretch targets above
-#' 100% (e.g., 105%) while still catching the 100x mismatch — the most common
+#' 100% (e.g., 105%) while still catching the 100x mismatch - the most common
 #' user error where `target_value = 2.0` is passed intending "2%" instead of
 #' the required proportion `0.02` (when `multiply = 1`).
 #'

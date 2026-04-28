@@ -35,7 +35,7 @@ data to \code{BFHllm::bfhllm_spc_suggestion()}. In healthcare contexts,
 implicit external data processing is unacceptable. Always set
 \code{use_ai = TRUE} deliberately.
 \itemize{
-\item \code{FALSE} (default): Use standard texts only — no external data sharing
+\item \code{FALSE} (default): Use standard texts only - no external data sharing
 \item \code{TRUE}: Use AI (requires BFHllm package; error if not installed)
 }}
 
@@ -75,7 +75,7 @@ When \code{use_ai = TRUE} and BFHllm is installed, the function:
 
 When \code{use_ai = FALSE} (default):
 \itemize{
-\item Returns Danish standard texts based on Anhøj SPC rules
+\item Returns Danish standard texts based on Anhoej SPC rules
 }
 }
 \examples{

@@ -134,7 +134,7 @@ format_time_danish <- function(val_minutes, time_unit = "minutes") {
 
 #' Tids-naturlige kandidat-intervaller i minutter
 #'
-#' Bruges af `time_breaks()` til at vælge tick-afstand. Dækker fra 1 minut
+#' Bruges af `time_breaks()` til at vaelge tick-afstand. Daekker fra 1 minut
 #' op til 30 dage.
 #'
 #' @keywords internal
@@ -145,13 +145,13 @@ TIME_BREAK_CANDIDATES <- c(
   1440, 2880, 10080, 43200 # dage (1d, 2d, 7d, 30d)
 )
 
-#' Formatér minutter som komposit tidsstreng (single value)
+#' Formater minutter som komposit tidsstreng (single value)
 #'
-#' Runder input til hele minutter før komponentopdeling for at undgå
-#' overflow (59,7 min → `1t`, ikke `60m`). Max 2 komponenter for læsbarhed:
+#' Runder input til hele minutter foer komponentopdeling for at undgaa
+#' overflow (59,7 min -> `1t`, ikke `60m`). Max 2 komponenter for laesbarhed:
 #' ved dage+timer vises ikke minutter.
 #'
-#' @param v numeric(1). Tidsværdi i minutter.
+#' @param v numeric(1). Tidsvaerdi i minutter.
 #' @return character(1) komposit-streng. `NA_character_` hvis `v` er NA.
 #' @keywords internal
 #' @noRd
@@ -185,19 +185,19 @@ format_time_composite_single <- function(v) {
   paste0(sign_prefix, result)
 }
 
-#' Formatér minutter som komposit tidsstreng (vektoriseret)
+#' Formater minutter som komposit tidsstreng (vektoriseret)
 #'
-#' Producerer læsbare danske tidsstrenge som `"45m"`, `"1t 30m"`, `"2d 13t"`.
+#' Producerer laesbare danske tidsstrenge som `"45m"`, `"1t 30m"`, `"2d 13t"`.
 #' Max 2 komponenter; dage+timer udelader minutter. Input rundes til hele
-#' minutter inden opdeling, så værdier nær en unit-grænse (fx 59,7 min)
-#' kollapser korrekt til næste unit (`1t`) i stedet for at producere
+#' minutter inden opdeling, saa vaerdier naer en unit-graense (fx 59,7 min)
+#' kollapser korrekt til naeste unit (`1t`) i stedet for at producere
 #' overflow-komponenter (`60m`).
 #'
-#' Bruges som kanonisk formatering på y-aksen og i data-punkt labels
-#' (centrallinje, target), så akse- og label-tekst altid er i samme
+#' Bruges som kanonisk formatering paa y-aksen og i data-punkt labels
+#' (centrallinje, target), saa akse- og label-tekst altid er i samme
 #' format.
 #'
-#' @param minutes numeric. Tidsværdi(er) i minutter. Negative værdier
+#' @param minutes numeric. Tidsvaerdi(er) i minutter. Negative vaerdier
 #'   prefikses med `"-"`. NA propageres til `NA_character_`.
 #' @return character vektor med komposit-formaterede strenge.
 #' @keywords internal
@@ -220,9 +220,9 @@ format_time_composite <- function(minutes) {
   vapply(minutes, format_time_composite_single, character(1))
 }
 
-#' Generér tids-naturlige tick-breaks
+#' Generer tids-naturlige tick-breaks
 #'
-#' Vælger det **største** interval fra `TIME_BREAK_CANDIDATES` der stadig
+#' Vaelger det **stoerste** interval fra `TIME_BREAK_CANDIDATES` der stadig
 #' giver mindst `target_n` ticks inden for data-range. Det giver
 #' naturligt grovere ticks for store ranges og finere for smalle ranges.
 #' Begge ender floor-snappes til multipla af det valgte interval
@@ -231,17 +231,17 @@ format_time_composite <- function(minutes) {
 #' Defensive guards:
 #' \itemize{
 #'   \item Ikke-finite input (`NA`, `NaN`, `Inf`, `-Inf`) filtreres
-#'     via `is.finite()` — ggplot2 passerer undertiden `Inf` under layout,
+#'     via `is.finite()` - ggplot2 passerer undertiden `Inf` under layout,
 #'     hvilket ville crashe `seq()` senere.
 #'   \item Konstant range (`y_min == y_max`) returnerer et enkelt tick.
 #'   \item Sub-unit range (< 1 minut) falder tilbage til data-bracketing
-#'     `c(y_min, y_max)` så aksen ikke bliver blank.
+#'     `c(y_min, y_max)` saa aksen ikke bliver blank.
 #' }
 #'
 #' @param y_values numeric. Data-range at generere ticks til.
 #' @param target_n integer. Minimums-antal ticks. Default `5L`.
 #' @return numeric vektor med tick-positioner i minutter. Tom vektor
-#'   hvis `y_values` kun indeholder ikke-finite værdier.
+#'   hvis `y_values` kun indeholder ikke-finite vaerdier.
 #' @keywords internal
 #' @noRd
 #' @examples
@@ -262,14 +262,14 @@ time_breaks <- function(y_values, target_n = 5L) {
   y_min <- min(y_clean)
   y_max <- max(y_clean)
 
-  # Konstant range: returnér enkelt tick på værdien
+  # Konstant range: returner enkelt tick paa vaerdien
   if (y_min == y_max) {
     return(y_min)
   }
 
-  # Primær: største interval med >= target_n ticks.
+  # Primaer: stoerste interval med >= target_n ticks.
   # Itererer alle kandidater (floor-snap kan give non-monotonisk n_ticks
-  # i sjældne tilfælde for små target_n — omkostningen er ubetydelig).
+  # i sjaeldne tilfaelde for smaa target_n - omkostningen er ubetydelig).
   chosen_interval <- NULL
   for (interval in TIME_BREAK_CANDIDATES) {
     start <- floor(y_min / interval) * interval
@@ -280,7 +280,7 @@ time_breaks <- function(y_values, target_n = 5L) {
     }
   }
 
-  # Fallback 1: meget smal range — brug mindste interval med >= 2 ticks
+  # Fallback 1: meget smal range - brug mindste interval med >= 2 ticks
   if (is.null(chosen_interval)) {
     for (interval in TIME_BREAK_CANDIDATES) {
       start <- floor(y_min / interval) * interval
@@ -293,8 +293,8 @@ time_breaks <- function(y_values, target_n = 5L) {
     }
   }
 
-  # Fallback 2: sub-unit range (f.eks. 0,3-0,9 min) — returnér
-  # data-bracketing tick-par så aksen ikke bliver blank.
+  # Fallback 2: sub-unit range (f.eks. 0,3-0,9 min) - returner
+  # data-bracketing tick-par saa aksen ikke bliver blank.
   if (is.null(chosen_interval)) {
     return(c(y_min, y_max))
   }
