@@ -1,0 +1,146 @@
+# Scheduled live Quarto/Typst render-tests for BFHcharts PDF/PNG export pipeline.
+#
+# Hvorfor en separat workflow:
+# R-CMD-check.yaml installerer ikke Quarto (Typst-template er hardcoded mod
+# proprietaer Mari-font, og Typst fejler exit 1 paa unknown-font warnings).
+# Render-gate'de tests skipper graceful via skip_if_no_quarto() i daglig CI,
+# hvilket efterlader PDF/PNG-pipelinen uden CI-coverage. Denne workflow lukker
+# det hul ved at:
+#   1. Installere Quarto + open fallback-fonts
+#   2. Koerre alle render-gate'de tests live
+#   3. Uploade PDF + Typst compile-logs som artifacts ved fejl
+#
+# Trigger: ugentlig + on-demand + ved aendringer til export-relaterede filer.
+#
+# Kilde: issue #210 (BFHcharts code review 2026-04-27, Codex finding #6).
+#
+# Sikkerhed: workflow bruger kun safe inputs (github.run_id som integer,
+# secrets.GITHUB_TOKEN), ingen untrusted user-input forwarded til run-steps.
+
+name: Render Tests (Quarto/Typst)
+
+on:
+  schedule:
+    # Hver mandag kl. 06:00 UTC (07:00 CET / 08:00 CEST)
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+  push:
+    branches: [main, develop]
+    paths:
+      - "R/export*.R"
+      - "R/utils_typst*.R"
+      - "R/utils_quarto*.R"
+      - "R/utils_export*.R"
+      - "inst/templates/typst/**"
+      - "tests/testthat/test-export*.R"
+      - "tests/testthat/test-integration-export*.R"
+      - "tests/testthat/test-utils_typst*.R"
+      - "tests/testthat/test-utils_quarto*.R"
+      - ".github/workflows/render-tests.yaml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "R/export*.R"
+      - "R/utils_typst*.R"
+      - "R/utils_quarto*.R"
+      - "R/utils_export*.R"
+      - "inst/templates/typst/**"
+
+permissions: read-all
+
+jobs:
+  render-tests:
+    runs-on: ${{ matrix.os }}
+    name: render-tests (${{ matrix.os }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+      BFHCHARTS_TEST_FULL: "true"
+      BFHCHARTS_TEST_RENDER: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system fonts (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            fonts-dejavu \
+            fonts-liberation \
+            fonts-liberation2 \
+            fonts-noto \
+            fonts-noto-core \
+            fonts-roboto \
+            fontconfig
+          fc-cache -f -v
+        shell: bash
+
+      - name: Install system fonts (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew tap homebrew/cask-fonts || true
+          brew install --cask font-dejavu font-liberation || true
+        shell: bash
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: "1.5.57"
+
+      - name: Verify Quarto installation
+        run: |
+          quarto --version
+          quarto check
+        shell: bash
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "release"
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pdftools any::rcmdcheck
+          needs: check
+
+      - name: Run render-gate'd tests
+        run: |
+          options(crayon.enabled = TRUE)
+          devtools::load_all()
+          res <- testthat::test_dir(
+            "tests/testthat",
+            filter = "export|integration-export|utils_typst|utils_quarto|pdf-output|security-export",
+            stop_on_failure = TRUE,
+            reporter = c("progress", "fail")
+          )
+          summary_df <- as.data.frame(res)
+          cat("\n\n========== Render test summary ==========\n")
+          cat("Total files: ", nrow(summary_df), "\n", sep = "")
+          cat("Failed:      ", sum(summary_df$failed > 0, na.rm = TRUE), "\n", sep = "")
+          cat("Errors:      ", sum(summary_df$error, na.rm = TRUE), "\n", sep = "")
+          cat("Skipped:     ", sum(summary_df$skipped, na.rm = TRUE), "\n", sep = "")
+          cat("=========================================\n")
+        shell: Rscript {0}
+
+      - name: Upload render artifacts (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-failures-${{ matrix.os }}-${{ github.run_id }}
+          path: |
+            tests/testthat/_snaps/**/*.new.svg
+            tests/testthat/_snaps/**/*.png
+            tests/testthat/_snaps/**/*.pdf
+            **/*.qmd
+            **/*.typ
+            **/*.tex.log
+          retention-days: 14
+          if-no-files-found: warn
