@@ -85,6 +85,31 @@
   tests koerer live; uploader PDF/Typst-artifacts ved fejl for
   remote-debugging.
 
+## Dokumentation
+
+* **Fire kliniske vignettes (#219).** Pakken havde tidligere kun reference-
+  dokumentation via roxygen — kliniske brugere manglede end-to-end guidance
+  paa hvilke chart-typer der passer til hvilke spoergsmaal, hvordan
+  interventioner haandteres, og hvad target-kontrakten dikterer. Fire nye
+  Rmd-vignettes i `vignettes/`:
+
+  - **`chart-types`**: Beslutningstrae fra klinisk spoergsmaal til
+    `chart_type`-valg. Per-type use cases, sample-size guidance,
+    anti-patterns. Reference: Provost & Murray (2011).
+  - **`phases-and-freeze`**: Distinguere `part` (separate centerlinjer per
+    fase) vs `freeze` (fastlaast baseline). Klinisk eksempel: pre/post
+    intervention med frosset baseline. Almindelige fejl + migration-pattern.
+  - **`targets-and-percent`**: Dokumenterer percent-target-kontrakten fra
+    v0.9.0 (#203). Migration-eksempel fra silently misvisende
+    `target_value = 2.0` paa percent-akse til korrekt
+    `target_value = 0.02` (proportion) eller `multiply = 100`.
+  - **`safe-exports`**: Sikkerheds-praksis for `inject_assets` og
+    `template_path` (#218). Allow-list-pattern til Shiny-applications,
+    pre-deploy security checklist.
+
+  Infrastruktur: `VignetteBuilder: knitr` tilfoejet til DESCRIPTION,
+  `knitr` + `rmarkdown` i Suggests, build artifacts i `.gitignore`.
+
 # BFHcharts 0.10.4
 
 ## Interne aendringer

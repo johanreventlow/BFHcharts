@@ -1,0 +1,171 @@
+---
+title: "Vælg den rigtige SPC-charttype"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vælg den rigtige SPC-charttype}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+```
+
+## Hvorfor charttypen er vigtig
+
+Forkert charttype giver misvisende konklusioner. En infektionsrate visualiseret som
+i-chart (individuelle målinger) ignorerer at varians afhænger af antal patienter
+i nævneren. En andelsmåling (proportion) i en c-chart antager at maximum er
+uendeligt — hvilket aldrig er sandt for proportioner ≤ 1.
+
+Denne vignette mapper kliniske spørgsmål til charttyper og giver beslutningsregler.
+
+## Beslutningstræ
+
+```
+  Hvad måler du?
+  │
+  ├── Tællinger (counts)
+  │   │
+  │   ├── Konstant areal/eksponering (fx fald per måned, alle samme afdeling)?
+  │   │   → c-chart (Poisson, tællinger med konstant forventning)
+  │   │
+  │   └── Varierende eksponering (fald per 1000 patientdage)?
+  │       → u-chart (Poisson, rate per eksponering)
+  │
+  ├── Proportioner (events / total)
+  │   │
+  │   ├── Klassisk binomial (fx genindlæggelser / udskrivninger)?
+  │   │   → p-chart
+  │   │
+  │   ├── Procent på y-akse (præsentation i %)?
+  │   │   → pp-chart (Laney p', overdispersion-korrigeret)
+  │   │
+  │   └── Rate i procent (sygefravær % af planlagt tid)?
+  │       → up-chart (Laney u')
+  │
+  ├── Kontinuerte målinger
+  │   │
+  │   ├── Subgrouped data (fx 5 målinger per dag)?
+  │   │   → xbar-chart (mean) + s-chart (variation)
+  │   │
+  │   ├── Individuelle målinger (én måling per periode)?
+  │   │   → i-chart + mr-chart (moving range)
+  │   │
+  │   └── For lille n eller ikke-normal fordeling?
+  │       → run-chart (kun centerlinje, ingen kontrolgrænser)
+  │
+  └── Tid eller antal mellem hændelser
+      │
+      ├── Tid mellem (dage mellem fald)?
+      │   → t-chart (Nelson-transformation for skæv fordeling)
+      │
+      └── Antal mellem (vagter siden sidste fejl)?
+          → g-chart (geometrisk fordeling)
+```
+
+## Per chart-type: hvornår, hvorfor
+
+### `p` — proportion (binomial)
+
+Klassisk: `p = events / total`. Bruges når data er binær per observation
+(fx infektion ja/nej for hver patient) og du vil måle andelen.
+
+```{r p-example}
+library(BFHcharts)
+
+# 12 måneder, infektioner per 1000 udskrivninger
+data <- data.frame(
+  month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+  infections = c(15, 18, 12, 14, 16, 13, 11, 9, 10, 8, 7, 6),
+  discharges = c(950, 1020, 980, 1050, 1010, 990, 970, 1030, 1000, 985, 995, 1015)
+)
+
+bfh_qic(data,
+  x = month, y = infections, n = discharges,
+  chart_type = "p",
+  y_axis_unit = "percent",
+  chart_title = "Infektionsrate"
+)
+```
+
+**Krav**: `n` (denominator) skal være ikke-NULL og positiv. `events <= n` for hver række.
+
+### `u` — rate per eksponering (Poisson)
+
+Bruges når events tælles per "eksponeringsenhed" (patientdage, vagter, behandlinger).
+I modsætning til `p` har `u` ikke et øvre bound (rates kan i princippet overstige 1).
+
+```{r u-example, eval = FALSE}
+# Fald per 1000 patientdage
+bfh_qic(data,
+  x = month, y = falls, n = patient_days,
+  chart_type = "u",
+  y_axis_unit = "rate"
+)
+```
+
+### `c` — konstant-eksponering tællinger
+
+Bruges når eksponering er praktisk konstant (samme afdeling, samme periodelængde).
+Simpler end u-chart men kræver konstans-antagelsen.
+
+### `i` — individuelle kontinuerte målinger
+
+For målinger hvor du har én værdi per periode (fx daglig ventetid). Brug **altid**
+sammen med `mr`-chart for at se variation mellem konsekutive målinger.
+
+### `xbar` + `s` — subgrouped kontinuerte data
+
+Når hver periode har flere målinger (fx 5 patienter målt per dag). `xbar` viser
+gennemsnit, `s` viser within-group variation. Kraftigt par når subgroup-størrelsen
+er stabil.
+
+### `run` — for lille n eller ikke-normalitet
+
+Hvis du har <12 datapunkter, eller fordelingen er kraftigt skæv, er kontrolgrænser
+upålidelige. Run-chart giver kun centerlinje + Anhøj-regler — fang systematiske
+ændringer uden fejlagtig falsk-positiv.
+
+### `t` og `g` — tid/antal mellem hændelser
+
+Til sjældne events. `t` (dage mellem) bruger Nelson-transformation for at håndtere
+skæv eksponentiel fordeling. `g` (count mellem) for diskret tælling.
+
+## Anti-patterns: når SPC misleder
+
+| Mønster | Problem |
+|---------|---------|
+| Bruge `i` til andele | Ignorerer denominator → forkerte kontrolgrænser |
+| Bruge `c` til varierende eksponering | Antager konstant baseline → falske signaler |
+| Skifte chart-type efter at have set data | Bias (cherry-picking) — bestem på forhånd |
+| Genberegne baseline efter intervention | Brug `freeze` til at låse pre-intervention CL |
+| <12 datapunkter med kontrolgrænser | Brug `run` indtil du har ≥12-15 punkter |
+
+## Sample size guidance
+
+| Chart-type | Minimum n | Anbefalet n |
+|------------|-----------|-------------|
+| `p`, `u`   | 8         | 20+ med n_i > 10 |
+| `c`        | 8         | 20+ med c_bar > 5 |
+| `i`, `mr`  | 12        | 20+ |
+| `xbar`, `s`| 8 subgroups| 20+ subgroups, n_i ≥ 4 |
+| `t`, `g`   | 8 events  | 25+ events |
+| `run`      | 8         | 12+ |
+
+## Reference
+
+- Provost LP & Murray SK (2011). *The Health Care Data Guide*. Jossey-Bass.
+- Mohammed MA et al. (2008). "Plotting basic control charts." *BMJ Quality & Safety* 17:137-145.
+- Anhøj J & Olesen AV (2014). "Run charts revisited." *PLOS ONE* 9(11):e113825.
+
+## Se også
+
+- `vignette("phases-and-freeze")` — håndtér interventioner og baseline
+- `vignette("targets-and-percent")` — target-værdi og procent-akser
+- `?bfh_qic` — fuld parameter-dokumentation

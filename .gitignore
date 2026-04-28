@@ -50,3 +50,6 @@ BFHcharts.Rcheck/
 BFHcharts_*.tar.gz
 # Backup files
 *.backup
+# Vignette build artifacts
+/doc/
+/Meta/

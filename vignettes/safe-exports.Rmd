@@ -1,0 +1,203 @@
+---
+title: "Sikre eksporter med custom templates og fonts"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Sikre eksporter med custom templates og fonts}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## To extension points med trust-krav
+
+`bfh_export_pdf()` og `bfh_create_export_session()` eksponerer to parametre der
+**kører caller-supplied kode/templates**. Begge er legitime for proprietære fonts
+og organisationsspecifikke templates, men begge kræver eksplicit trust:
+
+| Parameter | Hvad det gør | Risiko ved misbrug |
+|-----------|--------------|--------------------|
+| `inject_assets` | Kalder en R-callback med skrive-adgang til template-mappen | Vilkårlig R-kode-eksekvering |
+| `template_path` | Erstatter den pakkede Typst-template | Vilkårlig Typst (kan læse/skrive paths under compilation) |
+
+Begge parametre skal behandles med samme tillidskontrakt som `source()`:
+**aldrig fra user-input**, altid fra code-reviewed organisationskontrolleret kilde.
+
+## Brug `font_path` for de fleste tilfælde
+
+Hvis du **kun** har brug for at injicere fonts, brug `font_path` i stedet for
+`inject_assets`. Det er sikkert at videresende fra konfiguration eller
+miljøvariable, og kræver ikke trust på samme niveau:
+
+```{r font-path, eval = FALSE}
+library(BFHcharts)
+
+# Fonts er statiske filer på disk — ingen kode-eksekvering
+bfh_export_pdf(result, "rapport.pdf",
+  font_path = "/etc/bfh-fonts"
+)
+```
+
+`font_path` videregives som `--font-path` til Typst-compileren. Typst læser
+fonts fra mappen men eksekverer ingen kode fra den.
+
+## `inject_assets` — kun til organisations-kontrolleret kode
+
+Brug `inject_assets` når du har **dynamiske** filsystem-operationer der ikke
+passer ind i en fast `font_path`-mappe. Eksempel: en privat pakke der bundler
+fonts og afpakker dem til template-mappen lige før compilation.
+
+```{r inject-assets-good, eval = FALSE}
+# Sikkert: callback fra code-reviewed privat pakke
+inject_my_org_assets <- function(template_dir) {
+  font_dir <- file.path(template_dir, "fonts")
+  dir.create(font_dir, showWarnings = FALSE)
+  file.copy(
+    system.file("fonts", "Mari", package = "MyOrgPrivateFonts"),
+    font_dir,
+    recursive = TRUE
+  )
+}
+
+bfh_export_pdf(result, "rapport.pdf",
+  inject_assets = inject_my_org_assets
+)
+```
+
+```r
+# FARLIGT: callback bygget fra Shiny-input
+server <- function(input, output, session) {
+  output$pdf <- downloadHandler(
+    content = function(file) {
+      # ALDRIG videresend user-supplied kode/strenge til inject_assets:
+      user_callback <- parse_user_input(input$user_callback)
+      bfh_export_pdf(result, file, inject_assets = user_callback)
+    }
+  )
+}
+```
+
+Sidstnævnte mønster konverterer en Shiny-input til en eksekverbar callback —
+hvilket giver brugeren vilkårlig kode-eksekvering på serveren. Kald den
+"remote code execution" eller "RCE": uacceptabel selv i interne enterprise
+deployments.
+
+## `template_path` — kun til organisations-kontrolleret Typst
+
+Tilsvarende: `template_path` peger på en `.typ`-fil som Typst-compileren kører.
+En custom template kan udføre filsystem-operationer under compilation — så
+**aldrig** modtag template-stien fra user-input.
+
+```{r template-path-good, eval = FALSE}
+# Sikkert: template fra organisations-repo, code-reviewed
+bfh_export_pdf(result, "rapport.pdf",
+  template_path = system.file(
+    "templates", "afdelings-template.typ",
+    package = "MyOrgTemplates"
+  )
+)
+```
+
+```r
+# FARLIGT: template-sti fra user upload
+template <- input$uploaded_template$datapath
+bfh_export_pdf(result, "rapport.pdf",
+  template_path = template
+)
+```
+
+Den uploadede `.typ`-fil eksekveres af Typst-compileren med samme privilege
+som R-processen. Vilkårlig Typst-kode kan læse og skrive filsystem-paths.
+
+## Allow-list pattern: hvis du **skal** eksponere customisering
+
+Hvis dit Shiny-interface skal lade brugere vælge mellem **forhåndsgodkendte**
+templates, validér mod en fixed allow-list før kald:
+
+```{r allowlist, eval = FALSE}
+APPROVED_TEMPLATES <- list(
+  standard = system.file("templates/standard.typ", package = "MyOrg"),
+  klinisk  = system.file("templates/klinisk.typ", package = "MyOrg"),
+  forskning = system.file("templates/forskning.typ", package = "MyOrg")
+)
+
+server <- function(input, output, session) {
+  output$pdf <- downloadHandler(
+    content = function(file) {
+      # User vælger fra dropdown med navn — ikke fil-sti
+      template <- APPROVED_TEMPLATES[[input$template_name]]
+      if (is.null(template) || !file.exists(template)) {
+        stop("Ugyldig template valgt")
+      }
+      bfh_export_pdf(result, file, template_path = template)
+    }
+  )
+}
+```
+
+UI komponenten viser kun navnene fra allow-listen — fil-stier eksponeres aldrig.
+
+## Batch eksport med `bfh_create_export_session()`
+
+For mange eksporter med identiske template-assets: brug session for at undgå
+gentaget I/O. Trust-kravet for `inject_assets` er det samme:
+
+```{r batch, eval = FALSE}
+session <- bfh_create_export_session(
+  font_path = "/etc/bfh-fonts",
+  inject_assets = inject_my_org_assets   # Code-reviewed callback
+)
+on.exit(close(session))
+
+for (afdeling in afdelinger) {
+  result <- bfh_qic(data_per_afd[[afdeling]], ...)
+  bfh_export_pdf(result, paste0(afdeling, ".pdf"),
+    batch_session = session,
+    metadata = list(department = afdeling)
+  )
+}
+```
+
+`inject_assets` kaldes **én gang** ved session-opret; assets deles på tværs af
+alle eksporter. Trust-kravet er det samme som single-call mode.
+
+## Font-fallback chain
+
+Hvis `font_path` ikke matcher Typst's font-lookup, falder den tilbage på
+system-fonts (medmindre `ignore_system_fonts = TRUE`, default fra v0.10.0).
+Anbefalet praksis i production:
+
+```{r font-fallback, eval = FALSE}
+bfh_export_pdf(result, "rapport.pdf",
+  font_path = "/etc/bfh-fonts",
+  ignore_system_fonts = TRUE
+)
+```
+
+Med `ignore_system_fonts = TRUE` bruger Typst kun fonts fra `font_path` plus
+de bundle'de template-fonts. Det forhindrer overraskende rendering-forskelle
+mellem dev-maskiner og production-deployments hvor system-font-versioner divergerer.
+
+## Pre-deploy security checklist
+
+Før dit Shiny app eller batch-script går i produktion:
+
+- [ ] `inject_assets` callbacks kommer fra code-reviewed kilde (ikke user-input)
+- [ ] `template_path` peger på en organisations-kontrolleret `.typ`-fil
+- [ ] Hvis customisering eksponeres: allow-list validering før kald
+- [ ] `font_path` peger på read-only mappe (ingen brugerskrivning)
+- [ ] `ignore_system_fonts = TRUE` for reproducerbar rendering
+- [ ] Output-stier validerede (ingen path traversal)
+- [ ] Error messages eksponerer ikke template- eller filsystem-internals
+
+## Se også
+
+- `vignette("chart-types")` — vælg charttype før eksport
+- `?bfh_export_pdf` — `\section{Security}` med fuld trust-rationale
+- `?bfh_create_export_session` — batch-session security note
+- BFHcharts issue #218 — security boundary discussion

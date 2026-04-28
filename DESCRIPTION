@@ -46,7 +46,10 @@ Suggests:
     covr,
     pdftools (>= 3.3.0),
     withr,
-    BFHllm
+    BFHllm,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
 Remotes:
     johanreventlow/BFHtheme,
     johanreventlow/BFHllm
