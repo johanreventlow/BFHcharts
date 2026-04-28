@@ -279,138 +279,21 @@ test_that("print.viewport_dims returns object invisibly", {
 })
 
 # ============================================================================
-# PHASE_CONFIG TESTS
-# ============================================================================
-
-test_that("phase_config creates valid configuration object", {
-  pc <- phase_config()
-
-  expect_s3_class(pc, "phase_config")
-  expect_true(is.list(pc))
-})
-
-test_that("phase_config includes all parameters", {
-  pc <- phase_config(
-    part_positions = c(15, 30, 45),
-    freeze_position = 15
-  )
-
-  expect_equal(pc$part_positions, c(15, 30, 45))
-  expect_equal(pc$freeze_position, 15)
-})
-
-test_that("phase_config uses default NULL values", {
-  pc <- phase_config()
-
-  expect_null(pc$part_positions)
-  expect_null(pc$freeze_position)
-})
-
-test_that("phase_config validates part_positions are positive", {
-  pc <- phase_config(part_positions = c(10, 20, 30))
-  expect_equal(pc$part_positions, c(10, 20, 30))
-
-  pc <- phase_config(part_positions = 15)
-  expect_equal(pc$part_positions, 15)
-
-  expect_error(
-    phase_config(part_positions = c(10, 0, 20)),
-    "part_positions",
-    class = "bfhcharts_config_error"
-  )
-
-  expect_error(
-    phase_config(part_positions = c(10, -5)),
-    "part_positions",
-    class = "bfhcharts_config_error"
-  )
-
-  expect_error(
-    phase_config(part_positions = "ten"),
-    "part_positions",
-    class = "bfhcharts_config_error"
-  )
-
-  expect_error(
-    phase_config(part_positions = NA_integer_),
-    "part_positions",
-    class = "bfhcharts_config_error"
-  )
-})
-
-test_that("phase_config validates freeze_position is positive", {
-  pc <- phase_config(freeze_position = 20)
-  expect_equal(pc$freeze_position, 20)
-
-  expect_error(
-    phase_config(freeze_position = 0),
-    "freeze_position",
-    class = "bfhcharts_config_error"
-  )
-
-  expect_error(
-    phase_config(freeze_position = -10),
-    "freeze_position",
-    class = "bfhcharts_config_error"
-  )
-
-  expect_error(
-    phase_config(freeze_position = NA_real_),
-    "freeze_position",
-    class = "bfhcharts_config_error"
-  )
-})
-
-test_that("print.phase_config displays configuration", {
-  pc <- phase_config(
-    part_positions = c(15, 30),
-    freeze_position = 15
-  )
-
-  output <- capture.output(print(pc))
-
-  expect_true(any(grepl("Phase Configuration", output)))
-  expect_true(any(grepl("Part Positions.*15.*30", output)))
-  expect_true(any(grepl("Freeze Position.*15", output)))
-})
-
-test_that("print.phase_config shows NULL for empty values", {
-  pc <- phase_config()
-
-  output <- capture.output(print(pc))
-
-  expect_true(any(grepl("Part Positions.*NULL", output)))
-  expect_true(any(grepl("Freeze Position.*NULL", output)))
-})
-
-test_that("print.phase_config returns object invisibly", {
-  pc <- phase_config()
-
-  result <- withVisible(print(pc))
-
-  expect_false(result$visible)
-  expect_identical(result$value, pc)
-})
-
-# ============================================================================
 # INTEGRATION TESTS
 # ============================================================================
 
 test_that("Configuration objects can be used together", {
-  # Create all three config objects
+  # Create both config objects
   plot_cfg <- spc_plot_config(chart_type = "p", y_axis_unit = "percent")
   viewport <- viewport_dims(width = 1000, height = 600, base_size = 16)
-  phases <- phase_config(part_positions = 20)
 
   # All should be valid
   expect_s3_class(plot_cfg, "spc_plot_config")
   expect_s3_class(viewport, "viewport_dims")
-  expect_s3_class(phases, "phase_config")
 
   # Should have correct values
   expect_equal(plot_cfg$chart_type, "p")
   expect_equal(viewport$width, 1000)
-  expect_equal(phases$part_positions, 20)
 })
 
 test_that("Configuration objects work in bfh_qic", {

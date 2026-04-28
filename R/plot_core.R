@@ -21,7 +21,6 @@ NULL
 #' @param qic_data Data frame from qicharts2::qic() with return.data = TRUE
 #' @param plot_config Plot configuration
 #' @param viewport Viewport dimensions
-#' @param phase Optional phase configuration
 #' @param plot_margin Numeric vector of length 4 (top, right, bottom, left) in mm,
 #'   or a margin object from ggplot2::margin(), or NULL for default
 #'
@@ -82,7 +81,6 @@ NULL
 bfh_spc_plot <- function(qic_data,
                          plot_config = spc_plot_config(),
                          viewport = viewport_dims(),
-                         phase = NULL,
                          plot_margin = NULL) {
   # Validate inputs
   if (!is.data.frame(qic_data)) {
