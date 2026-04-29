@@ -59,7 +59,7 @@ local({
   pdf_fonts <- grDevices::pdfFonts()
   helv_ps <- ps_fonts[["Helvetica"]]
   helv_pdf <- pdf_fonts[["Helvetica"]]
-  for (fname in c("Mari", "Arial")) {
+  for (fname in c("Mari", "Arial", "Roboto")) {
     if (!fname %in% names(ps_fonts)) {
       tryCatch(
         do.call(grDevices::postscriptFonts, setNames(list(helv_ps), fname)),

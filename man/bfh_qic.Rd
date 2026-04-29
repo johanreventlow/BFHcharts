@@ -226,6 +226,14 @@ set \code{multiply = 100} to pass percent values directly.
 A 1.5x upper slack permits legitimate stretch targets above 100\%.
 }
 \examples{
+# Minimal kørbart eksempel med deterministiske data
+df <- data.frame(
+  maaned = seq.Date(as.Date("2023-01-01"), by = "month", length.out = 12),
+  vaerdi = c(10, 12, 11, 13, 10, 14, 11, 12, 10, 13, 11, 12)
+)
+result <- bfh_qic(df, x = maaned, y = vaerdi, chart_type = "i")
+class(result)  # "bfh_qic_result"
+
 \dontrun{
 library(BFHcharts)
 
