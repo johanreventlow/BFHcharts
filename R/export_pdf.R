@@ -49,7 +49,7 @@
 #'   \code{--ignore-system-fonts} to Typst so only fonts from \code{font_path}
 #'   (or bundled template fonts) are used. Prevents inconsistent rendering
 #'   when developers have additional Mari variants (e.g., Mari Heavy)
-#'   installed system-wide. See \code{\link{bfh_compile_typst}} for details.
+#'   installed system-wide. Passed to the internal Typst compiler.
 #' @param inject_assets Optional callback function called after Typst template
 #'   structure is created but before compilation. Receives one argument: the path
 #'   to the template directory (e.g., \code{<temp_dir>/bfh-template}). Use this
@@ -132,7 +132,6 @@
 #' @seealso
 #'   - [bfh_qic()] to create SPC charts
 #'   - [bfh_export_png()] to export as PNG
-#'   - [bfh_create_typst_document()] for low-level Typst generation
 #'   - [bfh_create_export_session()] for batch workflows (same trust
 #'     requirement applies to its `inject_assets` parameter)
 #' @examples

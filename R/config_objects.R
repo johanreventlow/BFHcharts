@@ -159,6 +159,7 @@ spc_plot_config <- function(
 #' @return Invisibly returns x
 #' @export
 #' @method print spc_plot_config
+#' @noRd
 print.spc_plot_config <- function(x, ...) {
   cat("SPC Plot Configuration:\n")
   cat("  Chart Type:", x$chart_type, "\n")
@@ -231,6 +232,7 @@ viewport_dims <- function(
 #' @return Invisibly returns x
 #' @export
 #' @method print viewport_dims
+#' @noRd
 print.viewport_dims <- function(x, ...) {
   cat("Viewport Dimensions:\n")
   cat("  Width:", if (is.null(x$width)) "Auto" else paste(x$width, "px"), "\n")

@@ -24,6 +24,7 @@ NULL
 #' @return Path to created .typ file (invisibly)
 #'
 #' @keywords internal
+#' @noRd
 bfh_create_typst_document <- function(chart_image,
                                       output,
                                       metadata,
@@ -201,6 +202,7 @@ bfh_create_typst_document <- function(chart_image,
 #' @return Path to created PDF file (invisibly)
 #'
 #' @keywords internal
+#' @noRd
 bfh_compile_typst <- function(typst_file, output, font_path = NULL,
                               ignore_system_fonts = TRUE,
                               .system2 = system2, .quarto_path = NULL) {
@@ -294,6 +296,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
 #' @param template_file Relative path to template .typ file (relative to document location)
 #' @return Character vector with Typst content
 #' @keywords internal
+#' @noRd
 build_typst_content <- function(chart_image, metadata, spc_stats, template, template_file) {
   # Valider template-identifier mod injection
 
@@ -422,6 +425,7 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
 #' @param s Character string to escape
 #' @return Escaped string safe for Typst
 #' @keywords internal
+#' @noRd
 escape_typst_string <- function(s) {
   if (is.null(s) || length(s) == 0) {
     return("")
@@ -454,6 +458,7 @@ escape_typst_string <- function(s) {
 #' @param s Character string to escape
 #' @return Escaped string safe for Typst content blocks
 #' @keywords internal
+#' @noRd
 escape_typst_text <- function(s) {
   if (is.null(s) || !nzchar(s)) {
     return(s %||% "")
@@ -488,6 +493,7 @@ escape_typst_raw <- function(s) {
 #' @param node xml2 node object
 #' @return Character string with Typst markup
 #' @keywords internal
+#' @noRd
 walk_typst_node <- function(node) {
   tag <- xml2::xml_name(node)
 
@@ -562,6 +568,7 @@ walk_typst_node <- function(node) {
 #' @param text Character string with CommonMark markdown
 #' @return Character string with Typst content markup
 #' @keywords internal
+#' @noRd
 parse_markdown_ast <- function(text) {
   xml_str <- commonmark::markdown_xml(text)
   doc <- xml2::read_xml(xml_str)
@@ -577,6 +584,7 @@ parse_markdown_ast <- function(text) {
 #' @param text Character string with markdown formatting
 #' @return Character string with Typst content block syntax
 #' @keywords internal
+#' @noRd
 #'
 #' @details
 #' **Supported Markdown Syntax:**

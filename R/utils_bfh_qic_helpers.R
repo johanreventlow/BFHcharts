@@ -55,6 +55,7 @@
 #'   serien er for kort til pålidelig Anhøj-evaluering),
 #'   eller NULL hvis input er NULL
 #' @keywords internal
+#' @noRd
 add_anhoej_signal <- function(qic_data) {
   if (is.null(qic_data)) {
     return(NULL)
@@ -93,6 +94,7 @@ add_anhoej_signal <- function(qic_data) {
 #' @return En af: `bfh_qic_result` S3-objekt (default), `qic_data` data.frame,
 #'   `list(plot, summary)`, eller `list(data, summary)`
 #' @keywords internal
+#' @noRd
 build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
                                  return.data, print.summary) {
   if (return.data && print.summary) {

@@ -79,7 +79,7 @@ system-wide on the deployment platform.}
 \code{--ignore-system-fonts} to Typst so only fonts from \code{font_path}
 (or bundled template fonts) are used. Prevents inconsistent rendering
 when developers have additional Mari variants (e.g., Mari Heavy)
-installed system-wide. See \code{\link{bfh_compile_typst}} for details.}
+installed system-wide. Passed to the internal Typst compiler.}
 
 \item{inject_assets}{Optional callback function called after Typst template
 structure is created but before compilation. Receives one argument: the path
@@ -238,7 +238,6 @@ for (dept in departments) {
 \itemize{
 \item \code{\link[=bfh_qic]{bfh_qic()}} to create SPC charts
 \item \code{\link[=bfh_export_png]{bfh_export_png()}} to export as PNG
-\item \code{\link[=bfh_create_typst_document]{bfh_create_typst_document()}} for low-level Typst generation
 \item \code{\link[=bfh_create_export_session]{bfh_create_export_session()}} for batch workflows (same trust
 requirement applies to its \code{inject_assets} parameter)
 }

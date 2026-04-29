@@ -3,8 +3,11 @@
 #' S3 class for wrapping SPC chart outputs. Enables pipe-compatible export
 #' workflows while maintaining backwards-compatible console display.
 #'
+#' Objects of class \code{bfh_qic_result} are returned by \code{\link{bfh_qic}}.
+#' Access components with \code{result$plot}, \code{result$summary},
+#' \code{result$qic_data}, and \code{result$config}.
+#'
 #' @name bfh_qic_result
-#' @keywords internal
 NULL
 
 #' Create a bfh_qic_result Object
@@ -23,6 +26,37 @@ NULL
 #'   \item{summary}{tibble with summary statistics}
 #'   \item{qic_data}{data.frame with qicharts2 calculations}
 #'   \item{config}{list with original parameters}
+#'
+#' @section Stability:
+#' \code{new_bfh_qic_result} is a stable, exported constructor. The structure of
+#' \code{bfh_qic_result} objects has been stable since v0.10.0. Field names
+#' (\code{$plot}, \code{$summary}, \code{$qic_data}, \code{$config}) will not
+#' be removed without a deprecation cycle.
+#'
+#' @section qic_data columns:
+#' The \code{$qic_data} field is a \code{data.frame} with the following
+#' canonical columns (supplied by qicharts2 >= 0.7.0):
+#' \describe{
+#'   \item{x}{Original x-axis input values}
+#'   \item{y}{Original y-axis input values (per-period)}
+#'   \item{n}{Denominator counts (for proportion/rate charts)}
+#'   \item{cl}{Numeric center line}
+#'   \item{ucl}{Numeric upper control limit}
+#'   \item{lcl}{Numeric lower control limit}
+#'   \item{ucl.95, lcl.95}{95-percent warning limits (Shewhart sigma = 2)}
+#'   \item{sigma.signal}{Logical: point outside 3-sigma control limits}
+#'   \item{runs.signal}{Logical: Anhoej runs-rule signal}
+#'   \item{longest.run, longest.run.max}{Observed and threshold run lengths}
+#'   \item{n.crossings, n.crossings.min}{Observed and minimum crossing counts}
+#'   \item{anhoej.signal}{Logical combined Anhoej-rule signal (runs OR
+#'     crossings). May be \code{FALSE} for series < 10 points where crossing
+#'     criterion is not applied.}
+#'   \item{cl.lab, ucl.lab, lcl.lab}{Character labels for chart annotations}
+#'   \item{part, baseline, include}{Phase/freeze/filter columns}
+#'   \item{notes}{Free-text annotation column}
+#' }
+#' The qicharts2 column contract is stable across minor versions >= 0.7.0.
+#' Additional columns may be present but should not be relied upon.
 #'
 #' @export
 new_bfh_qic_result <- function(plot, summary, qic_data, config) {
