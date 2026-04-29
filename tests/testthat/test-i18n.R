@@ -28,6 +28,13 @@ test_that("alle nøgler i da.yaml findes også i en.yaml (key parity)", {
     missing_in_en, character(0),
     info = paste("Nøgler i da.yaml men ikke i en.yaml:", paste(missing_in_en, collapse = ", "))
   )
+
+  # Bidirektionel paritet: EN må ikke have nøgler der mangler i DA
+  missing_in_da <- setdiff(en_keys, da_keys)
+  expect_equal(
+    missing_in_da, character(0),
+    info = paste("Nøgler i en.yaml men ikke i da.yaml:", paste(missing_in_da, collapse = ", "))
+  )
 })
 
 test_that("load_translations returnerer liste for 'da'", {

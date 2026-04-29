@@ -108,6 +108,35 @@
   åbner for fremtidige tests der ikke kræver Mari.
   (#add-pr-blocking-pdf-smoke-render)
 
+## Tests
+
+* **Smoke + boundary tests for g-, t- og mr-chart** tilføjet i
+  `tests/testthat/test-chart-types-gtmr.R`. Verificerer S3-klasse,
+  UCL/CL/LCL relationer og grænsetilfælde (nul-tæller-rækker for g-chart,
+  identiske tider for t-chart). (#expand-test-coverage-gaps)
+
+* **Bidirektionel i18n-paritetskontrol.** `test-i18n.R` tjekker nu begge
+  retninger: DA-nøgler manglende i EN og EN-nøgler manglende i DA.
+  (#expand-test-coverage-gaps)
+
+* **PDF-indholdsverifikation med pdftools.** Render-gated tests i
+  `test-export_pdf.R` verificerer nu at genererede PDF-filer har mindst 1
+  side via `pdftools::pdf_info()$pages`. (#expand-test-coverage-gaps)
+
+* **Kørbart eksempel i `bfh_qic()`.** Første `@examples`-blok er konverteret
+  fra `\dontrun{}` til kørbart kode med deterministiske inline-data.
+  Øvrige eksempler forbliver i `\dontrun{}`. (#expand-test-coverage-gaps)
+
+* **Laney p' håndberegnede referenceværdier.** To uafhængige fixtures med
+  kendte UCL/LCL-værdier (beregnet med Laney 2002-formel, verificeret mod
+  qicharts2) tilføjet til `test-statistical-accuracy-extended.R`.
+  (#expand-test-coverage-gaps)
+
+* **Nye edge-case tests.** `test-bfh_qic_edge_cases.R` dækker nu:
+  `part=c(6,9)` kombineret med `freeze=6` (regressiontest), tomt data.frame
+  (fejl forventet), og enkelt-rækket data (returnerer gyldigt objekt).
+  (#expand-test-coverage-gaps)
+
 # BFHcharts 0.10.5
 
 ## Bug fixes

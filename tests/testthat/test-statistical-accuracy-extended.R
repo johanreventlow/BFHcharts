@@ -484,3 +484,99 @@ test_that("mr og i charts på samme data har konsistente sigma-estimater", {
     label = "I-chart half-width = 3·MR_bar/d2"
   )
 })
+
+# ============================================================================
+# PP-CHART — LANEY P' HAND-BEREGNEDE REFERENCEVÆRDIER
+# ============================================================================
+#
+# Uafhængige håndberegninger verificerer Laney p' formel (Laney 2002):
+#
+#   p_bar = sum(y_i) / sum(n_i)                 (pooled proportion)
+#   sigma_p_i = sqrt(p_bar * (1-p_bar) / n_i)   (klassisk p-sigma pr. obs)
+#   z_i = (p_i - p_bar) / sigma_p_i             (standardiseret afvigelse)
+#   sigma_z = MR_bar(z) / 1.128                 (qicharts2 bruger MR-metode)
+#   UCL_i = p_bar + 3 * sigma_p_i * sigma_z
+#   LCL_i = max(0, p_bar - 3 * sigma_p_i * sigma_z)
+#
+# Verificeret mod qicharts2::qic(..., chart="pp") direkte.
+# Reference: Laney DB (2002) "Improved Control Charts for Attributes"
+
+test_that("pp-chart UCL/LCL matcher Laney-formel (ens n, håndberegnet)", {
+  # Data: 8 perioder, n=50 per periode
+  # p_bar = 36/400 = 0.09
+  # sigma_p_i (ens) = sqrt(0.09 * 0.91 / 50) ≈ 0.04047
+  # z_i = (-0.7412, 0.2471, -0.2471, 0.7412, -1.2354, 1.2354, -0.2471, 0.2471)
+  # MR_bar(z) / 1.128 ≈ 1.1265
+  # UCL_1 = 0.09 + 3 * 0.04047 * 1.1265 ≈ 0.22678
+  # LCL_1 = max(0, 0.09 - 3 * 0.04047 * 1.1265) = 0 (negativ → clip)
+  n_vec <- rep(50L, 8)
+  y_vec <- c(3L, 5L, 4L, 6L, 2L, 7L, 4L, 5L)
+  data <- data.frame(period = 1:8, y = y_vec, n = n_vec)
+
+  result <- suppressWarnings(
+    bfh_qic(data, x = period, y = y, n = n, chart_type = "pp")
+  )
+  qd <- result$qic_data
+
+  # CL = p_bar
+  expect_equal(qd$cl[1], 0.09,
+    tolerance = 1e-6,
+    label = "pp-chart CL = pooled p_bar = 0.09"
+  )
+
+  # UCL ≈ 0.22678 (håndberegnet + qicharts2-verificeret)
+  expect_equal(qd$ucl[1], 0.2267781,
+    tolerance = 1e-4,
+    label = "pp-chart UCL (Laney) ≈ 0.2268 (ens n)"
+  )
+
+  # LCL = 0 (clippet — negativ uden clip)
+  expect_equal(qd$lcl[1], 0,
+    tolerance = 1e-6,
+    label = "pp-chart LCL = 0 (clippet, da p_bar er lille)"
+  )
+})
+
+test_that("pp-chart UCL varierer med n (Laney p' er n-afhængig)", {
+  # Data: varierende n — UCL[n=50] > UCL[n=100] (bredere grænse ved lille n)
+  # Håndberegnede værdier verificeret mod qicharts2:
+  #   p_bar = 39/550 ≈ 0.07091
+  #   UCL[1] (n=50)  ≈ 0.11863
+  #   UCL[4] (n=100) ≈ 0.10465
+  #   LCL[1] (n=50)  ≈ 0.02319
+  n_vec <- c(50L, 80L, 60L, 100L, 45L, 90L, 70L, 55L)
+  y_vec <- c(3L, 6L, 4L, 8L, 2L, 7L, 5L, 4L)
+  data <- data.frame(period = 1:8, y = y_vec, n = n_vec)
+
+  result <- suppressWarnings(
+    bfh_qic(data, x = period, y = y, n = n, chart_type = "pp")
+  )
+  qd <- result$qic_data
+
+  # CL = p_bar ≈ 0.07091
+  expect_equal(qd$cl[1], 39 / 550,
+    tolerance = 1e-6,
+    label = "pp-chart CL = pooled p_bar med varierende n"
+  )
+
+  # UCL[1] (n=50) ≈ 0.11863
+  expect_equal(qd$ucl[1], 0.118625,
+    tolerance = 1e-4,
+    label = "pp-chart UCL[n=50] ≈ 0.1186 (håndberegnet)"
+  )
+
+  # UCL[4] (n=100) ≈ 0.10465  — snævrere end UCL[1]
+  expect_equal(qd$ucl[4], 0.104649,
+    tolerance = 1e-4,
+    label = "pp-chart UCL[n=100] ≈ 0.1046 (snævrere end n=50)"
+  )
+  expect_lt(qd$ucl[4], qd$ucl[1],
+    label = "UCL snævrere ved n=100 end n=50 (Laney n-afhængighed)"
+  )
+
+  # LCL[1] (n=50) ≈ 0.02319 (positiv — ikke clippet)
+  expect_equal(qd$lcl[1], 0.023194,
+    tolerance = 1e-4,
+    label = "pp-chart LCL[n=50] ≈ 0.0232 (ikke clippet)"
+  )
+})

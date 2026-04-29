@@ -2,7 +2,6 @@
 # Verificerer at pipelinen håndterer grænsetilfælde korrekt
 
 test_that("bfh_qic håndterer minimum data (3 punkter)", {
-
   data <- data.frame(
     date = as.Date(c("2024-01-01", "2024-02-01", "2024-03-01")),
     value = c(10, 15, 12)
@@ -17,7 +16,6 @@ test_that("bfh_qic håndterer minimum data (3 punkter)", {
 })
 
 test_that("bfh_qic håndterer alle identiske værdier (zero variance)", {
-
   data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rep(50, 12)
@@ -34,7 +32,6 @@ test_that("bfh_qic håndterer alle identiske værdier (zero variance)", {
 })
 
 test_that("bfh_qic håndterer data med alle nul-værdier", {
-
   data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rep(0, 12)
@@ -104,8 +101,10 @@ test_that("bfh_qic med multiply parameter skalerer korrekt", {
     value = rnorm(12, mean = 0.5, sd = 0.1)
   )
 
-  result <- bfh_qic(data, x = date, y = value, chart_type = "i",
-                     multiply = 100)
+  result <- bfh_qic(data,
+    x = date, y = value, chart_type = "i",
+    multiply = 100
+  )
 
   # Multiplicerede y-værdier skal være ~50 (0.5 * 100)
   expect_true(mean(result$qic_data$y) > 30)
@@ -119,8 +118,10 @@ test_that("bfh_qic med cl parameter sætter custom centerlinje", {
     value = rpois(12, lambda = 50)
   )
 
-  result <- bfh_qic(data, x = date, y = value, chart_type = "run",
-                     cl = 42)
+  result <- bfh_qic(data,
+    x = date, y = value, chart_type = "run",
+    cl = 42
+  )
 
   # Centerlinje skal være 42 (custom)
   expect_true(all(result$qic_data$cl == 42))
@@ -134,8 +135,10 @@ test_that("bfh_qic med part parameter opretter faser", {
     value = rpois(24, lambda = 50)
   )
 
-  result <- bfh_qic(data, x = date, y = value, chart_type = "i",
-                     part = 12)
+  result <- bfh_qic(data,
+    x = date, y = value, chart_type = "i",
+    part = 12
+  )
 
   expect_equal(length(unique(result$qic_data$part)), 2)
   expect_equal(nrow(result$summary), 2)
@@ -150,12 +153,64 @@ test_that("bfh_qic med freeze parameter fryser baseline", {
   )
 
   result <- suppressWarnings(
-    bfh_qic(data, x = date, y = value, chart_type = "i",
-             freeze = 12)
+    bfh_qic(data,
+      x = date, y = value, chart_type = "i",
+      freeze = 12
+    )
   )
 
   expect_s3_class(result, "bfh_qic_result")
   # Centerlinje skal være konstant (frozen fra de første 12 obs)
   cl_values <- unique(round(result$qic_data$cl, 2))
   expect_equal(length(cl_values), 1)
+})
+
+test_that("bfh_qic med part-vektor og freeze fungerer (regressiontest)", {
+  set.seed(1)
+
+  # Reproduktion af kombination: part=c(6,9) + freeze=6
+  # Sikrer at dette ikke crasher (regression mod evt. fremtidige brud)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 15),
+    value = rpois(15, lambda = 50)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data,
+      x = date, y = value, chart_type = "i",
+      part = c(6, 9), freeze = 6
+    )
+  )
+
+  expect_s3_class(result, "bfh_qic_result")
+  # 3 faser: obs 1-6, 7-9, 10-15
+  expect_equal(length(unique(result$qic_data$part)), 3)
+  expect_equal(nrow(result$summary), 3)
+})
+
+test_that("bfh_qic med tomt data.frame giver fejl", {
+  # Tomt data.frame (0 rækker) skal give en fejl — ikke en crash uden besked.
+  # Nuværende adfærd: R-intern fejl om argumentlænger.
+  # TODO: overvej at tilføje eksplicit "data must have at least 1 row" check i bfh_qic().
+  expect_error(
+    bfh_qic(
+      data.frame(date = as.Date(character(0)), value = numeric(0)),
+      x = date, y = value, chart_type = "i"
+    )
+  )
+})
+
+test_that("bfh_qic med enkelt-række data returnerer objekt (ingen crash)", {
+  # Single observation: qicharts2 håndterer dette — returnerer result med NA limits.
+  data <- data.frame(
+    date = as.Date("2024-01-01"),
+    value = 42
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, x = date, y = value, chart_type = "run")
+  )
+
+  expect_s3_class(result, "bfh_qic_result")
+  expect_equal(nrow(result$qic_data), 1)
 })
