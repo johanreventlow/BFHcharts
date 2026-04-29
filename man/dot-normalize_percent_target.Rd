@@ -34,19 +34,19 @@ Preserve otherwise (proportion already correct, or non-percent chart).
 }
 \examples{
 # Percent target expressed as 0-100 (normaliseres)
-BFHcharts:::.normalize_percent_target(90, ">= 90\%", "percent")  # 0.90
+BFHcharts:::.normalize_percent_target(90, ">= 90\%", "percent") # 0.90
 
 # Numerisk input >= 1 paa percent-chart (normaliseres)
-BFHcharts:::.normalize_percent_target(90, "", "percent")  # 0.90
+BFHcharts:::.normalize_percent_target(90, "", "percent") # 0.90
 
 # Allerede paa proportionsskala (bevares)
-BFHcharts:::.normalize_percent_target(0.9, "", "percent")  # 0.9
+BFHcharts:::.normalize_percent_target(0.9, "", "percent") # 0.9
 
 # Ingen \% i display og value <= 1: power-user proportion-override (bevares)
-BFHcharts:::.normalize_percent_target(0.9, ">= 0.9", "percent")  # 0.9
+BFHcharts:::.normalize_percent_target(0.9, ">= 0.9", "percent") # 0.9
 
 # Ikke et percent-diagram: altid uaendret
-BFHcharts:::.normalize_percent_target(90, ">= 90", "count")  # 90
+BFHcharts:::.normalize_percent_target(90, ">= 90", "count") # 90
 
 }
 \keyword{internal}
