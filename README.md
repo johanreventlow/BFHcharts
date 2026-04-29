@@ -55,6 +55,27 @@ The package uses font fallback: **Mari → Roboto → Arial → Helvetica → sa
 
 PDFs will be fully functional and readable, but without Region Hovedstaden specific branding. This is by design - Mari font is copyrighted and cannot be redistributed with the package.
 
+### Branding for Organizational Deployments
+
+Healthcare organizations that need consistent proprietary branding (custom fonts, hospital logos) across their BFHcharts deployments should distribute those assets via a **private companion R package** rather than bundling them in their consumer application or hardcoding paths.
+
+**Pattern:**
+
+1. Create a private R package (e.g. `MyOrgAssets`) hosting fonts and images in `inst/assets/`
+2. Export a single function `inject_my_assets(template_dir)` that copies bundled assets into the staged Typst template directory
+3. In your consumer application (e.g. a Shiny dashboard), depend on the companion package and pass its inject function to BFHcharts:
+
+```r
+BFHcharts::bfh_export_pdf(
+  result, "report.pdf",
+  inject_assets = MyOrgAssets::inject_my_assets
+)
+```
+
+This keeps proprietary assets out of public BFHcharts and out of your consumer app's git history, while supporting full branding in production deployments (including Posit Connect Cloud, RStudio Connect, and Docker).
+
+For the BFH/Region Hovedstaden reference deployment, the `BFHchartsAssets` private companion package (separate repository, hospital-internal access) implements this pattern. See its repository documentation for setup details.
+
 ## Quick Start
 
 ```r

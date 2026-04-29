@@ -1,4 +1,64 @@
+# BFHcharts 0.11.1
+
+## Bug fixes
+
+* **Klinisk korrekthedsfejl i auto-analyse for percent-indikatorer rettet.**
+  `bfh_generate_analysis()` med `auto_analysis = TRUE` producerede forkert
+  analysetekst ("målet er endnu ikke nået") for p-charts, selvom centerlinjen
+  reelt opfyldte et procent-mål. Fejlen opstod fordi `parse_target_input()`
+  fjernede `%`-suffixet og returnerede den rå numeriske værdi (fx `90`), mens
+  centerlinjerne for p-charts er på proportionsskala (fx `0.91`). Sammenligningen
+  `0.91 >= 90` evaluerede til `FALSE`. Fix: `bfh_build_analysis_context()` kalder
+  nu `.normalize_percent_target()` og dividerer target-værdien med 100 når
+  `y_axis_unit == "percent"` og target-displayet indeholder `%` eller
+  `target_value > 1`. `target_display` bevares uændret (fx `">= 90%"`) i
+  den genererede tekst. Kald med `auto_analysis = FALSE` (default) er
+  upåvirkede. (#fix-percent-target-scale-in-analysis)
+
+## Dokumentation
+
+* **`bfh_qic()` `print.summary`-dokumentation afspejler nu v0.11.0-fjernelsen.**
+  `@param print.summary` beskrev fortsat parameteren som "deprecated, will warn",
+  selvom runtime hard-errorer siden v0.11.0. Dokumentationen er opdateret til
+  at angive at kald med `print.summary = TRUE` giver en fejl, med
+  migrationsvejledning til det moderne S3-API (`result$summary`).
+  Eksempler 20-22 i `?bfh_qic` er omskrevet til at bruge `bfh_qic_result`-objektet
+  direkte fremfor det fjernede `print.summary`-argument.
+  (#update-print-summary-removal-docs)
+
+* **`bfh_qic()` `@param chart_type` og `@details Chart Types` dokumenterer nu
+  alle 12 validerede charttyper.** `mr` (Moving Range), `pp` (Laney-justeret
+  proportioner) og `up` (Laney-justeret rater) var accepteret af validatoren men
+  fraværende i public docs. Alle tre er nu dokumenteret med brugsvejledning,
+  inkl. hvornår Laney-varianterne (`pp`/`up`) er relevante (store denominatorer,
+  n > 1000 per subgruppe). To nye eksempler tilføjet: `pp`-chart og `mr`-chart
+  parret med I-chart. (#complete-chart-type-public-docs)
+
+* **Companion-pakke-pattern dokumenteret for proprietær branding.**
+  `?bfh_export_pdf`, `?bfh_create_export_session` og `README.md` beskriver
+  nu den anbefalede fremgangsmåde for organisationer, der har brug for
+  proprietære fonts (Mari, Arial) og hospital-logoer i PDF-eksport:
+  distribution via en privat companion R-pakke, der plugger ind via
+  `inject_assets`-parameteren. Dette holder proprietære assets ude af den
+  offentlige GPL-3-pakke og ud af consumer-applikationers git-historik, mens
+  fuld branding understøttes på Posit Connect Cloud, RStudio Connect og Docker.
+  For BFH/Region Hovedstaden-deployments implementerer `BFHchartsAssets`
+  (privat repo) dette mønster. (#add-bfhcharts-assets-companion-pkg)
+
 # BFHcharts 0.11.0
+
+## CI
+
+* **PDF smoke-render workflow genaktivet (Strategi B — CI-only test-template).**
+  `.github/workflows/pdf-smoke.yaml.disabled` er omdobt til `pdf-smoke.yaml`
+  og genaktivet som PR-blocking gate paa main og develop. Font-udfordringen
+  (proprietaer Mari-font kan ikke distribueres i public repo) loeses med
+  en minimal CI-only Typst-template (`tests/smoke/test-template.typ`) der
+  kun bruger DejaVu Sans (installeret via apt-get paa GitHub-hosted runners).
+  `render_smoke.R` detekterer `CI`-env-var og vaelger automatisk test-template
+  paa CI og production bfh-template lokalt. Visuel korrekthed (Mari-fonts)
+  haandteres fortsat af `vdiffr` og manuel review.
+  (#enable-ci-safe-pdf-smoke-render)
 
 ## Breaking changes
 
@@ -109,6 +169,15 @@
   (#add-pr-blocking-pdf-smoke-render)
 
 ## Interne ændringer
+
+* **Fjernet ineffektiv ownership-check i temp-dir-staging.** Den døde
+  `Sys.getenv("UID")`-baserede ownership-validering i `prepare_temp_workspace()`
+  er fjernet — `UID` er shell-intern og eksporteres typisk ikke til
+  R-processer (Rscript, RStudio Server, knitr, Shiny, GitHub Actions), så
+  checken skippede silently uden reel beskyttelse. Faktisk isolation via
+  `tempfile()` (per-bruger `tempdir()`) og `Sys.chmod(0700)` er uændret.
+  Tilsvarende forklarende kommentar tilføjet i `bfh_create_export_session()`.
+  (#cleanup-temp-dir-ownership-check)
 
 * **vdiffr snapshots re-baseret** (9 snapshots). Font-metric drift opstod da
   Roboto blev registreret som Helvetica-alias i v0.10.5 (`R/zzz.R`). SVG-koordinater

@@ -66,6 +66,59 @@ resolve_target <- function(target_input) {
 }
 
 
+#' Normalize percent target to proportion scale
+#'
+#' Internal helper. When `y_axis_unit` is `"percent"` and the target appears
+#' to be expressed on the 0-100 scale (either because `display` contains a
+#' literal `"%"` character, or because `value > 1` for a numeric-only input),
+#' the value is divided by 100 so downstream comparisons work on the same
+#' 0-1 proportion scale as the centerline.
+#'
+#' `target_display` is intentionally **not** modified — user-facing text
+#' continues to show `">= 90%"` rather than `">= 0.90"`.
+#'
+#' **Heuristic:**
+#' Normalize when `y_axis_unit == "percent"` AND
+#'   (`grepl("%", display)` OR `value > 1`)
+#' Preserve otherwise (proportion already correct, or non-percent chart).
+#'
+#' @param value Numeric target value as parsed by `resolve_target()`.
+#' @param display Character display string (may be empty `""` for numeric input).
+#' @param y_axis_unit Character y-axis unit (`"percent"`, `"count"`, `"rate"`, etc.).
+#'
+#' @return Numeric: `value / 100` when normalization applies, `value` otherwise.
+#'
+#' @examples
+#' # Percent target expressed as 0-100 (normaliseres)
+#' BFHcharts:::.normalize_percent_target(90, ">= 90%", "percent") # 0.90
+#'
+#' # Numerisk input >= 1 paa percent-chart (normaliseres)
+#' BFHcharts:::.normalize_percent_target(90, "", "percent") # 0.90
+#'
+#' # Allerede paa proportionsskala (bevares)
+#' BFHcharts:::.normalize_percent_target(0.9, "", "percent") # 0.9
+#'
+#' # Ingen % i display og value <= 1: power-user proportion-override (bevares)
+#' BFHcharts:::.normalize_percent_target(0.9, ">= 0.9", "percent") # 0.9
+#'
+#' # Ikke et percent-diagram: altid uaendret
+#' BFHcharts:::.normalize_percent_target(90, ">= 90", "count") # 90
+#'
+#' @keywords internal
+.normalize_percent_target <- function(value, display, y_axis_unit) {
+  if (is.null(y_axis_unit) || !identical(y_axis_unit, "percent")) {
+    return(value)
+  }
+  if (is.na(value) || !is.numeric(value)) {
+    return(value)
+  }
+  # Normaliser naar display indeholder "%" ELLER value > 1
+  # (OR-heuristik dækker både streng-input og numerisk input på 0-100 skala)
+  should_normalize <- isTRUE(grepl("%", display, fixed = TRUE)) || isTRUE(value > 1)
+  if (should_normalize) value / 100 else value
+}
+
+
 # Vaelg ental eller flertal ud fra n. n == 1 -> singular, alt andet -> plural.
 # NA og NULL behandles som flertal (neutral default).
 pluralize_da <- function(n, singular, plural) {
@@ -140,7 +193,12 @@ ensure_within_max <- function(text, max_chars) {
 #'   - `centerline`: Centerline value
 #'   - `spc_stats`: SPC statistics from `bfh_extract_spc_stats()`
 #'   - `has_signals`: Logical indicating if signals were detected
-#'   - `target_value`: Numeric target value (NA if absent)
+#'   - `target_value`: Numeric target value (NA if absent). **Percent-target
+#'     normalization:** when `y_axis_unit == "percent"` and the parsed target
+#'     value appears to be on the 0-100 scale (display contains `"%"` or
+#'     `value > 1`), `target_value` is divided by 100 so downstream
+#'     comparisons are on the same 0-1 proportion scale as `centerline`.
+#'     `target_display` is always preserved unchanged for user-facing text.
 #'   - `target_direction`: `"higher"`, `"lower"`, or `NULL` derived from
 #'     operator in `metadata$target` (NULL for numeric input)
 #'   - `target_display`: Original target string for display purposes
@@ -162,6 +220,14 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 
   # Resolve target-input til value + retning (genbruger parse_target_input)
   target_info <- resolve_target(metadata$target)
+
+  # Normaliser percent-target fra 0-100 til 0-1 proportionsskala naar relevant.
+  # Bevarer target_display uaendret (brugervendt tekst fortsat ">= 90%").
+  normalized_target_value <- .normalize_percent_target(
+    value = target_info$value,
+    display = target_info$display,
+    y_axis_unit = x$config$y_axis_unit
+  )
 
   # Udtraek SPC statistikker (inkl. outliers fra qic_data)
   spc_stats <- bfh_extract_spc_stats(x)
@@ -219,7 +285,7 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 
     # Bruger-metadata
     data_definition = metadata$data_definition,
-    target_value = target_info$value,
+    target_value = normalized_target_value,
     target_direction = target_info$direction,
     target_display = target_info$display,
     hospital = metadata$hospital,

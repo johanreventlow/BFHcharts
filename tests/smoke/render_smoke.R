@@ -17,14 +17,25 @@
 #   - Visuel korrekthed (kræver Mari-fonts — håndteres af vdiffr)
 #   - Tekst-præcision i PDF-output (håndteres af render-tests.yaml)
 #
-# Font-strategi på CI:
-#   Env-var BFHCHARTS_SMOKE_FONT_PATH kan pege på system-font-mappe med
-#   åbne fallback-fonts (DejaVu/Liberation/Noto installeret i pdf-smoke.yaml).
-#   Smoke-scriptet sætter font_path til denne sti hvis env-var er sat.
-#   ignore_system_fonts=TRUE (default i bfh_export_pdf) sikrer at Typst
-#   kun bruger de fonts vi eksplicit leverer.
+# Font-strategi (Strategi B):
+#   På CI bruges tests/smoke/test-template.typ som kun refererer DejaVu Sans.
+#   Production bfh-template.typ (med Mari-fonts) bruges IKKE på CI —
+#   den kræver proprietære fonts som ikke kan distribueres i public repo.
 #
-# Kilde: openspec/changes/add-pr-blocking-pdf-smoke-render (Task 4)
+#   CI-detection: Sys.getenv("CI") != "" → brug test-template + system fonts.
+#   Lokalt (CI ikke sat): brug production bfh-template (kræver Mari lokalt).
+#
+#   ignore_system_fonts:
+#     - CI (med test-template): FALSE — lad Typst finde DejaVu via system
+#     - Lokalt (production template): TRUE — brug kun fonts fra font_path
+#       (konsistent rendering på dev-maskiner med evt. ekstra Mari-varianter)
+#
+#   BFHCHARTS_SMOKE_FONT_PATH (valgfri på CI):
+#     Kan sættes til /usr/share/fonts for eksplicit at begrænse Typst's
+#     font-søgning til apt-installerede fonts. Hvis ikke sat og is_ci=TRUE,
+#     bruges ignore_system_fonts=FALSE så Typst finder DejaVu selv.
+#
+# Kilde: openspec/changes/enable-ci-safe-pdf-smoke-render (Strategi B)
 # =============================================================================
 
 # ---- Setup ------------------------------------------------------------------
@@ -76,10 +87,45 @@ check_pdf <- function(path, label) {
   invisible(TRUE)
 }
 
+# CI-detection: GitHub Actions sætter CI=true; lokal kørsel har CI="" (usat)
+is_ci <- nzchar(Sys.getenv("CI"))
+
 # Font-path: brug åbne fallback-fonts på CI hvis env-var er sat
 font_path_override <- Sys.getenv("BFHCHARTS_SMOKE_FONT_PATH", unset = NA_character_)
 if (is.na(font_path_override) || !nzchar(font_path_override)) {
   font_path_override <- NULL
+}
+
+# Template-strategi (Strategi B):
+#   CI: brug minimal test-template (tests/smoke/test-template.typ) med kun DejaVu Sans.
+#       ignore_system_fonts=FALSE så Typst kan bruge apt-installerede fonts.
+#   Lokalt: brug production bfh-template (NULL → bfh_export_pdf default).
+#       ignore_system_fonts=TRUE for konsistent rendering på dev-maskiner.
+if (is_ci) {
+  # Find test-template relativt til script-placering
+  script_dir <- tryCatch(
+    dirname(normalizePath(sys.frame(0)$ofile, mustWork = FALSE)),
+    error = function(e) "tests/smoke"
+  )
+  template_path_arg <- file.path(script_dir, "test-template.typ")
+  if (!file.exists(template_path_arg)) {
+    # Fallback: find fra working directory (ved Rscript fra package root)
+    template_path_arg <- file.path("tests", "smoke", "test-template.typ")
+  }
+  if (!file.exists(template_path_arg)) {
+    stop(
+      "[SMOKE FAIL] test-template.typ ikke fundet på CI.\n",
+      "  Forventet sti: tests/smoke/test-template.typ\n",
+      "  Arbejdsmappe: ", getwd(),
+      call. = FALSE
+    )
+  }
+  ignore_system_fonts_arg <- FALSE # Lad Typst finde DejaVu fra system
+  cat(sprintf("[SMOKE] CI=TRUE: bruger test-template: %s\n", template_path_arg))
+} else {
+  template_path_arg <- NULL # Brug production bfh-template
+  ignore_system_fonts_arg <- TRUE # Konsistent rendering lokalt
+  cat("[SMOKE] CI=FALSE: bruger production bfh-template\n")
 }
 
 # ---- Eksempeldata -----------------------------------------------------------
@@ -120,7 +166,9 @@ bfh_export_pdf(
     hospital = "Smoke Hospital",
     department = "Smoke Afdeling"
   ),
-  font_path = font_path_override
+  template_path = template_path_arg,
+  font_path = font_path_override,
+  ignore_system_fonts = ignore_system_fonts_arg
 )
 check_pdf(tmp1, "Smoke 1 (p-chart)")
 
@@ -155,7 +203,9 @@ bfh_export_pdf(
     data_definition = "Antal daglige haendelser",
     analysis = "Signifikant fald efter intervention i mdr 13"
   ),
-  font_path = font_path_override
+  template_path = template_path_arg,
+  font_path = font_path_override,
+  ignore_system_fonts = ignore_system_fonts_arg
 )
 check_pdf(tmp2, "Smoke 2 (i-chart med metadata)")
 
@@ -181,7 +231,9 @@ bfh_export_pdf(
     hospital = "Smoke Hospital",
     department = "Kirurgi"
   ),
-  font_path = font_path_override
+  template_path = template_path_arg,
+  font_path = font_path_override,
+  ignore_system_fonts = ignore_system_fonts_arg
 )
 check_pdf(tmp3, "Smoke 3 (run-chart med target)")
 

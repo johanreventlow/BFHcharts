@@ -31,7 +31,13 @@ demo_test.R
 # Generated PDF analysis files
 *.pdf
 # Copyright-protected fonts (must not be bundled)
+# Hel fonts-mappe er ekskluderet — ingen proprietaere fonts (Mari, Arial) maa commits
 inst/templates/typst/*/fonts/
+# Eksplicitte Mari-font-patterns (jf. openspec/changes/enable-ci-safe-pdf-smoke-render)
+inst/templates/typst/bfh-template/fonts/Mari*.ttf
+inst/templates/typst/bfh-template/fonts/Mari*.otf
+inst/templates/typst/bfh-template/fonts/Mari*.woff
+inst/templates/typst/bfh-template/fonts/Mari*.woff2
 # Git worktrees
 .worktrees/
 # Claude local settings

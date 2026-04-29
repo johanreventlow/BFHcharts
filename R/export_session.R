@@ -44,6 +44,17 @@
 #' \code{\link{bfh_export_pdf}} for the full rationale and the parallel
 #' warning for \code{template_path}.
 #'
+#' \strong{Recommended: companion package for proprietary branding.}
+#' Organizations that need consistent proprietary branding across batch
+#' exports should pass a companion-package callback here rather than
+#' hardcoding asset paths. For example:
+#' \code{bfh_create_export_session(inject_assets = MyAssetsPkg::inject_my_assets)}.
+#' This keeps proprietary fonts and logos out of public BFHcharts
+#' distribution while supporting full branding on Posit Connect Cloud,
+#' RStudio Connect, and Docker deployments. The callback is still
+#' subject to the trusted-code-only contract above. See
+#' \code{\link{bfh_export_pdf}} Security section for full details.
+#'
 #' @export
 #' @seealso
 #'   - [bfh_export_pdf()] for single exports and the full security note
@@ -60,6 +71,11 @@ bfh_create_export_session <- function(font_path = NULL, inject_assets = NULL) {
 
   tmpdir <- tempfile("bfh_batch_")
   dir.create(tmpdir, recursive = TRUE)
+  # Sikkerhed: tempfile() leverer en per-bruger isoleret sti i tempdir(),
+  # og Sys.chmod(0700) fjerner group/other-permissions. UID-baseret
+  # ownership-validering udelades bevidst — UID er shell-intern og typisk
+  # ikke eksporteret til R-processer (Rscript, RStudio Server, knitr,
+  # Shiny, GitHub Actions).
   Sys.chmod(tmpdir, mode = "0700", use_umask = FALSE)
 
   template_src <- system.file("templates/typst/bfh-template", package = "BFHcharts")
