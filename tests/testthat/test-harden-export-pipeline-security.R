@@ -104,27 +104,42 @@ test_that("find_quarto afviser ikke-eksisterende options-sti og falder tilbage",
 })
 
 test_that(".validate_binary_path tillader stier med parens (Windows Program Files)", {
-  skip_on_os("linux") # Fokus paa Windows-sti-format; skip paa Linux
   reset_quarto_cache()
 
-  # Opret en midlertidig eksekverbar fil til test
+  # Opret undermappe med parens i stien (simulerer C:/Program Files (x86)/Quarto)
   tmp_dir <- withr::local_tempdir("quarto_binary_test")
-  fake_quarto <- file.path(tmp_dir, "quarto.exe")
+  parens_dir <- file.path(tmp_dir, "Program Files (x86)")
+  dir.create(parens_dir)
+  fake_quarto <- file.path(parens_dir, "quarto.exe")
   writeLines("#!/bin/sh\necho quarto", fake_quarto)
   if (.Platform$OS.type != "windows") {
     Sys.chmod(fake_quarto, mode = "755")
   }
 
-  # Sti med parens men ingen farlige metachars
-  # (simulerer C:/Program Files (x86)/Quarto/bin/quarto.exe-format)
-  parens_path <- file.path(tmp_dir, "quarto.exe")
+  # Verificer at stien faktisk indeholder parens
+  expect_true(grepl("(", fake_quarto, fixed = TRUE))
 
   result <- suppressWarnings(
-    BFHcharts:::.validate_binary_path(parens_path, source = "test")
+    BFHcharts:::.validate_binary_path(fake_quarto, source = "test")
   )
-  # Paa Unix: filen eksisterer og er eksekverbar -> accepteret
-  # Paa Windows: eksekverbar-bit check springes over
+  # Parens er IKKE i SHELL_METACHARS_BINARY -> accepteret
   expect_false(is.null(result))
+  expect_equal(result, fake_quarto)
+})
+
+test_that(".validate_binary_path afviser stadig semikolon selv med binary-mode check", {
+  reset_quarto_cache()
+  warned <- FALSE
+  result <- withCallingHandlers(
+    BFHcharts:::.validate_binary_path("/tmp/quarto;evil", source = "test"),
+    warning = function(w) {
+      warned <<- TRUE
+      expect_match(conditionMessage(w), "disallowed")
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_null(result)
+  expect_true(warned)
 })
 
 # ============================================================================
