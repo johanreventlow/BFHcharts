@@ -237,3 +237,104 @@ test_that("bfh_generate_analysis(use_ai=FALSE) kalder aldrig BFHllm", {
   bfh_generate_analysis(result, use_ai = FALSE)
   expect_false(ai_called, label = "explicit use_ai = FALSE must not call BFHllm")
 })
+
+# ============================================================================
+# AUDIT SIGNAL: AI-egress message emitteres på AI-branch
+# ============================================================================
+
+test_that("bfh_generate_analysis(use_ai=TRUE) emitter [BFHcharts/AI]-besked", {
+  skip_if_not_installed("BFHllm")
+
+  result <- make_test_result_for_analysis()
+
+  testthat::local_mocked_bindings(
+    bfhllm_spc_suggestion = function(...) "AI output",
+    .package = "BFHllm"
+  )
+
+  expect_message(
+    bfh_generate_analysis(result, use_ai = TRUE),
+    regexp = "\\[BFHcharts/AI\\]"
+  )
+})
+
+test_that("bfh_generate_analysis(use_ai=TRUE) audit-besked navngiver felter", {
+  skip_if_not_installed("BFHllm")
+
+  result <- make_test_result_for_analysis()
+  captured_msg <- NULL
+
+  testthat::local_mocked_bindings(
+    bfhllm_spc_suggestion = function(...) "AI output",
+    .package = "BFHllm"
+  )
+
+  withCallingHandlers(
+    bfh_generate_analysis(result, use_ai = TRUE),
+    message = function(m) {
+      if (grepl("\\[BFHcharts/AI\\]", conditionMessage(m))) {
+        captured_msg <<- conditionMessage(m)
+        invokeRestart("muffleMessage")
+      }
+    }
+  )
+
+  expect_false(is.null(captured_msg), label = "[BFHcharts/AI]-besked skal emitteres")
+  # spc_result-felter
+  expect_match(captured_msg, "metadata")
+  expect_match(captured_msg, "qic_data")
+  # llm_context-felter
+  expect_match(captured_msg, "data_definition")
+  expect_match(captured_msg, "chart_title")
+  # use_rag
+  expect_match(captured_msg, "use_rag = TRUE")
+})
+
+test_that("suppress_ai_audit_message = TRUE undertrykker [BFHcharts/AI]-besked", {
+  skip_if_not_installed("BFHllm")
+
+  result <- make_test_result_for_analysis()
+
+  testthat::local_mocked_bindings(
+    bfhllm_spc_suggestion = function(...) "AI output",
+    .package = "BFHllm"
+  )
+
+  withr::with_options(
+    list(BFHcharts.suppress_ai_audit_message = TRUE),
+    {
+      msgs <- character(0)
+      withCallingHandlers(
+        bfh_generate_analysis(result, use_ai = TRUE),
+        message = function(m) {
+          msgs <<- c(msgs, conditionMessage(m))
+          invokeRestart("muffleMessage")
+        }
+      )
+      ai_msgs <- grep("\\[BFHcharts/AI\\]", msgs, value = TRUE)
+      expect_length(ai_msgs, 0)
+    }
+  )
+})
+
+test_that("bfh_generate_analysis(use_ai=FALSE) emitter ingen [BFHcharts/AI]-besked", {
+  skip_if_not_installed("BFHllm")
+
+  result <- make_test_result_for_analysis()
+
+  testthat::local_mocked_bindings(
+    bfhllm_spc_suggestion = function(...) "AI output",
+    .package = "BFHllm"
+  )
+
+  msgs <- character(0)
+  withCallingHandlers(
+    bfh_generate_analysis(result, use_ai = FALSE),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+  ai_msgs <- grep("\\[BFHcharts/AI\\]", msgs, value = TRUE)
+  expect_length(ai_msgs, 0)
+})

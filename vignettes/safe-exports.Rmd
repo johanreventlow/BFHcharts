@@ -195,6 +195,15 @@ Før dit Shiny app eller batch-script går i produktion:
 - [ ] Output-stier validerede (ingen path traversal)
 - [ ] Error messages eksponerer ikke template- eller filsystem-internals
 
+## AI-egress audit signal
+
+Som defense-in-depth emitter `bfh_generate_analysis(use_ai = TRUE)` en
+`message()` umiddelbart inden kald til `BFHllm::bfhllm_spc_suggestion()`.
+Beskeden bærer det stabile tag `[BFHcharts/AI]` og navngiver de felter der
+transmitteres, så R-level logs kan bekræfte om og hvornår AI-stien blev taget.
+Sæt `options(BFHcharts.suppress_ai_audit_message = TRUE)` for at undertrykke
+beskeden (f.eks. i applikationer der har egen audit-trail).
+
 ## Se også
 
 - `vignette("chart-types")` — vælg charttype før eksport

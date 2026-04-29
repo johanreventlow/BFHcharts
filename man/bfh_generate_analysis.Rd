@@ -78,6 +78,30 @@ When \code{use_ai = FALSE} (default):
 \item Returns Danish standard texts based on Anhoej SPC rules
 }
 }
+\section{AI audit signal}{
+
+When \code{use_ai = TRUE} and BFHllm is installed, a \code{message()} is emitted
+immediately before calling \code{BFHllm::bfhllm_spc_suggestion()}. The message
+uses the stable tag \verb{[BFHcharts/AI]} for log-grep-ability and lists:
+\itemize{
+\item the names of the \code{spc_result} and \code{llm_context} fields transmitted
+\item the \code{use_rag} value
+}
+
+Example message:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{[BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() — fields: metadata, qic_data; data_definition, chart_title, ...; use_rag = TRUE
+}\if{html}{\out{</div>}}
+
+\strong{Opt-out:} Set \code{options(BFHcharts.suppress_ai_audit_message = TRUE)} to
+suppress the message (e.g. in interactive sessions or when the calling
+application maintains its own audit trail).
+
+\strong{Rationale:} Hospital deployments need an audit trail when patient-context
+SPC data is sent to an external LLM. The message provides minimal-cost
+observability (defense-in-depth) without blocking the feature.
+}
+
 \examples{
 \dontrun{
 result <- bfh_qic(data, x = date, y = value, chart_type = "i")
