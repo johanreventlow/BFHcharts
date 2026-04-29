@@ -360,19 +360,22 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
 
   # Re-add labels with TARGET dimensions for positioning
   # and fixed PDF_LABEL_SIZE for font sizing
-  plot_with_labels <- add_spc_labels(
-    plot = plot_stripped,
-    qic_data = x$qic_data,
-    y_axis_unit = config$y_axis_unit %||% "count",
-    label_size = new_label_size,
-    viewport_width = target_width_inches,
-    viewport_height = target_height_inches,
-    target_text = config$target_text,
-    centerline_value = label_config$centerline_value,
-    has_frys_column = label_config$has_frys_column,
-    has_skift_column = label_config$has_skift_column,
-    verbose = FALSE,
-    language = config$language %||% "da"
+  # Se .muffle_expected_warnings() helper for hvilke warnings der mufles.
+  plot_with_labels <- .muffle_expected_warnings(
+    add_spc_labels(
+      plot = plot_stripped,
+      qic_data = x$qic_data,
+      y_axis_unit = config$y_axis_unit %||% "count",
+      label_size = new_label_size,
+      viewport_width = target_width_inches,
+      viewport_height = target_height_inches,
+      target_text = config$target_text,
+      centerline_value = label_config$centerline_value,
+      has_frys_column = label_config$has_frys_column,
+      has_skift_column = label_config$has_skift_column,
+      verbose = FALSE,
+      language = config$language %||% "da"
+    )
   )
 
   return(plot_with_labels)
