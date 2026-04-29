@@ -108,13 +108,16 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pdftools any::rcmdcheck
+          extra-packages: any::pdftools any::rcmdcheck any::pkgload any::testthat
           needs: check
 
       - name: Run render-gate'd tests
         run: |
           options(crayon.enabled = TRUE)
-          devtools::load_all()
+          # pkgload::load_all() er letvaegtsalternativ til devtools::load_all()
+          # uden devtools' ekstra dev-dependencies (hvilket kraever ekstra
+          # CI-installtid).
+          pkgload::load_all(".", quiet = TRUE)
           res <- testthat::test_dir(
             "tests/testthat",
             filter = "export|integration-export|utils_typst|utils_quarto|pdf-output|security-export",
