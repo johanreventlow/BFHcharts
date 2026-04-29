@@ -185,6 +185,57 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #' - NIVEAU 2: Flip labels til modsatte side (3 strategier)
 #' - NIVEAU 3: Shelf placement (sidste udvej)
 #'
+#' @section NIVEAU 2 trigger-betingelser:
+#' NIVEAU 2 (label-flip) aktiveres naar ALLE foelgende holder med default config
+#' (`relative_gap_line=0.08`, `relative_gap_labels=0.30`,
+#' `tight_threshold_factor=0.5`):
+#'
+#' 1. **Linjer er IKKE "tight"**:
+#'    `abs(yA - yB) >= 0.5 * (label_height + gap_labels)` — ellers flippes
+#'    `pref_pos` automatisk til over/under-strategi (linje ~522).
+#' 2. **Linjer er IKKE coincident**:
+#'    `abs(yA - yB) >= 0.1 * label_height` — ellers haandteres af coincident-
+#'    grenen (linje ~551).
+#' 3. **Initial proposals kolliderer**:
+#'    `abs(propA - propB) < label_height + gap_labels`.
+#' 4. **`pref_pos` matcher** (begge "under" eller begge "over") saa
+#'    propA/propB faar samme retning fra deres respektive linjer.
+#' 5. **Collision-resolution skubber labels saa line-gap-enforcement
+#'    genskaber kollision**.
+#' 6. **NIVEAU 1 reduktion (50/30/15%) kan ej lukke gap**.
+#'
+#' Konkret reproducerbart eksempel (NIVEAU 2b — flip B):
+#' ```
+#' place_two_labels_npc(
+#'   yA_npc = 0.30, yB_npc = 0.48,
+#'   label_height_npc = 0.20,
+#'   pref_pos = c("under", "under")
+#' )
+#' # placement_quality = "acceptable"
+#' # warnings inkluderer: "NIVEAU 2b: Flippet label B til modsatte side"
+#' ```
+#'
+#' @section NIVEAU 3 trigger-betingelser:
+#' NIVEAU 3 (shelf placement) aktiveres naar NIVEAU 1 OG NIVEAU 2 begge fejler.
+#' Dette kraever typisk **store labels relativt til linje-separation**, hvor
+#' alle tre flip-strategier (flip A, flip B, flip begge) stadig giver overlap
+#' (`abs(test_yA - test_yB) < label_height_npc`).
+#'
+#' Konkret reproducerbart eksempel (label optager 40% af panel):
+#' ```
+#' place_two_labels_npc(
+#'   yA_npc = 0.20, yB_npc = 0.50,
+#'   label_height_npc = 0.40,
+#'   pref_pos = c("under", "under")
+#' )
+#' # placement_quality = "degraded"
+#' # warnings inkluderer: "NIVEAU 3: shelf placement"
+#' ```
+#'
+#' Bemaerk: NIVEAU 3 returnerer `placement_quality = "degraded"` — kaldere
+#' boer behandle dette som "best effort" og overveje at oege panel-hoejde
+#' eller reducere label-stoerrelse.
+#'
 #' @param yA_npc Y-position for linje A i NPC (0-1)
 #' @param yB_npc Y-position for linje B i NPC (0-1)
 #' @param label_height_npc Label hoejde - enten:
