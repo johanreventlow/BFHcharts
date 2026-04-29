@@ -60,6 +60,11 @@ bfh_create_export_session <- function(font_path = NULL, inject_assets = NULL) {
 
   tmpdir <- tempfile("bfh_batch_")
   dir.create(tmpdir, recursive = TRUE)
+  # Sikkerhed: tempfile() leverer en per-bruger isoleret sti i tempdir(),
+  # og Sys.chmod(0700) fjerner group/other-permissions. UID-baseret
+  # ownership-validering udelades bevidst — UID er shell-intern og typisk
+  # ikke eksporteret til R-processer (Rscript, RStudio Server, knitr,
+  # Shiny, GitHub Actions).
   Sys.chmod(tmpdir, mode = "0700", use_umask = FALSE)
 
   template_src <- system.file("templates/typst/bfh-template", package = "BFHcharts")

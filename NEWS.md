@@ -110,6 +110,15 @@
 
 ## Interne ændringer
 
+* **Fjernet ineffektiv ownership-check i temp-dir-staging.** Den døde
+  `Sys.getenv("UID")`-baserede ownership-validering i `prepare_temp_workspace()`
+  er fjernet — `UID` er shell-intern og eksporteres typisk ikke til
+  R-processer (Rscript, RStudio Server, knitr, Shiny, GitHub Actions), så
+  checken skippede silently uden reel beskyttelse. Faktisk isolation via
+  `tempfile()` (per-bruger `tempdir()`) og `Sys.chmod(0700)` er uændret.
+  Tilsvarende forklarende kommentar tilføjet i `bfh_create_export_session()`.
+  (#cleanup-temp-dir-ownership-check)
+
 * **vdiffr snapshots re-baseret** (9 snapshots). Font-metric drift opstod da
   Roboto blev registreret som Helvetica-alias i v0.10.5 (`R/zzz.R`). SVG-koordinater
   ændrede sig minimalt (< 5px) — forventet og intentionelt.
