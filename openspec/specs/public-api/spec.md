@@ -362,3 +362,335 @@ Typically paired with an I-chart to characterize both process level
 (I) and short-term variation (MR).
 ```
 
+### Requirement: Summary SHALL expose variable control limits via min/max columns
+
+When control limits vary across observations within a part (typical for P-charts and U-charts with varying denominators), the summary returned by `bfh_qic()$summary` SHALL include explicit per-part minimum and maximum bounds plus a flag indicating whether limits are constant.
+
+**Rationale:**
+- Healthcare-typical P/U charts have variable denominators per period
+- Without exposed bounds, downstream consumers cannot distinguish "no limits available" from "limits vary"
+- Silent omission can be misread as a stable process when limits actually fluctuated
+- Exposing min/max preserves correctness while keeping summary actionable for reports
+
+**Contract:**
+
+| Limit constancy in part | `kontrolgrænser_konstante` | `nedre_/øvre_kontrolgrænse` (scalar) | `*_min`/`*_max` columns |
+|---|---|---|---|
+| Constant | `TRUE` | populated with single value | absent or NA |
+| Variable | `FALSE` | absent or NA | populated with min/max across part |
+
+#### Scenario: constant limits expose scalar columns and TRUE flag
+
+- **GIVEN** an i-chart with constant control limits within a single part
+- **WHEN** `format_qic_summary(...)` is called
+- **THEN** the summary SHALL contain `nedre_kontrolgrænse` and `øvre_kontrolgrænse` as scalar columns
+- **AND** `kontrolgrænser_konstante` SHALL be `TRUE`
+
+```r
+data <- data.frame(period = 1:10, value = c(10, 11, 10, 11, 10, 11, 10, 11, 10, 11))
+result <- bfh_qic(data, x = period, y = value, chart_type = "i")
+expect_true(result$summary$kontrolgrænser_konstante[1])
+expect_true("nedre_kontrolgrænse" %in% names(result$summary))
+expect_false(is.na(result$summary$nedre_kontrolgrænse[1]))
+```
+
+#### Scenario: variable limits expose min/max columns and FALSE flag
+
+- **GIVEN** a P-chart with varying denominators within a part (e.g., `n = c(100, 200, 50)`)
+- **WHEN** `format_qic_summary(...)` is called
+- **THEN** the summary SHALL contain `nedre_kontrolgrænse_min`, `nedre_kontrolgrænse_max`, `øvre_kontrolgrænse_min`, `øvre_kontrolgrænse_max` columns
+- **AND** `kontrolgrænser_konstante` SHALL be `FALSE`
+- **AND** the min ≤ max relationship SHALL hold
+
+```r
+data <- data.frame(
+  period = 1:6,
+  events = c(5, 10, 5, 10, 5, 10),
+  total = c(100, 200, 50, 200, 100, 50)  # varying n
+)
+result <- bfh_qic(data, x = period, y = events, n = total,
+                  chart_type = "p", y_axis_unit = "percent")
+expect_false(result$summary$kontrolgrænser_konstante[1])
+expect_true("nedre_kontrolgrænse_min" %in% names(result$summary))
+expect_lte(result$summary$nedre_kontrolgrænse_min[1],
+           result$summary$nedre_kontrolgrænse_max[1])
+```
+
+#### Scenario: backward-compatible reads on constant-limit summaries
+
+- **GIVEN** existing downstream code that reads `summary$nedre_kontrolgrænse` for a constant-limit chart
+- **WHEN** `format_qic_summary(...)` is called
+- **THEN** the column SHALL be present and populated as before
+- **AND** existing tests SHALL pass without modification
+
+#### Scenario: mixed constancy across multi-part summary
+
+- **GIVEN** a multi-part chart where part 1 has constant limits and part 2 has variable limits
+- **WHEN** `format_qic_summary(...)` is called
+- **THEN** `kontrolgrænser_konstante` SHALL be `TRUE` for part 1 and `FALSE` for part 2
+- **AND** scalar columns SHALL be populated for part 1 (NA or absent for part 2)
+- **AND** min/max columns SHALL be populated for part 2 (NA for part 1)
+
+### Requirement: Public API SHALL validate target_value scale against y_axis_unit contract
+
+The package SHALL validate `target_value` against an explicit scale derived from `y_axis_unit` and `multiply` to prevent silent unit-mismatch bugs that produce clinically misleading target lines.
+
+**Rationale:**
+- Healthcare context: silent magic is more dangerous than a clear, actionable error
+- Most common user-intuition error: passing `target_value = 2.0` for "2%" instead of `0.02`
+- Without validation, target line renders at 200% on a 0-100% axis — clinically misleading and a real risk for quality reports
+
+**Contract:**
+
+| `y_axis_unit` | `multiply` | Expected `target_value` range |
+|---|---|---|
+| `"percent"` | `1` (default) | `[0, 1.5]` (proportion) |
+| `"percent"` | `100` | `[0, 150]` (percent) |
+| `"percent"` | other `m` | `[0, m * 1.5]` |
+| `"count"` / `"rate"` / `"time"` | any | not validated against scale (subject to existing numeric validation only) |
+
+The 1.5x slack on the upper bound permits legitimate targets near the edge (e.g., aspirational stretch targets at 105%) while still catching the common 100x mismatch.
+
+The contract applies uniformly across all chart types — including run-chart, which has no control limits but still renders a target line.
+
+#### Scenario: percent target_value > 1.5 with default multiply rejected
+
+- **GIVEN** `y_axis_unit = "percent"`, `multiply = 1`, `target_value = 2.0`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** an error SHALL be raised
+- **AND** the error message SHALL identify the expected scale (`[0, 1.5]`)
+- **AND** the error message SHALL include an actionable migration hint suggesting `target_value = 0.02` or `multiply = 100`
+
+```r
+expect_error(
+  bfh_qic(data, x = period, y = events, n = total,
+          chart_type = "p", y_axis_unit = "percent",
+          target_value = 2.0),
+  "uden for forventet skala"
+)
+```
+
+#### Scenario: percent target_value as proportion accepted
+
+- **GIVEN** `y_axis_unit = "percent"`, `multiply = 1`, `target_value = 0.02`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** the function SHALL succeed
+- **AND** the underlying `qic_data$target` SHALL equal `0.02`
+
+```r
+result <- bfh_qic(data, x = period, y = events, n = total,
+                  chart_type = "p", y_axis_unit = "percent",
+                  target_value = 0.02)
+expect_equal(unique(result$qic_data$target[!is.na(result$qic_data$target)]), 0.02)
+```
+
+#### Scenario: percent target_value with multiply=100 accepted as percent
+
+- **GIVEN** `y_axis_unit = "percent"`, `multiply = 100`, `target_value = 2.0`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** the function SHALL succeed
+- **AND** the underlying `qic_data$target` SHALL equal `2.0`
+
+```r
+result <- bfh_qic(data, x = period, y = events, n = total,
+                  chart_type = "p", y_axis_unit = "percent",
+                  target_value = 2.0, multiply = 100)
+expect_equal(unique(result$qic_data$target[!is.na(result$qic_data$target)]), 2.0)
+```
+
+#### Scenario: negative target_value rejected for percent
+
+- **GIVEN** `y_axis_unit = "percent"`, `target_value = -0.1`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** an error SHALL be raised
+- **AND** the error message SHALL state that proportion targets must be non-negative
+
+```r
+expect_error(
+  bfh_qic(data, x = period, y = events, n = total,
+          chart_type = "p", y_axis_unit = "percent",
+          target_value = -0.1),
+  "non-negative|ikke-negativ"
+)
+```
+
+#### Scenario: boundary values within contract accepted
+
+- **GIVEN** `y_axis_unit = "percent"`, `multiply = 1`
+- **WHEN** `target_value = 1.0` (valid 100% target) OR `target_value = 1.5` (boundary)
+- **THEN** the function SHALL succeed for both
+- **AND** the underlying `qic_data$target` SHALL preserve the input value
+
+```r
+# 100% target
+result_100 <- bfh_qic(data, x = period, y = events, n = total,
+                      chart_type = "p", y_axis_unit = "percent",
+                      target_value = 1.0)
+expect_equal(unique(result_100$qic_data$target[!is.na(result_100$qic_data$target)]), 1.0)
+
+# Upper boundary
+result_boundary <- bfh_qic(data, x = period, y = events, n = total,
+                           chart_type = "p", y_axis_unit = "percent",
+                           target_value = 1.5)
+expect_equal(unique(result_boundary$qic_data$target[!is.na(result_boundary$qic_data$target)]), 1.5)
+```
+
+#### Scenario: non-percent units skip scale validation
+
+- **GIVEN** `y_axis_unit = "count"`, `target_value = 9999`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** the function SHALL NOT validate target_value against any scale ceiling
+- **AND** the function SHALL succeed (subject to existing numeric parameter validation)
+
+```r
+data <- data.frame(period = 1:10, value = rpois(10, lambda = 50))
+result <- bfh_qic(data, x = period, y = value,
+                  chart_type = "i", y_axis_unit = "count",
+                  target_value = 9999)
+expect_s3_class(result, "bfh_qic_result")
+```
+
+#### Scenario: contract applies to run-chart despite no control limits
+
+- **GIVEN** `chart_type = "run"`, `y_axis_unit = "percent"`, `target_value = 2.0`, `multiply = 1`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** an error SHALL be raised
+- **AND** the contract SHALL be enforced regardless of chart type
+
+```r
+expect_error(
+  bfh_qic(data, x = period, y = events, n = total,
+          chart_type = "run", y_axis_unit = "percent",
+          target_value = 2.0),
+  "uden for forventet skala"
+)
+```
+
+### Requirement: Public API SHALL validate denominator column content for ratio charts
+
+The package SHALL validate the content of the denominator column (`n` argument) for ratio chart types (`p`, `pp`, `u`, `up`) to prevent silently misleading rate plots from invalid denominator data.
+
+**Rationale:**
+- Healthcare data routinely contain rows with missing or zero denominators (e.g., months with no patients, missing data ingest)
+- Without content validation, qicharts2 produces NaN/Inf rates that render as silent gaps or out-of-range points
+- For P-charts, `y > n` violates the proportion contract (proportion ≤ 1) but qicharts2 plots it anyway
+- Strict failure with row-numbered messages makes invalid data visible to users instead of hidden
+
+**Contract:**
+
+| Chart type | `n` required | Validations on `n` content |
+|---|---|---|
+| `p`, `pp` | yes | `n > 0`, finite, `y <= n` per row |
+| `u`, `up` | yes | `n > 0`, finite |
+| `c`, `g`, `t` | no | n/a |
+| `i`, `mr`, `run` | no | n/a |
+| `xbar`, `s` | no (uses duplicated x as subgrouping) | n/a |
+
+`NA` in individual rows of `n` is permitted (qicharts2 drops them as missing data).
+
+#### Scenario: ratio chart without n rejected
+
+- **GIVEN** `chart_type = "p"` and no `n` argument
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** an error SHALL be raised
+- **AND** the message SHALL identify which chart types require `n`
+
+```r
+data <- data.frame(period = 1:8, events = rep(5L, 8))
+expect_error(
+  bfh_qic(data, x = period, y = events, chart_type = "p"),
+  "requires denominator"
+)
+```
+
+#### Scenario: zero denominator rejected
+
+- **GIVEN** `chart_type = "p"`, `n = c(100, 0, 100, 100)`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** an error SHALL be raised
+- **AND** the message SHALL state that `n` must be > 0
+
+```r
+data <- data.frame(
+  period = 1:4,
+  events = c(5L, 0L, 5L, 5L),
+  total = c(100L, 0L, 100L, 100L)
+)
+expect_error(
+  bfh_qic(data, x = period, y = events, n = total, chart_type = "p"),
+  "must be > 0"
+)
+```
+
+#### Scenario: negative denominator rejected
+
+- **GIVEN** `chart_type = "u"`, `n = c(100, -5, 100, 100)`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** an error SHALL be raised
+
+#### Scenario: infinite denominator rejected
+
+- **GIVEN** `n` column contains `Inf`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** an error SHALL be raised mentioning Inf/-Inf
+
+#### Scenario: NA in individual rows of n permitted
+
+- **GIVEN** `chart_type = "p"`, `n = c(100, NA, 100, 100)`, `y` valid otherwise
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** the function SHALL succeed
+- **AND** qicharts2 SHALL drop the NA row from calculations
+
+```r
+data <- data.frame(
+  period = 1:4,
+  events = c(5L, 5L, 5L, 5L),
+  total = c(100L, NA_integer_, 100L, 100L)
+)
+result <- bfh_qic(data, x = period, y = events, n = total, chart_type = "p")
+expect_s3_class(result, "bfh_qic_result")
+```
+
+#### Scenario: y greater than n on P-chart rejected with row numbers
+
+- **GIVEN** `chart_type = "p"`, `y = c(5, 6, 200, 8)`, `n = c(100, 100, 100, 100)`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** an error SHALL be raised
+- **AND** the message SHALL identify the violation row(s) (row 3 in this example)
+
+```r
+data <- data.frame(
+  period = 1:4,
+  events = c(5L, 6L, 200L, 8L),
+  total = rep(100L, 4)
+)
+expect_error(
+  bfh_qic(data, x = period, y = events, n = total, chart_type = "p"),
+  "y <= n"
+)
+```
+
+#### Scenario: u-chart allows y > n
+
+- **GIVEN** `chart_type = "u"`, `y = c(50, 60, 200)`, `n = c(100, 100, 100)`
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** the function SHALL succeed
+- **AND** rates can exceed 1 (events per unit, not proportion)
+
+```r
+data <- data.frame(
+  period = 1:3,
+  events = c(50L, 60L, 200L),
+  exposure = rep(100L, 3)
+)
+result <- bfh_qic(data, x = period, y = events, n = exposure, chart_type = "u")
+expect_s3_class(result, "bfh_qic_result")
+```
+
+#### Scenario: xbar chart skips n validation
+
+- **GIVEN** `chart_type = "xbar"` with subgroup data (duplicated x values, no n)
+- **WHEN** `bfh_qic(...)` is called
+- **THEN** the function SHALL NOT validate denominator content
+- **AND** the function SHALL succeed
+

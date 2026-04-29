@@ -248,16 +248,20 @@ All export entry points SHALL validate user-supplied output paths via a single c
 - Central place to tighten rules in response to future threats
 
 **The helper SHALL reject:**
-- Paths containing `..` segments (path traversal)
-- Shell metacharacters: `;`, `|`, `&`, backtick, `$`, `(`, `)`, newline
+- Paths where any path-separator-delimited component equals exactly `..` (path traversal)
+- Shell metacharacters: `;`, `|`, `&`, backtick, `$`, `(`, `)`, `{`, `}`, `<`, `>`, newline, carriage return
 - Extensions not in the format-specific whitelist
 - Symlinks that resolve outside the configured allowlist root (when root is configured)
 
+**The helper SHALL NOT reject:**
+- Filenames containing `..` as part of a longer string (e.g., `report..v2.pdf`, `..hidden.pdf`, `analyse..final.pdf`) — these are legitimate filename patterns
+- Paths with spaces, underscores, dashes, or unicode characters (already accepted)
+
 **The helper SHALL return:**
-- A normalized absolute path on success
+- A normalized absolute path on success (when `normalize = TRUE`)
 - An informative error (with class `bfhcharts_path_policy_error`) on rejection
 
-#### Scenario: Path traversal rejected
+#### Scenario: Path traversal rejected at component level
 
 **Given** a user supplies `../../etc/passwd` as output path
 **When** any export function validates the path
@@ -271,6 +275,44 @@ expect_error(
 )
 ```
 
+#### Scenario: Embedded subdirectory traversal rejected
+
+**Given** a user supplies `output/../secret.pdf`
+**When** validation runs
+**Then** the helper SHALL reject the path
+
+```r
+expect_error(
+  bfh_export_pdf(result, "output/../secret.pdf"),
+  "path|traversal"
+)
+```
+
+#### Scenario: Filenames containing double-dot substring accepted
+
+**Given** a user supplies `report..v2.pdf` (component is the whole filename, not `..`)
+**When** validation runs
+**Then** the helper SHALL accept the path
+**And** export SHALL proceed normally
+
+```r
+expect_no_error(
+  bfh_export_pdf(result, file.path(tempdir(), "report..v2.pdf"))
+)
+```
+
+#### Scenario: Dotfile prefix accepted
+
+**Given** a user supplies `..hidden.pdf` as filename (single component, not traversal)
+**When** validation runs
+**Then** the helper SHALL accept the path
+
+```r
+expect_no_error(
+  bfh_export_pdf(result, file.path(tempdir(), "..hidden.pdf"))
+)
+```
+
 #### Scenario: Shell metacharacters rejected
 
 **Given** a user supplies a path containing shell metacharacters
@@ -280,7 +322,7 @@ expect_error(
 ```r
 expect_error(
   bfh_export_pdf(result, "output;rm -rf /.pdf"),
-  "invalid|character"
+  "invalid|character|disallowed"
 )
 ```
 
@@ -300,14 +342,21 @@ expect_error(
 #### Scenario: Valid path returned normalized
 
 **Given** a legitimate path with `.` segments
-**When** validation succeeds
+**When** validation succeeds with normalize = TRUE
 **Then** the helper SHALL return an absolute, normalized path
 
 ```r
-normalized <- validate_export_path("./out/./chart.pdf", extension = "pdf")
+normalized <- validate_export_path("./out/./chart.pdf", extension = "pdf", normalize = TRUE)
 expect_true(startsWith(normalized, "/"))
 expect_false(grepl("/./", normalized, fixed = TRUE))
 ```
+
+#### Scenario: Cross-platform separator handling
+
+**Given** a Windows-style path `..\\evil.pdf`
+**When** validation runs
+**Then** the helper SHALL recognize `..` as a path component
+**And** SHALL reject the path
 
 ### Requirement: Markdown SHALL be converted to Typst via AST-based parser
 
@@ -562,4 +611,80 @@ BFHcharts::bfh_export_pdf(
 - **AND** the companion package's `DESCRIPTION` SHALL specify `BFHcharts (>= <minimum-version>)` to assert the callback contract version it supports
 
 This decoupling allows BFHcharts to evolve its public API freely while organizations control their branding-asset release cadence separately.
+
+### Requirement: Batch session SHALL use per-export unique intermediate filenames
+
+The package SHALL generate per-export unique filenames for intermediate artifacts (`chart.svg`, `document.typ`) within a shared `batch_session` tmpdir to eliminate filename collisions between exports and to make race conditions impossible by construction.
+
+**Rationale:**
+- Fixed filenames create a guaranteed collision if any caller violates the documented sequential-only contract (e.g., calling from `future_lapply()`)
+- Even sequential semantics benefit: a crashed export leaves orphan files only for its own filenames, preventing pollution of subsequent exports
+- Unique names cost only one `tempfile()` call per export — negligible overhead
+
+**Filename pattern:**
+```r
+chart_svg <- tempfile(pattern = "chart-", tmpdir = temp_dir, fileext = ".svg")
+typst_file <- tempfile(pattern = "document-", tmpdir = temp_dir, fileext = ".typ")
+```
+
+The Typst document SHALL reference the chart by relative basename (already the case in `build_typst_content()`), so unique filenames cause no document-content changes.
+
+#### Scenario: sequential batch produces unique intermediates per export
+
+- **GIVEN** a batch session and 10 sequential `bfh_export_pdf()` calls
+- **WHEN** all calls complete
+- **THEN** no two intermediate filenames SHALL have collided
+- **AND** all 10 final PDFs SHALL be valid
+
+```r
+session <- bfh_create_export_session()
+on.exit(close(session))
+for (i in 1:10) {
+  out <- tempfile(fileext = ".pdf")
+  bfh_export_pdf(result, out, batch_session = session)
+  expect_true(file.exists(out))
+}
+```
+
+#### Scenario: crash mid-export leaves only its own intermediates
+
+- **GIVEN** an export that crashes after writing `chart-XYZ.svg` but before completing
+- **WHEN** the next export runs in the same session
+- **THEN** the next export SHALL use a different chart filename (`chart-ABC.svg`)
+- **AND** the crashed export's orphan SHALL be removable independently
+
+#### Scenario: parallel batch isolation by construction
+
+- **GIVEN** two `bfh_export_pdf()` calls run concurrently against the same session (violating documented contract)
+- **WHEN** both write intermediates
+- **THEN** unique filenames SHALL prevent overwrite
+- **AND** both PDFs SHALL be valid OR fail with clear error (not silently corrupted)
+
+> Note: Parallel use is still not officially supported. This requirement removes a class of failure modes but does not promote parallel as a recommended pattern.
+
+### Requirement: Batch session SHALL register a finalizer for orphan tmpdir cleanup
+
+`bfh_create_export_session()` SHALL register a finalizer on the returned session object that calls `close()` if the user drops the reference without explicitly closing.
+
+**Rationale:**
+- R has no implicit RAII; users frequently forget `close()` in dashboards or scripts
+- Without finalizer, abandoned sessions leave tmpdirs until R session ends
+- Finalizer is a backup, not a substitute for `close()` — explicit cleanup is still preferred
+
+#### Scenario: dropped session reference triggers cleanup on GC
+
+- **GIVEN** a session created and reference dropped without `close()`
+- **WHEN** garbage collection runs
+- **THEN** the session tmpdir SHALL be removed
+- **AND** no error SHALL be raised even if `close()` was never called
+
+```r
+local({
+  session <- bfh_create_export_session()
+  tmpdir_path <- session$tmpdir
+  rm(session)
+  gc()
+  expect_false(dir.exists(tmpdir_path))
+})
+```
 
