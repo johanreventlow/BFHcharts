@@ -206,19 +206,13 @@ prepare_temp_workspace <- function(batch_session) {
 
   dir.create(temp_dir, recursive = TRUE)
 
-  # Forhindrer andre processer adgang til eksportens midlertidige filer
+  # Sikkerhed: tempfile() leverer en per-bruger isoleret sti i tempdir(),
+  # og Sys.chmod(0700) fjerner group/other-permissions. UID-baseret
+  # ownership-validering udelades bevidst — UID er shell-intern og typisk
+  # ikke eksporteret til R-processer (Rscript, RStudio Server, knitr,
+  # Shiny, GitHub Actions), så sådanne checks evaluerer til NA og skippes
+  # silently uden reel beskyttelse.
   Sys.chmod(temp_dir, mode = "0700", use_umask = FALSE)
-
-  if (.Platform$OS.type == "unix") {
-    dir_info <- file.info(temp_dir)
-    current_uid <- suppressWarnings(as.integer(Sys.getenv("UID")))
-    if (length(current_uid) > 0 && !is.na(current_uid) && current_uid > 0) {
-      if (dir_info$uid != current_uid) {
-        unlink(temp_dir, recursive = TRUE)
-        stop("Temp directory ownership mismatch (possible security issue)", call. = FALSE)
-      }
-    }
-  }
 
   list(temp_dir = temp_dir, chart_svg = chart_svg, typst_file = typst_file)
 }
