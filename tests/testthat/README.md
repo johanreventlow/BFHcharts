@@ -37,9 +37,37 @@ testthat::test_file("tests/testthat/test-spc_analysis.R")
 CI kører automatisk med begge miljøvariabler sat til `"true"` og installerer Quarto + åbne fallback-fonts (DejaVu, Liberation, Noto).
 
 Workflows:
-- `.github/workflows/R-CMD-check.yml` — R CMD check + testthat
+- `.github/workflows/R-CMD-check.yaml` — R CMD check + testthat (PR-blocking)
+- `.github/workflows/pdf-smoke.yaml` — PDF smoke render via Quarto/Typst (PR-blocking)
+- `.github/workflows/render-tests.yaml` — Ugentlig live render-test suite (cron)
 - `.github/workflows/test-coverage.yml` — covr::codecov() rapportering
-- `.github/workflows/lint.yml` — lintr (advisory)
+- `.github/workflows/lint.yaml` — lintr (advisory)
+
+#### CI Font-fallback strategi
+
+Mari-fonts (BFHtheme) er proprietære og ikke tilgængelige på public GitHub-runners.
+CI anvender to komplementære strategier:
+
+**R-CMD-check + pdf-smoke workflows:**
+- Installerer åbne fallback-fonts via `apt-get`: DejaVu, Liberation, Liberation2, Noto, Roboto
+- `setup.R` registrerer Mari/Arial/Roboto som Helvetica-aliaser i grDevices PS/PDF font-databaser
+  (matcher `R/zzz.R register_bfh_font_aliases()`)
+- `bfh_export_pdf()` bruger `font_path` til at pege Typst på de installerede åbne fonts
+- `ignore_system_fonts=TRUE` (Typst 0.13+) sikrer Typst kun bruger leverede fonts
+
+**vdiffr snapshot-tests:**
+- `skip_if_no_mari_font()` per test — skipper på CI (ingen Mari) uden at blokere suite
+- Snapshots re-baselinet ved: BFHtheme version-bump (forventede font-metric ændringer),
+  bevidst layout-ændring, regression-fix
+- Commit-beskeden skal dokumentere årsag ved re-baseline
+
+**Opsummering af skip-logik for font-afhængige tests:**
+
+| Test type | CI-adfærd | Lokal adfærd (med Mari) |
+|-----------|-----------|------------------------|
+| vdiffr snapshots | SKIP (skip_if_no_mari_font) | PASS mod baselines |
+| PDF smoke render | PASS (åbne fallback-fonts) | PASS (Mari) |
+| Render-tests (ugentlig) | PASS (åbne fallback-fonts) | PASS (Mari) |
 
 ---
 

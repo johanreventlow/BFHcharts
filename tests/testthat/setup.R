@@ -54,12 +54,19 @@ Sys.setlocale("LC_COLLATE", "C")
 # ~1600 harmlose "font family '...' not found in PostScript font database"
 # warnings per full test-kørsel (fra grid::C_stringMetric font-metric-lookup).
 # Mapping til Helvetica giver korrekte metrics under SVG/PDF-rendering.
+#
+# Font-sæt matcher zzz.R register_bfh_font_aliases() + CI fallback-sti:
+#   - Lokal (Mari installeret): zzz.R registrerer ved package-load, setup.R
+#     supplerer Roboto der kan mangle i R-intern database selv når screen-font findes
+#   - CI (ingen Mari): liberation/dejavu installeret via apt-get i R-CMD-check.yaml;
+#     Helvetica-alias sikrer grid-metric-lookup ikke kaster warnings
 local({
   ps_fonts <- grDevices::postscriptFonts()
   pdf_fonts <- grDevices::pdfFonts()
   helv_ps <- ps_fonts[["Helvetica"]]
   helv_pdf <- pdf_fonts[["Helvetica"]]
-  for (fname in c("Mari", "Arial")) {
+  # Synkroniseret med zzz.R register_bfh_font_aliases() — Mari/Arial/Roboto
+  for (fname in c("Mari", "Arial", "Roboto")) {
     if (!fname %in% names(ps_fonts)) {
       tryCatch(
         do.call(grDevices::postscriptFonts, setNames(list(helv_ps), fname)),
