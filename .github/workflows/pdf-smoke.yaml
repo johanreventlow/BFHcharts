@@ -1,21 +1,28 @@
 # PR-blocking PDF smoke-render workflow for BFHcharts.
 #
-# Formål:
-#   Kører 1-3 repræsentative bfh_export_pdf()-kald (via tests/smoke/render_smoke.R)
-#   på hver PR til main og develop. Fanger catastrophic Quarto/Typst-pipeline-
-#   regressioner FØR de lander i main -- frem for den ugentlige cron-opsnapning i
+# Formal:
+#   Koerer 1-3 repraesentative bfh_export_pdf()-kald (via tests/smoke/render_smoke.R)
+#   paa hver PR til main og develop. Fanger catastrophic Quarto/Typst-pipeline-
+#   regressioner FOER de lander i main -- frem for den ugentlige cron-opsnapning i
 #   render-tests.yaml.
 #
-# Font-strategi:
-#   Mari er proprietær. Denne workflow installerer open fallback-fonts
-#   (DejaVu, Liberation, Noto, Roboto) og sætter dem som font_path-override i
-#   render_smoke.R via env-var BFHCHARTS_SMOKE_FONT_PATH. Typst bruger
-#   --ignore-system-fonts (kræver Quarto >= 1.7 / Typst >= 0.13). Smoke-render
-#   verificerer at PDF-pipelinen producerer en fil > 0 bytes med >= 1 side --
-#   ikke visuel korrekthed (som kræver Mari og håndteres af vdiffr + review).
+# Font-strategi (Strategi B -- CI-only test-template):
+#   Mari er proprataer og kan ikke distribueres i dette public repo.
+#   I stedet bruges en minimal CI-only Typst-template (tests/smoke/test-template.typ)
+#   der kun refererer DejaVu Sans (installeret via apt-get nedenfor).
+#   Production bfh-template.typ (med Mari-fonts) bruges IKKE paa CI.
+#
+#   render_smoke.R detekterer CI=true (sat af GitHub Actions) og bruger
+#   automatisk test-template via template_path-argumentet til bfh_export_pdf().
+#   ignore_system_fonts=FALSE paa CI saa Typst finder DejaVu via system fontconfig.
+#
+#   Env-var BFHCHARTS_SMOKE_FONT_PATH saettes nedenfor (Configure-smoke-render-font-path)
+#   som eksplicit font-sti til /usr/share/fonts. render_smoke.R videregiver denne
+#   til bfh_export_pdf(..., font_path = ...). Hvis env-var ikke er sat, falder
+#   render_smoke.R tilbage til system fontconfig (ignore_system_fonts=FALSE paa CI).
 #
 # Manuelt trin (branch-protection):
-#   Jobbet skal tilføjes til required-status-checks i branch protection rules
+#   Jobbet skal tilfojes til required-status-checks i branch protection rules
 #   for main og develop paa GitHub:
 #     Settings -> Branches -> Branch protection rules -> [main/develop]
 #     -> "Require status checks to pass before merging"
@@ -24,7 +31,7 @@
 # Sikkerhed: workflow bruger kun safe inputs (github.run_id som integer,
 # secrets.GITHUB_TOKEN). Ingen untrusted user-input forwarded til run-steps.
 #
-# Kilde: openspec/changes/add-pr-blocking-pdf-smoke-render
+# Kilde: openspec/changes/enable-ci-safe-pdf-smoke-render (Strategi B)
 
 name: PDF smoke render
 
@@ -47,7 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system fonts (open fallback for Mari)
+      - name: Install system fonts (DejaVu for CI smoke render)
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -59,6 +66,12 @@ jobs:
             fonts-roboto \
             fontconfig
           fc-cache -f -v
+        shell: bash
+
+      - name: Configure smoke render font path
+        run: |
+          echo "BFHCHARTS_SMOKE_FONT_PATH=/usr/share/fonts" >> $GITHUB_ENV
+          fc-list | head -10
         shell: bash
 
       - uses: r-lib/actions/setup-pandoc@v2
