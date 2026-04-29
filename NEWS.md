@@ -15,6 +15,25 @@
   den genererede tekst. Kald med `auto_analysis = FALSE` (default) er
   upåvirkede. (#fix-percent-target-scale-in-analysis)
 
+## Dokumentation
+
+* **`bfh_qic()` `print.summary`-dokumentation afspejler nu v0.11.0-fjernelsen.**
+  `@param print.summary` beskrev fortsat parameteren som "deprecated, will warn",
+  selvom runtime hard-errorer siden v0.11.0. Dokumentationen er opdateret til
+  at angive at kald med `print.summary = TRUE` giver en fejl, med
+  migrationsvejledning til det moderne S3-API (`result$summary`).
+  Eksempler 20-22 i `?bfh_qic` er omskrevet til at bruge `bfh_qic_result`-objektet
+  direkte fremfor det fjernede `print.summary`-argument.
+  (#update-print-summary-removal-docs)
+
+* **`bfh_qic()` `@param chart_type` og `@details Chart Types` dokumenterer nu
+  alle 12 validerede charttyper.** `mr` (Moving Range), `pp` (Laney-justeret
+  proportioner) og `up` (Laney-justeret rater) var accepteret af validatoren men
+  fraværende i public docs. Alle tre er nu dokumenteret med brugsvejledning,
+  inkl. hvornår Laney-varianterne (`pp`/`up`) er relevante (store denominatorer,
+  n > 1000 per subgruppe). To nye eksempler tilføjet: `pp`-chart og `mr`-chart
+  parret med I-chart. (#complete-chart-type-public-docs)
+
 # BFHcharts 0.11.0
 
 ## Breaking changes
@@ -126,6 +145,15 @@
   (#add-pr-blocking-pdf-smoke-render)
 
 ## Interne ændringer
+
+* **Fjernet ineffektiv ownership-check i temp-dir-staging.** Den døde
+  `Sys.getenv("UID")`-baserede ownership-validering i `prepare_temp_workspace()`
+  er fjernet — `UID` er shell-intern og eksporteres typisk ikke til
+  R-processer (Rscript, RStudio Server, knitr, Shiny, GitHub Actions), så
+  checken skippede silently uden reel beskyttelse. Faktisk isolation via
+  `tempfile()` (per-bruger `tempdir()`) og `Sys.chmod(0700)` er uændret.
+  Tilsvarende forklarende kommentar tilføjet i `bfh_create_export_session()`.
+  (#cleanup-temp-dir-ownership-check)
 
 * **vdiffr snapshots re-baseret** (9 snapshots). Font-metric drift opstod da
   Roboto blev registreret som Helvetica-alias i v0.10.5 (`R/zzz.R`). SVG-koordinater
