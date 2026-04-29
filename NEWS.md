@@ -1,3 +1,24 @@
+# BFHcharts (development)
+
+## Dokumentation
+
+* **`bfh_qic()` `print.summary`-dokumentation afspejler nu v0.11.0-fjernelsen.**
+  `@param print.summary` beskrev fortsat parameteren som "deprecated, will warn",
+  selvom runtime hard-errorer siden v0.11.0. Dokumentationen er opdateret til
+  at angive at kald med `print.summary = TRUE` giver en fejl, med
+  migrationsvejledning til det moderne S3-API (`result$summary`).
+  Eksempler 20-22 i `?bfh_qic` er omskrevet til at bruge `bfh_qic_result`-objektet
+  direkte fremfor det fjernede `print.summary`-argument.
+  (#update-print-summary-removal-docs)
+
+* **`bfh_qic()` `@param chart_type` og `@details Chart Types` dokumenterer nu
+  alle 12 validerede charttyper.** `mr` (Moving Range), `pp` (Laney-justeret
+  proportioner) og `up` (Laney-justeret rater) var accepteret af validatoren men
+  fraværende i public docs. Alle tre er nu dokumenteret med brugsvejledning,
+  inkl. hvornår Laney-varianterne (`pp`/`up`) er relevante (store denominatorer,
+  n > 1000 per subgruppe). To nye eksempler tilføjet: `pp`-chart og `mr`-chart
+  parret med I-chart. (#complete-chart-type-public-docs)
+
 # BFHcharts 0.11.0
 
 ## Breaking changes
