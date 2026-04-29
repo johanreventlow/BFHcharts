@@ -72,6 +72,19 @@
   Tests bruger udelukkende deterministiske data (ingen RNG) og
   haandberegnede expected values for robusthed paa tvaers af R-versioner.
 
+* **Ny scheduled CI-workflow til live Quarto/Typst render-tests (#210).**
+  `R-CMD-check.yaml` installerer ikke Quarto (Typst-template hardcoder
+  proprietaer Mari-font, og Typst fejler exit 1 paa unknown-font warnings).
+  Dette efterlod PDF/PNG-eksport-pipelinen uden CI-coverage -- regressioner
+  i template-rendering, font-fallback eller chart-embedding kunne slippe
+  igennem. Ny `.github/workflows/render-tests.yaml` koerer ugentligt
+  (mandage 06:00 UTC) plus on-demand og ved aendringer til
+  export-relaterede filer; matrix over ubuntu-latest + macos-latest;
+  installerer Quarto 1.5.57 + open fallback-fonts (DejaVu, Liberation,
+  Noto, Roboto); aktiverer `BFHCHARTS_TEST_RENDER=true` saa render-gate'd
+  tests koerer live; uploader PDF/Typst-artifacts ved fejl for
+  remote-debugging.
+
 # BFHcharts 0.10.4
 
 ## Interne aendringer
