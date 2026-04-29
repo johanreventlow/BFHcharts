@@ -585,7 +585,7 @@ bfh_qic <- function(data,
   # Advar når custom cl overskriver den dataestimerede procesmiddel i Anhøj-beregning
   if (!is.null(cl) && any(c("runs.signal", "crossings.signal") %in% names(qic_data))) {
     warning(
-      "Custom cl supplied: Anhøj run/crossing signals are computed against ",
+      "Custom cl supplied: Anhoej run/crossing signals are computed against ",
       "the supplied centerline, not the data-estimated process mean. ",
       "Interpret with caution.",
       call. = FALSE

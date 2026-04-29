@@ -407,7 +407,7 @@ bfh_generate_analysis <- function(x,
       ctx_fields <- paste(names(llm_context), collapse = ", ")
       message(
         "[BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() ",
-        "— fields: ", spc_fields, "; ", ctx_fields,
+        "-- fields: ", spc_fields, "; ", ctx_fields,
         "; use_rag = TRUE"
       )
     }
