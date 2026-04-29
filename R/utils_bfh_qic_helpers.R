@@ -4,6 +4,28 @@
 # Disse helpers isolerer Anhoej signal-postprocessering og return-routing
 # fra bfh_qic()-kroppen. Se openspec/changes/refactor-bfh_qic-orchestrator.
 
+# Mufle expected ggplot2 + BFHtheme warnings under plot generation og label
+# placement. ggplot scale_*_date emitter "removed N rows" / "datetime" /
+# "numeric" warnings ved tomme akser, og BFHthemes proprietaere font (Mari)
+# udloeser "font family not found in PostScript font database" pr. tekstelement
+# naar font ikke er installeret. Begge er expected behavior, ikke fejl.
+# Genuine warnings propageres uaendret.
+.muffle_expected_warnings <- function(expr) {
+  withCallingHandlers(
+    expr,
+    warning = function(w) {
+      msg <- conditionMessage(w)
+      if (grepl(
+        "numeric|datetime|scale_[xy]_date|PostScript font database",
+        msg,
+        ignore.case = TRUE
+      )) {
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
+}
+
 #' Normaliser anhoej.signal i qic_data
 #'
 #' Deriverer en altid-boolean `anhoej.signal`-kolonne fra qicharts2-output,
@@ -484,21 +506,14 @@ render_bfh_plot <- function(qic_data,
 
   viewport <- viewport_dims(base_size = base_size)
 
-  withCallingHandlers(
+  # Se .muffle_expected_warnings() helper for hvilke warnings der mufles.
+  .muffle_expected_warnings(
     bfh_spc_plot(
       qic_data = qic_data,
       plot_config = plot_config,
       viewport = viewport,
       plot_margin = plot_margin
-    ),
-    warning = function(w) {
-      if (grepl("numeric|datetime|scale_[xy]_date|PostScript font database",
-        conditionMessage(w),
-        ignore.case = TRUE
-      )) {
-        invokeRestart("muffleWarning")
-      }
-    }
+    )
   )
 }
 
@@ -536,7 +551,8 @@ apply_spc_labels_to_export <- function(plot,
     label_size <- PDF_LABEL_SIZE
   }
 
-  withCallingHandlers(
+  # Se .muffle_expected_warnings() helper for hvilke warnings der mufles.
+  .muffle_expected_warnings(
     add_spc_labels(
       plot = plot,
       qic_data = qic_data,
@@ -547,12 +563,7 @@ apply_spc_labels_to_export <- function(plot,
       target_text = target_text,
       verbose = FALSE,
       language = language
-    ),
-    warning = function(w) {
-      if (grepl("PostScript font database", conditionMessage(w), fixed = TRUE)) {
-        invokeRestart("muffleWarning")
-      }
-    }
+    )
   )
 }
 
