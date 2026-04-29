@@ -30,5 +30,5 @@
 ## 5. Release
 
 - [x] 5.1 PATCH bump (bug fix)
-- [ ] 5.2 Run full test suite; address any newly-surfaced warnings in tests by either fixing fixtures or adding `expect_warning()` where the warning is intended
-- [ ] 5.3 `devtools::check()` clean
+- [x] 5.2 Run full test suite; address any newly-surfaced warnings in tests by either fixing fixtures or adding `expect_warning()` where the warning is intended
+- [x] 5.3 `devtools::check()` clean
