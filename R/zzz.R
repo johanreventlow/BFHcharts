@@ -40,7 +40,11 @@ register_bfh_font_aliases <- function() {
     return(invisible(FALSE))
   }
 
-  for (fname in c("Mari", "Arial")) {
+  # Liste matcher fonts brugt i BFH Typst-templates (Mari primaer, oevrige
+  # som fallback-chain) plus systemfonts som ggplot2-grobs kan referere.
+  # Aliaser dem alle til Helvetica-metrics i grid's PostScript/PDF-database
+  # for at undgaa "font family X not found" warnings under metric-lookup.
+  for (fname in c("Mari", "Arial", "Roboto")) {
     if (!fname %in% names(ps_fonts)) {
       tryCatch(
         do.call(
