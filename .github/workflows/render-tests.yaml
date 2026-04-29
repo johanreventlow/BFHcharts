@@ -24,27 +24,19 @@ on:
     # Hver mandag kl. 06:00 UTC (07:00 CET / 08:00 CEST)
     - cron: "0 6 * * 1"
   workflow_dispatch:
-  push:
-    branches: [main, develop]
-    paths:
-      - "R/export*.R"
-      - "R/utils_typst*.R"
-      - "R/utils_quarto*.R"
-      - "R/utils_export*.R"
-      - "inst/templates/typst/**"
-      - "tests/testthat/test-export*.R"
-      - "tests/testthat/test-integration-export*.R"
-      - "tests/testthat/test-utils_typst*.R"
-      - "tests/testthat/test-utils_quarto*.R"
-      - ".github/workflows/render-tests.yaml"
-  pull_request:
-    branches: [main, develop]
-    paths:
-      - "R/export*.R"
-      - "R/utils_typst*.R"
-      - "R/utils_quarto*.R"
-      - "R/utils_export*.R"
-      - "inst/templates/typst/**"
+  # NOTE: pull_request og push triggers er fjernet bevidst. Render-tests
+  # forudsaetter at Mari (proprietaer) er tilgaengelig som font, eller at
+  # \`--ignore-system-fonts\` deaktiveres. Hverken er muligt paa offentlige
+  # GitHub-runners uden enten:
+  #   1. Encrypted Mari-fonts via repository secrets, eller
+  #   2. Test-flag der saetter ignore_system_fonts=FALSE og injekterer
+  #      open fallback-fonts (DejaVu/Liberation) via font_path
+  # Indtil en af de to loesninger er paa plads, koerer render-tests kun
+  # scheduled (ugentligt) for at fange catastrophic-regression -- ikke
+  # som PR-blocking gate. Konsekvensen: regressioner i Typst-rendering kan
+  # slippe igennem til main mellem ugentlige cron-koerselser. Mitigation:
+  # manuel quality-check af PDF-output paa release-PRs.
+  # Tracking: (TODO -- aaben follow-up issue for permanent fix)
 
 permissions: read-all
 
