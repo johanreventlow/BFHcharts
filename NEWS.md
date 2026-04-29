@@ -1,3 +1,15 @@
+# BFHcharts 0.10.6
+
+## Bug fixes
+
+* **Fix: outliers_recent_count row-order assumption.**
+  `bfh_extract_spc_stats.bfh_qic_result()` sorterer nu `qic_data` efter `x`
+  inden recency-vinduet beregnes. Tidligere antog koden at input-rækkerne
+  allerede lå i kronologisk rækkefølge — omvendt eller scrambled data gav
+  forkert `outliers_recent_count`. Rækkefølge er nu ubetydelig; sorted,
+  reversed og tilfældigt permuteret input giver identiske resultater.
+  (harden-outliers-recent-count / row-order fix)
+
 # BFHcharts 0.10.5
 
 ## Bug fixes
