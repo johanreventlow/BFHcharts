@@ -1,3 +1,37 @@
+# BFHcharts 0.10.6
+
+## Sikkerhed
+
+* **Validering af Quarto binary-overrides (`find_quarto`).** Stier angivet
+  via `options(bfhcharts.quarto_path)` og `QUARTO_PATH`-miljøvariablen
+  valideres nu fuldt: shell-metakarakter-tjek (ny binary-variant der tillader
+  Windows Program Files-parens), path-traversal-tjek, eksistens-tjek og
+  eksekverbar-bit-tjek (Unix/macOS). Ugyldige overrides afvises med
+  informativ advarsel og falder tilbage til PATH-opdag. Det gyldige override
+  har nu prioritet over PATH-fund. Forhindrer potentielt vilkårlig kode-
+  eksekvering på multi-bruger-systemer med forgiftet `.Rprofile`.
+  (#harden-export-pipeline-security)
+
+* **Kontroltegn strippes i `escape_typst_string()`.** `\\n`, `\\r`, `\\t`
+  erstattes med mellemrum og NUL-bytes fjernes inden eksisterende `\\`, `"`,
+  `<`, `>`-escapes. Metadata-felter (fx afdelingsnavn copy-pastet fra Windows
+  med CRLF) producerer nu gyldigt Typst-output i stedet for syntaksfejl.
+  (#harden-export-pipeline-security)
+
+## Bug fixes
+
+* **Uniform truncering af compile-fejl-output til 500 tegn.** Begge fejl-
+  branches i `bfh_compile_typst()` (non-zero exit og "PDF not created")
+  afkorter nu output via den fælles helper `.truncate_compile_output()`.
+  Tidligere lækkede "PDF not created"-branchen ukortede filsystem-stier
+  i fejlbeskeder. (#harden-export-pipeline-security)
+
+* **`shQuote()` fjernet fra argv-vector i `bfh_compile_typst()`.** `system2()`
+  med `args = character_vector` bruger ikke shell; `shQuote()` tilføjede
+  literale anførselstegn der brød stier med mellemrum på Unix/macOS
+  (fx `~/My Files/`). Stier med mellemrum kompilerer nu korrekt.
+  (#harden-export-pipeline-security)
+
 # BFHcharts 0.10.5
 
 ## Bug fixes
