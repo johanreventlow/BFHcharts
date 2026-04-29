@@ -142,11 +142,14 @@ test_that("find_quarto respekterer QUARTO_PATH environment-variabel", {
       file.exists(as.character(Sys.which("quarto"))),
     "System Quarto present in PATH; cannot test QUARTO_PATH fallback"
   )
+  # QUARTO_PATH-validering kraever eksekverbar fil paa Unix/macOS.
+  skip_on_os("windows") # Execbit-check springes over paa Windows
 
   local_clean_quarto_cache()
 
   fake_path <- tempfile(fileext = ".fake-quarto")
   file.create(fake_path)
+  Sys.chmod(fake_path, mode = "755") # Goer eksekverbar saa validering bestaar
   withr::defer(unlink(fake_path))
 
   withr::local_envvar(QUARTO_PATH = fake_path)
@@ -155,21 +158,50 @@ test_that("find_quarto respekterer QUARTO_PATH environment-variabel", {
   expect_equal(result, fake_path)
 })
 
-test_that("find_quarto respekterer bfhcharts.quarto_path option", {
-  # Ligesom ovenfor: option-opslag er efter Sys.which i prioritet.
-  # Testen verificerer blot at funktionen returnerer en gyldig string.
+test_that("find_quarto respekterer bfhcharts.quarto_path option naar fil er eksekverbar", {
+  # Validering kræver eksekverbar fil paa Unix/macOS (harden-export-pipeline-security).
+  skip_on_os("windows") # Execbit-check springes over paa Windows
+
   local_clean_quarto_cache()
 
   fake_path <- tempfile(fileext = ".fake-quarto-opt")
   file.create(fake_path)
+  Sys.chmod(fake_path, mode = "755") # Goer eksekverbar
   withr::defer(unlink(fake_path))
 
-  withr::local_envvar(QUARTO_PATH = "") # Ryd environment først
+  withr::local_envvar(QUARTO_PATH = "") # Ryd environment foerst
   withr::local_options(bfhcharts.quarto_path = fake_path)
 
+  # Options har nu prioritet over PATH (overrides checks foerst)
+  # Paa systemer med quarto i PATH: options-override bor stadig returneres
   result <- BFHcharts:::find_quarto()
+  expect_equal(result, fake_path)
+})
+
+test_that("find_quarto emitter warning og falder tilbage naar options-sti ikke er eksekverbar", {
+  skip_on_os("windows") # Execbit-check springes over paa Windows
+  local_clean_quarto_cache()
+
+  fake_path <- tempfile(fileext = ".fake-quarto-opt")
+  file.create(fake_path)
+  # Giv IKKE eksekverbar rettighed -> validering fejler
+  withr::defer(unlink(fake_path))
+
+  withr::local_envvar(QUARTO_PATH = "")
+  withr::local_options(bfhcharts.quarto_path = fake_path)
+
+  expect_warning(
+    result <- BFHcharts:::find_quarto(),
+    regexp = "not executable"
+  )
+  # Resultat er stadig character (fallback til PATH eller "quarto")
   expect_type(result, "character")
   expect_length(result, 1)
+  # Den ugyldige sti maa ikke vaere cachet
+  if (exists("quarto_path", envir = BFHcharts:::.quarto_cache)) {
+    cached <- get("quarto_path", envir = BFHcharts:::.quarto_cache)
+    expect_false(identical(cached, fake_path))
+  }
 })
 
 # ============================================================================
@@ -337,8 +369,10 @@ test_that(".system2 mock: success path verifies arg construction og returnerer o
 
   expect_equal(result, output)
   expect_equal(captured_command, "/fake/quarto")
-  expect_equal(captured_args[1:3], c("typst", "compile", shQuote(typst_file)))
-  expect_equal(captured_args[4], shQuote(output))
+  # shQuote er fjernet fra compile_args (fix: harden-export-pipeline-security):
+  # system2() med vector-args sender raa argv-tokens, ikke shell-escaped strenge.
+  expect_equal(captured_args[1:3], c("typst", "compile", typst_file))
+  expect_equal(captured_args[4], output)
 })
 
 test_that(".system2 mock: non-zero exit code rejser fejl med output", {

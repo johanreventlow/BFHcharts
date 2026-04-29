@@ -56,6 +56,12 @@ driven from consistent - but distinct - numbers.
 
 Downstream packages should prefer the \code{bfh_qic_result} method so the PDF
 export and any on-screen preview agree on the outlier count.
+
+Stats are computed on x-sorted observations; input row order is not
+significant. When \code{qic_data} contains an \code{x} column, rows are sorted
+ascending by \code{x} before the recency-window slice for
+\code{outliers_recent_count} is applied. This ensures that reversed or
+scrambled input yields identical results to chronologically ordered input.
 }
 \examples{
 \dontrun{

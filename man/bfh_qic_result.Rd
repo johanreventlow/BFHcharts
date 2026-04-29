@@ -7,4 +7,8 @@
 S3 class for wrapping SPC chart outputs. Enables pipe-compatible export
 workflows while maintaining backwards-compatible console display.
 }
-\keyword{internal}
+\details{
+Objects of class \code{bfh_qic_result} are returned by \code{\link{bfh_qic}}.
+Access components with \code{result$plot}, \code{result$summary},
+\code{result$qic_data}, and \code{result$config}.
+}

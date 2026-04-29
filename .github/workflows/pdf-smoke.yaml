@@ -1,0 +1,100 @@
+# PR-blocking PDF smoke-render workflow for BFHcharts.
+#
+# Formål:
+#   Kører 1-3 repræsentative bfh_export_pdf()-kald (via tests/smoke/render_smoke.R)
+#   på hver PR til main og develop. Fanger catastrophic Quarto/Typst-pipeline-
+#   regressioner FØR de lander i main -- frem for den ugentlige cron-opsnapning i
+#   render-tests.yaml.
+#
+# Font-strategi:
+#   Mari er proprietær. Denne workflow installerer open fallback-fonts
+#   (DejaVu, Liberation, Noto, Roboto) og sætter dem som font_path-override i
+#   render_smoke.R via env-var BFHCHARTS_SMOKE_FONT_PATH. Typst bruger
+#   --ignore-system-fonts (kræver Quarto >= 1.7 / Typst >= 0.13). Smoke-render
+#   verificerer at PDF-pipelinen producerer en fil > 0 bytes med >= 1 side --
+#   ikke visuel korrekthed (som kræver Mari og håndteres af vdiffr + review).
+#
+# Manuelt trin (branch-protection):
+#   Jobbet skal tilføjes til required-status-checks i branch protection rules
+#   for main og develop paa GitHub:
+#     Settings -> Branches -> Branch protection rules -> [main/develop]
+#     -> "Require status checks to pass before merging"
+#     -> Soeg efter og tilfoj: "pdf-smoke (ubuntu-latest)"
+#
+# Sikkerhed: workflow bruger kun safe inputs (github.run_id som integer,
+# secrets.GITHUB_TOKEN). Ingen untrusted user-input forwarded til run-steps.
+#
+# Kilde: openspec/changes/add-pr-blocking-pdf-smoke-render
+
+name: PDF smoke render
+
+on:
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  pdf-smoke:
+    runs-on: ubuntu-latest
+    name: pdf-smoke (ubuntu-latest)
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system fonts (open fallback for Mari)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            fonts-dejavu \
+            fonts-liberation \
+            fonts-liberation2 \
+            fonts-noto \
+            fonts-noto-core \
+            fonts-roboto \
+            fontconfig
+          fc-cache -f -v
+        shell: bash
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          # Typst >= 0.13 kræves for --ignore-system-fonts.
+          # Quarto >= 1.7.x ships Typst 0.13.x; bruger pre-release indtil stable.
+          version: "pre-release"
+
+      - name: Verify Quarto installation
+        run: quarto --version
+        shell: bash
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "release"
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pdftools any::withr local::.
+          needs: check
+
+      - name: Run PDF smoke render
+        run: Rscript tests/smoke/render_smoke.R
+        shell: bash
+
+      - name: Upload smoke artifacts (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-smoke-failures-${{ github.run_id }}
+          path: |
+            /tmp/bfhcharts_smoke_*.pdf
+            **/*.typ
+            **/*.tex.log
+          retention-days: 7
+          if-no-files-found: warn

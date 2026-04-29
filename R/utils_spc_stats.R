@@ -36,6 +36,13 @@
 #'     `bfh_qic_result` input.}
 #' }
 #'
+#' @details
+#' Stats are computed on x-sorted observations; input row order is not
+#' significant. When `qic_data` contains an `x` column, rows are sorted
+#' ascending by `x` before the recency-window slice for
+#' `outliers_recent_count` is applied. This ensures that reversed or
+#' scrambled input yields identical results to chronologically ordered input.
+#'
 #' @export
 #' @examples
 #' \dontrun{
@@ -134,6 +141,13 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
   if ("part" %in% names(qd)) {
     latest_part <- max(qd$part, na.rm = TRUE)
     qd <- qd[qd$part == latest_part, ]
+  }
+
+  # Sortér efter x saa raekkefølgen af input-data ikke påvirker
+  # recency-vinduet. Rækkefølgen er ubetydelig for outliers_actual (sum),
+  # men afgørende for den positionsbaserede slice i outliers_recent_count.
+  if ("x" %in% names(qd)) {
+    qd <- qd[order(qd$x, na.last = TRUE), ]
   }
 
   stats$outliers_expected <- 0

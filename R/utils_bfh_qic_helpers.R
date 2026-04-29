@@ -4,19 +4,34 @@
 # Disse helpers isolerer Anhoej signal-postprocessering og return-routing
 # fra bfh_qic()-kroppen. Se openspec/changes/refactor-bfh_qic-orchestrator.
 
-# Mufle expected ggplot2 + BFHtheme warnings under plot generation og label
-# placement. ggplot scale_*_date emitter "removed N rows" / "datetime" /
-# "numeric" warnings ved tomme akser, og BFHthemes proprietaere font (Mari)
-# udloeser "font family not found in PostScript font database" pr. tekstelement
-# naar font ikke er installeret. Begge er expected behavior, ikke fejl.
-# Genuine warnings propageres uaendret.
+# Mufle kendte ufarlige ggplot2/scales/BFHtheme warnings under plot generation
+# og label placement. Kun eksplicitte, forankrede mønstre mufles — ingen
+# ubundne substring-matches som "numeric" eller "datetime", der ville skjule
+# datakvalitetsproblemer for kliniske brugere.
+#
+# Mønster-kilder:
+#   scale_[xy]_(continuous|date|datetime).* — ggplot2/scales: scale-warnings
+#     ved fjernede rækker / tomme akser (fx scale_x_date: Removed 3 rows)
+#   font family.*not found in PostScript font database — BFHtheme: Mari-font
+#     ikke installeret; registreres via .onLoad(), men grDevices-lookup kan
+#     stadig udløse dette pr. tekstelement
+#   Removed [0-9]+ rows containing — ggplot2 geom_*: manglende værdier
+#     fjernet ved rendering (fx geom_point, geom_line)
+#
+# Genuine warnings (fx "NAs introduced by coercion to numeric",
+# "non-numeric argument to binary operator") propageres uændret til caller.
+#' @keywords internal
 .muffle_expected_warnings <- function(expr) {
   withCallingHandlers(
     expr,
     warning = function(w) {
       msg <- conditionMessage(w)
       if (grepl(
-        "numeric|datetime|scale_[xy]_date|PostScript font database",
+        paste0(
+          "scale_[xy]_(continuous|date|datetime).*",
+          "|font family.*not found in PostScript font database",
+          "|Removed [0-9]+ rows containing"
+        ),
         msg,
         ignore.case = TRUE
       )) {
@@ -36,9 +51,11 @@
 #' -> `runs.signal` -> `FALSE`
 #'
 #' @param qic_data data.frame fra `qicharts2::qic()`, eller NULL
-#' @return qic_data med normaliseret `anhoej.signal` (logical, aldrig NA),
+#' @return qic_data med normaliseret `anhoej.signal` (logical, kan være NA når
+#'   serien er for kort til pålidelig Anhøj-evaluering),
 #'   eller NULL hvis input er NULL
 #' @keywords internal
+#' @noRd
 add_anhoej_signal <- function(qic_data) {
   if (is.null(qic_data)) {
     return(NULL)
@@ -58,11 +75,8 @@ add_anhoej_signal <- function(qic_data) {
     qic_data$anhoej.signal <- rep(FALSE, nrow(qic_data))
   }
 
-  # Downstream kraever altid TRUE/FALSE - aldrig NA
-  qic_data$anhoej.signal <- ifelse(
-    is.na(qic_data$anhoej.signal), FALSE, qic_data$anhoej.signal
-  )
-
+  # NA bevares bevidst — signalerer at serien er for kort til evaluering.
+  # Downstream-kode (plot_core.R, utils_qic_summary.R) håndterer NA eksplicit.
   qic_data
 }
 
@@ -77,36 +91,25 @@ add_anhoej_signal <- function(qic_data) {
 #' @param config liste med konfigurationsparametre
 #' @param return.data logical
 #' @param print.summary logical
-#' @return En af: `bfh_qic_result` S3-objekt (default), `qic_data` data.frame,
-#'   `list(plot, summary)`, eller `list(data, summary)`
+#' @return En af: `bfh_qic_result` S3-objekt (default) eller `qic_data` data.frame
 #' @keywords internal
+#' @noRd
 build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
                                  return.data, print.summary) {
-  if (print.summary) {
-    warning(
-      "The 'print.summary' parameter is deprecated as of BFHcharts 0.3.0.\n",
-      "  The summary is now always included in the result object.\n",
-      "  Access it via result$summary instead of using print.summary = TRUE.\n",
-      "  This parameter will be removed in a future version.",
+  # print.summary = TRUE er fjernet i v0.11.0. Brug return.data = TRUE og
+  # tilgå result$summary direkte.
+  if (isTRUE(print.summary)) {
+    stop(
+      "print.summary = TRUE has been removed in v0.11.0. ",
+      "Use return.data = TRUE and access result$qic_summary directly, ",
+      "or use the default bfh_qic_result object and access result$summary. ",
+      "See NEWS for migration guide.",
       call. = FALSE
     )
   }
 
-  if (return.data && print.summary) {
-    return(list(data = qic_data, summary = summary_result))
-  } else if (return.data) {
+  if (return.data) {
     return(qic_data)
-  } else if (print.summary) {
-    warning(
-      "Returning legacy list(plot, summary) format.\n",
-      "  Consider using the new bfh_qic_result object instead:\n",
-      "  result <- bfh_qic(...)\n",
-      "  result$plot     # Access plot\n",
-      "  result$summary  # Access summary\n",
-      "  This legacy format will be removed in a future version.",
-      call. = FALSE
-    )
-    return(list(plot = plot, summary = summary_result))
   } else {
     return(
       new_bfh_qic_result(
@@ -235,8 +238,35 @@ validate_bfh_qic_inputs <- function(data,
     min = 1, max = nrow(data),
     allow_null = TRUE, context = sprintf("1-%d", nrow(data))
   )
+
+  # Advar hvis freeze-baseline er for kort til pålidelig signal-detektion
+  if (!is.null(freeze) && freeze < MIN_BASELINE_N) {
+    warning(
+      "freeze = ", freeze, ": baseline har færre end ", MIN_BASELINE_N,
+      " observationer. Kontrolgrænser er statistisk usikre.",
+      call. = FALSE
+    )
+  }
+
+  # Advar for faser med for få observationer
+  if (!is.null(part)) {
+    n_total <- nrow(data)
+    # Beregn startpositionerne for hver fase
+    phase_starts <- c(1L, as.integer(part) + 1L)
+    phase_ends <- c(as.integer(part), n_total)
+    phase_sizes <- phase_ends - phase_starts + 1L
+    short_phases <- which(phase_sizes < MIN_BASELINE_N)
+    if (length(short_phases) > 0) {
+      warning(
+        "Fase(r) ", paste(short_phases, collapse = ", "),
+        " har færre end ", MIN_BASELINE_N,
+        " observationer. Kontrolgrænser kan være statistisk usikre.",
+        call. = FALSE
+      )
+    }
+  }
   validate_numeric_parameter(base_size, "base_size",
-    min = 1, max = 100,
+    min = 1, max = FONT_SCALING_CONFIG$max_size,
     allow_null = FALSE, len = 1
   )
   validate_numeric_parameter(width, "width",
@@ -613,6 +643,10 @@ build_bfh_qic_config <- function(chart_type,
     PDF_LABEL_SIZE
   }
 
+  # label_config$centerline_value, $has_frys_column og $has_skift_column er
+  # fjernet som statiske kopier for at undgaa desync ved mutation af
+  # top-niveau cl/freeze/part. Laes dem fra config$cl, config$freeze,
+  # config$part i stedet (se export_pdf.R).
   list(
     chart_type = chart_type,
     chart_title = chart_title,
@@ -627,9 +661,6 @@ build_bfh_qic_config <- function(chart_type,
     multiply = multiply,
     agg.fun = agg.fun,
     label_config = list(
-      centerline_value = cl,
-      has_frys_column = !is.null(freeze),
-      has_skift_column = !is.null(part),
       original_viewport_width = viewport_width_inches,
       original_viewport_height = viewport_height_inches,
       original_label_size = label_size

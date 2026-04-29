@@ -1,3 +1,237 @@
+# BFHcharts 0.11.0
+
+## Breaking changes
+
+* **`print.summary = TRUE` er fjernet.** Parameteren var depreceret siden
+  v0.3.0 (7 minor versioner). Kald med `print.summary = TRUE` fejler nu
+  med en klar fejlbesked. Migration: brug `return.data = TRUE` og tilgå
+  `result$qic_summary`, eller brug det nye default `bfh_qic_result`-objekt
+  og tilgå `result$summary` direkte. (#modernize-deprecations-and-deps)
+
+## Forbedringer
+
+* **Advarsel ved for kort baseline.** `bfh_qic()` udsender nu en advarsel
+  når `freeze` eller en `part`-fase har færre end 8 observationer
+  (`MIN_BASELINE_N`). Anhøj-reglerne og SPC-litteraturen kræver ca. 8+
+  punkter for meningsfulde kontrolgrænser — tidligere kørte beregningen
+  stille videre med statistisk usikre grænser. Ingen ændring i adfærd
+  for normale serier (n ≥ 8). (#enforce-baseline-minimum-and-cl-warnings)
+
+* **Advarsel ved custom `cl` og Anhøj-signaler.** Når `cl` angives manuelt,
+  beregnes Anhøj løbe- og krydsningssignaler mod den brugerleverede
+  centrallinje frem for den dataestimerede procesmiddel. `bfh_qic()` giver
+  nu eksplicit advarsel om dette, så brugere er klar over fortolknings-
+  forbeholdet. (#enforce-baseline-minimum-and-cl-warnings)
+
+## Sikkerhed
+
+* **Validering af Quarto binary-overrides (`find_quarto`).** Stier angivet
+  via `options(bfhcharts.quarto_path)` og `QUARTO_PATH`-miljøvariablen
+  valideres nu fuldt: shell-metakarakter-tjek (ny binary-variant der tillader
+  Windows Program Files-parens), path-traversal-tjek, eksistens-tjek og
+  eksekverbar-bit-tjek (Unix/macOS). Ugyldige overrides afvises med
+  informativ advarsel og falder tilbage til PATH-opdag. Det gyldige override
+  har nu prioritet over PATH-fund. Forhindrer potentielt vilkårlig kode-
+  eksekvering på multi-bruger-systemer med forgiftet `.Rprofile`.
+  (#harden-export-pipeline-security)
+
+* **Kontroltegn strippes i `escape_typst_string()`.** `\n`, `\r`, `\t`
+  erstattes med mellemrum og NUL-bytes fjernes inden eksisterende `\`, `"`,
+  `<`, `>`-escapes. Metadata-felter (fx afdelingsnavn copy-pastet fra Windows
+  med CRLF) producerer nu gyldigt Typst-output i stedet for syntaksfejl.
+  (#harden-export-pipeline-security)
+
+* **AI-egress audit signal.** `bfh_generate_analysis(use_ai = TRUE)` emitter
+  nu en `message()` med tag `[BFHcharts/AI]` umiddelbart inden kald til
+  `BFHllm::bfhllm_spc_suggestion()`. Beskeden navngiver de felter der
+  transmitteres og `use_rag`-værdien, så R-level logs kan bekræfte om og
+  hvornår AI-stien blev taget — et compliance/governance-krav i hospital
+  deployments. Supprimér med
+  `options(BFHcharts.suppress_ai_audit_message = TRUE)`. (#add-ai-egress-audit-signal)
+
+## Bug fixes
+
+* **Fix: outliers_recent_count row-order assumption.**
+  `bfh_extract_spc_stats.bfh_qic_result()` sorterer nu `qic_data` efter `x`
+  inden recency-vinduet beregnes. Tidligere antog koden at input-rækkerne
+  allerede lå i kronologisk rækkefølge — omvendt eller scrambled data gav
+  forkert `outliers_recent_count`. Rækkefølge er nu ubetydelig; sorted,
+  reversed og tilfældigt permuteret input giver identiske resultater.
+  (#fix-outliers-recent-count-row-order)
+
+* **Fail-early validering i `bfh_generate_details()` ved ugyldige x-værdier.**
+  `min()`/`max()` blev kaldt på `qic_data$x` uden forudgående tjek for
+  gyldige værdier, hvilket gav `Inf`/`-Inf` i periodefeltet ved tomme
+  eller alle-NA datasæt (fx cleanup-scenarier i batch-eksport). Funktionen
+  stopper nu med en informativ `bfhcharts_config_error` hvis x-kolonnen er
+  tom, alle-NA eller (for numerisk x) alle-Inf — inden `min`/`max` kaldes.
+  Kald med gyldige data påvirkes ikke. (#validate-export-details-edge-cases)
+
+* **Uniform truncering af compile-fejl-output til 500 tegn.** Begge fejl-
+  branches i `bfh_compile_typst()` (non-zero exit og "PDF not created")
+  afkorter nu output via den fælles helper `.truncate_compile_output()`.
+  Tidligere lækkede "PDF not created"-branchen ukortede filsystem-stier
+  i fejlbeskeder. (#harden-export-pipeline-security)
+
+* **`shQuote()` fjernet fra argv-vector i `bfh_compile_typst()`.** `system2()`
+  med `args = character_vector` bruger ikke shell; `shQuote()` tilføjede
+  literale anførselstegn der brød stier med mellemrum på Unix/macOS
+  (fx `~/My Files/`). Stier med mellemrum kompilerer nu korrekt.
+  (#harden-export-pipeline-security)
+
+* **Indsnævr warning-muffler scope i `.muffle_expected_warnings()`.** Det
+  ubundne `"numeric"`-substring-mønster mufler nu ikke længere advarsler som
+  `"NAs introduced by coercion to numeric"` (malformerede nævnere) eller
+  `"non-numeric argument to binary operator"` (typefejl), der er vigtige
+  datakvalitetssignaler i klinisk SPC-brug. Erstattet med eksplicitte,
+  forankrede mønstre der kun dækker kendte ufarlige sources:
+  `scale_[xy]_(continuous|date|datetime).*` (ggplot2/scales),
+  `font family.*not found in PostScript font database` (BFHtheme/grDevices),
+  og `Removed [0-9]+ rows containing` (ggplot2 geom-lag). (#tighten-warning-muffling-scope)
+
+* **Konsolidér dobbelt deprecation-advarsel i `build_bfh_qic_return()`.** Kald
+  med `print.summary = TRUE, return.data = FALSE` udsendte tidligere to
+  advarsler (én generel deprecation + én legacy-format-advarsel). Disse er
+  samlet til én konsolideret advarsel der indeholder både deprecation-kontekst
+  og migrationsinstruktion. (#tighten-warning-muffling-scope)
+
+## CI
+
+* **PR-blocking PDF smoke-render workflow tilføjet** (`.github/workflows/pdf-smoke.yaml`).
+  Kører 3 repræsentative `bfh_export_pdf()`-kald (p-chart, i-chart med metadata,
+  run-chart med target) på hver PR til `main` og `develop`. Verificerer at
+  Quarto/Typst-pipelinen producerer gyldige PDF-filer (> 0 bytes, >= 1 side).
+  Bruger åbne fallback-fonts (DejaVu/Liberation/Noto/Roboto) via `apt-get` så
+  pipelinen virker på public GitHub-runners uden proprietær Mari. Fanger
+  catastrophic render-regressioner før de lander i main — complement til
+  ugentlig `render-tests.yaml`. Manuel follow-up krævet: tilføj
+  "pdf-smoke (ubuntu-latest)" til branch-protection required-checks.
+  (#add-pr-blocking-pdf-smoke-render)
+
+## Interne ændringer
+
+* **vdiffr snapshots re-baseret** (9 snapshots). Font-metric drift opstod da
+  Roboto blev registreret som Helvetica-alias i v0.10.5 (`R/zzz.R`). SVG-koordinater
+  ændrede sig minimalt (< 5px) — forventet og intentionelt.
+  (#add-pr-blocking-pdf-smoke-render)
+
+* **Sync font-alias-sæt i `tests/testthat/setup.R`** med `R/zzz.R`. Roboto tilføjet
+  til `c("Mari", "Arial")` → `c("Mari", "Arial", "Roboto")` i setup.R's
+  grDevices-registrering. Forhindrer metric-divergens mellem production og test.
+  (#add-pr-blocking-pdf-smoke-render)
+
+* **`skip_if_no_pdf_render_deps()` tilføjet til `helper-skips.R`**. Tjekker
+  `BFHcharts:::quarto_available()` og `pdftools`-tilgængelighed samlet.
+  Til brug i smoke-render og fremtidige PDF-pipeline-tests.
+  (#add-pr-blocking-pdf-smoke-render)
+
+* **`test-visual-regression.R` migreret fra fil-scope til per-test skip**.
+  Fil-scope `skip_if_fonts_unavailable()` på linje 28 erstattet med
+  `skip_if_no_mari_font()` per test. Giver bedre testthat-reporting og
+  åbner for fremtidige tests der ikke kræver Mari.
+  (#add-pr-blocking-pdf-smoke-render)
+
+## Tests
+
+* **Smoke + boundary tests for g-, t- og mr-chart** tilføjet i
+  `tests/testthat/test-chart-types-gtmr.R`. Verificerer S3-klasse,
+  UCL/CL/LCL relationer og grænsetilfælde (nul-tæller-rækker for g-chart,
+  identiske tider for t-chart). (#expand-test-coverage-gaps)
+
+* **Bidirektionel i18n-paritetskontrol.** `test-i18n.R` tjekker nu begge
+  retninger: DA-nøgler manglende i EN og EN-nøgler manglende i DA.
+  (#expand-test-coverage-gaps)
+
+* **PDF-indholdsverifikation med pdftools.** Render-gated tests i
+  `test-export_pdf.R` verificerer nu at genererede PDF-filer har mindst 1
+  side via `pdftools::pdf_info()$pages`. (#expand-test-coverage-gaps)
+
+* **Kørbart eksempel i `bfh_qic()`.** Første `@examples`-blok er konverteret
+  fra `\dontrun{}` til kørbart kode med deterministiske inline-data.
+  Øvrige eksempler forbliver i `\dontrun{}`. (#expand-test-coverage-gaps)
+
+* **Laney p' håndberegnede referenceværdier.** To uafhængige fixtures med
+  kendte UCL/LCL-værdier (beregnet med Laney 2002-formel, verificeret mod
+  qicharts2) tilføjet til `test-statistical-accuracy-extended.R`.
+  (#expand-test-coverage-gaps)
+
+* **Nye edge-case tests.** `test-bfh_qic_edge_cases.R` dækker nu:
+  `part=c(6,9)` kombineret med `freeze=6` (regressiontest), tomt data.frame
+  (fejl forventet), og enkelt-rækket data (returnerer gyldigt objekt).
+  (#expand-test-coverage-gaps)
+
+* **Bevar NA i `anhoej.signal` fra qicharts2.** Tidligere blev NA i
+  `anhoej.signal` tvunget til `FALSE`, hvilket maskerede "for kort serie
+  til evaluering" som "ingen signal". NA bevares nu og repræsenterer
+  "ikke evaluerbar (for kort serie)". `plot_core.R` håndterer NA ved
+  rendering ved at behandle det som `FALSE` (solid linje) — ingen
+  visuel ændring for eksisterende charts. (#enforce-baseline-minimum-and-cl-warnings)
+
+## API
+
+* **Fjern 16 orphan Rd-sider for interne funktioner.** Interne funktioner
+  i `utils_typst.R`, `utils_quarto.R`, `utils_bfh_qic_helpers.R`,
+  `utils_path_policy.R`, `cache_reset.R` og `config_objects.R` manglede
+  `@noRd`-tag. `devtools::document()` genererede Rd-sider for funktioner
+  der aldrig var i NAMESPACE. Rettet ved at tilføje `@noRd` til alle
+  relevante interne blocks. (#align-public-api-documentation)
+
+* **Dokumentér `$qic_data` kolonnekontrakt.** `new_bfh_qic_result()`
+  har nu en `@section qic_data columns:` der lister de kanoniske kolonner
+  fra qicharts2 (x, y, n, cl, ucl, lcl, sigma.signal, runs.signal,
+  anhoej.signal m.fl.) med semantik og version-bound (qicharts2 >= 0.7.0).
+  (#align-public-api-documentation)
+
+* **Tilføj stabilitetserklæring til `new_bfh_qic_result()`.** Ny
+  `@section Stability:` dokumenterer at feltnavne (plot, summary,
+  qic_data, config) er stabile siden v0.10.0 og ikke fjernes uden
+  deprecation-cyklus. (#align-public-api-documentation)
+
+* **Fjern `@keywords internal` fra `bfh_qic_result` klasse-topic.**
+  Klassen er offentlig (returneres af enhver `bfh_qic()`-kald).
+  (#align-public-api-documentation)
+
+* **README: fjern "Low-Level API for Fine Control" afsnit.** `spc_plot_config()`,
+  `viewport_dims()` og `bfh_spc_plot()` er interne og må ikke
+  dokumenteres som public API. Afsnittet fjernet. Features-bullet opdateret.
+  (#align-public-api-documentation)
+
+* **`base_size`-loftet er justeret til 48** (fra 100) for at matche
+  `FONT_SCALING_CONFIG$max_size`. Eksplicitte `base_size`-værdier over 48
+  gav visuelt ødelagte layouts; loftet er nu konsistent med auto-skaleringslogikken.
+  (#modernize-deprecations-and-deps)
+
+* **Unit-auto-detektion udsender nu besked.** Når `width`/`height` angives
+  uden eksplicit `units`-parameter, emitterer `bfh_qic()` og `bfh_export_pdf()`
+  en `message()` der navngiver den detekterede enhed og opfordrer til eksplicit
+  `units`-angivelse. Supprimér med
+  `options(BFHcharts.suppress_unit_auto_detect_message = TRUE)`.
+  (#modernize-deprecations-and-deps)
+
+* **`bfh_generate_analysis()` dokumenterer nu manuel BFHllm-installation.**
+  `BFHllm` er fjernet fra `Remotes:` (den er kun i `Suggests`); Roxygen
+  `@details` indeholder nu `remotes::install_github("johanreventlow/BFHllm")`-
+  instruktionen til brugere der ønsker AI-analyse (`use_ai = TRUE`).
+  (#modernize-deprecations-and-deps)
+
+## Interne ændringer (modernization)
+
+* **`label_config$centerline_value`, `$has_frys_column`, `$has_skift_column`
+  er fjernet som statiske kopier** i `build_bfh_qic_config()`. Disse felter
+  var duplikater af `config$cl`, `config$freeze` og `config$part` og kunne
+  desynkronisere ved mutation. `export_pdf.R` læser nu direkte fra top-niveau
+  config-felterne. (#modernize-deprecations-and-deps)
+
+* **`BFHllm` Remotes-status revideret.** Et tidligere forsøg på at fjerne
+  `BFHllm` fra `Remotes:` (begrundet i `R CMD check --as-cran` advarsler for
+  `Suggests`-pakker) brød GitHub Actions CI: `r-lib/actions/setup-r-dependencies`
+  installerer Suggests via pak med `dependencies = "all"`, og uden Remotes-pointer
+  kan pak ikke finde BFHllm (privat GitHub-repo, ej på CRAN). `BFHllm` er nu
+  igen i `Remotes:` for at sikre CI fungerer; den er stadig kun i `Suggests`,
+  så manuel install er ikke længere strengt påkrævet for slutbrugere men er
+  dokumenteret i `bfh_generate_analysis()` Roxygen.
+  (#modernize-deprecations-and-deps)
+
 # BFHcharts 0.10.5
 
 ## Bug fixes

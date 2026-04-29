@@ -10,7 +10,7 @@
 
 - 🎨 **Beautiful themes** - Hospital branding with configurable multi-organizational support
 - 📊 **SPC chart types** - Run charts, I-charts, P-charts, U-charts, and more
-- 🔧 **Flexible API** - High-level convenience functions + low-level customization
+- 🔧 **Flexible API** - Simple one-function interface returning composable ggplot2 objects
 - 📖 **Well documented** - Comprehensive vignettes and examples
 - ✅ **Production ready** - Test-driven development with extensive coverage
 
@@ -104,37 +104,6 @@ bfh_qic(
 ```
 
 ## Advanced Usage
-
-### Low-Level API for Fine Control
-
-```r
-# Step 1: Calculate QIC data using qicharts2
-library(qicharts2)
-
-qic_data <- qic(
-  x = month,
-  y = infections,
-  n = surgeries,
-  data = data,
-  chart = "p",
-  return.data = TRUE
-)
-
-# Step 2: Configure plot
-plot_cfg <- spc_plot_config(
-  chart_type = "p",
-  y_axis_unit = "percent",
-  chart_title = "Custom Infection Rate",
-  target_value = 0.02,
-  target_text = "Target: 2%"
-)
-
-viewport <- viewport_dims(base_size = 14)
-
-# Step 3: Generate plot
-plot <- bfh_spc_plot(qic_data, plot_cfg, viewport)
-plot
-```
 
 ### Hospital Branding with BFHtheme
 

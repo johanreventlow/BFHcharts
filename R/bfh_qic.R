@@ -149,6 +149,14 @@ NULL
 #' @export
 #' @importFrom BFHtheme theme_bfh add_bfh_logo
 #' @examples
+#' # Minimal kørbart eksempel med deterministiske data
+#' df <- data.frame(
+#'   maaned = seq.Date(as.Date("2023-01-01"), by = "month", length.out = 12),
+#'   vaerdi = c(10, 12, 11, 13, 10, 14, 11, 12, 10, 13, 11, 12)
+#' )
+#' result <- bfh_qic(df, x = maaned, y = vaerdi, chart_type = "i")
+#' class(result) # "bfh_qic_result"
+#'
 #' \dontrun{
 #' library(BFHcharts)
 #'
@@ -573,6 +581,16 @@ bfh_qic <- function(data,
     y_axis_unit = y_axis_unit
   )
   qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
+
+  # Advar når custom cl overskriver den dataestimerede procesmiddel i Anhøj-beregning
+  if (!is.null(cl) && any(c("runs.signal", "crossings.signal") %in% names(qic_data))) {
+    warning(
+      "Custom cl supplied: Anhoej run/crossing signals are computed against ",
+      "the supplied centerline, not the data-estimated process mean. ",
+      "Interpret with caution.",
+      call. = FALSE
+    )
+  }
 
   # ---- Viewport + responsiv base_size ----
   vp <- compute_viewport_base_size(

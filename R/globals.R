@@ -88,3 +88,10 @@ PDF_LABEL_SIZE <- 6
 
 # Vindue for seneste observationer i outlier-tæller (6 er standard i SPC-litteraturen)
 RECENT_OBS_WINDOW <- 6L
+
+#' Minimum anbefalede baseline-observationer for stabile SPC-kontrolgrænser
+#'
+#' Anhøj-reglerne og SPC-litteraturen (Anhøj & Olesen 2014) kræver ca. 8+
+#' punkter for meningsfulde kontrolgrænser og pålidelig signal-detektion.
+#' Under denne grænse er kontrolgrænserne statistisk usikre.
+MIN_BASELINE_N <- 8L

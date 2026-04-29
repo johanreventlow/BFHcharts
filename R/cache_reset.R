@@ -11,6 +11,7 @@
 #'
 #' @return invisible(NULL)
 #' @keywords internal
+#' @noRd
 bfh_reset_caches <- function() {
   caches <- list(
     .font_cache,

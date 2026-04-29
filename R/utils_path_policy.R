@@ -2,6 +2,11 @@ ALLOWED_EXPORT_EXTENSIONS <- c("png", "pdf", "svg", "typ")
 
 SHELL_METACHARS_EXPORT <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
 
+# Metachars der er farlige i shell-kontekst MEN legitime i binary-stier
+# (fx Windows: C:\Program Files (x86)\Quarto\bin\quarto.exe indeholder parens)
+# system2() med vector-args bruger ikke shell, saa parens/braces er OK her.
+SHELL_METACHARS_BINARY <- c(";", "|", "&", "$", "`", "<", ">", "\n", "\r")
+
 #' Validate an export file path
 #'
 #' Checks that `path` is a safe, non-empty character string free of path
@@ -25,6 +30,7 @@ SHELL_METACHARS_EXPORT <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">
 #' @return `path` invisibly (normalized when `normalize = TRUE`).
 #'
 #' @keywords internal
+#' @noRd
 validate_export_path <- function(path,
                                  extension = NULL,
                                  allow_root = NULL,
@@ -95,5 +101,13 @@ validate_export_path <- function(path,
 .check_metachars <- function(path) {
   if (any(vapply(SHELL_METACHARS_EXPORT, function(ch) grepl(ch, path, fixed = TRUE), logical(1L)))) {
     stop("path contains disallowed unsafe characters", call. = FALSE)
+  }
+}
+
+# Variant til binary-stier: tillader parens/braces (Windows Program Files-stier),
+# men afviser egentlige shell-injection-tegn.
+.check_metachars_binary <- function(path) {
+  if (any(vapply(SHELL_METACHARS_BINARY, function(ch) grepl(ch, path, fixed = TRUE), logical(1L)))) {
+    stop("binary path contains disallowed unsafe characters", call. = FALSE)
   }
 }

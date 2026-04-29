@@ -13,19 +13,16 @@
 #
 # FONT-AFHÆNGIGHED:
 #   - BFHtheme bruger proprietære Mari-fonts
-#   - På CI/miljøer uden Mari: tests skippes via skip_if_fonts_unavailable()
+#   - På CI/miljøer uden Mari: tests skippes via skip_if_no_mari_font() per test
 #   - Visuel regression fanges kun på udviklermaskiner med Mari installeret
 #
 # RE-BASELINE:
-#   - Ved bevidst visuel ændring: `testthat::snapshot_accept()` eller
-#     `testthat::snapshot_accept("visual-regression")` for denne fil
+#   - Ved bevidst visuel ændring: kopier .new.svg over .svg eller brug
+#     `testthat::snapshot_accept("visual-regression")` fra package-root
 #   - Commit med begrundelse i commit-beskeden
 #
 # Reference: openspec/changes/strengthen-test-infrastructure (Fase 2 task 7)
 # Spec: test-infrastructure, "Plot rendering SHALL have visual regression protection"
-
-# Alle tests kræver Mari-fonts fra BFHtheme — skip på CI uden fonts
-skip_if_fonts_unavailable()
 
 # vdiffr kan være fraværende — hop over hele filen
 skip_if_not_installed("vdiffr")
@@ -35,6 +32,7 @@ skip_if_not_installed("vdiffr")
 # ============================================================================
 
 test_that("vdiffr: run-chart (basic)", {
+  skip_if_no_mari_font()
   data <- fixture_deterministic_chart_data()
   result <- bfh_qic(
     data,
@@ -48,6 +46,7 @@ test_that("vdiffr: run-chart (basic)", {
 })
 
 test_that("vdiffr: i-chart med UCL/LCL", {
+  skip_if_no_mari_font()
   data <- fixture_deterministic_chart_data()
   result <- bfh_qic(
     data,
@@ -61,6 +60,7 @@ test_that("vdiffr: i-chart med UCL/LCL", {
 })
 
 test_that("vdiffr: p-chart med variabel denominator", {
+  skip_if_no_mari_font()
   # Deterministisk p-chart data
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -83,6 +83,7 @@ test_that("vdiffr: p-chart med variabel denominator", {
 })
 
 test_that("vdiffr: u-chart", {
+  skip_if_no_mari_font()
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     events = c(3, 5, 8, 4, 7, 6, 5, 9, 7, 8, 6, 5),
@@ -104,6 +105,7 @@ test_that("vdiffr: u-chart", {
 })
 
 test_that("vdiffr: c-chart", {
+  skip_if_no_mari_font()
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     count = c(3, 7, 5, 5, 5, 5, 6, 4, 5, 6, 4, 5)
@@ -127,6 +129,7 @@ test_that("vdiffr: c-chart", {
 # ============================================================================
 
 test_that("vdiffr: multi-phase i-chart", {
+  skip_if_no_mari_font()
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
     value = c(
@@ -152,6 +155,7 @@ test_that("vdiffr: multi-phase i-chart", {
 # ============================================================================
 
 test_that("vdiffr: chart med target line", {
+  skip_if_no_mari_font()
   data <- fixture_deterministic_chart_data()
   result <- bfh_qic(
     data,
@@ -171,6 +175,7 @@ test_that("vdiffr: chart med target line", {
 # ============================================================================
 
 test_that("vdiffr: p-chart med notes-annotationer", {
+  skip_if_no_mari_font()
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     events = c(5, 8, 12, 10, 15, 11, 9, 14, 13, 16, 12, 10),
@@ -199,6 +204,7 @@ test_that("vdiffr: p-chart med notes-annotationer", {
 })
 
 test_that("vdiffr: chart med custom labels", {
+  skip_if_no_mari_font()
   data <- fixture_deterministic_chart_data()
 
   result <- bfh_qic(

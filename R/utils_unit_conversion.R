@@ -132,6 +132,14 @@ smart_convert_to_inches <- function(width, height, dpi = 96) {
     "in" # Typical inch ranges: 6-16 (legacy compatibility)
   }
 
+  # Udsend besked om auto-detektion med mindre supprimeret via option
+  if (!isTRUE(getOption("BFHcharts.suppress_unit_auto_detect_message"))) {
+    message(
+      "Auto-detected units: ", detected_unit,
+      " (pass units = '", detected_unit, "' to silence this message)"
+    )
+  }
+
   # Convert using detected unit
   convert_to_inches(width, height, detected_unit, dpi)
 }

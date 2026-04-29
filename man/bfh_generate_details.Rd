@@ -40,6 +40,13 @@ period range, averages, latest values, and current level (centerline).
 \item Uses detect_date_interval() to determine the interval type
 \item Labels adapt: "maaned", "uge", "dag", "kvartal", "aar"
 }
+
+\strong{Fail-early contract:}
+\itemize{
+\item If \code{qic_data$x} contains no finite/non-NA values (empty, all-NA, or
+all-Inf for numeric), the function stops with a \code{bfhcharts_config_error}.
+\item Calls with valid data are unaffected.
+}
 }
 \examples{
 \dontrun{

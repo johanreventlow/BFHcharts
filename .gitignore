@@ -53,3 +53,11 @@ BFHcharts_*.tar.gz
 # Vignette build artifacts
 /doc/
 /Meta/
+
+# Stray plot artifacts (top-level)
+demo_plots.png
+ventetid_chart.png
+*.png
+!inst/**/*.png
+!tests/testthat/_snaps/**/*.png
+!man/figures/*.png

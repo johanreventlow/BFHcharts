@@ -49,7 +49,7 @@
 #'   \code{--ignore-system-fonts} to Typst so only fonts from \code{font_path}
 #'   (or bundled template fonts) are used. Prevents inconsistent rendering
 #'   when developers have additional Mari variants (e.g., Mari Heavy)
-#'   installed system-wide. See \code{\link{bfh_compile_typst}} for details.
+#'   installed system-wide. Passed to the internal Typst compiler.
 #' @param inject_assets Optional callback function called after Typst template
 #'   structure is created but before compilation. Receives one argument: the path
 #'   to the template directory (e.g., \code{<temp_dir>/bfh-template}). Use this
@@ -132,7 +132,6 @@
 #' @seealso
 #'   - [bfh_qic()] to create SPC charts
 #'   - [bfh_export_png()] to export as PNG
-#'   - [bfh_create_typst_document()] for low-level Typst generation
 #'   - [bfh_create_export_session()] for batch workflows (same trust
 #'     requirement applies to its `inject_assets` parameter)
 #' @examples
@@ -361,6 +360,8 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
   # Re-add labels with TARGET dimensions for positioning
   # and fixed PDF_LABEL_SIZE for font sizing
   # Se .muffle_expected_warnings() helper for hvilke warnings der mufles.
+  # centerline_value, has_frys_column, has_skift_column laeses fra top-niveau
+  # config-felter (enkelt kilde til sandhed — se build_bfh_qic_config()).
   plot_with_labels <- .muffle_expected_warnings(
     add_spc_labels(
       plot = plot_stripped,
@@ -370,9 +371,9 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
       viewport_width = target_width_inches,
       viewport_height = target_height_inches,
       target_text = config$target_text,
-      centerline_value = label_config$centerline_value,
-      has_frys_column = label_config$has_frys_column,
-      has_skift_column = label_config$has_skift_column,
+      centerline_value = config$cl,
+      has_frys_column = !is.null(config$freeze),
+      has_skift_column = !is.null(config$part),
       verbose = FALSE,
       language = config$language %||% "da"
     )

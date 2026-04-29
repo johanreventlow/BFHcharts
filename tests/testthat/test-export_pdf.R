@@ -142,6 +142,12 @@ test_that("bfh_export_pdf creates PDF file", {
   file_info <- file.info(temp_file)
   expect_gt(file_info$size, 0)
 
+  # Verificer PDF-indhold med pdftools (kræver at pakken er installeret)
+  if (requireNamespace("pdftools", quietly = TRUE)) {
+    info <- pdftools::pdf_info(temp_file)
+    expect_gte(info$pages, 1)
+  }
+
   # Verify return value for pipe chaining
   expect_identical(returned, result)
 
@@ -172,6 +178,12 @@ test_that("bfh_export_pdf works in pipe workflow", {
 
   expect_true(file.exists(temp_file))
   expect_s3_class(result, "bfh_qic_result")
+
+  # Verificer PDF-indhold med pdftools
+  if (requireNamespace("pdftools", quietly = TRUE)) {
+    info <- pdftools::pdf_info(temp_file)
+    expect_gte(info$pages, 1)
+  }
 
   # Cleanup
   unlink(temp_file)
@@ -1763,13 +1775,18 @@ test_that("label_config is stored in bfh_qic_result config", {
 
   label_config <- result$config$label_config
 
-  # Should contain expected fields
-  expect_true("centerline_value" %in% names(label_config))
-  expect_true("has_frys_column" %in% names(label_config))
-  expect_true("has_skift_column" %in% names(label_config))
+  # centerline_value, has_frys_column, has_skift_column er fjernet som
+  # statiske kopier. Laes dem fra top-niveau config-felterne i stedet.
+  expect_false("centerline_value" %in% names(label_config))
+  expect_false("has_frys_column" %in% names(label_config))
+  expect_false("has_skift_column" %in% names(label_config))
 
-  # has_frys_column should be TRUE since we passed freeze = 6
-  expect_true(label_config$has_frys_column)
+  # Viewport-felterne stadig tilgaengelige
+  expect_true("original_label_size" %in% names(label_config))
+
+  # freeze er tilgaengelig som top-niveau config$freeze (enkelt kilde)
+  expect_equal(result$config$freeze, 6)
+  expect_true(!is.null(result$config$freeze))
 })
 
 

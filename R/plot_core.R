@@ -210,7 +210,11 @@ bfh_spc_plot <- function(qic_data,
       na.rm = TRUE
     ),
     ggplot2::geom_line(
-      ggplot2::aes(y = cl, group = part, linetype = anhoej.signal),
+      ggplot2::aes(
+        y = cl, group = part,
+        # NA i anhoej.signal (serie for kort) behandles som FALSE (solid linje)
+        linetype = ifelse(is.na(anhoej.signal), FALSE, anhoej.signal)
+      ),
       color = cols$blue,
       linewidth = cl_linewidth
     )

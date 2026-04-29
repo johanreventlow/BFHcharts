@@ -54,6 +54,8 @@ analysis:
       standard: "The process is unstable with multiple simultaneous signals: level shift and clustering, plus {outliers_actual} of the most recent {effective_window} observations outside the control limits."
       detailed: "The process is unstable with multiple simultaneous signals: level shift (run length {runs_actual} > {runs_expected}), clustering around the centre line (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent {effective_window} observations outside the control limits. Investigate common and special causes systematically."
 
+  anhoej_not_evaluable: "not evaluable (series too short)"
+
   target:
     at_target:
       short: "The level is close to the target ({target})."

@@ -2,7 +2,6 @@
 # Verificerer at pipelinen håndterer grænsetilfælde korrekt
 
 test_that("bfh_qic håndterer minimum data (3 punkter)", {
-
   data <- data.frame(
     date = as.Date(c("2024-01-01", "2024-02-01", "2024-03-01")),
     value = c(10, 15, 12)
@@ -17,7 +16,6 @@ test_that("bfh_qic håndterer minimum data (3 punkter)", {
 })
 
 test_that("bfh_qic håndterer alle identiske værdier (zero variance)", {
-
   data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rep(50, 12)
@@ -34,7 +32,6 @@ test_that("bfh_qic håndterer alle identiske værdier (zero variance)", {
 })
 
 test_that("bfh_qic håndterer data med alle nul-værdier", {
-
   data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rep(0, 12)
@@ -104,8 +101,10 @@ test_that("bfh_qic med multiply parameter skalerer korrekt", {
     value = rnorm(12, mean = 0.5, sd = 0.1)
   )
 
-  result <- bfh_qic(data, x = date, y = value, chart_type = "i",
-                     multiply = 100)
+  result <- bfh_qic(data,
+    x = date, y = value, chart_type = "i",
+    multiply = 100
+  )
 
   # Multiplicerede y-værdier skal være ~50 (0.5 * 100)
   expect_true(mean(result$qic_data$y) > 30)
@@ -119,8 +118,9 @@ test_that("bfh_qic med cl parameter sætter custom centerlinje", {
     value = rpois(12, lambda = 50)
   )
 
-  result <- bfh_qic(data, x = date, y = value, chart_type = "run",
-                     cl = 42)
+  result <- suppressWarnings(
+    bfh_qic(data, x = date, y = value, chart_type = "run", cl = 42)
+  )
 
   # Centerlinje skal være 42 (custom)
   expect_true(all(result$qic_data$cl == 42))
@@ -134,8 +134,10 @@ test_that("bfh_qic med part parameter opretter faser", {
     value = rpois(24, lambda = 50)
   )
 
-  result <- bfh_qic(data, x = date, y = value, chart_type = "i",
-                     part = 12)
+  result <- bfh_qic(data,
+    x = date, y = value, chart_type = "i",
+    part = 12
+  )
 
   expect_equal(length(unique(result$qic_data$part)), 2)
   expect_equal(nrow(result$summary), 2)
@@ -150,12 +152,188 @@ test_that("bfh_qic med freeze parameter fryser baseline", {
   )
 
   result <- suppressWarnings(
-    bfh_qic(data, x = date, y = value, chart_type = "i",
-             freeze = 12)
+    bfh_qic(data,
+      x = date, y = value, chart_type = "i",
+      freeze = 12
+    )
   )
 
   expect_s3_class(result, "bfh_qic_result")
   # Centerlinje skal være konstant (frozen fra de første 12 obs)
   cl_values <- unique(round(result$qic_data$cl, 2))
   expect_equal(length(cl_values), 1)
+})
+
+test_that("bfh_qic med part-vektor og freeze fungerer (regressiontest)", {
+  set.seed(1)
+
+  # Reproduktion af kombination: part=c(6,9) + freeze=6
+  # Sikrer at dette ikke crasher (regression mod evt. fremtidige brud)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 15),
+    value = rpois(15, lambda = 50)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data,
+      x = date, y = value, chart_type = "i",
+      part = c(6, 9), freeze = 6
+    )
+  )
+
+  expect_s3_class(result, "bfh_qic_result")
+  # 3 faser: obs 1-6, 7-9, 10-15
+  expect_equal(length(unique(result$qic_data$part)), 3)
+  expect_equal(nrow(result$summary), 3)
+})
+
+test_that("bfh_qic med tomt data.frame giver fejl", {
+  # Tomt data.frame (0 rækker) skal give en fejl — ikke en crash uden besked.
+  # Nuværende adfærd: R-intern fejl om argumentlænger.
+  # TODO: overvej at tilføje eksplicit "data must have at least 1 row" check i bfh_qic().
+  expect_error(
+    bfh_qic(
+      data.frame(date = as.Date(character(0)), value = numeric(0)),
+      x = date, y = value, chart_type = "i"
+    )
+  )
+})
+
+test_that("bfh_qic med enkelt-række data returnerer objekt (ingen crash)", {
+  # Single observation: qicharts2 håndterer dette — returnerer result med NA limits.
+  data <- data.frame(
+    date = as.Date("2024-01-01"),
+    value = 42
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, x = date, y = value, chart_type = "run")
+  )
+
+  expect_s3_class(result, "bfh_qic_result")
+  expect_equal(nrow(result$qic_data), 1)
+})
+
+# ============================================================================
+# BASELINE MINIMUM ADVARSEL TESTS (enforce-baseline-minimum-and-cl-warnings)
+# ============================================================================
+
+test_that("bfh_qic giver advarsel når freeze < MIN_BASELINE_N (8)", {
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rpois(20, lambda = 50)
+  )
+
+  expect_warning(
+    bfh_qic(data, x = date, y = value, chart_type = "i", freeze = 3),
+    regexp = "freeze = 3"
+  )
+})
+
+test_that("bfh_qic giver advarsel ved freeze = 7 (< 8)", {
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rpois(20, lambda = 50)
+  )
+
+  expect_warning(
+    bfh_qic(data, x = date, y = value, chart_type = "i", freeze = 7),
+    regexp = "baseline har færre end 8"
+  )
+})
+
+test_that("bfh_qic giver IKKE advarsel når freeze = 8 (lig MIN_BASELINE_N)", {
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rpois(20, lambda = 50)
+  )
+
+  expect_no_warning(
+    bfh_qic(data, x = date, y = value, chart_type = "i", freeze = 8)
+  )
+})
+
+test_that("bfh_qic giver IKKE advarsel når freeze = NULL", {
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  # Ingen freeze — ingen advarsel fra freeze-check
+  result <- bfh_qic(data, x = date, y = value, chart_type = "i")
+  expect_s3_class(result, "bfh_qic_result")
+})
+
+test_that("bfh_qic giver advarsel når en part-fase er for kort", {
+  set.seed(42)
+  # n=18: part=3 → fase 1 har 3 obs (< 8), fase 2 har 15 obs
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 18),
+    value = rpois(18, lambda = 50)
+  )
+
+  expect_warning(
+    bfh_qic(data, x = date, y = value, chart_type = "i", part = 3),
+    regexp = "Fase\\(r\\) 1"
+  )
+})
+
+test_that("bfh_qic giver IKKE advarsel når alle part-faser har >= 8 obs", {
+  set.seed(42)
+  # n=24: part=12 → fase 1 har 12 obs, fase 2 har 12 obs
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
+    value = rpois(24, lambda = 50)
+  )
+
+  expect_no_warning(
+    bfh_qic(data, x = date, y = value, chart_type = "i", part = 12)
+  )
+})
+
+test_that("bfh_qic giver cl-override advarsel ved custom cl med tilstrækkelige data", {
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rpois(20, lambda = 50)
+  )
+
+  expect_warning(
+    bfh_qic(data, x = date, y = value, chart_type = "i", cl = 50),
+    regexp = "Custom cl supplied"
+  )
+})
+
+test_that("bfh_qic giver IKKE cl-override advarsel ved cl = NULL", {
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rpois(20, lambda = 50)
+  )
+
+  # Ingen cl — ingen advarsel fra cl-check
+  result <- bfh_qic(data, x = date, y = value, chart_type = "i")
+  expect_s3_class(result, "bfh_qic_result")
+})
+
+test_that("anhoej.signal kan være NA for en kort serie (n=6)", {
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 6),
+    value = c(10, 15, 12, 14, 11, 13)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, x = date, y = value, chart_type = "i")
+  )
+
+  expect_s3_class(result, "bfh_qic_result")
+  # Kort serie → qicharts2 returnerer NA for Anhøj-signaler
+  # anhoej.signal må godt indeholde NA (bevaret fra qicharts2)
+  anhoej_vals <- result$qic_data$anhoej.signal
+  # Enten er alle NA (for meget kort serie) eller logisk — ikke tvunget til FALSE
+  expect_true(is.logical(anhoej_vals))
 })
