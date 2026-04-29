@@ -1,6 +1,6 @@
 ## Why
 
-`bfh_qic()` validates the `n` argument only as a syntactically valid column name (`R/create_spc_chart.R:661`). It does not validate the *content* of the denominator column. Users with `n = 0`, `n = NA`, `n = Inf`, or `y > n` for P/PP-charts pass validation and produce silently misleading charts (NaN/Inf rates, illegal proportions > 1, or empty points where users expect signals).
+`bfh_qic()` validates the `n` argument only as a syntactically valid column name (`R/bfh_qic.R:661`). It does not validate the *content* of the denominator column. Users with `n = 0`, `n = NA`, `n = Inf`, or `y > n` for P/PP-charts pass validation and produce silently misleading charts (NaN/Inf rates, illegal proportions > 1, or empty points where users expect signals).
 
 Codex code review 2026-04-27 (finding #3) flagged this as HIGH severity. Clinical impact: false-clean reports when underlying data is invalid.
 
@@ -27,7 +27,7 @@ Codex code review 2026-04-27 (finding #3) flagged this as HIGH severity. Clinica
 
 **Affected code:**
 - `R/utils_helpers.R` — new internal helper `validate_denominator_data()`
-- `R/create_spc_chart.R` — wire validation call before `do.call(qicharts2::qic, ...)`
+- `R/bfh_qic.R` — wire validation call before `do.call(qicharts2::qic, ...)`
 - `tests/testthat/test-denominator-validator.R` — new file
 - `NEWS.md` — breaking change entry
 

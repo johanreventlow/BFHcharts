@@ -1,6 +1,6 @@
 Package: BFHcharts
 Title: SPC Visualization for Healthcare Quality Improvement
-Version: 0.10.4
+Version: 0.10.5
 Authors@R: c(
     person(
       "Johan", "Reventlow",
@@ -47,7 +47,9 @@ Suggests:
     pdftools (>= 3.3.0),
     withr,
     BFHllm,
-    geomtextpath
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
 Remotes:
     johanreventlow/BFHtheme,
     johanreventlow/BFHllm

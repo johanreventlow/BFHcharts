@@ -104,11 +104,37 @@
 #' - Other chart types show only values (e.g., "127")
 #' - Interval labels adapt to data frequency (month, week, day, etc.)
 #'
+#' @section Security:
+#' Both \code{inject_assets} and \code{template_path} are designed for
+#' advanced use cases (proprietary fonts, organization-specific templates)
+#' and \strong{must be treated as trusted-code-only}:
+#' \itemize{
+#'   \item \code{inject_assets} is invoked with full filesystem access in
+#'     the template directory. Whatever R code the callback contains runs
+#'     with the same privileges as the calling process -- equivalent to
+#'     sourcing arbitrary R from disk.
+#'   \item \code{template_path} is compiled by the Typst binary. A custom
+#'     template can read and write arbitrary paths during compilation.
+#' }
+#' Treat both parameters with the same trust contract you would apply to
+#' \code{source()}: pass only code-reviewed, organizationally controlled
+#' values. \strong{Never} forward user-supplied input (Shiny inputs,
+#' query parameters, untrusted uploads) to either parameter -- doing so
+#' creates a privilege-escalation vector. If your application surface
+#' needs to expose template customization to end users, validate against
+#' a fixed allow-list of approved templates and callbacks before invoking
+#' \code{bfh_export_pdf()}.
+#'
+#' The same trust requirement applies to \code{inject_assets} when passed
+#' to \code{\link{bfh_create_export_session}()}.
+#'
 #' @export
 #' @seealso
 #'   - [bfh_qic()] to create SPC charts
 #'   - [bfh_export_png()] to export as PNG
 #'   - [bfh_create_typst_document()] for low-level Typst generation
+#'   - [bfh_create_export_session()] for batch workflows (same trust
+#'     requirement applies to its `inject_assets` parameter)
 #' @examples
 #' \dontrun{
 #' library(BFHcharts)
@@ -334,19 +360,22 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
 
   # Re-add labels with TARGET dimensions for positioning
   # and fixed PDF_LABEL_SIZE for font sizing
-  plot_with_labels <- add_spc_labels(
-    plot = plot_stripped,
-    qic_data = x$qic_data,
-    y_axis_unit = config$y_axis_unit %||% "count",
-    label_size = new_label_size,
-    viewport_width = target_width_inches,
-    viewport_height = target_height_inches,
-    target_text = config$target_text,
-    centerline_value = label_config$centerline_value,
-    has_frys_column = label_config$has_frys_column,
-    has_skift_column = label_config$has_skift_column,
-    verbose = FALSE,
-    language = config$language %||% "da"
+  # Se .muffle_expected_warnings() helper for hvilke warnings der mufles.
+  plot_with_labels <- .muffle_expected_warnings(
+    add_spc_labels(
+      plot = plot_stripped,
+      qic_data = x$qic_data,
+      y_axis_unit = config$y_axis_unit %||% "count",
+      label_size = new_label_size,
+      viewport_width = target_width_inches,
+      viewport_height = target_height_inches,
+      target_text = config$target_text,
+      centerline_value = label_config$centerline_value,
+      has_frys_column = label_config$has_frys_column,
+      has_skift_column = label_config$has_skift_column,
+      verbose = FALSE,
+      language = config$language %||% "da"
+    )
   )
 
   return(plot_with_labels)

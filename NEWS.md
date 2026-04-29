@@ -1,3 +1,115 @@
+# BFHcharts 0.10.5
+
+## Bug fixes
+
+* **Eliminer "font family not found in PostScript font database" warnings
+  i production.** Mari/Arial registreres nu som Helvetica-aliaser i
+  `grDevices::postscriptFonts()` og `grDevices::pdfFonts()` ved package
+  load (ny `.onLoad()` i `R/zzz.R`). Tidligere blev registreringen kun
+  udfoert i test-setup -- production-kald af `bfh_qic()` og
+  `ggplot2::ggsave()` producerede ~40-50 harmlose PostScript-warnings per
+  kald (fra `grid::C_stringMetric` font-metric-lookup). Registreringen er
+  konservativ: eksisterende Mari/Arial-registreringer (fx via
+  systemfonts) overskrives ikke. Den interne
+  `.muffle_expected_warnings()` helper bevares som defense-in-depth for
+  datetime/numeric scale warnings. (#202)
+
+## Interne aendringer
+
+* **Filomdoebning: `R/create_spc_chart.R` -> `R/bfh_qic.R`.** Funktionen
+  blev omdoebt fra `create_spc_chart()` til `bfh_qic()` i v0.2.0, men
+  filnavnet blev aldrig opdateret. Ingen API-paavirkning -- kun navigation
+  forbedret. Live docs (`README.md`, `CLAUDE.md`, `AGENTS.md`,
+  `tests/testthat/README.md`, pending OpenSpec-changes) opdateret til
+  at referere det korrekte sti. (#217, #204)
+
+* **Repository-hygiene:** Fjernet `geomtextpath` fra `Suggests` (ubrugt --
+  kun en stale TODO-kommentar i `R/plot_core.R` refererede pakken). Fjernet
+  tracked dev-scripts (`demo_*.R`, `pdf_export_forsoeg.R`,
+  `test_labels.R`, `test_date_formatting_debug.R`,
+  `09_medicinsikker_*.R`) og `CLAUDE.md.backup`. Strammet `.gitignore`
+  med `*.backup` og generic `BFHcharts_*.tar.gz`. (#215)
+
+* **DRY refactor af font-warning handlers i `utils_bfh_qic_helpers.R`.** To
+  naesten identiske `withCallingHandlers`-blokke (i `render_bfh_plot()`
+  omkring `bfh_spc_plot()` og i `apply_spc_labels_to_export()` omkring
+  `add_spc_labels()`) er konsolideret i en intern helper
+  `.muffle_expected_warnings()`. Helper'en mufler ggplot2 datetime/numeric
+  scale-warnings og BFHtheme PostScript-font-warnings (Mari ikke i
+  font-database) -- begge er expected behavior. Genuine warnings
+  propageres uaendret. Fungerer som defense-in-depth efter PR #242
+  (font-aliases onLoad) der eliminerer font-warnings ved kilden. (#200)
+
+## Sikkerhed
+
+* **Roxygen-dokumentation eksplicit om trust-grænse for `inject_assets` og
+  `template_path`.** Begge parametre i `bfh_export_pdf()` (og
+  `inject_assets` i `bfh_create_export_session()`) accepterer
+  caller-supplied kode/templates der koerer med fuld proces-privilege.
+  De er legitim infrastruktur for proprietaere fonts og custom templates,
+  men en naiv Shiny-integration der videresender user-input vil skabe en
+  privilege-escalation-vektor. Ny `\\section{Security}` markerer eksplicit
+  hvilke parametre der er trusted-code-only og hvordan de skal valideres
+  mod allow-lister hvis exposed. Ingen kode-aendring -- kun docs. (#218)
+
+* **Numerisk verifikation udvidet til 7 yderligere chart-typer (#208).**
+  Ny test-fil `tests/testthat/test-statistical-accuracy-extended.R` med
+  39 tests der verificerer kontrolgrænse-formler for `xbar`, `s`, `mr`,
+  `t`, `g`, `pp` og `up`. Fanger regressioner i BFHcharts' wrapping af
+  `qicharts2` og detekterer breaking changes ved `qicharts2`-opgraderinger.
+
+  - **xbar/s**: Montgomery 6.1-6.2 formler med `A3`/`B4`-konstanter.
+  - **mr**: Montgomery 6.3 (`D4 = 3.267` for n=2).
+  - **t**: Nelson `y^(1/3.6)`-transformation med I-chart paa transformerede
+    skala, back-transformeret til original.
+  - **g**: geometrisk fordeling med median som centerlinje (robust),
+    mean-baseret sigma `sqrt(c_bar·(c_bar+1))`.
+  - **pp/up**: Laney prime-charts (Wheeler/Laney sigma-Z overdispersion-
+    correction). Cross-verificeret mod `qicharts2::qic()` direkte siden
+    prime-formlen er non-triviel at reproducere uden duplikering af
+    `qicharts2` internals.
+
+  Tests bruger udelukkende deterministiske data (ingen RNG) og
+  haandberegnede expected values for robusthed paa tvaers af R-versioner.
+
+* **Ny scheduled CI-workflow til live Quarto/Typst render-tests (#210).**
+  `R-CMD-check.yaml` installerer ikke Quarto (Typst-template hardcoder
+  proprietaer Mari-font, og Typst fejler exit 1 paa unknown-font warnings).
+  Dette efterlod PDF/PNG-eksport-pipelinen uden CI-coverage -- regressioner
+  i template-rendering, font-fallback eller chart-embedding kunne slippe
+  igennem. Ny `.github/workflows/render-tests.yaml` koerer ugentligt
+  (mandage 06:00 UTC) plus on-demand og ved aendringer til
+  export-relaterede filer; matrix over ubuntu-latest + macos-latest;
+  installerer Quarto 1.5.57 + open fallback-fonts (DejaVu, Liberation,
+  Noto, Roboto); aktiverer `BFHCHARTS_TEST_RENDER=true` saa render-gate'd
+  tests koerer live; uploader PDF/Typst-artifacts ved fejl for
+  remote-debugging.
+
+## Dokumentation
+
+* **Fire kliniske vignettes (#219).** Pakken havde tidligere kun reference-
+  dokumentation via roxygen — kliniske brugere manglede end-to-end guidance
+  paa hvilke chart-typer der passer til hvilke spoergsmaal, hvordan
+  interventioner haandteres, og hvad target-kontrakten dikterer. Fire nye
+  Rmd-vignettes i `vignettes/`:
+
+  - **`chart-types`**: Beslutningstrae fra klinisk spoergsmaal til
+    `chart_type`-valg. Per-type use cases, sample-size guidance,
+    anti-patterns. Reference: Provost & Murray (2011).
+  - **`phases-and-freeze`**: Distinguere `part` (separate centerlinjer per
+    fase) vs `freeze` (fastlaast baseline). Klinisk eksempel: pre/post
+    intervention med frosset baseline. Almindelige fejl + migration-pattern.
+  - **`targets-and-percent`**: Dokumenterer percent-target-kontrakten fra
+    v0.9.0 (#203). Migration-eksempel fra silently misvisende
+    `target_value = 2.0` paa percent-akse til korrekt
+    `target_value = 0.02` (proportion) eller `multiply = 100`.
+  - **`safe-exports`**: Sikkerheds-praksis for `inject_assets` og
+    `template_path` (#218). Allow-list-pattern til Shiny-applications,
+    pre-deploy security checklist.
+
+  Infrastruktur: `VignetteBuilder: knitr` tilfoejet til DESCRIPTION,
+  `knitr` + `rmarkdown` i Suggests, build artifacts i `.gitignore`.
+
 # BFHcharts 0.10.4
 
 ## Interne aendringer
