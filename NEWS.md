@@ -52,6 +52,26 @@
   hvilke parametre der er trusted-code-only og hvordan de skal valideres
   mod allow-lister hvis exposed. Ingen kode-aendring -- kun docs. (#218)
 
+* **Numerisk verifikation udvidet til 7 yderligere chart-typer (#208).**
+  Ny test-fil `tests/testthat/test-statistical-accuracy-extended.R` med
+  39 tests der verificerer kontrolgrænse-formler for `xbar`, `s`, `mr`,
+  `t`, `g`, `pp` og `up`. Fanger regressioner i BFHcharts' wrapping af
+  `qicharts2` og detekterer breaking changes ved `qicharts2`-opgraderinger.
+
+  - **xbar/s**: Montgomery 6.1-6.2 formler med `A3`/`B4`-konstanter.
+  - **mr**: Montgomery 6.3 (`D4 = 3.267` for n=2).
+  - **t**: Nelson `y^(1/3.6)`-transformation med I-chart paa transformerede
+    skala, back-transformeret til original.
+  - **g**: geometrisk fordeling med median som centerlinje (robust),
+    mean-baseret sigma `sqrt(c_bar·(c_bar+1))`.
+  - **pp/up**: Laney prime-charts (Wheeler/Laney sigma-Z overdispersion-
+    correction). Cross-verificeret mod `qicharts2::qic()` direkte siden
+    prime-formlen er non-triviel at reproducere uden duplikering af
+    `qicharts2` internals.
+
+  Tests bruger udelukkende deterministiske data (ingen RNG) og
+  haandberegnede expected values for robusthed paa tvaers af R-versioner.
+
 # BFHcharts 0.10.4
 
 ## Interne aendringer
