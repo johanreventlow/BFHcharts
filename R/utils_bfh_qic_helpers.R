@@ -77,36 +77,24 @@ add_anhoej_signal <- function(qic_data) {
 #' @param config liste med konfigurationsparametre
 #' @param return.data logical
 #' @param print.summary logical
-#' @return En af: `bfh_qic_result` S3-objekt (default), `qic_data` data.frame,
-#'   `list(plot, summary)`, eller `list(data, summary)`
+#' @return En af: `bfh_qic_result` S3-objekt (default) eller `qic_data` data.frame
 #' @keywords internal
 build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
                                  return.data, print.summary) {
-  if (print.summary) {
-    warning(
-      "The 'print.summary' parameter is deprecated as of BFHcharts 0.3.0.\n",
-      "  The summary is now always included in the result object.\n",
-      "  Access it via result$summary instead of using print.summary = TRUE.\n",
-      "  This parameter will be removed in a future version.",
+  # print.summary = TRUE er fjernet i v0.11.0. Brug return.data = TRUE og
+  # tilgaa result$summary direkte.
+  if (isTRUE(print.summary)) {
+    stop(
+      "print.summary = TRUE has been removed in v0.11.0. ",
+      "Use return.data = TRUE and access result$qic_summary directly, ",
+      "or use the default bfh_qic_result object and access result$summary. ",
+      "See NEWS for migration guide.",
       call. = FALSE
     )
   }
 
-  if (return.data && print.summary) {
-    return(list(data = qic_data, summary = summary_result))
-  } else if (return.data) {
+  if (return.data) {
     return(qic_data)
-  } else if (print.summary) {
-    warning(
-      "Returning legacy list(plot, summary) format.\n",
-      "  Consider using the new bfh_qic_result object instead:\n",
-      "  result <- bfh_qic(...)\n",
-      "  result$plot     # Access plot\n",
-      "  result$summary  # Access summary\n",
-      "  This legacy format will be removed in a future version.",
-      call. = FALSE
-    )
-    return(list(plot = plot, summary = summary_result))
   } else {
     return(
       new_bfh_qic_result(
@@ -236,7 +224,7 @@ validate_bfh_qic_inputs <- function(data,
     allow_null = TRUE, context = sprintf("1-%d", nrow(data))
   )
   validate_numeric_parameter(base_size, "base_size",
-    min = 1, max = 100,
+    min = 1, max = FONT_SCALING_CONFIG$max_size,
     allow_null = FALSE, len = 1
   )
   validate_numeric_parameter(width, "width",
@@ -613,6 +601,10 @@ build_bfh_qic_config <- function(chart_type,
     PDF_LABEL_SIZE
   }
 
+  # label_config$centerline_value, $has_frys_column og $has_skift_column er
+  # fjernet som statiske kopier for at undgaa desync ved mutation af
+  # top-niveau cl/freeze/part. Laes dem fra config$cl, config$freeze,
+  # config$part i stedet (se export_pdf.R).
   list(
     chart_type = chart_type,
     chart_title = chart_title,
@@ -627,9 +619,6 @@ build_bfh_qic_config <- function(chart_type,
     multiply = multiply,
     agg.fun = agg.fun,
     label_config = list(
-      centerline_value = cl,
-      has_frys_column = !is.null(freeze),
-      has_skift_column = !is.null(part),
       original_viewport_width = viewport_width_inches,
       original_viewport_height = viewport_height_inches,
       original_label_size = label_size

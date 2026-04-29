@@ -27,8 +27,7 @@ build_bfh_qic_return(
 \item{print.summary}{logical}
 }
 \value{
-En af: \code{bfh_qic_result} S3-objekt (default), \code{qic_data} data.frame,
-\code{list(plot, summary)}, eller \code{list(data, summary)}
+En af: \code{bfh_qic_result} S3-objekt (default) eller \code{qic_data} data.frame
 }
 \description{
 Haandterer alle fire returkombinationer af \code{return.data} og \code{print.summary},

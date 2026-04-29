@@ -133,45 +133,8 @@ test_that("build_bfh_qic_return returnerer qic_data data.frame ved return.data =
   expect_true("cl" %in% names(result))
 })
 
-test_that("build_bfh_qic_return returnerer list(plot, summary) ved print.summary = TRUE", {
-  result <- suppressWarnings(
-    build_bfh_qic_return(
-      qic_data = make_mock_qic_data(),
-      plot = make_mock_plot(),
-      summary_result = make_mock_summary(),
-      config = make_mock_config(),
-      return.data = FALSE,
-      print.summary = TRUE
-    )
-  )
-  expect_type(result, "list")
-  expect_named(result, c("plot", "summary"))
-  expect_s3_class(result$plot, "ggplot")
-  expect_s3_class(result$summary, "data.frame")
-})
-
-test_that("build_bfh_qic_return returnerer list(data, summary) ved begge TRUE", {
-  result <- suppressWarnings(
-    build_bfh_qic_return(
-      qic_data = make_mock_qic_data(),
-      plot = make_mock_plot(),
-      summary_result = make_mock_summary(),
-      config = make_mock_config(),
-      return.data = TRUE,
-      print.summary = TRUE
-    )
-  )
-  expect_type(result, "list")
-  expect_named(result, c("data", "summary"))
-  expect_s3_class(result$data, "data.frame")
-  expect_s3_class(result$summary, "data.frame")
-})
-
-
-test_that("build_bfh_qic_return udsender legacy-format-warning kun ved print.summary = TRUE og return.data = FALSE", {
-  # Forventer to warnings: deprecation + legacy-format
-  w <- character(0)
-  withCallingHandlers(
+test_that("build_bfh_qic_return fejler med stop() ved print.summary = TRUE (fjernet i v0.11.0)", {
+  expect_error(
     build_bfh_qic_return(
       qic_data = make_mock_qic_data(),
       plot = make_mock_plot(),
@@ -180,20 +143,12 @@ test_that("build_bfh_qic_return udsender legacy-format-warning kun ved print.sum
       return.data = FALSE,
       print.summary = TRUE
     ),
-    warning = function(e) {
-      w <<- c(w, conditionMessage(e))
-      invokeRestart("muffleWarning")
-    }
+    "print.summary = TRUE has been removed in v0.11.0"
   )
-  expect_length(w, 2)
-  expect_true(any(grepl("deprecated", w)))
-  expect_true(any(grepl("legacy", w)))
 })
 
-test_that("build_bfh_qic_return udsender kun deprecation-warning ved return.data = TRUE og print.summary = TRUE", {
-  # return.data && print.summary → kun én warning (deprecation), ingen legacy-format
-  w <- character(0)
-  withCallingHandlers(
+test_that("build_bfh_qic_return fejler med stop() ved print.summary = TRUE selv med return.data = TRUE", {
+  expect_error(
     build_bfh_qic_return(
       qic_data = make_mock_qic_data(),
       plot = make_mock_plot(),
@@ -202,13 +157,8 @@ test_that("build_bfh_qic_return udsender kun deprecation-warning ved return.data
       return.data = TRUE,
       print.summary = TRUE
     ),
-    warning = function(e) {
-      w <<- c(w, conditionMessage(e))
-      invokeRestart("muffleWarning")
-    }
+    "print.summary = TRUE has been removed in v0.11.0"
   )
-  expect_length(w, 1)
-  expect_true(grepl("deprecated", w[1]))
 })
 
 test_that("build_bfh_qic_return udsender ingen warnings ved default", {
@@ -432,12 +382,12 @@ test_that("compute_viewport_base_size returnerer NULL dimensioner naar width/hei
 
 test_that("compute_viewport_base_size konverterer cm til inches korrekt", {
   # 25 cm auto-detekteres som cm (10 <= 25 <= 100)
-  result <- compute_viewport_base_size(
+  result <- suppressMessages(compute_viewport_base_size(
     width = 25, height = 15,
     units = NULL, dpi = 96,
     base_size = 14, base_size_supplied = TRUE,
     xlab = "x", ylab = "y"
-  )
+  ))
   expect_false(is.null(result$width_inches))
   # 25 cm = 25/2.54 inches ≈ 9.84
   expect_equal(result$width_inches, 25 / 2.54, tolerance = 0.01)
@@ -533,23 +483,29 @@ test_that("build_bfh_qic_config returnerer liste med korrekte topniveaufelter", 
   expect_true("label_config" %in% names(result))
 })
 
-test_that("build_bfh_qic_config label_config har korrekte underfelter", {
+test_that("build_bfh_qic_config label_config har korrekte underfelter (viewport-relaterede)", {
+  # centerline_value, has_frys_column og has_skift_column er fjernet som statiske
+  # kopier (single-source-of-truth). Laes fra config$cl, config$freeze, config$part.
   result <- call_config()
   lc <- result$label_config
-  expect_true("centerline_value" %in% names(lc))
-  expect_true("has_frys_column" %in% names(lc))
-  expect_true("has_skift_column" %in% names(lc))
+  expect_false("centerline_value" %in% names(lc))
+  expect_false("has_frys_column" %in% names(lc))
+  expect_false("has_skift_column" %in% names(lc))
   expect_true("original_label_size" %in% names(lc))
+  expect_true("original_viewport_width" %in% names(lc))
+  expect_true("original_viewport_height" %in% names(lc))
 })
 
-test_that("build_bfh_qic_config has_frys_column er TRUE naar freeze angivet", {
+test_that("build_bfh_qic_config freeze tilgaengeligt som top-niveau config$freeze", {
   result <- call_config(freeze = 6L)
-  expect_true(result$label_config$has_frys_column)
+  expect_equal(result$freeze, 6L)
+  expect_true(!is.null(result$freeze))
 })
 
-test_that("build_bfh_qic_config has_skift_column er TRUE naar part angivet", {
+test_that("build_bfh_qic_config part tilgaengeligt som top-niveau config$part", {
   result <- call_config(part = 5L)
-  expect_true(result$label_config$has_skift_column)
+  expect_equal(result$part, 5L)
+  expect_true(!is.null(result$part))
 })
 
 test_that("build_bfh_qic_config bruger PDF_LABEL_SIZE naar viewport er NULL", {
