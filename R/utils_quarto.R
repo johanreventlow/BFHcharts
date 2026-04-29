@@ -76,25 +76,33 @@ find_quarto <- function() {
     return(get("quarto_path", envir = .quarto_cache))
   }
 
-  # 1. Check if quarto is in PATH
+  # 1. Check option (prioritet: eksplicit override slaar PATH-fund)
+  opt_path <- getOption("bfhcharts.quarto_path")
+  if (!is.null(opt_path)) {
+    validated <- .validate_binary_path(opt_path, source = "options(bfhcharts.quarto_path)")
+    if (!is.null(validated)) {
+      assign("quarto_path", validated, envir = .quarto_cache)
+      return(validated)
+    }
+    # Validering fejlede — advarsel allerede udsendt, fortsaet til naeste kilde
+  }
+
+  # 2. Check environment variable
+  env_path <- Sys.getenv("QUARTO_PATH", "")
+  if (nchar(env_path) > 0) {
+    validated <- .validate_binary_path(env_path, source = "QUARTO_PATH env var")
+    if (!is.null(validated)) {
+      assign("quarto_path", validated, envir = .quarto_cache)
+      return(validated)
+    }
+    # Validering fejlede — advarsel allerede udsendt, fortsaet til naeste kilde
+  }
+
+  # 3. Check if quarto is in PATH
   quarto_in_path <- Sys.which("quarto")
   if (nchar(quarto_in_path) > 0 && file.exists(quarto_in_path)) {
     assign("quarto_path", as.character(quarto_in_path), envir = .quarto_cache)
     return(as.character(quarto_in_path))
-  }
-
-  # 2. Check option (bruger kan saette options(bfhcharts.quarto_path = "..."))
-  opt_path <- getOption("bfhcharts.quarto_path")
-  if (!is.null(opt_path) && file.exists(opt_path)) {
-    assign("quarto_path", opt_path, envir = .quarto_cache)
-    return(opt_path)
-  }
-
-  # 3. Check environment variable
-  env_path <- Sys.getenv("QUARTO_PATH", "")
-  if (nchar(env_path) > 0 && file.exists(env_path)) {
-    assign("quarto_path", env_path, envir = .quarto_cache)
-    return(env_path)
   }
 
   # 4. Search known locations (Windows: RStudio bundled, standalone installs)
@@ -142,6 +150,81 @@ find_quarto <- function() {
 
   # Fallback: return "quarto" and let system2 fail with clear error
   "quarto"
+}
+
+
+# Validerer en bruger-leveret binary-sti og returnerer den normaliserede sti
+# ved success, eller NULL (med warning) ved fejl.
+# Bruges af find_quarto() til at gate option/env-overrides.
+.validate_binary_path <- function(path, source) {
+  # Basistjek: skal vaere ikke-tom character
+  if (!is.character(path) || length(path) != 1L || nchar(path) == 0L) {
+    warning(
+      "Ignoring invalid Quarto binary override from ", source,
+      ": must be a non-empty character string",
+      call. = FALSE
+    )
+    return(NULL)
+  }
+
+  # Metakarakter-tjek (binary-variant tillader parens/braces fra Windows-stier)
+  has_metachars <- tryCatch(
+    {
+      .check_metachars_binary(path)
+      FALSE
+    },
+    error = function(e) TRUE
+  )
+  if (has_metachars) {
+    warning(
+      "Ignoring Quarto binary override from ", source,
+      ": path contains disallowed shell metacharacters: ", path,
+      call. = FALSE
+    )
+    return(NULL)
+  }
+
+  # Path-traversal tjek
+  has_traversal <- tryCatch(
+    {
+      .check_traversal(path)
+      FALSE
+    },
+    error = function(e) TRUE
+  )
+  if (has_traversal) {
+    warning(
+      "Ignoring Quarto binary override from ", source,
+      ": path traversal detected: ", path,
+      call. = FALSE
+    )
+    return(NULL)
+  }
+
+  # Filen skal eksistere
+  if (!file.exists(path)) {
+    warning(
+      "Ignoring Quarto binary override from ", source,
+      ": file does not exist: ", path,
+      call. = FALSE
+    )
+    return(NULL)
+  }
+
+  # Eksekverbar-bit tjek (kun Unix/macOS; system2() med vector-args er ikke shell,
+  # men vi vil afvise filer der tydeligvis ikke er eksekverbare)
+  if (.Platform$OS.type != "windows") {
+    if (file.access(path, mode = 1L) != 0L) {
+      warning(
+        "Ignoring Quarto binary override from ", source,
+        ": file is not executable: ", path,
+        call. = FALSE
+      )
+      return(NULL)
+    }
+  }
+
+  path
 }
 
 

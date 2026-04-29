@@ -167,6 +167,14 @@ bfh_create_typst_document <- function(chart_image,
   invisible(output)
 }
 
+# Afkorter compile-output til max `max` tegn for at undgaa laekage af
+# filsystem-stier i fejlbeskeder. Bruges i begge fejl-branches i
+# bfh_compile_typst() saa truncation er konsistent.
+.truncate_compile_output <- function(output, max = 500L) {
+  substr(paste(output, collapse = "\n"), 1L, max)
+}
+
+
 #' Compile Typst Document to PDF
 #'
 #' Compiles a .typ file to PDF using Quarto's bundled Typst compiler.
@@ -224,9 +232,12 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   }
 
   # Build compilation args
-  compile_args <- c("typst", "compile", shQuote(typst_file), shQuote(output))
+  # shQuote() maa IKKE bruges her: system2() med character vector sender
+  # argv-tokens direkte uden shell — shQuote tilfojer literale anforselstegn
+  # og bryder stier med mellemrum paa Unix/macOS.
+  compile_args <- c("typst", "compile", typst_file, output)
   if (!is.null(font_path)) {
-    compile_args <- c(compile_args, "--font-path", shQuote(font_path))
+    compile_args <- c(compile_args, "--font-path", font_path)
   }
   if (isTRUE(ignore_system_fonts)) {
     compile_args <- c(compile_args, "--ignore-system-fonts")
@@ -253,8 +264,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   # Check exit status
   exit_status <- attr(result, "status")
   if (!is.null(exit_status) && exit_status != 0) {
-    # Begraens output for at undgaa laekage af filsystem-stier i fejlbeskeder
-    safe_output <- substr(paste(result, collapse = "\n"), 1, 500)
+    safe_output <- .truncate_compile_output(result)
     stop(
       "Quarto compilation failed with exit code ", exit_status, "\n",
       "  Output: ", safe_output,
@@ -264,9 +274,10 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
 
   # Check if PDF was created (quarto typst compile outputs directly to target)
   if (!file.exists(output)) {
+    safe_output <- .truncate_compile_output(result)
     stop(
       "PDF compilation failed.\n",
-      "  Quarto output: ", paste(result, collapse = "\n"),
+      "  Quarto output: ", safe_output,
       call. = FALSE
     )
   }
@@ -415,6 +426,14 @@ escape_typst_string <- function(s) {
   if (is.null(s) || length(s) == 0) {
     return("")
   }
+
+  # Fjern/erstat kontroltegn foer andre escapes:
+  # \n, \r, \t -> mellemrum (fx afdeling copy-pastet fra Windows med CRLF)
+  s <- gsub("[\n\r\t]", " ", s)
+  # NUL-byte -> fjern (udefineret adfaerd i Typst)
+  # R character-strenge kan normalt ikke indeholde NUL, men defensivt guard:
+  # perl-regex \\x00 matcher NUL uden at skulle indlejre literal NUL i kildefil.
+  s <- gsub("\\x00", "", s, perl = TRUE)
 
   # Escape backslashes and quotes
   s <- gsub("\\\\", "\\\\\\\\", s)
