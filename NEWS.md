@@ -1,3 +1,15 @@
+# BFHcharts 0.10.6
+
+## Sikkerhed
+
+* **AI-egress audit signal.** `bfh_generate_analysis(use_ai = TRUE)` emitter
+  nu en `message()` med tag `[BFHcharts/AI]` umiddelbart inden kald til
+  `BFHllm::bfhllm_spc_suggestion()`. Beskeden navngiver de felter der
+  transmitteres og `use_rag`-værdien, så R-level logs kan bekræfte om og
+  hvornår AI-stien blev taget — et compliance/governance-krav i hospital
+  deployments. Supprimér med
+  `options(BFHcharts.suppress_ai_audit_message = TRUE)`. (#add-ai-egress-audit-signal)
+
 # BFHcharts 0.10.5
 
 ## Bug fixes

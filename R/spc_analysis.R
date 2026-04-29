@@ -277,6 +277,26 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #' When `use_ai = FALSE` (default):
 #' - Returns Danish standard texts based on Anhoej SPC rules
 #'
+#' @section AI audit signal:
+#' When `use_ai = TRUE` and BFHllm is installed, a `message()` is emitted
+#' immediately before calling `BFHllm::bfhllm_spc_suggestion()`. The message
+#' uses the stable tag `[BFHcharts/AI]` for log-grep-ability and lists:
+#' - the names of the `spc_result` and `llm_context` fields transmitted
+#' - the `use_rag` value
+#'
+#' Example message:
+#' ```
+#' [BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() — fields: metadata, qic_data; data_definition, chart_title, ...; use_rag = TRUE
+#' ```
+#'
+#' **Opt-out:** Set `options(BFHcharts.suppress_ai_audit_message = TRUE)` to
+#' suppress the message (e.g. in interactive sessions or when the calling
+#' application maintains its own audit trail).
+#'
+#' **Rationale:** Hospital deployments need an audit trail when patient-context
+#' SPC data is sent to an external LLM. The message provides minimal-cost
+#' observability (defense-in-depth) without blocking the feature.
+#'
 #' @examples
 #' \dontrun{
 #' result <- bfh_qic(data, x = date, y = value, chart_type = "i")
@@ -376,6 +396,17 @@ bfh_generate_analysis <- function(x,
       # Fagligt korrekt baseline-analyse baseret paa Anhoej-regler
       baseline_analysis = baseline_analysis
     )
+
+    # Audit-signal: emit message naar AI-egress sker, medmindre opt-out
+    if (!isTRUE(getOption("BFHcharts.suppress_ai_audit_message"))) {
+      spc_fields <- paste(names(spc_result), collapse = ", ")
+      ctx_fields <- paste(names(llm_context), collapse = ", ")
+      message(
+        "[BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() ",
+        "— fields: ", spc_fields, "; ", ctx_fields,
+        "; use_rag = TRUE"
+      )
+    }
 
     # Kald BFHllm
     analysis <- tryCatch(
