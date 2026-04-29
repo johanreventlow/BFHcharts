@@ -8,7 +8,15 @@
   allerede lå i kronologisk rækkefølge — omvendt eller scrambled data gav
   forkert `outliers_recent_count`. Rækkefølge er nu ubetydelig; sorted,
   reversed og tilfældigt permuteret input giver identiske resultater.
-  (harden-outliers-recent-count / row-order fix)
+  (#fix-outliers-recent-count-row-order)
+
+* **Fail-early validering i `bfh_generate_details()` ved ugyldige x-værdier.**
+  `min()`/`max()` blev kaldt på `qic_data$x` uden forudgående tjek for
+  gyldige værdier, hvilket gav `Inf`/`-Inf` i periodefeltet ved tomme
+  eller alle-NA datasæt (fx cleanup-scenarier i batch-eksport). Funktionen
+  stopper nu med en informativ `bfhcharts_config_error` hvis x-kolonnen er
+  tom, alle-NA eller (for numerisk x) alle-Inf — inden `min`/`max` kaldes.
+  Kald med gyldige data påvirkes ikke. (#validate-export-details-edge-cases)
 
 # BFHcharts 0.10.5
 
