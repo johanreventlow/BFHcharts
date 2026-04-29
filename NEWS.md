@@ -56,6 +56,22 @@
   (fx `~/My Files/`). Stier med mellemrum kompilerer nu korrekt.
   (#harden-export-pipeline-security)
 
+* **Indsnævr warning-muffler scope i `.muffle_expected_warnings()`.** Det
+  ubundne `"numeric"`-substring-mønster mufler nu ikke længere advarsler som
+  `"NAs introduced by coercion to numeric"` (malformerede nævnere) eller
+  `"non-numeric argument to binary operator"` (typefejl), der er vigtige
+  datakvalitetssignaler i klinisk SPC-brug. Erstattet med eksplicitte,
+  forankrede mønstre der kun dækker kendte ufarlige sources:
+  `scale_[xy]_(continuous|date|datetime).*` (ggplot2/scales),
+  `font family.*not found in PostScript font database` (BFHtheme/grDevices),
+  og `Removed [0-9]+ rows containing` (ggplot2 geom-lag). (#tighten-warning-muffling-scope)
+
+* **Konsolidér dobbelt deprecation-advarsel i `build_bfh_qic_return()`.** Kald
+  med `print.summary = TRUE, return.data = FALSE` udsendte tidligere to
+  advarsler (én generel deprecation + én legacy-format-advarsel). Disse er
+  samlet til én konsolideret advarsel der indeholder både deprecation-kontekst
+  og migrationsinstruktion. (#tighten-warning-muffling-scope)
+
 # BFHcharts 0.10.5
 
 ## Bug fixes

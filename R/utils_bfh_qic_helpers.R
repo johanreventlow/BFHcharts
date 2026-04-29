@@ -4,19 +4,34 @@
 # Disse helpers isolerer Anhoej signal-postprocessering og return-routing
 # fra bfh_qic()-kroppen. Se openspec/changes/refactor-bfh_qic-orchestrator.
 
-# Mufle expected ggplot2 + BFHtheme warnings under plot generation og label
-# placement. ggplot scale_*_date emitter "removed N rows" / "datetime" /
-# "numeric" warnings ved tomme akser, og BFHthemes proprietaere font (Mari)
-# udloeser "font family not found in PostScript font database" pr. tekstelement
-# naar font ikke er installeret. Begge er expected behavior, ikke fejl.
-# Genuine warnings propageres uaendret.
+# Mufle kendte ufarlige ggplot2/scales/BFHtheme warnings under plot generation
+# og label placement. Kun eksplicitte, forankrede mønstre mufles — ingen
+# ubundne substring-matches som "numeric" eller "datetime", der ville skjule
+# datakvalitetsproblemer for kliniske brugere.
+#
+# Mønster-kilder:
+#   scale_[xy]_(continuous|date|datetime).* — ggplot2/scales: scale-warnings
+#     ved fjernede rækker / tomme akser (fx scale_x_date: Removed 3 rows)
+#   font family.*not found in PostScript font database — BFHtheme: Mari-font
+#     ikke installeret; registreres via .onLoad(), men grDevices-lookup kan
+#     stadig udløse dette pr. tekstelement
+#   Removed [0-9]+ rows containing — ggplot2 geom_*: manglende værdier
+#     fjernet ved rendering (fx geom_point, geom_line)
+#
+# Genuine warnings (fx "NAs introduced by coercion to numeric",
+# "non-numeric argument to binary operator") propageres uændret til caller.
+#' @keywords internal
 .muffle_expected_warnings <- function(expr) {
   withCallingHandlers(
     expr,
     warning = function(w) {
       msg <- conditionMessage(w)
       if (grepl(
-        "numeric|datetime|scale_[xy]_date|PostScript font database",
+        paste0(
+          "scale_[xy]_(continuous|date|datetime).*",
+          "|font family.*not found in PostScript font database",
+          "|Removed [0-9]+ rows containing"
+        ),
         msg,
         ignore.case = TRUE
       )) {
@@ -82,7 +97,8 @@ add_anhoej_signal <- function(qic_data) {
 #' @keywords internal
 build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
                                  return.data, print.summary) {
-  if (print.summary) {
+  if (return.data && print.summary) {
+    # Enkelt deprecation-advarsel: print.summary er deprecated
     warning(
       "The 'print.summary' parameter is deprecated as of BFHcharts 0.3.0.\n",
       "  The summary is now always included in the result object.\n",
@@ -90,20 +106,19 @@ build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
       "  This parameter will be removed in a future version.",
       call. = FALSE
     )
-  }
-
-  if (return.data && print.summary) {
     return(list(data = qic_data, summary = summary_result))
   } else if (return.data) {
     return(qic_data)
   } else if (print.summary) {
+    # Enkelt konsolideret advarsel: både deprecation-kontekst og legacy-format-hint
     warning(
-      "Returning legacy list(plot, summary) format.\n",
+      "The 'print.summary' parameter is deprecated as of BFHcharts 0.3.0.\n",
+      "  Returning legacy list(plot, summary) format.\n",
       "  Consider using the new bfh_qic_result object instead:\n",
       "  result <- bfh_qic(...)\n",
       "  result$plot     # Access plot\n",
       "  result$summary  # Access summary\n",
-      "  This legacy format will be removed in a future version.",
+      "  This parameter will be removed in a future version.",
       call. = FALSE
     )
     return(list(plot = plot, summary = summary_result))
