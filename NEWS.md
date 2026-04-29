@@ -1,3 +1,31 @@
+# BFHcharts 0.11.0
+
+## API
+
+* **Fjern 16 orphan Rd-sider for interne funktioner.** Interne funktioner
+  i `utils_typst.R`, `utils_quarto.R`, `utils_bfh_qic_helpers.R`,
+  `utils_path_policy.R`, `cache_reset.R` og `config_objects.R` manglede
+  `@noRd`-tag. `devtools::document()` genererede Rd-sider for funktioner
+  der aldrig var i NAMESPACE. Rettet ved at tilfoeje `@noRd` til alle
+  relevante interne blocks.
+
+* **Dokumenter `$qic_data` kolonnekontrakt.** `new_bfh_qic_result()`
+  har nu en `@section qic_data columns:` der lister de kanoniske kolonner
+  fra qicharts2 (x, y, n, cl, ucl, lcl, sigma.signal, runs.signal,
+  anhoej.signal m.fl.) med semantik og version-bound (qicharts2 >= 0.7.0).
+
+* **Tilfoej stabilitetserklaring til `new_bfh_qic_result()`.** Ny
+  `@section Stability:` dokumenterer at feltnavne (plot, summary,
+  qic_data, config) er stabile siden v0.10.0 og ikke fjernes uden
+  deprecation-cyklus.
+
+* **Fjern `@keywords internal` fra `bfh_qic_result` klasse-topic.**
+  Klassen er offentlig (returneres af enhver `bfh_qic()`-kald).
+
+* **README: fjern "Low-Level API for Fine Control" afsnit.** `spc_plot_config()`,
+  `viewport_dims()` og `bfh_spc_plot()` er interne og maa ikke
+  dokumenteres som public API. Afsnittet fjernet. Features-bullet opdateret.
+
 # BFHcharts 0.10.5
 
 ## Bug fixes

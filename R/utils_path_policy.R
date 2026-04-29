@@ -25,6 +25,7 @@ SHELL_METACHARS_EXPORT <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">
 #' @return `path` invisibly (normalized when `normalize = TRUE`).
 #'
 #' @keywords internal
+#' @noRd
 validate_export_path <- function(path,
                                  extension = NULL,
                                  allow_root = NULL,

@@ -24,6 +24,7 @@ NULL
 #' @return Logical indicating whether Quarto is available and meets version requirement
 #'
 #' @keywords internal
+#' @noRd
 quarto_available <- function(min_version = "1.4.0", use_cache = TRUE,
                              .system2 = system2) {
   # Check cache first
@@ -70,6 +71,7 @@ quarto_available <- function(min_version = "1.4.0", use_cache = TRUE,
 #' @return Character path to quarto executable, or "quarto" if not found
 #'   (will fail gracefully at system2 call)
 #' @keywords internal
+#' @noRd
 find_quarto <- function() {
   # Return cached path if available
   if (exists("quarto_path", envir = .quarto_cache)) {
@@ -152,6 +154,7 @@ find_quarto <- function() {
 #'
 #' @return Character path to quarto executable
 #' @keywords internal
+#' @noRd
 get_quarto_path <- function() {
   if (exists("quarto_path", envir = .quarto_cache)) {
     return(get("quarto_path", envir = .quarto_cache))
@@ -165,6 +168,7 @@ get_quarto_path <- function() {
 #' @param min_version Minimum required version (e.g., "1.4.0")
 #' @return Logical indicating whether version meets requirement
 #' @keywords internal
+#' @noRd
 check_quarto_version <- function(version_string, min_version) {
   # Extract version numbers using regex
   # Matches patterns like "1.4.557", "1.4", "2.0.0" anywhere in the string
