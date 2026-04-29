@@ -360,6 +360,8 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
   # Re-add labels with TARGET dimensions for positioning
   # and fixed PDF_LABEL_SIZE for font sizing
   # Se .muffle_expected_warnings() helper for hvilke warnings der mufles.
+  # centerline_value, has_frys_column, has_skift_column laeses fra top-niveau
+  # config-felter (enkelt kilde til sandhed — se build_bfh_qic_config()).
   plot_with_labels <- .muffle_expected_warnings(
     add_spc_labels(
       plot = plot_stripped,
@@ -369,9 +371,9 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
       viewport_width = target_width_inches,
       viewport_height = target_height_inches,
       target_text = config$target_text,
-      centerline_value = label_config$centerline_value,
-      has_frys_column = label_config$has_frys_column,
-      has_skift_column = label_config$has_skift_column,
+      centerline_value = config$cl,
+      has_frys_column = !is.null(config$freeze),
+      has_skift_column = !is.null(config$part),
       verbose = FALSE,
       language = config$language %||% "da"
     )

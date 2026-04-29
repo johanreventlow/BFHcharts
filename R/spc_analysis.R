@@ -269,6 +269,10 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #' exposure in environments where BFHllm uses network calls, RAG, or
 #' third-party services.
 #'
+#' **Installing BFHllm:** BFHllm is not on CRAN and must be installed
+#' manually from GitHub before using `use_ai = TRUE`:
+#' \preformatted{remotes::install_github("johanreventlow/BFHllm")}
+#'
 #' When `use_ai = TRUE` and BFHllm is installed, the function:
 #' 1. Builds context from the `bfh_qic_result` and metadata
 #' 2. Calls `BFHllm::bfhllm_spc_suggestion()` for AI-generated analysis

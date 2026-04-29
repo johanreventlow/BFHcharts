@@ -66,22 +66,29 @@ test_that("bfh_qic validates base_size is reasonable", {
     )
   })
 
-  # Excessive base_size (potential DoS)
+  # Excessive base_size (over max_size = 48, aligned with FONT_SCALING_CONFIG)
   expect_error(
-    bfh_qic(data, x = month, y = value, base_size = 999, chart_type = "run"),
-    "base_size must be between 1 and 100"
+    bfh_qic(data, x = month, y = value, base_size = 49, chart_type = "run"),
+    "base_size must be between 1 and 48"
   )
+
+  # base_size == max_size (48) er gyldig
+  expect_no_error({
+    suppressWarnings(
+      bfh_qic(data, x = month, y = value, base_size = 48, chart_type = "run")
+    )
+  })
 
   # Zero base_size
   expect_error(
     bfh_qic(data, x = month, y = value, base_size = 0, chart_type = "run"),
-    "base_size must be between 1 and 100"
+    "base_size must be between 1 and 48"
   )
 
   # Negative base_size
   expect_error(
     bfh_qic(data, x = month, y = value, base_size = -5, chart_type = "run"),
-    "base_size must be between 1 and 100"
+    "base_size must be between 1 and 48"
   )
 })
 
@@ -90,9 +97,9 @@ test_that("bfh_qic validates width and height are reasonable", {
 
   # Valid dimensions
   expect_no_error({
-    suppressWarnings(
+    suppressMessages(suppressWarnings(
       bfh_qic(data, x = month, y = value, width = 10, height = 6, chart_type = "run")
-    )
+    ))
   })
 
   # Excessive width (potential memory exhaustion)

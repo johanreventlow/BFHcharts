@@ -1,5 +1,13 @@
 # BFHcharts 0.11.0
 
+## Breaking changes
+
+* **`print.summary = TRUE` er fjernet.** Parameteren var depreceret siden
+  v0.3.0 (7 minor versioner). Kald med `print.summary = TRUE` fejler nu
+  med en klar fejlbesked. Migration: brug `return.data = TRUE` og tilgå
+  `result$qic_summary`, eller brug det nye default `bfh_qic_result`-objekt
+  og tilgå `result$summary` direkte. (#modernize-deprecations-and-deps)
+
 ## Forbedringer
 
 * **Advarsel ved for kort baseline.** `bfh_qic()` udsender nu en advarsel
@@ -187,6 +195,37 @@
   `viewport_dims()` og `bfh_spc_plot()` er interne og må ikke
   dokumenteres som public API. Afsnittet fjernet. Features-bullet opdateret.
   (#align-public-api-documentation)
+
+* **`base_size`-loftet er justeret til 48** (fra 100) for at matche
+  `FONT_SCALING_CONFIG$max_size`. Eksplicitte `base_size`-værdier over 48
+  gav visuelt ødelagte layouts; loftet er nu konsistent med auto-skaleringslogikken.
+  (#modernize-deprecations-and-deps)
+
+* **Unit-auto-detektion udsender nu besked.** Når `width`/`height` angives
+  uden eksplicit `units`-parameter, emitterer `bfh_qic()` og `bfh_export_pdf()`
+  en `message()` der navngiver den detekterede enhed og opfordrer til eksplicit
+  `units`-angivelse. Supprimér med
+  `options(BFHcharts.suppress_unit_auto_detect_message = TRUE)`.
+  (#modernize-deprecations-and-deps)
+
+* **`bfh_generate_analysis()` dokumenterer nu manuel BFHllm-installation.**
+  `BFHllm` er fjernet fra `Remotes:` (den er kun i `Suggests`); Roxygen
+  `@details` indeholder nu `remotes::install_github("johanreventlow/BFHllm")`-
+  instruktionen til brugere der ønsker AI-analyse (`use_ai = TRUE`).
+  (#modernize-deprecations-and-deps)
+
+## Interne ændringer (modernization)
+
+* **`label_config$centerline_value`, `$has_frys_column`, `$has_skift_column`
+  er fjernet som statiske kopier** i `build_bfh_qic_config()`. Disse felter
+  var duplikater af `config$cl`, `config$freeze` og `config$part` og kunne
+  desynkronisere ved mutation. `export_pdf.R` læser nu direkte fra top-niveau
+  config-felterne. (#modernize-deprecations-and-deps)
+
+* **`BFHllm` fjernet fra `Remotes:`.** BFHllm er kun i `Suggests` og har
+  ikke brug for automatisk GitHub-installation; `Remotes:`-indgange for
+  `Suggests`-pakker advares imod af `R CMD check --as-cran`.
+  (#modernize-deprecations-and-deps)
 
 # BFHcharts 0.10.5
 

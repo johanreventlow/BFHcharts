@@ -66,6 +66,10 @@ informative error is raised if it is not. This prevents accidental data
 exposure in environments where BFHllm uses network calls, RAG, or
 third-party services.
 
+\strong{Installing BFHllm:} BFHllm is not on CRAN and must be installed
+manually from GitHub before using \code{use_ai = TRUE}:
+\preformatted{remotes::install_github("johanreventlow/BFHllm")}
+
 When \code{use_ai = TRUE} and BFHllm is installed, the function:
 \enumerate{
 \item Builds context from the \code{bfh_qic_result} and metadata

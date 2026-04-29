@@ -77,23 +77,23 @@ test_that("convert_to_inches() validates units parameter", {
 # ============================================================================
 
 test_that("smart_convert_to_inches() detects pixels (> 100)", {
-  result <- smart_convert_to_inches(800, 600, dpi = 96)
+  result <- suppressMessages(smart_convert_to_inches(800, 600, dpi = 96))
 
   expect_equal(result$detected_unit, "px")
-  expect_equal(result$width_inches, 800/96, tolerance = 0.01)
-  expect_equal(result$height_inches, 600/96, tolerance = 0.01)
+  expect_equal(result$width_inches, 800 / 96, tolerance = 0.01)
+  expect_equal(result$height_inches, 600 / 96, tolerance = 0.01)
 })
 
 test_that("smart_convert_to_inches() detects centimeters (10-100)", {
-  result <- smart_convert_to_inches(25, 15)
+  result <- suppressMessages(smart_convert_to_inches(25, 15))
 
   expect_equal(result$detected_unit, "cm")
-  expect_equal(result$width_inches, 25/2.54, tolerance = 0.01)
-  expect_equal(result$height_inches, 15/2.54, tolerance = 0.01)
+  expect_equal(result$width_inches, 25 / 2.54, tolerance = 0.01)
+  expect_equal(result$height_inches, 15 / 2.54, tolerance = 0.01)
 })
 
 test_that("smart_convert_to_inches() detects inches (< 10)", {
-  result <- smart_convert_to_inches(10, 6)
+  result <- suppressMessages(smart_convert_to_inches(10, 6))
 
   expect_equal(result$detected_unit, "in")
   expect_equal(result$width_inches, 10)
@@ -102,16 +102,49 @@ test_that("smart_convert_to_inches() detects inches (< 10)", {
 
 test_that("smart_convert_to_inches() uses max dimension for detection", {
   # Portrait: height > width, but both < 100 → cm
-  result1 <- smart_convert_to_inches(15, 25)
+  result1 <- suppressMessages(smart_convert_to_inches(15, 25))
   expect_equal(result1$detected_unit, "cm")
 
   # Landscape: width > height, but both < 100 → cm
-  result2 <- smart_convert_to_inches(25, 15)
+  result2 <- suppressMessages(smart_convert_to_inches(25, 15))
   expect_equal(result2$detected_unit, "cm")
 
   # Portrait pixels: height > 100 → px
-  result3 <- smart_convert_to_inches(600, 800)
+  result3 <- suppressMessages(smart_convert_to_inches(600, 800))
   expect_equal(result3$detected_unit, "px")
+})
+
+test_that("smart_convert_to_inches() emitter besked ved auto-detektion", {
+  # Auto-detektion udsender message der navngiver detekteret enhed
+  expect_message(
+    smart_convert_to_inches(25, 15),
+    "Auto-detected units: cm"
+  )
+  expect_message(
+    smart_convert_to_inches(800, 600),
+    "Auto-detected units: px"
+  )
+  expect_message(
+    smart_convert_to_inches(8, 5),
+    "Auto-detected units: in"
+  )
+})
+
+test_that("smart_convert_to_inches() emitter ingen besked med suppress-option", {
+  withr::with_options(
+    list(BFHcharts.suppress_unit_auto_detect_message = TRUE),
+    {
+      expect_no_message(smart_convert_to_inches(25, 15))
+      expect_no_message(smart_convert_to_inches(800, 600))
+    }
+  )
+})
+
+test_that("convert_to_inches() med eksplicit units emitter ingen auto-detektion-besked", {
+  # Eksplicit units = ingen auto-detektion → ingen besked
+  expect_no_message(convert_to_inches(25, 15, "cm"))
+  expect_no_message(convert_to_inches(800, 600, "px"))
+  expect_no_message(convert_to_inches(10, 6, "in"))
 })
 
 # ============================================================================
@@ -125,17 +158,17 @@ test_that("bfh_qic() accepts centimeters with auto-detection", {
   )
 
   expect_no_error({
-    suppressWarnings(
+    suppressMessages(suppressWarnings(
       plot <- bfh_qic(
         data = data,
         x = month,
         y = infections,
         chart_type = "run",
         y_axis_unit = "count",
-        width = 25,   # Auto-detected as cm
+        width = 25, # Auto-detected as cm
         height = 15
       )
-    )
+    ))
   })
 })
 
@@ -168,18 +201,18 @@ test_that("bfh_qic() accepts pixels with auto-detection", {
   )
 
   expect_no_error({
-    suppressWarnings(
+    suppressMessages(suppressWarnings(
       plot <- bfh_qic(
         data = data,
         x = month,
         y = infections,
         chart_type = "run",
         y_axis_unit = "count",
-        width = 800,  # Auto-detected as px
+        width = 800, # Auto-detected as px
         height = 600,
         dpi = 96
       )
-    )
+    ))
   })
 })
 
@@ -191,7 +224,7 @@ test_that("bfh_qic() backward compatibility - inches still work", {
 
   # Old code with inches (< 10 → auto-detected as inches)
   expect_no_error({
-    suppressWarnings(
+    suppressMessages(suppressWarnings(
       plot <- bfh_qic(
         data = data,
         x = month,
@@ -201,7 +234,7 @@ test_that("bfh_qic() backward compatibility - inches still work", {
         width = 10,
         height = 6
       )
-    )
+    ))
   })
 })
 

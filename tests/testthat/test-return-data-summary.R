@@ -60,31 +60,29 @@ test_that("return.data = TRUE returns data.frame with qic calculations", {
   expect_true("lcl" %in% names(result))
 })
 
-test_that("print.summary = TRUE returns list with plot and summary", {
+test_that("print.summary = TRUE giver stop() med klar migreringsbesked (fjernet i v0.11.0)", {
   set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "i",
-      y_axis_unit = "count",
-      print.summary = TRUE
-    )
+  expect_error(
+    suppressWarnings(
+      bfh_qic(
+        data = data,
+        x = month,
+        y = infections,
+        chart_type = "i",
+        y_axis_unit = "count",
+        print.summary = TRUE
+      )
+    ),
+    "print.summary = TRUE has been removed in v0.11.0"
   )
-
-  expect_type(result, "list")
-  expect_named(result, c("plot", "summary"))
-  expect_s3_class(result$plot, "ggplot")
-  expect_s3_class(result$summary, "data.frame")
 })
 
-test_that("return.data = TRUE and print.summary = TRUE returns list with data and summary", {
+test_that("summary tilgaengeligt som result$summary i default bfh_qic_result-objekt", {
   set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -97,16 +95,13 @@ test_that("return.data = TRUE and print.summary = TRUE returns list with data an
       x = month,
       y = infections,
       chart_type = "i",
-      y_axis_unit = "count",
-      return.data = TRUE,
-      print.summary = TRUE
+      y_axis_unit = "count"
     )
   )
 
-  expect_type(result, "list")
-  expect_named(result, c("data", "summary"))
-  expect_s3_class(result$data, "data.frame")
+  expect_s3_class(result, "bfh_qic_result")
   expect_s3_class(result$summary, "data.frame")
+  expect_s3_class(result$plot, "ggplot")
 })
 
 test_that("summary has correct Danish column names", {
@@ -122,15 +117,16 @@ test_that("summary has correct Danish column names", {
       x = month,
       y = infections,
       chart_type = "i",
-      y_axis_unit = "count",
-      print.summary = TRUE
+      y_axis_unit = "count"
     )
   )
 
-  expected_cols <- c("fase", "antal_observationer", "anvendelige_observationer",
-                     "længste_løb", "længste_løb_max", "antal_kryds", "antal_kryds_min",
-                     "løbelængde_signal", "sigma_signal", "centerlinje",
-                     "nedre_kontrolgrænse", "øvre_kontrolgrænse")
+  expected_cols <- c(
+    "fase", "antal_observationer", "anvendelige_observationer",
+    "længste_løb", "længste_løb_max", "antal_kryds", "antal_kryds_min",
+    "løbelængde_signal", "sigma_signal", "centerlinje",
+    "nedre_kontrolgrænse", "øvre_kontrolgrænse"
+  )
 
   expect_true(all(expected_cols %in% names(result$summary)))
 })
@@ -148,8 +144,7 @@ test_that("summary works with run charts (no control limits)", {
       x = month,
       y = infections,
       chart_type = "run",
-      y_axis_unit = "count",
-      print.summary = TRUE
+      y_axis_unit = "count"
     )
   )
 
@@ -178,8 +173,7 @@ test_that("summary works with p-charts", {
       y = infections,
       n = surgeries,
       chart_type = "p",
-      y_axis_unit = "percent",
-      print.summary = TRUE
+      y_axis_unit = "percent"
     )
   )
 
@@ -203,8 +197,7 @@ test_that("summary works with c-charts", {
       x = month,
       y = defects,
       chart_type = "c",
-      y_axis_unit = "count",
-      print.summary = TRUE
+      y_axis_unit = "count"
     )
   )
 
@@ -227,8 +220,7 @@ test_that("summary works with u-charts", {
       y = defects,
       n = units,
       chart_type = "u",
-      y_axis_unit = "rate",
-      print.summary = TRUE
+      y_axis_unit = "rate"
     )
   )
 
@@ -253,8 +245,7 @@ test_that("summary handles multiple phases correctly", {
       y = infections,
       chart_type = "i",
       y_axis_unit = "count",
-      part = c(12),  # Split into 2 phases
-      print.summary = TRUE
+      part = c(12) # Split into 2 phases
     )
   )
 
@@ -278,8 +269,7 @@ test_that("summary decimal places are appropriate for y_axis_unit", {
       y = infections,
       n = surgeries,
       chart_type = "p",
-      y_axis_unit = "percent",
-      print.summary = TRUE
+      y_axis_unit = "percent"
     )
   )
 
@@ -294,8 +284,7 @@ test_that("summary decimal places are appropriate for y_axis_unit", {
       x = month,
       y = infections,
       chart_type = "i",
-      y_axis_unit = "count",
-      print.summary = TRUE
+      y_axis_unit = "count"
     )
   )
 
@@ -410,8 +399,7 @@ test_that("Anhøj statistics are included in summary", {
       x = month,
       y = infections,
       chart_type = "i",
-      y_axis_unit = "count",
-      print.summary = TRUE
+      y_axis_unit = "count"
     )
   )
 
@@ -444,8 +432,7 @@ test_that("summary returns single row for charts without phases", {
       y = infections,
       n = surgeries,
       chart_type = "p",
-      y_axis_unit = "percent",
-      print.summary = TRUE
+      y_axis_unit = "percent"
     )
   )
 
@@ -469,8 +456,7 @@ test_that("summary returns correct rows for multi-phase charts", {
       y = infections,
       chart_type = "i",
       y_axis_unit = "count",
-      part = c(12, 24),
-      print.summary = TRUE
+      part = c(12, 24)
     )
   )
 
@@ -493,8 +479,7 @@ test_that("i-charts and c-charts have constant control limits in summary", {
       x = month,
       y = infections,
       chart_type = "i",
-      y_axis_unit = "count",
-      print.summary = TRUE
+      y_axis_unit = "count"
     )
   )
 
@@ -510,8 +495,7 @@ test_that("i-charts and c-charts have constant control limits in summary", {
       x = month,
       y = infections,
       chart_type = "c",
-      y_axis_unit = "count",
-      print.summary = TRUE
+      y_axis_unit = "count"
     )
   )
 
