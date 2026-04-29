@@ -1,3 +1,15 @@
+# BFHcharts 0.10.6
+
+## Bug fixes
+
+* **Fail-early validering i `bfh_generate_details()` ved ugyldige x-vaerdier.**
+  `min()`/`max()` blev kaldt paa `qic_data$x` uden forudgaaende tjek for
+  gyldige vaerdier, hvilket gav `Inf`/`-Inf` i periodefeltet ved tomme
+  eller alle-NA datasaet (fx cleanup-scenarier i batch-eksport). Funktionen
+  stopper nu med en informativ `bfhcharts_config_error` hvis x-kolonnen er
+  tom, alle-NA eller (for numerisk x) alle-Inf — inden `min`/`max` kaldes.
+  Kald med gyldige data paavirkes ikke. (#validate-export-details-edge-cases)
+
 # BFHcharts 0.10.5
 
 ## Bug fixes

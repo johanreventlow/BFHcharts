@@ -25,6 +25,11 @@
 #' - Uses detect_date_interval() to determine the interval type
 #' - Labels adapt: "maaned", "uge", "dag", "kvartal", "aar"
 #'
+#' **Fail-early contract:**
+#' - If `qic_data$x` contains no finite/non-NA values (empty, all-NA, or
+#'   all-Inf for numeric), the function stops with a `bfhcharts_config_error`.
+#' - Calls with valid data are unaffected.
+#'
 #' @examples
 #' \dontrun{
 #' result <- bfh_qic(data, x = date, y = value, chart_type = "i")
@@ -44,6 +49,20 @@ bfh_generate_details <- function(x, language = "da") {
 
   qic_data <- x$qic_data
   config <- x$config
+
+  # Validér at x-kolonnen indeholder mindst én brugbar værdi
+  x_col <- qic_data$x
+  has_valid_x <- if (inherits(x_col, c("Date", "POSIXct", "POSIXlt"))) {
+    any(!is.na(x_col))
+  } else {
+    any(is.finite(x_col))
+  }
+  if (!has_valid_x) {
+    stop_config_error(sprintf(
+      "bfh_generate_details(): qic_data$x has no finite/non-NA values (column class: %s). ",
+      paste(class(x_col), collapse = "/")
+    ))
+  }
 
   interval_info <- detect_date_interval(qic_data$x)
   interval_label <- get_danish_interval_label(interval_info$type, language)
