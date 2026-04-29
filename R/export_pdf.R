@@ -128,6 +128,21 @@
 #' The same trust requirement applies to \code{inject_assets} when passed
 #' to \code{\link{bfh_create_export_session}()}.
 #'
+#' \strong{Recommended: companion package for proprietary branding.}
+#' Organizations deploying BFHcharts-based applications that need consistent
+#' proprietary branding (custom fonts, hospital logos) should distribute those
+#' assets via a private companion R package. The companion package exposes a
+#' single function compatible with \code{inject_assets}, e.g.
+#' \code{inject_bfh_assets(template_dir)}. Consumer applications then call
+#' \code{bfh_export_pdf(..., inject_assets = MyAssetsPkg::inject_bfh_assets)}.
+#' This keeps proprietary assets out of public BFHcharts distribution while
+#' preserving full branding in production. The companion package is still
+#' subject to the trusted-code-only contract above. For the BFH/Region
+#' Hovedstaden reference deployment, the \code{BFHchartsAssets} private
+#' companion package implements this pattern. See
+#' \code{vignette("organizational-deployments")} (when available) or the
+#' BFHchartsAssets repository documentation.
+#'
 #' @export
 #' @seealso
 #'   - [bfh_qic()] to create SPC charts
