@@ -168,8 +168,8 @@ test_that("build_bfh_qic_return returnerer list(data, summary) ved begge TRUE", 
 })
 
 
-test_that("build_bfh_qic_return udsender legacy-format-warning kun ved print.summary = TRUE og return.data = FALSE", {
-  # Forventer to warnings: deprecation + legacy-format
+test_that("build_bfh_qic_return udsender noejagtigt een konsolideret warning ved print.summary = TRUE og return.data = FALSE", {
+  # Efter konsolidering: kun én warning der indeholder baade deprecation og legacy-kontekst
   w <- character(0)
   withCallingHandlers(
     build_bfh_qic_return(
@@ -185,9 +185,9 @@ test_that("build_bfh_qic_return udsender legacy-format-warning kun ved print.sum
       invokeRestart("muffleWarning")
     }
   )
-  expect_length(w, 2)
-  expect_true(any(grepl("deprecated", w)))
-  expect_true(any(grepl("legacy", w)))
+  expect_length(w, 1)
+  expect_true(grepl("deprecated", w[1]))
+  expect_true(grepl("legacy", w[1]))
 })
 
 test_that("build_bfh_qic_return udsender kun deprecation-warning ved return.data = TRUE og print.summary = TRUE", {
@@ -561,4 +561,63 @@ test_that("build_bfh_qic_config beregner label_size naar viewport kendes", {
   result <- call_config(viewport_width_inches = 10, viewport_height_inches = 6)
   expected <- compute_label_size_for_viewport(10, 6)
   expect_equal(result$label_config$original_label_size, expected)
+})
+
+# ============================================================================
+# .muffle_expected_warnings() — muffler-scope tests (openspec: tighten-warning-muffling-scope)
+# ============================================================================
+
+# Hjælper: kald .muffle_expected_warnings() og fang alle warnings der slipper igennem
+capture_warnings_from_muffler <- function(msg) {
+  caught <- character(0)
+  withCallingHandlers(
+    BFHcharts:::.muffle_expected_warnings(warning(msg)),
+    warning = function(w) {
+      caught <<- c(caught, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  caught
+}
+
+test_that(".muffle_expected_warnings muffler IKKE 'NAs introduced by coercion to numeric'", {
+  w <- capture_warnings_from_muffler("NAs introduced by coercion to numeric")
+  expect_length(w, 1)
+  expect_true(grepl("NAs introduced by coercion to numeric", w[1]))
+})
+
+test_that(".muffle_expected_warnings muffler IKKE 'non-numeric argument to binary operator'", {
+  w <- capture_warnings_from_muffler("non-numeric argument to binary operator")
+  expect_length(w, 1)
+  expect_true(grepl("non-numeric argument to binary operator", w[1]))
+})
+
+test_that(".muffle_expected_warnings muffler 'scale_x_date: Removed 3 rows containing missing values'", {
+  w <- capture_warnings_from_muffler("scale_x_date: Removed 3 rows containing missing values")
+  expect_length(w, 0)
+})
+
+test_that(".muffle_expected_warnings muffler 'font family Mari not found in PostScript font database'", {
+  w <- capture_warnings_from_muffler("font family Mari not found in PostScript font database")
+  expect_length(w, 0)
+})
+
+test_that(".muffle_expected_warnings muffler 'Removed 5 rows containing missing values'", {
+  w <- capture_warnings_from_muffler("Removed 5 rows containing missing values")
+  expect_length(w, 0)
+})
+
+test_that(".muffle_expected_warnings muffler scale_y_continuous-warning", {
+  w <- capture_warnings_from_muffler("scale_y_continuous: Removed 2 rows containing non-finite values")
+  expect_length(w, 0)
+})
+
+test_that(".muffle_expected_warnings muffler scale_x_datetime-warning", {
+  w <- capture_warnings_from_muffler("scale_x_datetime: Removed 1 rows containing missing values")
+  expect_length(w, 0)
+})
+
+test_that(".muffle_expected_warnings propagerer generel type-warning uaendret", {
+  w <- capture_warnings_from_muffler("object 'foo' not found")
+  expect_length(w, 1)
 })
