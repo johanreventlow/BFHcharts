@@ -29,7 +29,12 @@ Named list with complete context including:
 \item \code{centerline}: Centerline value
 \item \code{spc_stats}: SPC statistics from \code{bfh_extract_spc_stats()}
 \item \code{has_signals}: Logical indicating if signals were detected
-\item \code{target_value}: Numeric target value (NA if absent)
+\item \code{target_value}: Numeric target value (NA if absent). \strong{Percent-target
+normalization:} when \code{y_axis_unit == "percent"} and the parsed target
+value appears to be on the 0-100 scale (display contains \code{"\%"} or
+\code{value > 1}), \code{target_value} is divided by 100 so downstream
+comparisons are on the same 0-1 proportion scale as \code{centerline}.
+\code{target_display} is always preserved unchanged for user-facing text.
 \item \code{target_direction}: \code{"higher"}, \code{"lower"}, or \code{NULL} derived from
 operator in \code{metadata$target} (NULL for numeric input)
 \item \code{target_display}: Original target string for display purposes

@@ -1,3 +1,20 @@
+# BFHcharts 0.11.1
+
+## Bug fixes
+
+* **Klinisk korrekthedsfejl i auto-analyse for percent-indikatorer rettet.**
+  `bfh_generate_analysis()` med `auto_analysis = TRUE` producerede forkert
+  analysetekst ("målet er endnu ikke nået") for p-charts, selvom centerlinjen
+  reelt opfyldte et procent-mål. Fejlen opstod fordi `parse_target_input()`
+  fjernede `%`-suffixet og returnerede den rå numeriske værdi (fx `90`), mens
+  centerlinjerne for p-charts er på proportionsskala (fx `0.91`). Sammenligningen
+  `0.91 >= 90` evaluerede til `FALSE`. Fix: `bfh_build_analysis_context()` kalder
+  nu `.normalize_percent_target()` og dividerer target-værdien med 100 når
+  `y_axis_unit == "percent"` og target-displayet indeholder `%` eller
+  `target_value > 1`. `target_display` bevares uændret (fx `">= 90%"`) i
+  den genererede tekst. Kald med `auto_analysis = FALSE` (default) er
+  upåvirkede. (#fix-percent-target-scale-in-analysis)
+
 # BFHcharts 0.11.0
 
 ## Breaking changes

@@ -649,3 +649,193 @@ test_that("build_fallback_analysis bruger flertal ved 3 outliers", {
   # Må aldrig bruge ental efter tal > 1
   expect_false(grepl("\\b3 observation\\b", txt))
 })
+
+
+# ==============================================================================
+# .normalize_percent_target() — unit tests (alle 6 kombinationer fra spec)
+# ==============================================================================
+
+test_that(".normalize_percent_target: percent-chart + display med % + value > 1 -> divider med 100", {
+  # Fx ">= 90%" -> parsed value=90, display=">= 90%", y_axis_unit="percent"
+  result <- BFHcharts:::.normalize_percent_target(90, ">= 90%", "percent")
+  expect_equal(result, 0.90, tolerance = 1e-9)
+})
+
+test_that(".normalize_percent_target: percent-chart + numeric input value > 1 + tom display -> normaliser", {
+  # resolve_target(90) returnerer display="" (numerisk input-sti)
+  result <- BFHcharts:::.normalize_percent_target(90, "", "percent")
+  expect_equal(result, 0.90, tolerance = 1e-9)
+})
+
+test_that(".normalize_percent_target: percent-chart + value <= 1 + tom display -> uændret (allerede proportion)", {
+  result <- BFHcharts:::.normalize_percent_target(0.9, "", "percent")
+  expect_equal(result, 0.9, tolerance = 1e-9)
+})
+
+test_that(".normalize_percent_target: percent-chart + '>= 0.9' display (ingen %) + value <= 1 -> uændret", {
+  # Power-user input: proportion-skala direkte angivet
+  result <- BFHcharts:::.normalize_percent_target(0.9, ">= 0.9", "percent")
+  expect_equal(result, 0.9, tolerance = 1e-9)
+})
+
+test_that(".normalize_percent_target: count-chart + value > 1 -> ingen normalisering", {
+  result <- BFHcharts:::.normalize_percent_target(90, ">= 90", "count")
+  expect_equal(result, 90)
+})
+
+test_that(".normalize_percent_target: rate-chart + value > 1 -> ingen normalisering", {
+  result <- BFHcharts:::.normalize_percent_target(2.5, "<= 2.5", "rate")
+  expect_equal(result, 2.5)
+})
+
+test_that(".normalize_percent_target: lower-direction percent target normaliseres korrekt", {
+  # "<= 5%" -> value=5, display="<= 5%", unit="percent"
+  result <- BFHcharts:::.normalize_percent_target(5, "<= 5%", "percent")
+  expect_equal(result, 0.05, tolerance = 1e-9)
+})
+
+
+# ==============================================================================
+# Regressions-tests: percent-target skalafejl (bug 2026-04-29)
+# ==============================================================================
+
+test_that("REGRESSION: bfh_build_analysis_context normaliserer '>= 90%' til 0.90 på p-chart", {
+  # Fejlscenarie: centerline=0.91, target=">= 90%" -> target_value lagret som 90
+  # -> 0.91 >= 90 = FALSE -> FORKERT "endnu ikke nået"
+  # Forventet: target_value normaliseres til 0.90
+
+  set.seed(7)
+  # p-chart kræver n (nævner) og events (tæller)
+  p_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
+    n = rep(100L, 24),
+    events = c(rep(91L, 20), rep(88L, 4)) # ~91% de fleste måneder
+  )
+  result <- bfh_qic(p_data,
+    x = date, y = events, n = n, chart_type = "p",
+    y_axis_unit = "percent"
+  )
+
+  ctx <- bfh_build_analysis_context(result, metadata = list(target = ">= 90%"))
+
+  expect_equal(ctx$target_value, 0.90,
+    tolerance = 1e-9,
+    label = "target_value skal være 0.90 (normaliseret fra 90)"
+  )
+  expect_equal(ctx$target_display, ">= 90%",
+    label = "target_display bevares uændret"
+  )
+  expect_equal(ctx$target_direction, "higher")
+})
+
+test_that("REGRESSION: build_fallback_analysis producerer 'opfylder målet' for 91% vs >= 90%", {
+  # Dette er den direkte kliniske konsekvens-test:
+  # Med normaliseret target (0.90) og centerline (0.91) skal goal_met = TRUE
+  ctx <- fixture_analysis_context(
+    chart_type = "p",
+    y_axis_unit = "percent",
+    centerline = 0.91,
+    target_value = 0.90, # normaliseret (bug: var 90 -> FALSE)
+    target_direction = "higher",
+    target_display = ">= 90%"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+
+  # Teksten bør bekræfte at målet er nået
+  expect_match(txt, "opfylder målet|målet.*opfyldt|målet.*nået",
+    label = "Skal indeholde positivt målbekræftelse"
+  )
+  # Og IKKE den fejlagtige negative tekst
+  expect_false(grepl("endnu ikke nået|opfylder ikke", txt),
+    label = "Må ikke indeholde fejlagtig negation"
+  )
+})
+
+test_that("REGRESSION: lower-direction 3% vs '<= 5%' -> goal_met via normalisering", {
+  set.seed(9)
+  p_data <- data.frame(
+    date   = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    n      = rep(100L, 20),
+    events = rep(3L, 20) # 3% -> centerline ~0.03
+  )
+  result <- bfh_qic(p_data,
+    x = date, y = events, n = n, chart_type = "p",
+    y_axis_unit = "percent"
+  )
+
+  ctx <- bfh_build_analysis_context(result, metadata = list(target = "<= 5%"))
+
+  expect_equal(ctx$target_value, 0.05,
+    tolerance = 1e-9,
+    label = "target_value normaliseret fra 5 til 0.05"
+  )
+  expect_equal(ctx$target_direction, "lower")
+
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_match(txt, "opfylder målet|målet.*opfyldt",
+    label = "3% opfylder <= 5% mål"
+  )
+})
+
+test_that("bfh_build_analysis_context: numerisk target=90 normaliseres på p-chart", {
+  set.seed(11)
+  p_data <- data.frame(
+    date   = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    n      = rep(100L, 20),
+    events = rep(91L, 20)
+  )
+  result <- bfh_qic(p_data,
+    x = date, y = events, n = n, chart_type = "p",
+    y_axis_unit = "percent"
+  )
+
+  ctx <- bfh_build_analysis_context(result, metadata = list(target = 90))
+  expect_equal(ctx$target_value, 0.90, tolerance = 1e-9)
+})
+
+test_that("bfh_build_analysis_context: numerisk target=0.9 bevares uændret på p-chart", {
+  set.seed(11)
+  p_data <- data.frame(
+    date   = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    n      = rep(100L, 20),
+    events = rep(91L, 20)
+  )
+  result <- bfh_qic(p_data,
+    x = date, y = events, n = n, chart_type = "p",
+    y_axis_unit = "percent"
+  )
+
+  ctx <- bfh_build_analysis_context(result, metadata = list(target = 0.9))
+  expect_equal(ctx$target_value, 0.9, tolerance = 1e-9)
+})
+
+test_that("bfh_build_analysis_context: '>= 0.9' på p-chart bevares uændret (ingen % i display)", {
+  set.seed(11)
+  p_data <- data.frame(
+    date   = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    n      = rep(100L, 20),
+    events = rep(91L, 20)
+  )
+  result <- bfh_qic(p_data,
+    x = date, y = events, n = n, chart_type = "p",
+    y_axis_unit = "percent"
+  )
+
+  ctx <- bfh_build_analysis_context(result, metadata = list(target = ">= 0.9"))
+  expect_equal(ctx$target_value, 0.9, tolerance = 1e-9)
+  expect_equal(ctx$target_display, ">= 0.9")
+})
+
+test_that("bfh_build_analysis_context: i-chart target=90 ikke normaliseret (count-skala)", {
+  set.seed(42)
+  i_data <- data.frame(
+    date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rnorm(20, mean = 95, sd = 5)
+  )
+  result <- bfh_qic(i_data, x = date, y = value, chart_type = "i")
+
+  ctx <- bfh_build_analysis_context(result, metadata = list(target = ">= 90"))
+  expect_equal(ctx$target_value, 90,
+    label = "i-chart count-skala: 90 bevares uændret"
+  )
+})
