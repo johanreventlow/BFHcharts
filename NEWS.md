@@ -1,5 +1,18 @@
 # BFHcharts 0.11.0
 
+## CI
+
+* **PDF smoke-render workflow genaktivet (Strategi B — CI-only test-template).**
+  `.github/workflows/pdf-smoke.yaml.disabled` er omdobt til `pdf-smoke.yaml`
+  og genaktivet som PR-blocking gate paa main og develop. Font-udfordringen
+  (proprietaer Mari-font kan ikke distribueres i public repo) loeses med
+  en minimal CI-only Typst-template (`tests/smoke/test-template.typ`) der
+  kun bruger DejaVu Sans (installeret via apt-get paa GitHub-hosted runners).
+  `render_smoke.R` detekterer `CI`-env-var og vaelger automatisk test-template
+  paa CI og production bfh-template lokalt. Visuel korrekthed (Mari-fonts)
+  haandteres fortsat af `vdiffr` og manuel review.
+  (#enable-ci-safe-pdf-smoke-render)
+
 ## Breaking changes
 
 * **`print.summary = TRUE` er fjernet.** Parameteren var depreceret siden
