@@ -1,0 +1,208 @@
+---
+title: "Mål-værdier og procent-akser"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Mål-værdier og procent-akser}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+```
+
+## Den hyppigste fejl: 2% bliver til 200%
+
+Før BFHcharts 0.9.0 producerede dette stille en misvisende graf:
+
+```r
+bfh_qic(data, ...,
+  y_axis_unit = "percent",
+  target_value = 2.0,                    # Brugerens hensigt: "2%"
+  target_text = "↓ Mål: 2%"
+)
+```
+
+`bfh_qic()` plottede target-linjen ved y = 2.0 — som på en procent-akse renderer
+som **200%**. Klinisk konsekvens: et mål der ser ud som umuligt at nå (eller, værre,
+som "altid nået").
+
+Fra v0.9.0 valideres `target_value` mod skalaen implyeret af `multiply`:
+
+| `multiply` | Forventet `target_value` skala | Eksempel |
+|------------|-------------------------------|----------|
+| `1` (default) | Proportion `[0, 1.5]` | `target_value = 0.02` betyder 2% |
+| `100`         | Procent `[0, 150]`     | `target_value = 2.0` betyder 2% |
+
+Validering uden for området kaster en hård fejl med migration-hint.
+
+## Kontrakten i praksis
+
+### Option A: Proportion (default, `multiply = 1`)
+
+Data er proportioner i [0, 1]. Y-aksen formateres med `%`-suffix (BFHcharts
+multiplicerer med 100 ved tegning, men værdier er proportioner internt).
+
+```{r option-a-fixed}
+library(BFHcharts)
+
+data <- data.frame(
+  month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+  infections = c(15, 18, 12, 14, 16, 13, 11, 9, 10, 8, 7, 6),
+  discharges = rep(100L, 12)
+)
+
+# multiply = 1 (default), target som proportion
+bfh_qic(data,
+  x = month, y = infections, n = discharges,
+  chart_type = "p",
+  y_axis_unit = "percent",
+  target_value = 0.10,      # 10% — proportion
+  target_text = "↓ Mål: <10%"
+)
+```
+
+### Option B: Procent (`multiply = 100`)
+
+Data og target er begge i procent (0-100 skala). Y-aksen formateres uden konvertering.
+
+```{r option-b-fixed}
+bfh_qic(data,
+  x = month, y = infections, n = discharges,
+  chart_type = "p",
+  y_axis_unit = "percent",
+  multiply = 100,
+  target_value = 10,        # 10% — procent
+  target_text = "↓ Mål: <10%"
+)
+```
+
+Begge giver samme visuelle resultat. Vælg den der matcher hvordan dine data er
+gemt (proportion vs procent).
+
+## Direction-operatorer i `target_text`
+
+`target_text` understøtter directional indicators der **erstatter** target-linjen
+med en pil ved plot-kanten:
+
+| Symbol | Betydning |
+|--------|-----------|
+| `↑`    | Højere er bedre (ingen line, kun pil opad) |
+| `↓`    | Lavere er bedre (ingen line, kun pil nedad) |
+| `<`    | Mål er øvre grænse |
+| `>`    | Mål er nedre grænse |
+
+```{r arrow-target}
+# Pil-target (ingen visible line)
+bfh_qic(data,
+  x = month, y = infections, n = discharges,
+  chart_type = "p",
+  y_axis_unit = "percent",
+  target_value = 0.10,
+  target_text = "↓ Mål: 10%"   # Pil-version
+)
+```
+
+Når `target_text` indeholder `↑`, `↓`, `<`, eller `>`, suppresseres target-linjen
+i plottet for at undgå dobbelt-visualisering. Pilen placeres ved den right-edge
+label-pipeline.
+
+## Hvornår er target en benchmark vs aspiration?
+
+Tre kategorier af mål, hver med forskellig statistisk fortolkning:
+
+### Benchmark (sammenligning)
+
+Mål = ekstern reference (national gennemsnit, regional median). Brug fast linje
+uden directional pil. Ikke en kontrolgrænse — bare en visualiseringsreference.
+
+```{r benchmark, eval = FALSE}
+bfh_qic(data, ...,
+  target_value = 0.12,         # National gennemsnit 12%
+  target_text = "Nationalt gns."
+)
+```
+
+### Aspiration (mål)
+
+Mål = ønsket fremtidig tilstand. Ofte med directional pil (`↑`/`↓`).
+Vis at processen er på vej derhen, eller at fokuseret indsats kræves.
+
+```{r aspiration, eval = FALSE}
+bfh_qic(data, ...,
+  target_value = 0.05,
+  target_text = "↓ Mål Q4 2025: 5%"
+)
+```
+
+### Lower-/upper-limit (kontrakt)
+
+Mål = absolut grænse (regulatorisk, etisk). Kombiner med `<` eller `>` for at
+markere retningen. Punkter der overstiger grænsen er **akut** action-trigger.
+
+```{r limit, eval = FALSE}
+bfh_qic(data, ...,
+  target_value = 0.15,
+  target_text = "< Maks acceptabel: 15%"
+)
+```
+
+## Sanity-check af din konfiguration
+
+Hvis du er i tvivl, sammenlign target-værdi mod data-skala:
+
+```{r sanity, eval = FALSE}
+# Hvad er din data-range?
+range(data$y)     # Hvis [0, 0.2] → multiply = 1, target i samme skala
+range(data$y)     # Hvis [0, 20]  → multiply = 100, target i samme skala
+
+# Validér eksplicit
+stopifnot(
+  target_value >= 0,
+  target_value <= max(data$y) * 2  # Sanity check: target ikke 100x off
+)
+```
+
+## Migration fra pre-0.9.0
+
+```r
+# Gammel kode (silently misvisende):
+bfh_qic(data, ...,
+  y_axis_unit = "percent",
+  target_value = 2.0           # Plottet som 200% på percent-akse
+)
+
+# Ny kode — Option A (anbefalet):
+bfh_qic(data, ...,
+  y_axis_unit = "percent",
+  target_value = 0.02          # 2% som proportion
+)
+
+# Ny kode — Option B (hvis data allerede i procent):
+bfh_qic(data, ...,
+  y_axis_unit = "percent",
+  multiply = 100,
+  target_value = 2.0           # 2% som procent
+)
+```
+
+Valideringsfejlen vil identificere problemet med præcis migrationshjælp:
+
+```
+Error: target_value (2.0) ligger uden for forventet område [0, 1.5]
+for y_axis_unit = 'percent' med multiply = 1.
+Du mente sandsynligvis target_value = 0.02 (2% som proportion)
+eller target_value = 2.0 med multiply = 100 (2% som procent).
+```
+
+## Se også
+
+- `vignette("chart-types")` — vælg charttype først
+- `vignette("phases-and-freeze")` — håndtér interventioner og baseline
+- `?bfh_qic` — `@details` "Percent Target Contract" sektion
+- NEWS for v0.9.0 — fuld breaking-change beskrivelse

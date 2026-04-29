@@ -1,0 +1,177 @@
+---
+title: "Faser og fastfrysning af baseline"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Faser og fastfrysning af baseline}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+```
+
+## To måder at håndtere ændringer
+
+`bfh_qic()` understøtter to relaterede men forskellige mekanismer for håndtering
+af interventioner og baseline-perioder:
+
+| Parameter | Hvad det gør | Klinisk brug |
+|-----------|-------------|--------------|
+| `part`    | Splitter dataset i flere faser; hver fase får **egen** centerlinje + kontrolgrænser | Sammenligning før/efter intervention |
+| `freeze`  | Beregner kontrolgrænser kun fra første N rækker; bruger samme grænser for alle efterfølgende | Etabler baseline, vis afvigelser efter |
+
+## `part` — flere faser med separate kontrolgrænser
+
+Brug når du vil sammenligne to (eller flere) statistisk distinkte perioder, fx
+før og efter en kvalitetsforbedrings-intervention. Hver fase får egen centerlinje
+og egne kontrolgrænser.
+
+```{r part-example}
+library(BFHcharts)
+
+# Pre-intervention: månedlig infektionsrate ~15%
+# Intervention rullet ud i marts 2024
+# Post-intervention: rate falder til ~8%
+data <- data.frame(
+  month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+  infections = c(15, 18, 14, 9, 8, 7, 8, 9, 7, 6, 8, 7),
+  discharges = rep(100L, 12)
+)
+
+# part = 3 splitter dataset efter periode 3 (marts)
+bfh_qic(data,
+  x = month, y = infections, n = discharges,
+  chart_type = "p",
+  y_axis_unit = "percent",
+  part = 3,
+  chart_title = "Infektionsrate (intervention marts 2024)"
+)
+```
+
+**Anvendelse**:
+- `part = 3` splitter efter 3. observation
+- `part = c(3, 9)` opretter 3 faser med splits ved positioner 3 og 9
+- Hver fase beregner sin egen `p_bar`, `UCL`, `LCL`
+
+**Hvornår** bruges `part`:
+- Du har en **kendt intervention** med specifik dato
+- Du forventer at processen er statistisk anderledes efter
+- Du ikke ønsker at fase 1 forurener fase 2's kontrolgrænser
+
+## `freeze` — fastlås baseline-grænser
+
+Brug når du vil etablere en stabil baseline og vise hvordan efterfølgende perioder
+afviger. I modsætning til `part` får alle perioder samme kontrolgrænser
+(beregnet fra de første N punkter).
+
+```{r freeze-example}
+# Baseline = de første 6 måneder (jan-jun 2024)
+# Baseline-grænser bruges for hele datasættet — afsløre intervention-effekt
+bfh_qic(data,
+  x = month, y = infections, n = discharges,
+  chart_type = "p",
+  y_axis_unit = "percent",
+  freeze = 6,
+  chart_title = "Infektionsrate (baseline jan-jun, frosset)"
+)
+```
+
+**Anvendelse**:
+- `freeze = 6` beregner CL/UCL/LCL kun fra observationer 1-6
+- Alle observationer 7+ tegnes mod **samme** grænser
+- Punkter under LCL post-baseline = signifikant forbedring
+
+**Hvornår** bruges `freeze`:
+- Du har en **historisk stabil** baseline du vil måle imod
+- Du **ikke** ønsker at post-intervention perioder skal "trække" centerlinjen
+- Du vil vise effektstørrelse af en intervention visuelt
+
+## Kombineret: `part` + `freeze`
+
+Begge parametre kan kombineres når du har flere sekventielle interventioner:
+
+```{r part-freeze-example, eval = FALSE}
+# Baseline: jan-jun 2024 (frosset)
+# Intervention 1: jul-sep 2024
+# Intervention 2: okt-dec 2024
+bfh_qic(data,
+  x = month, y = infections, n = discharges,
+  chart_type = "p",
+  part = c(6, 9),
+  freeze = 6
+)
+```
+
+Resultat: 3 faser; fase 1's grænser er frosne fra de første 6 punkter; fase 2 og 3
+beregner deres egne grænser fra deres data.
+
+## Almindelige fejl
+
+### Fejl 1: Refreeze på hver datasæt-opdatering
+
+```r
+# ❌ Forkert: dynamisk freeze gør grænser ustabile
+bfh_qic(data, ..., freeze = nrow(data) - 3)  # Sidste 3 ekskluderet hver gang
+
+# ✅ Rigtigt: fast freeze-position fra original baseline
+bfh_qic(data, ..., freeze = 12)  # 12 første måneder, fast
+```
+
+### Fejl 2: Bruge `part` som "moving window"
+
+`part` er ikke en glidende vindue. Hver fase er **statistisk uafhængig** —
+data fra fase 1 påvirker ikke fase 2's kontrolgrænser.
+
+### Fejl 3: For tidlig faseopsplitning
+
+Du har brug for ≥8 datapunkter per fase for meningsfulde kontrolgrænser. Under
+det: brug `run`-chart for fasen i stedet, eller udskyd fase-split til mere data
+er tilgængelig.
+
+### Fejl 4: Faseopsplitning baseret på data (post-hoc)
+
+Bestem `part`-positioner **før** du ser data — baseret på kendte interventionstidspunkter.
+Splitter du efter at have set hvor data ændrer sig, har du committed cherry-picking.
+
+## Klinisk eksempel: medicineringsfejl
+
+```{r clinical-example}
+# Antal medicineringsfejl per 1000 ordinationer
+# Intervention: ny dobbeltkontrol-procedure indført okt 2024
+data <- data.frame(
+  month = seq(as.Date("2024-01-01"), by = "month", length.out = 18),
+  errors = c(
+    # Pre-intervention: ~12 fejl/1000
+    11, 13, 14, 12, 10, 13, 14, 11, 15,
+    # Post-intervention: ~6 fejl/1000
+    7, 5, 6, 4, 7, 5, 4, 6, 5
+  ),
+  prescriptions = rep(1000L, 18)
+)
+
+# Vis effekt med frosset baseline
+bfh_qic(data,
+  x = month, y = errors, n = prescriptions,
+  chart_type = "u",
+  y_axis_unit = "rate",
+  freeze = 9,
+  chart_title = "Medicineringsfejl per 1000 ordinationer",
+  target_text = "↓ Mål: <8 fejl/1000",
+  target_value = 8
+)
+```
+
+Punkter under LCL efter periode 9 demonstrerer signifikant forbedring; baseline
+fastfrosset så reduktion er visuelt tydelig.
+
+## Se også
+
+- `vignette("chart-types")` — vælg den rigtige charttype først
+- `vignette("targets-and-percent")` — sat realistiske mål
+- `?bfh_qic` — `@param part`, `@param freeze` parameter-detaljer

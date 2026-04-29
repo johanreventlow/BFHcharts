@@ -36,3 +36,5 @@
 ^BFHLLM_INTEGRATION\.md$
 ^TRANSLATORS\.md$
 ^CLAUDE\.md\.backup$
+^doc$
+^Meta$
