@@ -222,9 +222,14 @@
   desynkronisere ved mutation. `export_pdf.R` læser nu direkte fra top-niveau
   config-felterne. (#modernize-deprecations-and-deps)
 
-* **`BFHllm` fjernet fra `Remotes:`.** BFHllm er kun i `Suggests` og har
-  ikke brug for automatisk GitHub-installation; `Remotes:`-indgange for
-  `Suggests`-pakker advares imod af `R CMD check --as-cran`.
+* **`BFHllm` Remotes-status revideret.** Et tidligere forsøg på at fjerne
+  `BFHllm` fra `Remotes:` (begrundet i `R CMD check --as-cran` advarsler for
+  `Suggests`-pakker) brød GitHub Actions CI: `r-lib/actions/setup-r-dependencies`
+  installerer Suggests via pak med `dependencies = "all"`, og uden Remotes-pointer
+  kan pak ikke finde BFHllm (privat GitHub-repo, ej på CRAN). `BFHllm` er nu
+  igen i `Remotes:` for at sikre CI fungerer; den er stadig kun i `Suggests`,
+  så manuel install er ikke længere strengt påkrævet for slutbrugere men er
+  dokumenteret i `bfh_generate_analysis()` Roxygen.
   (#modernize-deprecations-and-deps)
 
 # BFHcharts 0.10.5

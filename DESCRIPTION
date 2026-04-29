@@ -51,5 +51,6 @@ Suggests:
     rmarkdown
 VignetteBuilder: knitr
 Remotes:
-    johanreventlow/BFHtheme
+    johanreventlow/BFHtheme,
+    johanreventlow/BFHllm
 Config/testthat/edition: 3
