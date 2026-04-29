@@ -2,7 +2,6 @@
 
 ## Interne aendringer
 
-<<<<<<< HEAD
 * **Filomdoebning: `R/create_spc_chart.R` -> `R/bfh_qic.R`.** Funktionen
   blev omdoebt fra `create_spc_chart()` til `bfh_qic()` i v0.2.0, men
   filnavnet blev aldrig opdateret. Ingen API-paavirkning -- kun navigation
@@ -16,6 +15,16 @@
   `test_labels.R`, `test_date_formatting_debug.R`,
   `09_medicinsikker_*.R`) og `CLAUDE.md.backup`. Strammet `.gitignore`
   med `*.backup` og generic `BFHcharts_*.tar.gz`. (#215)
+
+* **DRY refactor af font-warning handlers i `utils_bfh_qic_helpers.R`.** To
+  naesten identiske `withCallingHandlers`-blokke (i `render_bfh_plot()`
+  omkring `bfh_spc_plot()` og i `apply_spc_labels_to_export()` omkring
+  `add_spc_labels()`) er konsolideret i en intern helper
+  `.muffle_expected_warnings()`. Helper'en mufler ggplot2 datetime/numeric
+  scale-warnings og BFHtheme PostScript-font-warnings (Mari ikke i
+  font-database) -- begge er expected behavior. Genuine warnings
+  propageres uaendret. Fungerer som defense-in-depth efter PR #242
+  (font-aliases onLoad) der eliminerer font-warnings ved kilden. (#200)
 
 # BFHcharts 0.10.4
 
