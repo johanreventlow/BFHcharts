@@ -25,7 +25,7 @@ bfh_qic(args) [≤ 80 lines]
 
 #### Scenario: orchestrator under target size after refactor
 
-- **GIVEN** the refactored `bfh_qic()` function in `R/create_spc_chart.R`
+- **GIVEN** the refactored `bfh_qic()` function in `R/bfh_qic.R`
 - **WHEN** the function body is measured (excluding Roxygen, blank lines)
 - **THEN** the body SHALL be ≤ 80 lines
 
