@@ -317,3 +317,35 @@ test_that("bfh_compile_typst sender sti MED mellemrum som raet argv-token", {
   expect_true(length(typst_arg) >= 1)
   expect_false(any(grepl('^".*"$', typst_arg)))
 })
+
+# ============================================================================
+# 5. cleanup-temp-dir-ownership-check — temp dir isolation via tempfile + 0700
+# ============================================================================
+
+test_that("prepare_temp_workspace opretter 0700-tilladelsesmappe paa Unix", {
+  skip_on_os("windows")
+  ws <- BFHcharts:::prepare_temp_workspace(NULL)
+  on.exit(unlink(ws$temp_dir, recursive = TRUE), add = TRUE)
+  mode_octal <- as.integer(file.info(ws$temp_dir)$mode) %% (8^3)
+  expect_equal(mode_octal, as.integer(strtoi("700", 8L)),
+    info = "temp dir skal have 0700 tilladelser for at forhindre anden-bruger-adgang"
+  )
+})
+
+test_that("prepare_temp_workspace returnerer temp_dir under tempdir()", {
+  ws <- BFHcharts:::prepare_temp_workspace(NULL)
+  on.exit(unlink(ws$temp_dir, recursive = TRUE), add = TRUE)
+  expect_true(startsWith(
+    normalizePath(ws$temp_dir, mustWork = FALSE),
+    normalizePath(tempdir(), mustWork = TRUE)
+  ))
+})
+
+test_that("prepare_temp_workspace bruger ikke Sys.getenv UID-check", {
+  src_path <- system.file("R", "utils_export_helpers.R", package = "BFHcharts")
+  if (nchar(src_path) == 0) {
+    skip("kildekode ikke installeret")
+  }
+  src <- readLines(src_path)
+  expect_false(any(grepl('Sys\\.getenv\\("UID"\\)', src)))
+})
