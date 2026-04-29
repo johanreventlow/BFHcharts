@@ -214,3 +214,135 @@ PDF orchestration file
 `bfh_merge_metadata()` directly
 **And** duplicate internal alias wrappers SHALL NOT remain
 
+### Requirement: Internal infrastructure SHALL NOT carry unused scaffolding
+
+The package SHALL NOT carry constructor functions, S3 methods, or function parameters that have no production call sites. Internal scaffolding for "future API" SHALL either be (a) wired into an active code path within one minor version, or (b) removed.
+
+**Rationale:**
+- Reserved-but-unused infrastructure carries maintenance and review weight without delivering value
+- "Future API" tends to drift from current patterns and become incompatible by the time it would be used
+- Easier to re-add when actually needed than to maintain dead code under test
+
+**Examples of removed scaffolding:**
+- `phase_config()` constructor + `print.phase_config()` method (was reserved, never wired)
+- `bfh_spc_plot(phase = NULL)` parameter (read by no code path)
+
+#### Scenario: dead constructor removed
+
+- **GIVEN** an internal constructor function with zero production call sites (verified via grep)
+- **WHEN** the next minor release is prepared
+- **THEN** the constructor SHALL be either wired into a production code path OR removed entirely
+- **AND** removal SHALL include constructor, related S3 methods, NAMESPACE entries, tests, and Rd files
+
+#### Scenario: dead parameter removed from internal function
+
+- **GIVEN** a function parameter that is accepted but never read in the function body
+- **WHEN** the parameter is identified during refactor or review
+- **THEN** the parameter SHALL be removed from the signature
+- **AND** the removal SHALL be safe because the function is internal (not exported in NAMESPACE)
+
+### Requirement: bfh_export_pdf SHALL follow the orchestrator-helper pattern
+
+`bfh_export_pdf()` SHALL be refactored to act as a thin orchestrator delegating distinct responsibilities to internal helpers, mirroring the pattern established by `bfh_qic()` (see `refactor-bfh_qic-orchestrator` change). Function body SHOULD target ≤ 80 lines excluding Roxygen.
+
+**Rationale:**
+- Current 330-line implementation mixes validation, IO, security checks, plot manipulation, Typst generation, and Quarto execution
+- Security check ordering is currently spread across the function — risk of regression when modifying any single step
+- Companion to `bfh_qic()` refactor for consistency
+
+**Pattern:**
+
+```
+bfh_export_pdf(args) [≤ 80 lines]
+  ├── validate_bfh_export_pdf_inputs(args)
+  ├── metadata <- prepare_export_metadata(x, metadata, auto_analysis, use_ai, ...)
+  ├── temp_dir <- prepare_temp_workspace(batch_session)
+  ├── plot <- prepare_export_plot(x)
+  ├── chart_svg <- export_chart_svg(plot, temp_dir, dpi)
+  ├── typst_file <- compose_typst_document(chart_svg, metadata, temp_dir, ...)
+  ├── compile_pdf_via_quarto(typst_file, output, font_path)
+  └── invisible(x)
+```
+
+**Security ordering preserved:**
+1. Validation (no IO yet)
+2. File system operations
+3. Quarto execution
+4. Cleanup (registered before any allocation)
+
+#### Scenario: orchestrator under target size after refactor
+
+- **GIVEN** the refactored `bfh_export_pdf()` function
+- **WHEN** the function body is measured (excluding Roxygen, blank lines)
+- **THEN** the body SHALL be ≤ 80 lines
+
+#### Scenario: helpers callable in isolation
+
+- **GIVEN** any of the new helpers
+- **WHEN** called with appropriate arguments
+- **THEN** the helper SHALL produce its expected output without invoking the full orchestrator
+
+#### Scenario: security check ordering preserved
+
+- **GIVEN** the refactored function
+- **WHEN** an invalid `output` path with shell metachars is passed
+- **THEN** validation SHALL fail BEFORE any tempdir is created
+- **AND** no Quarto invocation SHALL occur
+
+#### Scenario: public API unchanged after refactor
+
+- **GIVEN** existing tests calling `bfh_export_pdf()` from any caller
+- **WHEN** running `devtools::test()` after the refactor
+- **THEN** all pre-existing tests SHALL pass without modification
+
+### Requirement: Primary public entry points SHALL be thin orchestrators
+
+Primary public entry points (`bfh_qic()`, `bfh_export_pdf()`, `bfh_export_png()`) SHALL act as thin orchestrators that delegate distinct responsibilities (validation, computation, rendering, IO, return-routing) to internal helpers. Orchestrator function bodies SHOULD target ≤ 80 lines excluding Roxygen.
+
+**Rationale:**
+- Single function carrying 380+ lines mixes 8+ concerns and is impossible to test in isolation
+- Failure localization is slow when one giant function breaks
+- Architectural pattern documented for future entry points
+
+**Pattern:**
+
+```
+bfh_qic(args) [≤ 80 lines]
+  ├── validate_bfh_qic_inputs(args)
+  ├── qic_args <- build_qic_args(args, validated_columns)
+  ├── qic_data <- invoke_qicharts2(qic_args)
+  ├── viewport_info <- compute_viewport_base_size(args)
+  ├── plot <- render_bfh_plot(qic_data, args, viewport_info)
+  ├── plot <- apply_spc_labels_to_export(plot, qic_data, args, viewport_info)
+  ├── summary <- format_qic_summary(qic_data, args$y_axis_unit)
+  └── build_bfh_qic_return(qic_data, plot, summary, config, args$return.data, args$print.summary)
+```
+
+#### Scenario: orchestrator under target size after refactor
+
+- **GIVEN** the refactored `bfh_qic()` function in `R/bfh_qic.R`
+- **WHEN** the function body is measured (excluding Roxygen, blank lines)
+- **THEN** the body SHALL be ≤ 80 lines
+
+#### Scenario: helpers callable in isolation
+
+- **GIVEN** any of the new helpers (`validate_bfh_qic_inputs`, `build_qic_args`, etc.)
+- **WHEN** called with appropriate arguments in isolation
+- **THEN** the helper SHALL produce its expected output without invoking the full orchestrator
+- **AND** unit tests SHALL exercise each helper independently
+
+```r
+# Example — validation helper testable alone
+expect_error(
+  validate_bfh_qic_inputs(args = list(chart_type = "invalid_type", ...)),
+  "chart_type must be"
+)
+```
+
+#### Scenario: public API unchanged after refactor
+
+- **GIVEN** existing tests calling `bfh_qic()` from any caller
+- **WHEN** running `devtools::test()` after the refactor
+- **THEN** all pre-existing tests SHALL pass without modification
+- **AND** `bfh_qic()` signature, return values, and behavior SHALL be identical
+
