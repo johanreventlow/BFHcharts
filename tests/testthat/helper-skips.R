@@ -160,3 +160,30 @@ skip_if_no_mari_font <- function(
   }
   invisible(TRUE)
 }
+
+# ----------------------------------------------------------------------------
+# PDF smoke-render deps skip-helper
+# ----------------------------------------------------------------------------
+
+#' Skip test hvis PDF-rendering-deps (Quarto CLI + pdftools) ikke er tilgængelige
+#'
+#' Bruges i smoke-render-tests der kræver en fungerende Quarto/Typst PDF-pipeline.
+#' Tjekker Quarto-tilgængelighed via `BFHcharts:::quarto_available()` og
+#' `pdftools`-pakken. Erstatter `skip_if_no_quarto()` + manuel pdftools-tjek.
+#'
+#' @param msg Besked der vises ved skip
+#' @keywords internal
+skip_if_no_pdf_render_deps <- function(
+  msg = "Skipping: PDF render deps not available (Quarto CLI or pdftools missing)"
+) {
+  quarto_ok <- tryCatch(
+    BFHcharts:::quarto_available(),
+    error = function(e) FALSE
+  )
+  pdftools_ok <- requireNamespace("pdftools", quietly = TRUE)
+
+  if (!quarto_ok || !pdftools_ok) {
+    testthat::skip(msg)
+  }
+  invisible(TRUE)
+}

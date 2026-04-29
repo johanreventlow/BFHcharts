@@ -1,3 +1,36 @@
+# BFHcharts 0.10.6
+
+## CI
+
+* **PR-blocking PDF smoke-render workflow tilfojet** (`.github/workflows/pdf-smoke.yaml`).
+  Korer 3 repraescentative `bfh_export_pdf()`-kald (p-chart, i-chart med metadata,
+  run-chart med target) paa hver PR til `main` og `develop`. Verificerer at
+  Quarto/Typst-pipelinen producerer gyldige PDF-filer (> 0 bytes, >= 1 side).
+  Bruger aabne fallback-fonts (DejaVu/Liberation/Noto/Roboto) via `apt-get` saa
+  pipelinen virker paa public GitHub-runners uden propriataer Mari. Fanger
+  catastrophic render-regressioner foer de lander i main -- complement til
+  ugentlig `render-tests.yaml`. Manuel follow-up kraevet: tilfoej
+  "pdf-smoke (ubuntu-latest)" til branch-protection required-checks.
+
+## Interne aendringer
+
+* **vdiffr snapshots re-baseret** (9 snapshots). Font-metric drift opstod da
+  Roboto blev registreret som Helvetica-alias i v0.10.5 (`R/zzz.R`). SVG-koordinater
+  aendrede sig minimalt (< 5px) -- forventet og intentionelt.
+
+* **Sync font-alias-sæt i `tests/testthat/setup.R`** med `R/zzz.R`. Roboto tilfojet
+  til `c("Mari", "Arial")` -> `c("Mari", "Arial", "Roboto")` i setup.R's
+  grDevices-registrering. Forhindrer metric-divergens mellem production og test.
+
+* **`skip_if_no_pdf_render_deps()` tilfojet til `helper-skips.R`**. Tjekker
+  `BFHcharts:::quarto_available()` og `pdftools`-tilgaengelighed samlet.
+  Til brug i smoke-render og fremtidige PDF-pipeline-tests.
+
+* **`test-visual-regression.R` migreret fra fil-scope til per-test skip**.
+  Fil-scope `skip_if_fonts_unavailable()` paa linje 28 erstattet med
+  `skip_if_no_mari_font()` per test. Giver bedre testthat-reporting og
+  aabnner for fremtidige tests der ikke kraever Mari.
+
 # BFHcharts 0.10.5
 
 ## Bug fixes
