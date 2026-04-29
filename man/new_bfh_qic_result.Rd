@@ -37,8 +37,8 @@ be removed without a deprecation cycle.
 
 \section{qic_data columns}{
 
-The \code{$qic_data} field is a \code{data.frame} with the following canonical
-columns (supplied by qicharts2 >= 0.7.0):
+The \code{$qic_data} field is a \code{data.frame} with the following
+canonical columns (supplied by qicharts2 >= 0.7.0):
 \describe{
 \item{x}{Original x-axis input values}
 \item{y}{Original y-axis input values (per-period)}
@@ -51,9 +51,9 @@ columns (supplied by qicharts2 >= 0.7.0):
 \item{runs.signal}{Logical: Anhoej runs-rule signal}
 \item{longest.run, longest.run.max}{Observed and threshold run lengths}
 \item{n.crossings, n.crossings.min}{Observed and minimum crossing counts}
-\item{anhoej.signal}{Logical combined Anhoej-rule signal (runs OR crossings).
-May be \code{FALSE} for series < 10 points where crossing criterion is
-not applied.}
+\item{anhoej.signal}{Logical combined Anhoej-rule signal (runs OR
+crossings). May be \code{FALSE} for series < 10 points where crossing
+criterion is not applied.}
 \item{cl.lab, ucl.lab, lcl.lab}{Character labels for chart annotations}
 \item{part, baseline, include}{Phase/freeze/filter columns}
 \item{notes}{Free-text annotation column}

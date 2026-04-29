@@ -232,7 +232,7 @@ df <- data.frame(
   vaerdi = c(10, 12, 11, 13, 10, 14, 11, 12, 10, 13, 11, 12)
 )
 result <- bfh_qic(df, x = maaned, y = vaerdi, chart_type = "i")
-class(result)  # "bfh_qic_result"
+class(result) # "bfh_qic_result"
 
 \dontrun{
 library(BFHcharts)
