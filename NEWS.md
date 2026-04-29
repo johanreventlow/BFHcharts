@@ -1,3 +1,29 @@
+# BFHcharts 0.11.0
+
+## Forbedringer
+
+* **Advarsel ved for kort baseline.** `bfh_qic()` udsender nu en advarsel
+  når `freeze` eller en `part`-fase har færre end 8 observationer
+  (`MIN_BASELINE_N`). Anhøj-reglerne og SPC-litteraturen kræver ca. 8+
+  punkter for meningsfulde kontrolgrænser — tidligere kørte beregningen
+  stille videre med statistisk usikre grænser. Ingen ændring i adfærd
+  for normale serier (n ≥ 8). (#enforce-baseline-minimum-and-cl-warnings)
+
+* **Advarsel ved custom `cl` og Anhøj-signaler.** Når `cl` angives manuelt,
+  beregnes Anhøj løbe- og krydsningssignaler mod den brugerleverede
+  centrallinje frem for den dataestimerede procesmiddel. `bfh_qic()` giver
+  nu eksplicit advarsel om dette, så brugere er klar over fortolknings-
+  forbeholdet. (#enforce-baseline-minimum-and-cl-warnings)
+
+## Bug fixes
+
+* **Bevar NA i `anhoej.signal` fra qicharts2.** Tidligere blev NA i
+  `anhoej.signal` tvunget til `FALSE`, hvilket maskerede "for kort serie
+  til evaluering" som "ingen signal". NA bevares nu og repræsenterer
+  "ikke evaluerbar (for kort serie)". `plot_core.R` håndterer NA ved
+  rendering ved at behandle det som `FALSE` (solid linje) — ingen
+  visuel ændring for eksisterende charts. (#enforce-baseline-minimum-and-cl-warnings)
+
 # BFHcharts 0.10.5
 
 ## Bug fixes
