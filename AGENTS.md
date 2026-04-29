@@ -584,7 +584,7 @@ vdiffr::expect_doppelganger("name", plot, writer = "svg")
 | **plot_enhancements.R** | Plot enhancements | Target lines, labels, annotations |
 | **themes.R** | ggplot2 themes | `bfh_theme()`, color palettes |
 | **chart_types.R** | Chart type definitions | Chart type mappings, validering |
-| **config_objects.R** | Config constructors | `spc_plot_config()`, `viewport_dims()`, `phase_config()` |
+| **config_objects.R** | Config constructors | `spc_plot_config()`, `viewport_dims()` |
 | **utils_y_axis_formatting.R** | Y-axis formatting | Format functions for different units |
 | **utils_date_formatting.R** | Date/time formatting | Date axis helpers |
 | **utils_helpers.R** | General utilities | Generic helper functions |
