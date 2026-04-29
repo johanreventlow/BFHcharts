@@ -129,3 +129,60 @@ test_that("bfh_qic() result$qic_data anhoej.signal is never NA", {
     info = "anhoej.signal contains NA values (should always be TRUE/FALSE)"
   )
 })
+
+# ----------------------------------------------------------------------------
+# Regression: print.summary removal documentation (update-print-summary-removal-docs)
+# Verificerer at man/bfh_qic.Rd ikke beskriver print.summary som deprecated-med-advarsel
+# og at @examples ikke demonstrerer det fjernede argument.
+# ----------------------------------------------------------------------------
+
+test_that("bfh_qic Rd does not describe print.summary as 'deprecated, will warn'", {
+  rd_path <- system.file("man", "bfh_qic.Rd", package = "BFHcharts")
+  skip_if(nchar(rd_path) == 0, "Package not installed — run devtools::install()")
+
+  rd_content <- readLines(rd_path, warn = FALSE)
+  expect_false(
+    any(grepl("deprecated, will warn", rd_content, fixed = TRUE)),
+    info = "Rd still contains legacy 'deprecated, will warn' phrasing for print.summary"
+  )
+  expect_false(
+    any(grepl("triggers deprecation warning", rd_content, fixed = TRUE)),
+    info = "Rd still describes print.summary as triggering deprecation warning"
+  )
+})
+
+test_that("bfh_qic Rd examples do not demonstrate print.summary = TRUE", {
+  rd_path <- system.file("man", "bfh_qic.Rd", package = "BFHcharts")
+  skip_if(nchar(rd_path) == 0, "Package not installed — run devtools::install()")
+
+  rd_lines <- readLines(rd_path, warn = FALSE)
+
+  # Find the \examples{} block
+  examples_start <- which(grepl("^\\\\examples\\{", rd_lines))
+  if (length(examples_start) == 0) skip("No \\examples{} block found in Rd")
+
+  examples_section <- rd_lines[examples_start:length(rd_lines)]
+  expect_false(
+    any(grepl("print.summary\\s*=\\s*TRUE", examples_section, perl = TRUE)),
+    info = "Rd examples still demonstrate print.summary = TRUE (removed in v0.11.0)"
+  )
+})
+
+# ----------------------------------------------------------------------------
+# Regression: chart type documentation completeness (complete-chart-type-public-docs)
+# Verificerer at alle typer i CHART_TYPES_EN er dokumenteret i man/bfh_qic.Rd.
+# ----------------------------------------------------------------------------
+
+test_that("bfh_qic Rd documents all validated chart types", {
+  rd_path <- system.file("man", "bfh_qic.Rd", package = "BFHcharts")
+  skip_if(nchar(rd_path) == 0, "Package not installed — run devtools::install()")
+
+  rd_content <- paste(readLines(rd_path, warn = FALSE), collapse = "\n")
+
+  for (t in BFHcharts:::CHART_TYPES_EN) {
+    expect_true(
+      grepl(paste0("\\b", t, "\\b"), rd_content, perl = TRUE),
+      info = paste("Chart type", t, "missing from bfh_qic.Rd")
+    )
+  }
+})
