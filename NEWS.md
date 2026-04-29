@@ -26,6 +26,18 @@
   propageres uaendret. Fungerer som defense-in-depth efter PR #242
   (font-aliases onLoad) der eliminerer font-warnings ved kilden. (#200)
 
+## Sikkerhed
+
+* **Roxygen-dokumentation eksplicit om trust-grænse for `inject_assets` og
+  `template_path`.** Begge parametre i `bfh_export_pdf()` (og
+  `inject_assets` i `bfh_create_export_session()`) accepterer
+  caller-supplied kode/templates der koerer med fuld proces-privilege.
+  De er legitim infrastruktur for proprietaere fonts og custom templates,
+  men en naiv Shiny-integration der videresender user-input vil skabe en
+  privilege-escalation-vektor. Ny `\\section{Security}` markerer eksplicit
+  hvilke parametre der er trusted-code-only og hvordan de skal valideres
+  mod allow-lister hvis exposed. Ingen kode-aendring -- kun docs. (#218)
+
 # BFHcharts 0.10.4
 
 ## Interne aendringer

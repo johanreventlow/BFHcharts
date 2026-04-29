@@ -104,11 +104,37 @@
 #' - Other chart types show only values (e.g., "127")
 #' - Interval labels adapt to data frequency (month, week, day, etc.)
 #'
+#' @section Security:
+#' Both \code{inject_assets} and \code{template_path} are designed for
+#' advanced use cases (proprietary fonts, organization-specific templates)
+#' and \strong{must be treated as trusted-code-only}:
+#' \itemize{
+#'   \item \code{inject_assets} is invoked with full filesystem access in
+#'     the template directory. Whatever R code the callback contains runs
+#'     with the same privileges as the calling process -- equivalent to
+#'     sourcing arbitrary R from disk.
+#'   \item \code{template_path} is compiled by the Typst binary. A custom
+#'     template can read and write arbitrary paths during compilation.
+#' }
+#' Treat both parameters with the same trust contract you would apply to
+#' \code{source()}: pass only code-reviewed, organizationally controlled
+#' values. \strong{Never} forward user-supplied input (Shiny inputs,
+#' query parameters, untrusted uploads) to either parameter -- doing so
+#' creates a privilege-escalation vector. If your application surface
+#' needs to expose template customization to end users, validate against
+#' a fixed allow-list of approved templates and callbacks before invoking
+#' \code{bfh_export_pdf()}.
+#'
+#' The same trust requirement applies to \code{inject_assets} when passed
+#' to \code{\link{bfh_create_export_session}()}.
+#'
 #' @export
 #' @seealso
 #'   - [bfh_qic()] to create SPC charts
 #'   - [bfh_export_png()] to export as PNG
 #'   - [bfh_create_typst_document()] for low-level Typst generation
+#'   - [bfh_create_export_session()] for batch workflows (same trust
+#'     requirement applies to its `inject_assets` parameter)
 #' @examples
 #' \dontrun{
 #' library(BFHcharts)

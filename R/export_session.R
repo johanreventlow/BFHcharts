@@ -34,7 +34,20 @@
 #' - Not compatible with \code{template_path} (custom templates).
 #' - Pass \code{inject_assets} here, not to individual \code{bfh_export_pdf()} calls.
 #'
+#' @section Security:
+#' \code{inject_assets} is invoked with full filesystem access in the
+#' template directory and runs whatever R code the callback contains.
+#' \strong{Treat it as trusted-code-only}: pass only code-reviewed,
+#' organizationally controlled callbacks. Never forward user-supplied
+#' input (Shiny inputs, query parameters, untrusted uploads) to this
+#' parameter -- the same trust contract as \code{source()} applies. See
+#' \code{\link{bfh_export_pdf}} for the full rationale and the parallel
+#' warning for \code{template_path}.
+#'
 #' @export
+#' @seealso
+#'   - [bfh_export_pdf()] for single exports and the full security note
+#'     covering both `inject_assets` and `template_path`
 bfh_create_export_session <- function(font_path = NULL, inject_assets = NULL) {
   if (!is.null(inject_assets) && !is.function(inject_assets)) {
     stop("inject_assets must be a function or NULL", call. = FALSE)
