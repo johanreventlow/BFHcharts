@@ -34,6 +34,17 @@
   n > 1000 per subgruppe). To nye eksempler tilføjet: `pp`-chart og `mr`-chart
   parret med I-chart. (#complete-chart-type-public-docs)
 
+* **Companion-pakke-pattern dokumenteret for proprietær branding.**
+  `?bfh_export_pdf`, `?bfh_create_export_session` og `README.md` beskriver
+  nu den anbefalede fremgangsmåde for organisationer, der har brug for
+  proprietære fonts (Mari, Arial) og hospital-logoer i PDF-eksport:
+  distribution via en privat companion R-pakke, der plugger ind via
+  `inject_assets`-parameteren. Dette holder proprietære assets ude af den
+  offentlige GPL-3-pakke og ud af consumer-applikationers git-historik, mens
+  fuld branding understøttes på Posit Connect Cloud, RStudio Connect og Docker.
+  For BFH/Region Hovedstaden-deployments implementerer `BFHchartsAssets`
+  (privat repo) dette mønster. (#add-bfhcharts-assets-companion-pkg)
+
 # BFHcharts 0.11.0
 
 ## CI

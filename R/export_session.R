@@ -44,6 +44,17 @@
 #' \code{\link{bfh_export_pdf}} for the full rationale and the parallel
 #' warning for \code{template_path}.
 #'
+#' \strong{Recommended: companion package for proprietary branding.}
+#' Organizations that need consistent proprietary branding across batch
+#' exports should pass a companion-package callback here rather than
+#' hardcoding asset paths. For example:
+#' \code{bfh_create_export_session(inject_assets = MyAssetsPkg::inject_my_assets)}.
+#' This keeps proprietary fonts and logos out of public BFHcharts
+#' distribution while supporting full branding on Posit Connect Cloud,
+#' RStudio Connect, and Docker deployments. The callback is still
+#' subject to the trusted-code-only contract above. See
+#' \code{\link{bfh_export_pdf}} Security section for full details.
+#'
 #' @export
 #' @seealso
 #'   - [bfh_export_pdf()] for single exports and the full security note
