@@ -143,13 +143,20 @@ skip_if_fonts_unavailable <- function(
 skip_if_no_mari_font <- function(
   msg = "Skipping: Mari fonts (BFHtheme) not available"
 ) {
+  # Eksplicit CI-skip: vdiffr-snapshots er rebaseret pa macOS med Mari;
+  # CI Ubuntu uden Mari producerer divergerende SVG selv hvis systemfonts
+  # detekterer en font-rest med "Mari" i navnet.
+  if (isTRUE(as.logical(Sys.getenv("CI")))) {
+    testthat::skip(msg)
+  }
+
   mari_present <- tryCatch(
     {
       if (requireNamespace("systemfonts", quietly = TRUE)) {
         fonts <- systemfonts::system_fonts()
         any(grepl("Mari", fonts$family, ignore.case = TRUE))
       } else {
-        !isTRUE(as.logical(Sys.getenv("CI")))
+        FALSE
       }
     },
     error = function(e) FALSE
