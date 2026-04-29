@@ -51,7 +51,8 @@
 #' -> `runs.signal` -> `FALSE`
 #'
 #' @param qic_data data.frame fra `qicharts2::qic()`, eller NULL
-#' @return qic_data med normaliseret `anhoej.signal` (logical, aldrig NA),
+#' @return qic_data med normaliseret `anhoej.signal` (logical, kan være NA når
+#'   serien er for kort til pålidelig Anhøj-evaluering),
 #'   eller NULL hvis input er NULL
 #' @keywords internal
 add_anhoej_signal <- function(qic_data) {
@@ -73,11 +74,8 @@ add_anhoej_signal <- function(qic_data) {
     qic_data$anhoej.signal <- rep(FALSE, nrow(qic_data))
   }
 
-  # Downstream kraever altid TRUE/FALSE - aldrig NA
-  qic_data$anhoej.signal <- ifelse(
-    is.na(qic_data$anhoej.signal), FALSE, qic_data$anhoej.signal
-  )
-
+  # NA bevares bevidst — signalerer at serien er for kort til evaluering.
+  # Downstream-kode (plot_core.R, utils_qic_summary.R) håndterer NA eksplicit.
   qic_data
 }
 
@@ -250,6 +248,33 @@ validate_bfh_qic_inputs <- function(data,
     min = 1, max = nrow(data),
     allow_null = TRUE, context = sprintf("1-%d", nrow(data))
   )
+
+  # Advar hvis freeze-baseline er for kort til pålidelig signal-detektion
+  if (!is.null(freeze) && freeze < MIN_BASELINE_N) {
+    warning(
+      "freeze = ", freeze, ": baseline har færre end ", MIN_BASELINE_N,
+      " observationer. Kontrolgrænser er statistisk usikre.",
+      call. = FALSE
+    )
+  }
+
+  # Advar for faser med for få observationer
+  if (!is.null(part)) {
+    n_total <- nrow(data)
+    # Beregn startpositionerne for hver fase
+    phase_starts <- c(1L, as.integer(part) + 1L)
+    phase_ends <- c(as.integer(part), n_total)
+    phase_sizes <- phase_ends - phase_starts + 1L
+    short_phases <- which(phase_sizes < MIN_BASELINE_N)
+    if (length(short_phases) > 0) {
+      warning(
+        "Fase(r) ", paste(short_phases, collapse = ", "),
+        " har færre end ", MIN_BASELINE_N,
+        " observationer. Kontrolgrænser kan være statistisk usikre.",
+        call. = FALSE
+      )
+    }
+  }
   validate_numeric_parameter(base_size, "base_size",
     min = 1, max = 100,
     allow_null = FALSE, len = 1

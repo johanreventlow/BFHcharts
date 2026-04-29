@@ -13,24 +13,26 @@ test_that("add_anhoej_signal returnerer NULL for NULL input", {
   expect_null(add_anhoej_signal(NULL))
 })
 
-test_that("add_anhoej_signal normaliserer eksisterende anhoej.signal kolonne", {
+test_that("add_anhoej_signal normaliserer eksisterende anhoej.signal kolonne (NA bevares)", {
   df <- data.frame(
     x = 1:3,
     anhoej.signal = c(1, 0, NA)
   )
   result <- add_anhoej_signal(df)
   expect_type(result$anhoej.signal, "logical")
-  expect_equal(result$anhoej.signal, c(TRUE, FALSE, FALSE))
+  # NA bevares — signalerer "for kort serie til evaluering"
+  expect_equal(result$anhoej.signal, c(TRUE, FALSE, NA))
 })
 
-test_that("add_anhoej_signal bruger anhoej.signals fallback", {
+test_that("add_anhoej_signal bruger anhoej.signals fallback (NA bevares)", {
   df <- data.frame(
     x = 1:3,
     anhoej.signals = c(TRUE, FALSE, NA)
   )
   result <- add_anhoej_signal(df)
   expect_type(result$anhoej.signal, "logical")
-  expect_equal(result$anhoej.signal, c(TRUE, FALSE, FALSE))
+  # NA bevares — signalerer "for kort serie til evaluering"
+  expect_equal(result$anhoej.signal, c(TRUE, FALSE, NA))
 })
 
 test_that("add_anhoej_signal kombinerer runs.signal og crossings.signal", {
@@ -61,14 +63,18 @@ test_that("add_anhoej_signal defaulter til FALSE når ingen signal-kolonner", {
   expect_equal(result$anhoej.signal, c(FALSE, FALSE, FALSE))
 })
 
-test_that("add_anhoej_signal erstatter aldrig NA med NA i output", {
+test_that("add_anhoej_signal bevarer NA i output (NA = for kort serie til evaluering)", {
   df <- data.frame(
     x = 1:4,
     runs.signal = c(NA, TRUE, FALSE, NA),
     crossings.signal = c(FALSE, NA, FALSE, NA)
   )
   result <- add_anhoej_signal(df)
-  expect_false(any(is.na(result$anhoej.signal)))
+  expect_type(result$anhoej.signal, "logical")
+  # NA i begge input-kolonner → NA i output (bevares som "ikke evaluerbar")
+  # Rad 1: runs=NA OR crossings=FALSE → NA (NA OR FALSE = NA i R)
+  # Rad 4: runs=NA OR crossings=NA   → NA
+  expect_true(any(is.na(result$anhoej.signal)))
 })
 
 test_that("add_anhoej_signal bevarer øvrige kolonner uændret", {

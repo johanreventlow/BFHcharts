@@ -582,6 +582,16 @@ bfh_qic <- function(data,
   )
   qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
 
+  # Advar når custom cl overskriver den dataestimerede procesmiddel i Anhøj-beregning
+  if (!is.null(cl) && any(c("runs.signal", "crossings.signal") %in% names(qic_data))) {
+    warning(
+      "Custom cl supplied: Anhøj run/crossing signals are computed against ",
+      "the supplied centerline, not the data-estimated process mean. ",
+      "Interpret with caution.",
+      call. = FALSE
+    )
+  }
+
   # ---- Viewport + responsiv base_size ----
   vp <- compute_viewport_base_size(
     width = width,
