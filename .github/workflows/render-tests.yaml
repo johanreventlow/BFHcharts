@@ -93,10 +93,12 @@ jobs:
 
       - uses: quarto-dev/quarto-actions/setup@v2
         with:
-          # Quarto 1.6+ kraeves: BFHcharts bruger \`--ignore-system-fonts\`
-          # (Typst 0.13+-flag) via bfh_compile_typst(). Quarto 1.5.x ships
-          # Typst 0.11 som ikke understoetter flaget.
-          version: "1.6.40"
+          # BFHcharts bruger \`--ignore-system-fonts\` (Typst 0.13+-flag) via
+          # bfh_compile_typst(). Quarto 1.5.x og 1.6.x ships begge Typst 0.11
+          # som ikke understoetter flaget. Quarto 1.7.x ships Typst 0.13.x.
+          # Bruger "pre-release"-channel indtil 1.7.x bliver stable, hvorefter
+          # vi kan pinne en specifik version.
+          version: "pre-release"
 
       - name: Verify Quarto installation
         run: |
