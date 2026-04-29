@@ -290,20 +290,26 @@ test_that("deterministisk: samme input giver altid samme output", {
 # place_two_labels_npc - label_height_npc > 0.5 (#92)
 # ==============================================================================
 
-test_that("label_height_npc > 0.5 giver IKKE hard stop (#92)", {
-  # BUG-TEST: Denne test dokumenterer bug #92
-  # Nuværende kode kaster stop() ved > 0.5, men det bør degraderes gracefully
-  # TODO #92: Fejler på Ubuntu CI (oldrel/release) — graceful degradation ikke
-  # implementeret endnu. Skip på CI indtil bug fixes.
-  testthat::skip_on_ci()
-  expect_no_error(
+test_that("label_height_npc > 0.5 emitterer warning, ikke hard stop (#92)", {
+  # BUG #92 fix-kontrakt: store labels (>50% af panel) skal degraderes
+  # gracefully via warning() — ikke stop(). Bekraefter at koden ved
+  # R/utils_label_placement.R:376-384 emitterer warning og returnerer
+  # et gyldigt resultat (best-effort placement).
+  #
+  # CI-NOTE: tidligere skip_on_ci() pga. options(warn = 2) konverterede
+  # warning til error og brød expect_no_error(). Fix: assertér warning'en
+  # direkte i stedet — platform-uafhaengigt.
+  result <- NULL
+  expect_warning(
     result <- place_two_labels_npc(
       yA_npc = 0.5, yB_npc = NA_real_,
       label_height_npc = 0.6,
       gap_line = 0.01, gap_labels = 0.03,
       pad_top = 0.01, pad_bot = 0.01
-    )
+    ),
+    regexp = "degraded placement"
   )
+  expect_false(is.null(result))
 })
 
 # ==============================================================================
