@@ -45,7 +45,7 @@ bfh_qic(
 
 \item{n}{Name of denominator column for ratio charts (optional, unquoted, NSE)}
 
-\item{chart_type}{Chart type: "run", "i", "p", "c", "u", "xbar", "s", "t", "g"}
+\item{chart_type}{Chart type: "run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t"}
 
 \item{y_axis_unit}{Unit type: "count", "percent", "rate", or "time"}
 
@@ -91,13 +91,13 @@ bfh_qic(
 
 \item{return.data}{Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result object. If FALSE (default), return bfh_qic_result S3 object. Legacy parameter maintained for backwards compatibility.}
 
-\item{print.summary}{\strong{DEPRECATED.} Logical. The summary is now always included in the bfh_qic_result object. Access it via \code{result$summary}. This parameter will be removed in a future version. When TRUE, triggers deprecation warning and returns legacy list(plot, summary) format.}
+\item{print.summary}{\strong{REMOVED in v0.11.0.} Calling with \code{print.summary = TRUE} raises an error. Use \code{return.data = TRUE} and access \code{result$qic_summary}, or use the default \code{bfh_qic_result} object and access \code{result$summary} directly.}
 
 \item{language}{Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Passed through to analysis and label generation. Default \code{"da"} preserves backward compatibility.}
 }
 \value{
 \itemize{
-\item Default (return.data = FALSE, print.summary = FALSE): \code{bfh_qic_result} S3 object with components:
+\item Default (return.data = FALSE): \code{bfh_qic_result} S3 object with components:
 \itemize{
 \item \code{$plot}: ggplot2 object with the SPC chart
 \item \code{$summary}: data.frame with SPC statistics
@@ -105,8 +105,6 @@ bfh_qic(
 \item \code{$config}: list with original function parameters
 }
 \item return.data = TRUE: data.frame with qic calculations (legacy behavior)
-\item print.summary = TRUE: list(plot = ggplot, summary = data.frame) (deprecated, will warn)
-\item Both TRUE: list(data = data.frame, summary = data.frame) (deprecated, will warn)
 }
 }
 \description{
@@ -133,13 +131,21 @@ entire workflow from raw data to finished plot with intelligent labels.
 \itemize{
 \item \strong{run}: Run chart (no control limits)
 \item \strong{i}: I-chart (individuals)
+\item \strong{mr}: Moving Range chart — measures point-to-point variability.
+Typically paired with an I-chart to characterise both process level (I)
+and short-term variation (MR).
 \item \strong{p}: P-chart (proportions, requires n)
-\item \strong{c}: C-chart (counts)
+\item \strong{pp}: P-prime chart (Laney-adjusted proportions) — use instead of \code{p}
+when denominators are very large (n > 1000 per subgroup) and standard
+control limits become artificially tight due to over-dispersion. Requires n.
 \item \strong{u}: U-chart (rates, requires n)
+\item \strong{up}: U-prime chart (Laney-adjusted rates) — same rationale as \code{pp},
+applied to count rates. Requires n.
+\item \strong{c}: C-chart (counts)
+\item \strong{g}: G-chart (geometric)
 \item \strong{xbar}: X-bar chart
 \item \strong{s}: S-chart
 \item \strong{t}: T-chart (time between events)
-\item \strong{g}: G-chart (geometric)
 }
 
 \strong{Y-Axis Units:}
@@ -516,33 +522,30 @@ result <- bfh_qic(
   y = infections,
   chart_type = "i",
   y_axis_unit = "count",
-  chart_title = "Infections - With Summary",
-  print.summary = TRUE # Return list(plot, summary)
+  chart_title = "Infections - With Summary"
 )
 
 # Access the plot
 result$plot
 
-# Access the summary statistics (Danish column names)
+# Access the summary statistics (Danish column names) via S3 object
 print(result$summary)
 # Columns: fase, antal_observationer, anvendelige_observationer,
 #          centerlinje, nedre_kontrolgraense, oevre_kontrolgraense,
 #          laengste_loeb, antal_kryds, loebelaengde_signal, sigma_signal
 
-# Example 21: Get both raw data and summary
+# Example 21: Get both raw qic data and summary via S3 object
 result <- bfh_qic(
   data = data,
   x = month,
   y = infections,
   chart_type = "i",
   y_axis_unit = "count",
-  part = c(12), # Split into phases
-  return.data = TRUE,
-  print.summary = TRUE # Return list(data, summary)
+  part = c(12) # Split into phases
 )
 
-# Access raw qic data
-result$data
+# Access raw qic data (all qicharts2 calculations)
+result$qic_data
 
 # Access summary statistics (one row per phase)
 result$summary
@@ -558,11 +561,10 @@ result <- bfh_qic(
   chart_type = "p",
   y_axis_unit = "percent",
   chart_title = "Infection Rate - Multi-phase Analysis",
-  part = c(12),
-  print.summary = TRUE
+  part = c(12)
 )
 
-# Extract key metrics for reporting
+# Extract key metrics for reporting via result$summary
 summary_stats <- result$summary
 cat("Fase 1 centerlinje:", summary_stats$centerlinje[1], "\%\n")
 cat("Fase 2 centerlinje:", summary_stats$centerlinje[2], "\%\n")
@@ -571,5 +573,40 @@ cat("Forbedring:", summary_stats$centerlinje[1] - summary_stats$centerlinje[2], 
 if (summary_stats$sigma_signal[2]) {
   cat("VIGTIG: Special cause variation detekteret i fase 2!\n")
 }
+
+# Example 23: P-prime chart for large denominators (Laney-adjusted)
+data_large_n <- data.frame(
+  month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+  events = rpois(24, lambda = 50),
+  population = rpois(24, lambda = 5000) # Very large denominators
+)
+plot_pp <- bfh_qic(
+  data = data_large_n,
+  x = month,
+  y = events,
+  n = population,
+  chart_type = "pp", # Laney-adjusted: prevents artificially tight limits
+  y_axis_unit = "percent",
+  chart_title = "Event Rate (Laney P-prime)"
+)
+
+# Example 24: Moving Range chart paired with I-chart
+# Use MR-chart alongside I-chart for full process variation characterisation
+plot_i <- bfh_qic(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Infections - Process Level (I-chart)"
+)
+plot_mr <- bfh_qic(
+  data = data,
+  x = month,
+  y = infections,
+  chart_type = "mr", # Moving Range: short-term variation
+  y_axis_unit = "count",
+  chart_title = "Infections - Short-term Variation (MR-chart)"
+)
 }
 }
