@@ -15,6 +15,11 @@ bfh_build_analysis_context(x, metadata = list())
 \item \code{target}: Target value for the metric. Accepts either numeric (backward
 compatible) or character with optional operator prefix (\code{"<= 2,5"},
 \code{">= 90\%"}). Operators are parsed to derive \code{target_direction}.
+\strong{Fallback chain:} when \code{metadata$target} is NULL the function falls
+back to \code{x$config$target_text}, then \code{x$config$target_value}. This means
+a target supplied to \code{bfh_qic(target_text = ..., target_value = ...)}
+automatically reaches the analysis context without callers duplicating
+it in \code{metadata}.
 \item \code{hospital}: Hospital name
 \item \code{department}: Department name
 }}
