@@ -16,7 +16,12 @@
 #'     \item \code{author}: Author name (optional)
 #'     \item \code{date}: Report date (default: Sys.Date())
 #'     \item \code{data_definition}: Data definition text (optional)
-#'     \item \code{target}: Target value for analysis context (numeric or character, optional)
+#'     \item \code{target}: Target value for analysis context. Must be either
+#'       NULL, a single finite numeric (`length 1`, no NA/Inf/NaN), or a
+#'       single character string (`length 1`, not NA). Multi-element vectors
+#'       and non-finite numerics are rejected with an informative error. The
+#'       target also auto-flows from `bfh_qic(target_text=, target_value=)`
+#'       via the analysis-context fallback chain (since v0.12.0).
 #'     \item \code{footer_content}: Additional content to display below the chart (optional).
 #'       Supports markdown formatting (bold, italic, line breaks).
 #'   }
@@ -66,6 +71,24 @@
 #'     \item \code{font_path} here overrides \code{session$font_path}.
 #'     \item Close the session with \code{close(session)} after the batch is done.
 #'   }
+#' @param strict_baseline Logical. When TRUE (default), the function errors
+#'   before render if \code{x$config$freeze < MIN_BASELINE_N} (8) or if any
+#'   phase in \code{x$qic_data} contains fewer than \code{MIN_BASELINE_N}
+#'   points. When FALSE, the export proceeds and the legacy warning-only
+#'   behavior of \code{bfh_qic()} is preserved.
+#'
+#'   \strong{Rationale:} PDFs from this function typically reach
+#'   quality-improvement leadership where R warnings never surface.
+#'   Anhoej & Olesen (2014) recommend >= 8 baseline points for reliable
+#'   run/crossing detection; charts with shorter baselines have tight but
+#'   statistically unreliable control limits. Strict-by-default forces
+#'   explicit acknowledgement of short-baseline output; the interactive
+#'   \code{bfh_qic()} path remains warning-only because the analyst is
+#'   present.
+#'
+#'   \strong{Inheritance:} When \code{batch_session} is supplied without an
+#'   explicit per-call value, the session's \code{strict_baseline} is used.
+#'   An explicit per-call value overrides the session.
 #'
 #' @return The input object \code{x} invisibly, enabling pipe chaining
 #'
@@ -216,11 +239,31 @@ bfh_export_pdf <- function(x,
                            font_path = NULL,
                            ignore_system_fonts = TRUE,
                            inject_assets = NULL,
-                           batch_session = NULL) {
+                           batch_session = NULL,
+                           strict_baseline) {
+  # strict_baseline: per-call > session > default(TRUE).
+  # missing()-flag fanges FOERST i orchestrator-scopet (NSE-sensitive).
+  strict_baseline_supplied <- !missing(strict_baseline)
+
   # ---- 1. Input-validering (class, metadata, dpi, font_path, session) --------
   validate_bfh_export_pdf_inputs(
     x, output, metadata, dpi, font_path, inject_assets, batch_session, template_path
   )
+
+  # ---- 1b. Resolv strict_baseline + valider strict-mode --------------------
+  if (!strict_baseline_supplied) {
+    strict_baseline <- if (!is.null(batch_session) &&
+      !is.null(batch_session$strict_baseline)) {
+      batch_session$strict_baseline
+    } else {
+      TRUE
+    }
+  }
+  if (!is.logical(strict_baseline) || length(strict_baseline) != 1L ||
+    is.na(strict_baseline)) {
+    stop("strict_baseline must be TRUE or FALSE", call. = FALSE)
+  }
+  .validate_strict_baseline(x, strict_baseline)
 
   # ---- 2. Metadata (auto-analysis + auto-details) ----------------------------
   metadata <- prepare_export_metadata(
@@ -259,9 +302,9 @@ bfh_export_pdf <- function(x,
       add = TRUE
     )
   } else {
-    # Single-call mode: ryd hele temp_dir op
-    # Registreres efter dir.create() — men prepare_temp_workspace() har
-    # allerede lavet mappen, så vi registrerer her for at fange fejl i trin 6+
+    # Single-call mode: clean up the entire temp_dir
+    # Registered after dir.create() -- prepare_temp_workspace() has
+    # already created the directory, so we register here to catch errors in step 6+
     on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
   }
 
@@ -274,7 +317,7 @@ bfh_export_pdf <- function(x,
   # ---- 8. SPC-statistik -------------------------------------------------------
   spc_stats <- bfh_extract_spc_stats(x)
 
-  # ---- 9. Typst-dokument + font_path-opløsning --------------------------------
+  # ---- 9. Typst document + font_path resolution ------------------------------
   effective_font_path <- compose_typst_document(
     x, chart_svg, typst_file,
     metadata, spc_stats, template, template_path,
@@ -376,7 +419,7 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
   # and fixed PDF_LABEL_SIZE for font sizing
   # Se .muffle_expected_warnings() helper for hvilke warnings der mufles.
   # centerline_value, has_frys_column, has_skift_column laeses fra top-niveau
-  # config-felter (enkelt kilde til sandhed — se build_bfh_qic_config()).
+  # config fields (single source of truth -- see build_bfh_qic_config()).
   plot_with_labels <- .muffle_expected_warnings(
     add_spc_labels(
       plot = plot_stripped,

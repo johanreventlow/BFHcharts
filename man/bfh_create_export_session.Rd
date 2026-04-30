@@ -4,7 +4,11 @@
 \alias{bfh_create_export_session}
 \title{Create a Batch Export Session}
 \usage{
-bfh_create_export_session(font_path = NULL, inject_assets = NULL)
+bfh_create_export_session(
+  font_path = NULL,
+  inject_assets = NULL,
+  strict_baseline = TRUE
+)
 }
 \arguments{
 \item{font_path}{Optional path to directory containing additional fonts.
@@ -17,6 +21,14 @@ directory (\code{<session_tmpdir>/bfh-template}). Use this to inject fonts
 or images not bundled in BFHcharts (e.g., proprietary fonts from a private
 package). If the injected directory contains a \code{fonts/} subdirectory
 and \code{font_path} is NULL, \code{font_path} is set automatically.}
+
+\item{strict_baseline}{Logical. Default for the session: when TRUE
+(default), every \code{bfh_export_pdf()} call inheriting this session
+errors before render if the result has \code{freeze < MIN_BASELINE_N}
+or any phase shorter than \code{MIN_BASELINE_N} (8) data points. Set
+FALSE to preserve the legacy warning-only behavior across the batch.
+Per-call \code{strict_baseline} on \code{bfh_export_pdf()} overrides
+the session value.}
 }
 \value{
 A \code{bfh_export_session} object. Close with \code{close(session)}

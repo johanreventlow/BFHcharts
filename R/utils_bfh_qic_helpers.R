@@ -4,22 +4,110 @@
 # Disse helpers isolerer Anhoej signal-postprocessering og return-routing
 # fra bfh_qic()-kroppen. Se openspec/changes/refactor-bfh_qic-orchestrator.
 
-# Mufle kendte ufarlige ggplot2/scales/BFHtheme warnings under plot generation
-# og label placement. Kun eksplicitte, forankrede mønstre mufles — ingen
-# ubundne substring-matches som "numeric" eller "datetime", der ville skjule
-# datakvalitetsproblemer for kliniske brugere.
+# Valider position-indekser (part / freeze / exclude) som heltal-positioner
+# i data. Strengere end validate_numeric_parameter:
+# - Heltal: x == floor(x) (numerisk fra parent.frame() er ofte double)
+# - Bounds: [min, max] inkl. begge ender
+# - Unik (require_unique): ingen dubletter
+# - Sorteret (require_sorted): strengt voksende
+# - Scalar (require_scalar): laengde 1
 #
-# Mønster-kilder:
-#   scale_[xy]_(continuous|date|datetime).* — ggplot2/scales: scale-warnings
-#     ved fjernede rækker / tomme akser (fx scale_x_date: Removed 3 rows)
-#   font family.*not found in PostScript font database — BFHtheme: Mari-font
-#     ikke installeret; registreres via .onLoad(), men grDevices-lookup kan
-#     stadig udløse dette pr. tekstelement
-#   Removed [0-9]+ rows containing — ggplot2 geom_*: manglende værdier
-#     fjernet ved rendering (fx geom_point, geom_line)
+# Brugt i validate_bfh_qic_inputs():
+#   part:    require_sorted = TRUE, require_unique = TRUE, min = 2, max = nrow
+#   freeze:  require_scalar = TRUE, require_unique = TRUE, min = 1, max = nrow-1
+#   exclude: require_unique = TRUE, min = 1, max = nrow
+#' @keywords internal
+#' @noRd
+validate_position_indices <- function(x,
+                                      name,
+                                      nrow_data,
+                                      require_sorted = FALSE,
+                                      require_unique = TRUE,
+                                      require_scalar = FALSE,
+                                      min = 1L,
+                                      max = nrow_data) {
+  if (is.null(x)) {
+    return(invisible(NULL))
+  }
+  if (!is.numeric(x) || anyNA(x)) {
+    stop(
+      sprintf(
+        "%s must be numeric without NAs, got: %s",
+        name, paste(x, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  if (require_scalar && length(x) != 1L) {
+    stop(
+      sprintf("%s must be a single integer value, got length %d", name, length(x)),
+      call. = FALSE
+    )
+  }
+  # Heltals-tjek: tillader 3.0 men ikke 3.5
+  if (any(x != floor(x))) {
+    stop(
+      sprintf(
+        "%s must contain only integer position indices (got non-integer: %s)",
+        name, paste(x[x != floor(x)], collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  if (any(x < min) || any(x > max)) {
+    # Bevar bagudkompatibel ordlyd ("positive integer"/"positive integers")
+    # som testes af eksisterende test-security-bounds-validation.R
+    plural_phrase <- if (require_scalar) {
+      sprintf("%s position must be a positive integer", name)
+    } else {
+      sprintf("%s positions must be positive integers", name)
+    }
+    stop(
+      sprintf(
+        "%s within data bounds (%d-%d), got: %s",
+        plural_phrase, as.integer(min), as.integer(max), paste(x, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  if (require_unique && any(duplicated(x))) {
+    stop(
+      sprintf(
+        "%s must contain unique values (got duplicates: %s)",
+        name,
+        paste(x[duplicated(x)], collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  if (require_sorted && length(x) > 1L && any(diff(x) <= 0)) {
+    stop(
+      sprintf(
+        "%s must be strictly increasing (sorted ascending), got: %s",
+        name, paste(x, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
+# Muffle known harmless ggplot2/scales/BFHtheme warnings during plot generation
+# and label placement. Only explicit, anchored patterns are muffled -- no
+# unbounded substring matches like "numeric" or "datetime" that would hide
+# data-quality issues from clinical users.
 #
-# Genuine warnings (fx "NAs introduced by coercion to numeric",
-# "non-numeric argument to binary operator") propageres uændret til caller.
+# Pattern sources:
+#   scale_[xy]_(continuous|date|datetime).* -- ggplot2/scales: scale warnings
+#     when rows are removed / axes are empty (e.g. scale_x_date: Removed 3 rows)
+#   font family.*not found in PostScript font database -- BFHtheme: Mari font
+#     not installed; registered via .onLoad(), but grDevices lookup can
+#     still trigger this per text element
+#   Removed [0-9]+ rows containing -- ggplot2 geom_*: missing values
+#     removed at render time (e.g. geom_point, geom_line)
+#
+# Genuine warnings (e.g. "NAs introduced by coercion to numeric",
+# "non-numeric argument to binary operator") are propagated unchanged to caller.
 #' @keywords internal
 .muffle_expected_warnings <- function(expr) {
   withCallingHandlers(
@@ -50,10 +138,10 @@
 #' `anhoej.signal` -> `anhoej.signals` -> `runs.signal | crossings.signal`
 #' -> `runs.signal` -> `FALSE`
 #'
-#' @param qic_data data.frame fra `qicharts2::qic()`, eller NULL
-#' @return qic_data med normaliseret `anhoej.signal` (logical, kan være NA når
-#'   serien er for kort til pålidelig Anhøj-evaluering),
-#'   eller NULL hvis input er NULL
+#' @param qic_data data.frame from `qicharts2::qic()`, or NULL
+#' @return qic_data with a normalised `anhoej.signal` (logical, may be NA when
+#'   the series is too short for reliable Anhoej evaluation),
+#'   or NULL if input is NULL
 #' @keywords internal
 #' @noRd
 add_anhoej_signal <- function(qic_data) {
@@ -75,8 +163,8 @@ add_anhoej_signal <- function(qic_data) {
     qic_data$anhoej.signal <- rep(FALSE, nrow(qic_data))
   }
 
-  # NA bevares bevidst — signalerer at serien er for kort til evaluering.
-  # Downstream-kode (plot_core.R, utils_qic_summary.R) håndterer NA eksplicit.
+  # NA is preserved deliberately -- signals that the series is too short for evaluation.
+  # Downstream code (plot_core.R, utils_qic_summary.R) handles NA explicitly.
   qic_data
 }
 
@@ -97,7 +185,7 @@ add_anhoej_signal <- function(qic_data) {
 build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
                                  return.data, print.summary) {
   # print.summary = TRUE er fjernet i v0.11.0. Brug return.data = TRUE og
-  # tilgå result$summary direkte.
+  # access result$summary directly.
   if (isTRUE(print.summary)) {
     stop(
       "print.summary = TRUE has been removed in v0.11.0. ",
@@ -126,13 +214,13 @@ build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
 # NSE KOLONNE-NAVN VALIDATOR
 # ============================================================================
 
-#' Validér og normaliser et NSE kolonne-udtryk til et symbol
+#' Validate and normalise an NSE column expression to a symbol
 #'
-#' Tager et allerede fanget udtryk (fra `substitute()` i bfh_qic()-scopet)
-#' og validerer at det er et simpelt identifier. Understøtter direkte symboler
-#' (month) og quoted symboler (quote(month)) til programmatisk brug.
+#' Takes an already-captured expression (from `substitute()` in bfh_qic()'s scope)
+#' and validates that it is a simple identifier. Supports direct symbols
+#' (month) and quoted symbols (quote(month)) for programmatic use.
 #'
-#' Denne funktion kalder IKKE selv `substitute()` — det SKAL ske i bfh_qic().
+#' This function does NOT itself call `substitute()` -- it MUST happen in bfh_qic().
 #'
 #' @param col_expr Et R-udtryk fanget via substitute() i bfh_qic()
 #' @param param_name Parameternavn til fejlbesked
@@ -165,7 +253,7 @@ validate_column_name_expr <- function(col_expr, param_name) {
 #'
 #' Konsoliderer alle input-valideringer fra bfh_qic()-kroppen i en enkelt
 #' funktion. NSE-udtryk (x_expr, y_expr, n_expr) skal vaere fanget i
-#' bfh_qic() via substitute() FØR dette kald — aldrig inde i denne helper.
+#' bfh_qic() via substitute() BEFORE this call -- never inside this helper.
 #'
 #' @param data Data frame med maalinger
 #' @param chart_type Charttype-streng
@@ -175,13 +263,13 @@ validate_column_name_expr <- function(col_expr, param_name) {
 #' @param n_expr Symbol for n-kolonne eller NULL
 #' @param part Vektor af fase-positioner eller NULL
 #' @param freeze Freeze-position eller NULL
-#' @param base_size Basisskriftstørrelse
-#' @param width Plotbredde eller NULL
-#' @param height Plothøjde eller NULL
-#' @param exclude Ekskluderingspositioner eller NULL
-#' @param cl Brugerdefineret centerlinje eller NULL
-#' @param multiply Multiplikator
-#' @param agg_fun_supplied Logical — om agg.fun er eksplicit angivet af bruger
+#' @param base_size Base font size
+#' @param width Plot width or NULL
+#' @param height Plot height or NULL
+#' @param exclude Exclusion positions or NULL
+#' @param cl User-defined centerline or NULL
+#' @param multiply Multiplier
+#' @param agg_fun_supplied Logical -- whether agg.fun is explicitly supplied by user
 #' @param agg.fun Aggregeringsfunktionsstreng
 #' @param return.data Logical
 #' @param print.summary Logical
@@ -215,6 +303,28 @@ validate_bfh_qic_inputs <- function(data,
     stop("data must be a data frame")
   }
 
+  if (nrow(data) == 0L) {
+    stop(
+      "'data' is empty; bfh_qic() requires at least one row",
+      call. = FALSE
+    )
+  }
+
+  # y column must be numeric (or integer). Early error prevents
+  # cryptic qicharts2 chain failures on e.g. character/factor input.
+  if (!is.null(y_expr_char) && y_expr_char %in% names(data)) {
+    y_data <- data[[y_expr_char]]
+    if (!is.numeric(y_data)) {
+      stop(
+        sprintf(
+          "column '%s' (y) must be numeric, got: %s",
+          y_expr_char, paste(class(y_data), collapse = "/")
+        ),
+        call. = FALSE
+      )
+    }
+  }
+
   if (!chart_type %in% CHART_TYPES_EN) {
     stop(sprintf(
       "chart_type must be one of: %s",
@@ -230,28 +340,29 @@ validate_bfh_qic_inputs <- function(data,
     ))
   }
 
-  validate_numeric_parameter(part, "part",
-    min = 1, max = nrow(data),
-    allow_null = TRUE, context = sprintf("1-%d", nrow(data))
+  validate_position_indices(part, "part", nrow(data),
+    require_sorted = TRUE, require_unique = TRUE,
+    min = 2L, max = nrow(data)
   )
-  validate_numeric_parameter(freeze, "freeze",
-    min = 1, max = nrow(data),
-    allow_null = TRUE, context = sprintf("1-%d", nrow(data))
+  validate_position_indices(freeze, "freeze", nrow(data),
+    require_sorted = FALSE, require_unique = TRUE,
+    require_scalar = TRUE,
+    min = 1L, max = max(nrow(data) - 1L, 1L)
   )
 
-  # Advar hvis freeze-baseline er for kort til pålidelig signal-detektion
+  # Warn if freeze baseline is too short for reliable signal detection
   if (!is.null(freeze) && freeze < MIN_BASELINE_N) {
     warning(
-      "freeze = ", freeze, ": baseline har færre end ", MIN_BASELINE_N,
-      " observationer. Kontrolgrænser er statistisk usikre.",
+      "freeze = ", freeze, ": baseline har f\u00e6rre end ", MIN_BASELINE_N,
+      " observationer. Kontrolgr\u00e6nser er statistisk usikre.",
       call. = FALSE
     )
   }
 
-  # Advar for faser med for få observationer
+  # Warn for phases with too few observations
   if (!is.null(part)) {
     n_total <- nrow(data)
-    # Beregn startpositionerne for hver fase
+    # Compute start positions for each phase
     phase_starts <- c(1L, as.integer(part) + 1L)
     phase_ends <- c(as.integer(part), n_total)
     phase_sizes <- phase_ends - phase_starts + 1L
@@ -259,8 +370,8 @@ validate_bfh_qic_inputs <- function(data,
     if (length(short_phases) > 0) {
       warning(
         "Fase(r) ", paste(short_phases, collapse = ", "),
-        " har færre end ", MIN_BASELINE_N,
-        " observationer. Kontrolgrænser kan være statistisk usikre.",
+        " har f\u00e6rre end ", MIN_BASELINE_N,
+        " observationer. Kontrolgr\u00e6nser kan v\u00e6re statistisk usikre.",
         call. = FALSE
       )
     }
@@ -277,9 +388,9 @@ validate_bfh_qic_inputs <- function(data,
     min = 0.1, max = 3000,
     allow_null = TRUE, len = 1
   )
-  validate_numeric_parameter(exclude, "exclude",
-    min = 1, max = nrow(data),
-    allow_null = TRUE, context = sprintf("1-%d", nrow(data))
+  validate_position_indices(exclude, "exclude", nrow(data),
+    require_sorted = FALSE, require_unique = TRUE,
+    min = 1L, max = nrow(data)
   )
   validate_numeric_parameter(cl, "cl",
     min = -Inf, max = Inf,
@@ -302,7 +413,7 @@ validate_bfh_qic_inputs <- function(data,
 
   if (!is.null(plot_margin)) {
     if (inherits(plot_margin, "ggplot2::margin") || inherits(plot_margin, "margin")) {
-      # margin()-objekt — trust brugerens input
+      # margin()-objekt -- trust brugerens input
     } else if (is.numeric(plot_margin)) {
       if (length(plot_margin) != 4) {
         stop(
@@ -355,7 +466,7 @@ validate_bfh_qic_inputs <- function(data,
 #'
 #' Konstruerer den komplette `qic_args`-liste der sendes til
 #' `do.call(qicharts2::qic, ...)`. NSE-symboler skal vaere fanget i
-#' bfh_qic() FØR dette kald.
+#' bfh_qic() FOeR dette kald.
 #'
 #' @param data Data frame
 #' @param x_expr Symbol for x-kolonne
@@ -411,14 +522,14 @@ build_qic_args <- function(data,
 }
 
 # ============================================================================
-# KALD qicharts2 + ANHØJ POST-PROCESSING
+# KALD qicharts2 + ANHOeJ POST-PROCESSING
 # ============================================================================
 
-#' Kald qicharts2::qic() og normaliser Anhøj-signal
+#' Kald qicharts2::qic() og normaliser Anhoej-signal
 #'
 #' Wrapper om `do.call(qicharts2::qic, qic_args)` efterfulgt af
 #' `add_anhoej_signal()`. `envir` skal vaere `parent.frame()` evalueret i
-#' bfh_qic()-scopet — aldrig i denne helpers scope.
+#' bfh_qic()-scopet -- aldrig i denne helpers scope.
 #'
 #' @param qic_args Liste af argumenter til qicharts2::qic()
 #' @param envir Environment hvori qic_args evalueres (typisk bfh_qic()'s parent.frame)
@@ -440,11 +551,11 @@ invoke_qicharts2 <- function(qic_args, envir) {
 #' responsiv base_size-beregning og normalisering af tomme akse-labels.
 #'
 #' @param width Plotbredde (raa bruger-input, NULL eller numerisk)
-#' @param height Plothøjde (raa bruger-input, NULL eller numerisk)
+#' @param height Plothoejde (raa bruger-input, NULL eller numerisk)
 #' @param units Enhedstype eller NULL (smart auto-detection)
 #' @param dpi DPI til pixel-konvertering
 #' @param base_size Eksplicit base_size fra bruger
-#' @param base_size_supplied Logical — om bruger eksplicit angav base_size
+#' @param base_size_supplied Logical -- om bruger eksplicit angav base_size
 #' @param xlab X-akse label (streng)
 #' @param ylab Y-akse label (streng)
 #' @return Liste: width_inches, height_inches, base_size, xlab, ylab
@@ -505,7 +616,7 @@ compute_viewport_base_size <- function(width,
 #' @param xlab X-akse label eller NULL
 #' @param subtitle Undertitel eller NULL
 #' @param caption Billedtekst eller NULL
-#' @param base_size Basisskriftstørrelse
+#' @param base_size Basisskriftstoerrelse
 #' @param plot_margin Margin-objekt eller NULL
 #' @return ggplot2-objekt
 #' @keywords internal
@@ -521,7 +632,8 @@ render_bfh_plot <- function(qic_data,
                             subtitle,
                             caption,
                             base_size,
-                            plot_margin) {
+                            plot_margin,
+                            language = "da") {
   plot_config <- spc_plot_config(
     chart_type = chart_type,
     y_axis_unit = y_axis_unit,
@@ -531,7 +643,8 @@ render_bfh_plot <- function(qic_data,
     ylab = ylab,
     xlab = xlab,
     subtitle = subtitle,
-    caption = caption
+    caption = caption,
+    language = language
   )
 
   viewport <- viewport_dims(base_size = base_size)
@@ -548,10 +661,10 @@ render_bfh_plot <- function(qic_data,
 }
 
 # ============================================================================
-# TILFØJ SPC LABELS TIL EXPORT
+# TILFOeJ SPC LABELS TIL EXPORT
 # ============================================================================
 
-#' Tilføj SPC-labels til plot med viewport-skaleret labelstørrelse
+#' Tilfoej SPC-labels til plot med viewport-skaleret labelstoerrelse
 #'
 #' Beregner responsiv label_size baseret paa viewport-dimensioner og
 #' kalder add_spc_labels() med PostScript font warning-suppression.
@@ -560,10 +673,10 @@ render_bfh_plot <- function(qic_data,
 #' @param qic_data data.frame fra invoke_qicharts2()
 #' @param y_axis_unit Y-akse enhed
 #' @param viewport_width_inches Plotbredde i inches eller NULL
-#' @param viewport_height_inches Plothøjde i inches eller NULL
+#' @param viewport_height_inches Plothoejde i inches eller NULL
 #' @param target_text Maaltekst eller NULL
 #' @param language Sprogkode ("da" eller "en")
-#' @return ggplot2-objekt med labels tilføjet
+#' @return ggplot2-objekt med labels tilfoejet
 #' @keywords internal
 #' @noRd
 apply_spc_labels_to_export <- function(plot,
@@ -619,7 +732,7 @@ apply_spc_labels_to_export <- function(plot,
 #' @param multiply Multiplikator
 #' @param agg.fun Normaliseret aggregeringsfunktionsstreng eller NULL
 #' @param viewport_width_inches Plotbredde i inches eller NULL
-#' @param viewport_height_inches Plothøjde i inches eller NULL
+#' @param viewport_height_inches Plothoejde i inches eller NULL
 #' @return Liste med chart-konfiguration inkl. label_config
 #' @keywords internal
 #' @noRd

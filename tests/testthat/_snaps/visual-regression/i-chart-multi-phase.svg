@@ -86,17 +86,17 @@
 <polyline points='38.72,379.87 34.47,379.87 ' style='stroke-width: 1.07; stroke: #B3B3B3; stroke-linecap: butt;' />
 <polyline points='38.72,190.12 34.47,190.12 ' style='stroke-width: 1.07; stroke: #B3B3B3; stroke-linecap: butt;' />
 <polyline points='34.47,530.66 620.83,530.66 ' style='stroke-width: 1.07; stroke: #B3B3B3; stroke-linecap: butt;' />
-<text x='50.84' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='23.81px' lengthAdjust='spacingAndGlyphs'>JAN</text>
+<text x='50.84' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='27.31px' lengthAdjust='spacingAndGlyphs'>JAN.</text>
 <text x='50.84' y='559.21' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='28.03px' lengthAdjust='spacingAndGlyphs'>2024</text>
-<text x='121.80' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='25.92px' lengthAdjust='spacingAndGlyphs'>APR</text>
-<text x='192.75' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='22.42px' lengthAdjust='spacingAndGlyphs'>JUL</text>
-<text x='264.49' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='26.60px' lengthAdjust='spacingAndGlyphs'>OCT</text>
-<text x='336.23' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='23.81px' lengthAdjust='spacingAndGlyphs'>JAN</text>
+<text x='121.80' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='29.42px' lengthAdjust='spacingAndGlyphs'>APR.</text>
+<text x='192.75' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='25.92px' lengthAdjust='spacingAndGlyphs'>JUL.</text>
+<text x='264.49' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='29.41px' lengthAdjust='spacingAndGlyphs'>OKT.</text>
+<text x='336.23' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='27.31px' lengthAdjust='spacingAndGlyphs'>JAN.</text>
 <text x='336.23' y='559.21' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='28.03px' lengthAdjust='spacingAndGlyphs'>2025</text>
-<text x='406.40' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='25.92px' lengthAdjust='spacingAndGlyphs'>APR</text>
-<text x='477.36' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='22.42px' lengthAdjust='spacingAndGlyphs'>JUL</text>
-<text x='549.10' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='26.60px' lengthAdjust='spacingAndGlyphs'>OCT</text>
-<text x='620.83' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='23.81px' lengthAdjust='spacingAndGlyphs'>JAN</text>
+<text x='406.40' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='29.42px' lengthAdjust='spacingAndGlyphs'>APR.</text>
+<text x='477.36' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='25.92px' lengthAdjust='spacingAndGlyphs'>JUL.</text>
+<text x='549.10' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='29.41px' lengthAdjust='spacingAndGlyphs'>OKT.</text>
+<text x='620.83' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='27.31px' lengthAdjust='spacingAndGlyphs'>JAN.</text>
 <text x='620.83' y='559.21' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='28.03px' lengthAdjust='spacingAndGlyphs'>2026</text>
 <path d='M 24.42 17.53 L 24.42 27.81 L 25.72 27.81 L 25.72 15.81 L 23.77 15.81 L 20.56 24.28 L 17.41 15.81 L 15.44 15.81 L 15.44 27.81 L 16.70 27.81 L 16.70 17.53 L 16.78 17.53 L 19.91 25.80 L 21.22 25.80 L 24.35 17.53 Z' style='fill-rule: nonzero; fill: #000000; stroke-width: 0.75; stroke: none;' />
 <path d='M 34.90 18.81 L 33.65 18.81 L 33.65 24.78 L 33.61 25.23 L 33.51 25.64 L 33.33 26.00 L 33.08 26.31 L 32.75 26.55 L 32.36 26.74 L 31.89 26.85 L 31.35 26.89 L 30.91 26.87 L 30.51 26.79 L 30.17 26.65 L 29.88 26.46 L 29.65 26.22 L 29.48 25.92 L 29.37 25.56 L 29.34 25.14 L 29.34 18.81 L 28.07 18.81 L 28.07 25.17 L 28.13 25.83 L 28.30 26.38 L 28.57 26.84 L 28.93 27.20 L 29.36 27.48 L 29.86 27.67 L 30.41 27.78 L 31.01 27.81 L 31.83 27.73 L 32.54 27.50 L 33.12 27.11 L 33.57 26.58 L 33.65 26.58 L 33.65 27.81 L 34.90 27.81 Z' style='fill-rule: nonzero; fill: #000000; stroke-width: 0.75; stroke: none;' />

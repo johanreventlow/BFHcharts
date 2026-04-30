@@ -23,26 +23,26 @@ NULL
 #'   One row per phase (part). Columns present depend on chart type:
 #'
 #'   **Always present:**
-#'   - `fase` — phase number (integer)
-#'   - `antal_observationer` — total observations per phase
-#'   - `anvendelige_observationer` — usable observations per phase
-#'   - `laengste_loeb`, `laengste_loeb_max` — run-length statistics
-#'   - `antal_kryds`, `antal_kryds_min` — crossing-count statistics
-#'   - `loebelaengde_signal`, `sigma_signal` — Anhøj + sigma signals (logical)
-#'   - `centerlinje` — center line value
+#'   - `fase` -- phase number (integer)
+#'   - `antal_observationer` -- total observations per phase
+#'   - `anvendelige_observationer` -- usable observations per phase
+#'   - `laengste_loeb`, `laengste_loeb_max` -- run-length statistics
+#'   - `antal_kryds`, `antal_kryds_min` -- crossing-count statistics
+#'   - `loebelaengde_signal`, `sigma_signal` -- Anhoej + sigma signals (logical)
+#'   - `centerlinje` -- center line value
 #'
 #'   **Control limit columns (if lcl/ucl present in qic_data):**
-#'   - `kontrolgraenser_konstante` — logical, TRUE if control limits are
+#'   - `kontrolgraenser_konstante` -- logical, TRUE if control limits are
 #'     identical for all observations within this phase. FALSE for p/u-charts
 #'     with varying denominators.
 #'
 #'   *When ALL phases have constant limits* (e.g. I-charts, C-charts):
-#'   - `nedre_kontrolgraense` — scalar lower control limit per phase
-#'   - `oevre_kontrolgraense` — scalar upper control limit per phase
+#'   - `nedre_kontrolgraense` -- scalar lower control limit per phase
+#'   - `oevre_kontrolgraense` -- scalar upper control limit per phase
 #'
 #'   *When ANY phase has variable limits* (e.g. P-charts with varying n):
-#'   - `nedre_kontrolgraense_min` / `nedre_kontrolgraense_max` — range of LCL
-#'   - `oevre_kontrolgraense_min` / `oevre_kontrolgraense_max` — range of UCL
+#'   - `nedre_kontrolgraense_min` / `nedre_kontrolgraense_max` -- range of LCL
+#'   - `oevre_kontrolgraense_min` / `oevre_kontrolgraense_max` -- range of UCL
 #'
 #'   Run charts (no lcl/ucl) receive no control limit columns at all.
 #'

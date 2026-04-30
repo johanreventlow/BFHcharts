@@ -217,18 +217,18 @@ test_that("bfh_compile_typst afviser manglende typst-fil", {
 })
 
 test_that("bfh_compile_typst afviser shell-metacharacters i typst_file-sti", {
-  # Opret en fil med unsafe karakterer i navn
-  temp_dir <- tempfile()
-  dir.create(temp_dir)
-  withr::defer(unlink(temp_dir, recursive = TRUE))
-
-  # Sti med semikolon (shell-metacharacter)
-  unsafe_file <- file.path(temp_dir, "test;rm.typ")
-  file.create(unsafe_file)
+  # Sti med semikolon (shell-metacharacter) afvises stadig
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[test]", typst_file)
+  withr::defer(unlink(typst_file))
 
   expect_error(
-    BFHcharts:::bfh_compile_typst(unsafe_file, tempfile(fileext = ".pdf")),
-    "unsafe characters"
+    BFHcharts:::bfh_compile_typst(typst_file, "output;rm.pdf"),
+    "disallowed unsafe characters"
+  )
+  expect_error(
+    BFHcharts:::bfh_compile_typst(typst_file, "output\nrm.pdf"),
+    "disallowed unsafe characters"
   )
 })
 
@@ -237,20 +237,42 @@ test_that("bfh_compile_typst afviser shell-metacharacters i output-sti", {
   writeLines("#text[test]", typst_file)
   withr::defer(unlink(typst_file))
 
+  # ;|backtick<> = shell-syntax (kommando-kæder, redirection, substitution).
+  # R's system2(stdout=TRUE, stderr=TRUE) shell-mode kan eksekvere disse —
+  # validering forhindrer det.
   expect_error(
     BFHcharts:::bfh_compile_typst(typst_file, "output; rm -rf /.pdf"),
-    "unsafe characters"
+    "disallowed unsafe characters"
   )
-
   expect_error(
     BFHcharts:::bfh_compile_typst(typst_file, "output | cat.pdf"),
-    "unsafe characters"
+    "disallowed unsafe characters"
   )
-
   expect_error(
     BFHcharts:::bfh_compile_typst(typst_file, "output`cmd`.pdf"),
-    "unsafe characters"
+    "disallowed unsafe characters"
   )
+})
+
+test_that("bfh_compile_typst tillader hospital-relevante karakterer i output-sti", {
+  # Codex 2026-04-30 #10: parens/brackets/braces/&$' og spaces er nu OK.
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[test]", typst_file)
+  withr::defer(unlink(typst_file))
+
+  for (out in c(
+    "rapport (final).pdf", "Q1 [2026].pdf",
+    "kvalitet {draft}.pdf", "Indikator & resultat.pdf"
+  )) {
+    err <- tryCatch(
+      BFHcharts:::bfh_compile_typst(typst_file, file.path(tempdir(), out)),
+      error = function(e) e$message
+    )
+    expect_false(
+      grepl("disallowed unsafe characters", err %||% ""),
+      info = paste("Path:", out)
+    )
+  }
 })
 
 test_that("bfh_compile_typst afviser path traversal i font_path", {
@@ -268,7 +290,9 @@ test_that("bfh_compile_typst afviser path traversal i font_path", {
   )
 })
 
-test_that("bfh_compile_typst afviser shell-metacharacters i font_path", {
+test_that("bfh_compile_typst afviser newline i font_path (output-path policy)", {
+  # font_path bruger output-path validator (samme som output-sti):
+  # newline/CR afvises, men shell-metacharacters tillades nu.
   typst_file <- tempfile(fileext = ".typ")
   writeLines("#text[test]", typst_file)
   withr::defer(unlink(typst_file))
@@ -277,9 +301,9 @@ test_that("bfh_compile_typst afviser shell-metacharacters i font_path", {
     BFHcharts:::bfh_compile_typst(
       typst_file,
       tempfile(fileext = ".pdf"),
-      font_path = "/fonts; rm"
+      font_path = "/fonts\nrm"
     ),
-    "unsafe characters"
+    "disallowed unsafe characters"
   )
 })
 

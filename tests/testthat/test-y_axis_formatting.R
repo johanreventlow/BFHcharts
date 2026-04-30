@@ -113,49 +113,59 @@ test_that("format_y_axis_percent creates valid scale", {
   expect_true(!is.null(scale$labels))
 })
 
-test_that("format_y_axis_percent uses whole percents for wide range", {
+test_that("format_y_axis_percent uses whole percents for wide range (Danish default)", {
   # Wide range (> 5 percentage points) - should use whole percents
   wide_range <- c(0.10, 0.90) # 80 percentage points
   scale <- format_y_axis_percent(wide_range)
 
-  # Test label generation - should NOT show decimals
+  # v0.12.0+: Dansk-default formatering er "25 %" (med space, jf. spec-tabel)
   labels <- scale$labels(c(0.25, 0.50, 0.75))
-  expect_equal(labels, c("25%", "50%", "75%"))
+  expect_equal(labels, c("25 %", "50 %", "75 %"))
 })
 
-test_that("format_y_axis_percent uses decimals for narrow range", {
+test_that("format_y_axis_percent uses decimals for narrow range (Danish default)", {
   # Narrow range (< 2 percentage points) - should use decimals
   narrow_range <- c(0.975, 0.990) # 1.5 percentage points
   scale <- format_y_axis_percent(narrow_range)
 
-  # Test label generation - should show decimals (scales::label_percent uses English notation)
+  # v0.12.0+: Dansk decimal-mark er "," (jf. locale-aware-en-formatting spec)
   labels <- scale$labels(c(0.975, 0.980, 0.985))
-  expect_true(all(grepl("\\.", labels))) # Decimals present (English notation from scales package)
-  expect_equal(labels, c("97.5%", "98.0%", "98.5%"))
+  expect_equal(labels, c("97,5 %", "98,0 %", "98,5 %"))
 })
 
-test_that("format_y_axis_percent handles boundary at 2 percentage points", {
+test_that("format_y_axis_percent handles boundary at 2 percentage points (Danish default)", {
   # Just above 2 percentage points - should use whole percents
   wide_boundary_range <- c(0.90, 0.93) # 3 percentage points (> 0.02)
   scale_wide <- format_y_axis_percent(wide_boundary_range)
 
   labels_wide <- scale_wide$labels(c(0.91, 0.92))
-  expect_equal(labels_wide, c("91%", "92%")) # Whole percents
+  expect_equal(labels_wide, c("91 %", "92 %"))
 
   # Just below 2 percentage points - should use decimals
   narrow_boundary_range <- c(0.90, 0.915) # 1.5 percentage points (< 0.02)
   scale_narrow <- format_y_axis_percent(narrow_boundary_range)
 
   labels_narrow <- scale_narrow$labels(c(0.905, 0.910))
-  expect_equal(labels_narrow, c("90.5%", "91.0%")) # Decimals
+  expect_equal(labels_narrow, c("90,5 %", "91,0 %"))
 })
 
-test_that("format_y_axis_percent handles NULL range", {
+test_that("format_y_axis_percent handles NULL range (Danish default)", {
   # NULL range should default to whole percents
   scale <- format_y_axis_percent(NULL)
 
   labels <- scale$labels(c(0.25, 0.50))
-  expect_equal(labels, c("25%", "50%"))
+  expect_equal(labels, c("25 %", "50 %"))
+})
+
+test_that("format_y_axis_percent producerer engelsk format med language='en'", {
+  # English: "12.5%" uden space (spec-tabel)
+  scale <- format_y_axis_percent(c(0.10, 0.90), language = "en")
+  labels <- scale$labels(c(0.25, 0.50, 0.75))
+  expect_equal(labels, c("25%", "50%", "75%"))
+
+  scale_narrow <- format_y_axis_percent(c(0.975, 0.990), language = "en")
+  labels_narrow <- scale_narrow$labels(c(0.975, 0.980))
+  expect_equal(labels_narrow, c("97.5%", "98.0%"))
 })
 
 # ============================================================================

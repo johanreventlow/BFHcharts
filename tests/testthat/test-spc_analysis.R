@@ -839,3 +839,120 @@ test_that("bfh_build_analysis_context: i-chart target=90 ikke normaliseret (coun
     label = "i-chart count-skala: 90 bevares uændret"
   )
 })
+
+
+# ==============================================================================
+# Target fallback chain (metadata -> config$target_text -> config$target_value)
+# Issue #1 (Codex 2026-04-30): Chart-target skal flyde til analyse uden
+# at caller duplikerer i metadata.
+# ==============================================================================
+
+test_that("Target fallback: metadata-only target preserves existing behavior", {
+  set.seed(101)
+  i_data <- data.frame(
+    date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rnorm(20, mean = 95, sd = 5)
+  )
+  result <- bfh_qic(i_data, x = date, y = value, chart_type = "i")
+  # Bekræft at chart ikke selv har target (regression-baseline)
+  expect_null(result$config$target_text)
+  expect_null(result$config$target_value)
+
+  ctx <- bfh_build_analysis_context(result, metadata = list(target = ">= 90"))
+  expect_equal(ctx$target_value, 90)
+  expect_equal(ctx$target_direction, "higher")
+})
+
+test_that("Target fallback: chart target_value (numeric) used when metadata absent", {
+  set.seed(102)
+  i_data <- data.frame(
+    date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rnorm(20, mean = 95, sd = 5)
+  )
+  result <- bfh_qic(i_data, x = date, y = value, chart_type = "i", target_value = 85)
+  expect_equal(result$config$target_value, 85)
+
+  ctx <- bfh_build_analysis_context(result, metadata = list())
+  expect_equal(ctx$target_value, 85,
+    label = "config$target_value bruges som fallback når metadata$target er NULL"
+  )
+  expect_null(ctx$target_direction,
+    label = "Numerisk target har ingen retning (matcher resolve_target-kontrakt)"
+  )
+})
+
+test_that("Target fallback: chart target_text (character with operator) used when metadata absent", {
+  set.seed(103)
+  i_data <- data.frame(
+    date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rnorm(20, mean = 95, sd = 5)
+  )
+  result <- bfh_qic(i_data,
+    x = date, y = value, chart_type = "i",
+    target_text = ">= 90"
+  )
+  expect_equal(result$config$target_text, ">= 90")
+
+  ctx <- bfh_build_analysis_context(result, metadata = list())
+  expect_equal(ctx$target_value, 90,
+    label = "config$target_text parser-stien bruges som fallback"
+  )
+  expect_equal(ctx$target_direction, "higher",
+    label = "Operator-retning bevares gennem fallback"
+  )
+})
+
+test_that("Target fallback: metadata overrides chart config when both present", {
+  set.seed(104)
+  i_data <- data.frame(
+    date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rnorm(20, mean = 95, sd = 5)
+  )
+  result <- bfh_qic(i_data,
+    x = date, y = value, chart_type = "i",
+    target_text = ">= 90"
+  )
+
+  ctx <- bfh_build_analysis_context(result, metadata = list(target = "<= 50"))
+  expect_equal(ctx$target_value, 50,
+    label = "metadata$target overrider config (eksplicit caller wins)"
+  )
+  expect_equal(ctx$target_direction, "lower")
+})
+
+test_that("Target fallback: percent-target via config flows through normalize_percent_target", {
+  set.seed(105)
+  p_data <- data.frame(
+    date   = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    n      = rep(100L, 20),
+    events = rep(91L, 20)
+  )
+  result <- bfh_qic(p_data,
+    x = date, y = events, n = n, chart_type = "p",
+    y_axis_unit = "percent",
+    target_text = ">= 90%"
+  )
+
+  ctx <- bfh_build_analysis_context(result, metadata = list())
+  expect_equal(ctx$target_value, 0.90,
+    tolerance = 1e-9,
+    label = "Percent-normalisering virker også når target kommer fra config"
+  )
+  expect_equal(ctx$target_direction, "higher")
+  expect_equal(ctx$target_display, ">= 90%")
+})
+
+test_that("Target fallback: no target anywhere yields NA target_value", {
+  set.seed(106)
+  i_data <- data.frame(
+    date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rnorm(20, mean = 95, sd = 5)
+  )
+  result <- bfh_qic(i_data, x = date, y = value, chart_type = "i")
+
+  ctx <- bfh_build_analysis_context(result, metadata = list())
+  expect_true(is.na(ctx$target_value),
+    label = "resolve_target() returnerer NA_real_ for NULL-input"
+  )
+  expect_null(ctx$target_direction)
+})

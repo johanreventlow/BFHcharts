@@ -1833,6 +1833,97 @@ test_that("bfh_export_pdf validates dpi parameter", {
   )
 })
 
+# ============================================================================
+# strict_baseline (Codex 2026-04-30 #4 / change strict-baseline-mode-for-export)
+# ============================================================================
+# Disse tests rammer kun input-validering foer render — fejl skal opstaa foer
+# Quarto kaldes.
+
+test_that("bfh_export_pdf default-strict afviser short freeze foer render", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  short_freeze_chart <- suppressWarnings(
+    bfh_qic(data, x = month, y = value, freeze = 5L, chart_type = "i")
+  )
+
+  err <- tryCatch(
+    bfh_export_pdf(short_freeze_chart, tempfile(fileext = ".pdf")),
+    error = function(e) e
+  )
+  expect_s3_class(err, "error")
+  expect_match(err$message, "freeze = 5")
+  expect_match(err$message, "MIN_BASELINE_N|8 punkter")
+  expect_match(err$message, "strict_baseline = FALSE")
+})
+
+test_that("bfh_export_pdf strict_baseline=FALSE tillader short freeze (warning-only)", {
+  skip_if_not_render_test()
+  skip_if_no_quarto()
+  skip_on_cran()
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  short_freeze_chart <- suppressWarnings(
+    bfh_qic(data, x = month, y = value, freeze = 5L, chart_type = "i")
+  )
+
+  temp_file <- tempfile(fileext = ".pdf")
+  expect_no_error(
+    suppressWarnings(
+      bfh_export_pdf(short_freeze_chart, temp_file, strict_baseline = FALSE)
+    )
+  )
+  if (file.exists(temp_file)) unlink(temp_file)
+})
+
+test_that("bfh_export_pdf strict-mode afviser fase med faerre end MIN_BASELINE_N punkter", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+    value = rnorm(24, mean = 50, sd = 5)
+  )
+  # part = 4 deler i fase 1 (4 punkter) og fase 2 (20 punkter) — fase 1 < 8
+  multi_phase_chart <- suppressWarnings(
+    bfh_qic(data, x = month, y = value, part = 4L, chart_type = "i")
+  )
+
+  err <- tryCatch(
+    bfh_export_pdf(multi_phase_chart, tempfile(fileext = ".pdf")),
+    error = function(e) e
+  )
+  expect_s3_class(err, "error")
+  expect_match(err$message, "Fase|MIN_BASELINE_N")
+  expect_match(err$message, "strict_baseline = FALSE")
+})
+
+test_that("bfh_qic interaktivt bevarer warning-only adfaerd (regression)", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  # Direkte bfh_qic() med kort freeze: warning, ikke error
+  expect_warning(
+    bfh_qic(data, x = month, y = value, freeze = 5L, chart_type = "i"),
+    "baseline har f"
+  )
+})
+
+test_that("bfh_export_pdf afviser non-logical strict_baseline", {
+  chart <- fixture_test_chart()
+  expect_error(
+    bfh_export_pdf(chart, tempfile(fileext = ".pdf"), strict_baseline = "yes"),
+    "strict_baseline must be TRUE or FALSE"
+  )
+  expect_error(
+    bfh_export_pdf(chart, tempfile(fileext = ".pdf"), strict_baseline = NA),
+    "strict_baseline must be TRUE or FALSE"
+  )
+})
+
+
 test_that("bfh_export_pdf accepts custom analysis length parameters", {
   skip_if_not_render_test()
   skip_if_no_quarto()

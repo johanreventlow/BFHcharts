@@ -87,6 +87,7 @@ add_spc_labels <- function(
   debug_mode = FALSE,
   language = "da"
 ) {
+  .ensure_bfhtheme()
   # Input validation ----
   if (!inherits(plot, "gg")) {
     stop("plot skal v\u00e6re et ggplot object")

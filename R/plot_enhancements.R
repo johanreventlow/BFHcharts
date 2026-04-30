@@ -35,6 +35,7 @@ add_plot_enhancements <- function(plot,
                                   comment_size = 6,
                                   suppress_targetline = FALSE,
                                   line_positions = NULL) {
+  .ensure_bfhtheme()
   # Cache BFHtheme farver (undgaar gentagne opslag)
   color_keys <- c("hospital_blue", "regionh_grey", "regionh_dark")
   bfh_colors <- BFHtheme::bfh_cols(color_keys)

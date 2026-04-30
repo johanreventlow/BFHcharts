@@ -128,6 +128,118 @@ format_count_danish <- function(val) {
   }
 }
 
+#' Format Count Value with K/M/mia or K/M/B Notation (Locale-Aware)
+#'
+#' Locale-aware dispatcher for count-formatting. Routes to
+#' [format_count_danish()] (decimal `,`, thousand `.`) for `language = "da"`
+#' and [format_count_english()] (decimal `.`, thousand `,`) for
+#' `language = "en"`.
+#'
+#' @param val Numeric value
+#' @param language Locale code: `"da"` (default, Danish) or `"en"` (English)
+#'
+#' @return Locale-formatted string
+#'
+#' @examples
+#' \dontrun{
+#' format_count(1234.5, "da") # "1.234,5"
+#' format_count(1234.5, "en") # "1,234.5"
+#' format_count(1500000, "da") # "1,5M"
+#' format_count(1500000, "en") # "1.5M"
+#' }
+#'
+#' @keywords internal
+#' @noRd
+#' @family spc-formatting
+format_count <- function(val, language = "da") {
+  switch(language,
+    "en" = format_count_english(val),
+    format_count_danish(val) # default: da
+  )
+}
+
+#' Format Count Value with English Notation
+#'
+#' Mirror of [format_count_danish()] but with English number conventions
+#' (decimal `.`, thousand `,`). Uses K/M/B suffixes for billions instead
+#' of " mia." (Danish-specific).
+#'
+#' @param val Numeric value
+#' @return Formatted string with English notation
+#'
+#' @keywords internal
+#' @noRd
+#' @family spc-formatting
+format_count_english <- function(val) {
+  if (is.na(val)) {
+    return(NA_character_)
+  }
+
+  magnitude <- determine_magnitude(val)
+
+  if (!is.null(magnitude)) {
+    # English equivalent: " mia." -> " B" (billions). K/M unchanged.
+    suffix_en <- switch(magnitude$suffix,
+      " mia." = " B",
+      magnitude$suffix
+    )
+    scaled <- val / magnitude$scale
+    if (is_effective_integer(scaled)) {
+      paste0(round(scaled), suffix_en)
+    } else {
+      paste0(
+        format(round(scaled, 1),
+          big.mark = ",", decimal.mark = ".", nsmall = 1
+        ),
+        suffix_en
+      )
+    }
+  } else {
+    if (is_effective_integer(val)) {
+      format(round(val), big.mark = ",", decimal.mark = ".")
+    } else if (abs(val) < 1) {
+      format(round(val, 2), big.mark = ",", decimal.mark = ".", nsmall = 2)
+    } else {
+      format(round(val, 1), big.mark = ",", decimal.mark = ".", nsmall = 1)
+    }
+  }
+}
+
+#' Format Rate Value with Locale-Aware Notation
+#'
+#' Locale-aware dispatcher mirroring [format_count()]. Routes to
+#' [format_rate_danish()] for `language = "da"` and to a parallel English
+#' formatter for `language = "en"`.
+#'
+#' @param val Numeric value
+#' @param language Locale code: `"da"` (default) or `"en"`
+#'
+#' @keywords internal
+#' @noRd
+format_rate <- function(val, language = "da") {
+  switch(language,
+    "en" = format_rate_english(val),
+    format_rate_danish(val) # default: da
+  )
+}
+
+#' Format Rate Value with English Notation
+#' @param val Numeric value
+#' @keywords internal
+#' @noRd
+format_rate_english <- function(val) {
+  if (is.na(val)) {
+    return(NA_character_)
+  }
+  if (is_effective_integer(val)) {
+    format(round(val), decimal.mark = ".")
+  } else if (abs(val) < 1) {
+    format(round(val, 2), decimal.mark = ".", nsmall = 2)
+  } else {
+    format(round(val, 1), decimal.mark = ".", nsmall = 1)
+  }
+}
+
 #' Format Rate Value with Danish Notation (Canonical)
 #'
 #' Formats rate values with Danish decimal notation.

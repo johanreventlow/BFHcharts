@@ -22,19 +22,53 @@ test_that("validate_export_path afviser path traversal med ..", {
 })
 
 # ============================================================================
-# SHELL METACHARACTERS
+# OUTPUT PATH POLICY: kun NUL/LF/CR + traversal afvises
 # ============================================================================
+#
+# Output-stier passeres som argv[1+] til system2() i vector-form, som ikke
+# invokerer shell. Shell-metacharacters er derfor ufarlige.
+# Kontekst: Codex 2026-04-30 finding #10 / change relax-output-path-policy-parens
 
-test_that("validate_export_path afviser shell metacharacters", {
+test_that("validate_export_path afviser stadig shell-pipeline metacharacters + LF/CR", {
+  # R's system2(stdout=TRUE, stderr=TRUE) shell-mode — disse karakterer kan
+  # bryde shell-parsing eller udfoere kommando-substitution.
   expect_error(validate_export_path("out; rm -rf /"), "disallowed")
   expect_error(validate_export_path("out | cat /etc/passwd"), "disallowed")
-  expect_error(validate_export_path("out & evil"), "disallowed")
   expect_error(validate_export_path("out`cmd`"), "disallowed")
-  expect_error(validate_export_path("out$(cmd)"), "disallowed")
   expect_error(validate_export_path("out<in"), "disallowed")
   expect_error(validate_export_path("out>redirect"), "disallowed")
   expect_error(validate_export_path("out\nevil"), "disallowed")
   expect_error(validate_export_path("out\revil"), "disallowed")
+})
+
+test_that("validate_export_path tillader hospital-relevante karakterer i output-stier", {
+  # Codex 2026-04-30 #10 (relaxed): hospital-filnavne inkluderer parens,
+  # brackets, braces, ampersand, dollar, single-quote, spaces.
+  expect_no_error(validate_export_path("out & evil"))
+  expect_no_error(validate_export_path("out$value"))
+  expect_no_error(validate_export_path("out's draft"))
+})
+
+test_that("validate_export_path accepterer parens/brackets/braces (hospital-filnavne)", {
+  expect_no_error(validate_export_path("rapport (final).pdf"))
+  expect_no_error(validate_export_path("Q1 [2026].pdf"))
+  expect_no_error(validate_export_path("kvalitet {draft}.pdf"))
+  expect_no_error(validate_export_path("Indikator & resultat.pdf"))
+  expect_no_error(validate_export_path("(((test))).pdf"))
+})
+
+test_that("validate_export_path accepterer enkelt-quotes og dollartegn", {
+  expect_no_error(validate_export_path("rapport 'draft'.pdf"))
+  expect_no_error(validate_export_path("budget $2026.pdf"))
+})
+
+test_that(".check_metachars_binary forbliver strikt for binary-stier", {
+  # Binary-validator skal stadig afvise shell-metacharacters
+  expect_error(.check_metachars_binary("/bin/quarto;evil"), "disallowed")
+  expect_error(.check_metachars_binary("/bin/quarto|cat"), "disallowed")
+  expect_error(.check_metachars_binary("/bin/quarto`cmd`"), "disallowed")
+  expect_error(.check_metachars_binary("/bin/quarto$(cmd)"), "disallowed")
+  expect_error(.check_metachars_binary("/bin/quarto<in"), "disallowed")
 })
 
 # ============================================================================

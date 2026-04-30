@@ -175,6 +175,188 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 
 
 # ==============================================================================
+# LABEL PLACEMENT - INTERNAL HELPERS (NIVEAU CASCADE)
+# ==============================================================================
+# The 3-niveau collision cascade is invoked by `place_two_labels_npc()` only
+# when an initial collision-push followed by line-gap enforcement creates a
+# new collision (lines 728-737 of the orchestrator). The helpers below are
+# pure functions: each takes an explicit subset of state (proposed positions,
+# bounds, geometry config) and returns either a "success" record with the
+# resolved positions or a sentinel `list(success = FALSE)` indicating the
+# next niveau should be tried.
+#
+# Algorithm summary:
+#   NIVEAU 1: Try shrinking the inter-label gap by configured reduction
+#             factors (50% -> 30% -> 15% by default). First factor that
+#             clears the line-gap-induced collision wins.
+#   NIVEAU 2: Try flipping label A, then label B, then both, to the opposite
+#             side of the corresponding line. Each candidate must produce
+#             non-overlapping labels.
+#   NIVEAU 3: Last resort. Pin the priority label near its line; pin the
+#             other label to the opposite shelf (top or bottom of panel).
+
+#' Verify whether a label position respects the line-gap constraint
+#'
+#' Standalone version of the closure-form helper used inside
+#' `place_two_labels_npc()`. Returns the corrected center plus a `violated`
+#' flag so callers can decide whether to apply the correction.
+#'
+#' @keywords internal
+#' @noRd
+.verify_line_gap_npc <- function(y_center, y_line, side, label_h, gap_line) {
+  half <- label_h / 2
+  if (side == "under") {
+    required_max <- y_line - gap_line - half
+    if (y_center > required_max) {
+      return(list(y = required_max, violated = TRUE))
+    }
+  } else {
+    required_min <- y_line + gap_line + half
+    if (y_center < required_min) {
+      return(list(y = required_min, violated = TRUE))
+    }
+  }
+  list(y = y_center, violated = FALSE)
+}
+
+#' NIVEAU 1: Try gap-reduction collision resolution
+#'
+#' Iterates over `reduction_factors` (default 50%/30%/15%). For each factor,
+#' tests whether the proposed positions clear the reduced inter-label gap.
+#' First factor that clears the gap wins.
+#'
+#' @return list with `success` (logical). On success, also `yA`, `yB`,
+#'   `placement_quality`, and `warning` (single string).
+#' @keywords internal
+#' @noRd
+.try_niveau_1_gap_reduction <- function(proposed_yA, proposed_yB,
+                                        label_height_npc_value, gap_labels,
+                                        low_bound, high_bound,
+                                        reduction_factors) {
+  for (reduction_factor in reduction_factors) {
+    reduced_min_gap <- label_height_npc_value + gap_labels * reduction_factor
+    if (abs(proposed_yA - proposed_yB) >= reduced_min_gap) {
+      return(list(
+        success = TRUE,
+        yA = clamp_to_bounds(proposed_yA, low_bound, high_bound),
+        yB = clamp_to_bounds(proposed_yB, low_bound, high_bound),
+        placement_quality = "acceptable",
+        warning = paste0(
+          "NIVEAU 1: Reduceret label gap til ",
+          round(reduction_factor * 100), "% - line-gaps overholdt"
+        )
+      ))
+    }
+  }
+  list(success = FALSE)
+}
+
+#' NIVEAU 2: Try label-flip collision resolution
+#'
+#' Three strategies tried in order:
+#'   2a: Flip label A only.
+#'   2b: Flip label B only (if 2a failed).
+#'   2c: Flip both labels (if 2a and 2b failed).
+#' Each candidate must produce labels separated by at least `label_height_npc_value`
+#' (no overlap).
+#'
+#' @return list with `success` (logical). On success, also `yA`, `yB`,
+#'   `sideA`, `sideB`, `placement_quality`, and `warning`.
+#' @keywords internal
+#' @noRd
+.try_niveau_2_flip <- function(proposed_yA, proposed_yB,
+                               yA_npc, yB_npc,
+                               sideA, sideB,
+                               label_height_npc_value,
+                               gap_line, pad_top, pad_bot,
+                               low_bound, high_bound) {
+  # Strategy 2a: flip A
+  new_side_A <- if (sideA == "under") "over" else "under"
+  propA_flipped <- propose_single_label(
+    yA_npc, new_side_A, label_height_npc_value, gap_line, pad_top, pad_bot
+  )
+  verifyA_flipped <- .verify_line_gap_npc(
+    propA_flipped$center, yA_npc, propA_flipped$side,
+    label_height_npc_value, gap_line
+  )
+  test_yA <- if (verifyA_flipped$violated) verifyA_flipped$y else propA_flipped$center
+
+  if (abs(test_yA - proposed_yB) >= label_height_npc_value) {
+    return(list(
+      success = TRUE,
+      yA = clamp_to_bounds(test_yA, low_bound, high_bound),
+      yB = clamp_to_bounds(proposed_yB, low_bound, high_bound),
+      sideA = propA_flipped$side,
+      sideB = sideB,
+      placement_quality = "acceptable",
+      warning = "NIVEAU 2a: Flippet label A til modsatte side - konflikt l\u00f8st"
+    ))
+  }
+
+  # Strategy 2b: flip B
+  new_side_B <- if (sideB == "under") "over" else "under"
+  propB_flipped <- propose_single_label(
+    yB_npc, new_side_B, label_height_npc_value, gap_line, pad_top, pad_bot
+  )
+  verifyB_flipped <- .verify_line_gap_npc(
+    propB_flipped$center, yB_npc, propB_flipped$side,
+    label_height_npc_value, gap_line
+  )
+  test_yB <- if (verifyB_flipped$violated) verifyB_flipped$y else propB_flipped$center
+
+  if (abs(proposed_yA - test_yB) >= label_height_npc_value) {
+    return(list(
+      success = TRUE,
+      yA = clamp_to_bounds(proposed_yA, low_bound, high_bound),
+      yB = clamp_to_bounds(test_yB, low_bound, high_bound),
+      sideA = sideA,
+      sideB = propB_flipped$side,
+      placement_quality = "acceptable",
+      warning = "NIVEAU 2b: Flippet label B til modsatte side - konflikt l\u00f8st"
+    ))
+  }
+
+  # Strategy 2c: flip both
+  if (abs(test_yA - test_yB) >= label_height_npc_value) {
+    return(list(
+      success = TRUE,
+      yA = clamp_to_bounds(test_yA, low_bound, high_bound),
+      yB = clamp_to_bounds(test_yB, low_bound, high_bound),
+      sideA = propA_flipped$side,
+      sideB = propB_flipped$side,
+      placement_quality = "suboptimal",
+      warning = "NIVEAU 2c: Flippet BEGGE labels til modsatte side - konflikt l\u00f8st"
+    ))
+  }
+
+  list(success = FALSE)
+}
+
+#' NIVEAU 3: Last-resort shelf placement
+#'
+#' Pins the priority label near its proposed position; pins the
+#' non-priority label to the opposite shelf (top vs bottom of panel)
+#' based on whether the priority label sits below the configured shelf
+#' center threshold.
+#'
+#' @return list with `yA`, `yB`, `placement_quality` (always "degraded").
+#' @keywords internal
+#' @noRd
+.apply_niveau_3_shelf <- function(proposed_yA, proposed_yB,
+                                  low_bound, high_bound,
+                                  priority, shelf_threshold) {
+  if (priority == "A") {
+    yA <- clamp_to_bounds(proposed_yA, low_bound, high_bound)
+    yB <- if (yA < shelf_threshold) high_bound else low_bound
+  } else {
+    yB <- clamp_to_bounds(proposed_yB, low_bound, high_bound)
+    yA <- if (yB < shelf_threshold) high_bound else low_bound
+  }
+  list(yA = yA, yB = yB, placement_quality = "degraded")
+}
+
+
+# ==============================================================================
 # LABEL PLACEMENT - CORE ALGORITHM
 # ==============================================================================
 
@@ -191,10 +373,10 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #' `tight_threshold_factor=0.5`):
 #'
 #' 1. **Linjer er IKKE "tight"**:
-#'    `abs(yA - yB) >= 0.5 * (label_height + gap_labels)` — ellers flippes
+#'    `abs(yA - yB) >= 0.5 * (label_height + gap_labels)` -- ellers flippes
 #'    `pref_pos` automatisk til over/under-strategi (linje ~522).
 #' 2. **Linjer er IKKE coincident**:
-#'    `abs(yA - yB) >= 0.1 * label_height` — ellers haandteres af coincident-
+#'    `abs(yA - yB) >= 0.1 * label_height` -- ellers haandteres af coincident-
 #'    grenen (linje ~551).
 #' 3. **Initial proposals kolliderer**:
 #'    `abs(propA - propB) < label_height + gap_labels`.
@@ -204,7 +386,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #'    genskaber kollision**.
 #' 6. **NIVEAU 1 reduktion (50/30/15%) kan ej lukke gap**.
 #'
-#' Konkret reproducerbart eksempel (NIVEAU 2b — flip B):
+#' Konkret reproducerbart eksempel (NIVEAU 2b -- flip B):
 #' ```
 #' place_two_labels_npc(
 #'   yA_npc = 0.30, yB_npc = 0.48,
@@ -232,7 +414,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 #' # warnings inkluderer: "NIVEAU 3: shelf placement"
 #' ```
 #'
-#' Bemaerk: NIVEAU 3 returnerer `placement_quality = "degraded"` — kaldere
+#' Bemaerk: NIVEAU 3 returnerer `placement_quality = "degraded"` -- kaldere
 #' boer behandle dette som "best effort" og overveje at oege panel-hoejde
 #' eller reducere label-stoerrelse.
 #'
@@ -418,10 +600,10 @@ place_two_labels_npc <- function(
     relative_gap_labels = 0.30,
     pad_top = 0.01,
     pad_bot = 0.01,
-    tight_lines_threshold_factor = 0.5,
-    coincident_threshold_factor = 0.1,
-    gap_reduction_factors = c(0.5, 0.3, 0.15),
-    shelf_center_threshold = 0.5
+    tight_lines_threshold_factor = LABEL_PLACEMENT_TIGHT_LINES_THRESHOLD_FACTOR,
+    coincident_threshold_factor = LABEL_PLACEMENT_COINCIDENT_THRESHOLD_FACTOR,
+    gap_reduction_factors = LABEL_PLACEMENT_GAP_REDUCTION_FACTORS,
+    shelf_center_threshold = LABEL_PLACEMENT_SHELF_CENTER_THRESHOLD
   )
 
   cfg <- default_cfg
@@ -737,93 +919,48 @@ place_two_labels_npc <- function(
     if (abs(proposed_yA - proposed_yB) < min_center_gap) {
       warnings <- c(warnings, "Line-gap enforcement ville skabe collision - fors\u00f8ger multi-level fallback")
 
-      # === NIVEAU 1: Reducer gap_labels for at give mere plads ===
-      reduced_gap_successful <- FALSE
-
-      # Brug batch-loaded config
-      reduction_factors <- cfg$gap_reduction_factors
-
-      for (reduction_factor in reduction_factors) {
-        reduced_min_gap <- label_height_npc_value + gap_labels * reduction_factor
-
-        if (abs(proposed_yA - proposed_yB) >= reduced_min_gap) {
-          # Success! Vi kan bruge line-gap enforcement med reduceret label-gap
-          warnings <- c(warnings, paste0(
-            "NIVEAU 1: Reduceret label gap til ",
-            round(reduction_factor * 100), "% - line-gaps overholdt"
-          ))
-          yA <- clamp_to_bounds(proposed_yA, low_bound, high_bound)
-          yB <- clamp_to_bounds(proposed_yB, low_bound, high_bound)
-          reduced_gap_successful <- TRUE
-          placement_quality <- "acceptable"
-          break
-        }
-      }
-
-      # === NIVEAU 2: Flip label til modsatte side ===
-      if (!reduced_gap_successful) {
+      # === NIVEAU 1: Reduce gap_labels to widen spacing ===
+      n1 <- .try_niveau_1_gap_reduction(
+        proposed_yA, proposed_yB,
+        label_height_npc_value, gap_labels,
+        low_bound, high_bound,
+        cfg$gap_reduction_factors
+      )
+      if (n1$success) {
+        yA <- n1$yA
+        yB <- n1$yB
+        placement_quality <- n1$placement_quality
+        warnings <- c(warnings, n1$warning)
+      } else {
+        # === NIVEAU 2: Flip labels to opposite side ===
         warnings <- c(warnings, "NIVEAU 1 fejlede - fors\u00f8ger NIVEAU 2: flip labels til modsatte side")
-
-        # Proev begge flip-strategier i prioritetsraekkefoelge
-        # Strategi 1: Flip A (CL) til modsatte side, hold B (Target) fast
-        new_side_A <- if (sideA == "under") "over" else "under"
-        propA_flipped <- propose_single_label(yA_npc, new_side_A, label_height_npc_value, gap_line, pad_top, pad_bot)
-        verifyA_flipped <- verify_line_gap(propA_flipped$center, yA_npc, propA_flipped$side, label_height_npc_value)
-        test_yA <- if (verifyA_flipped$violated) verifyA_flipped$y else propA_flipped$center
-
-        # Check om flip A loeser problemet
-        if (abs(test_yA - proposed_yB) >= label_height_npc_value) { # Minimum: labels m\u00e5 ikke overlappe
-          yA <- clamp_to_bounds(test_yA, low_bound, high_bound)
-          yB <- clamp_to_bounds(proposed_yB, low_bound, high_bound)
-          sideA <- propA_flipped$side
-          warnings <- c(warnings, "NIVEAU 2a: Flippet label A til modsatte side - konflikt l\u00f8st")
-          placement_quality <- "acceptable"
-          reduced_gap_successful <- TRUE
+        n2 <- .try_niveau_2_flip(
+          proposed_yA, proposed_yB,
+          yA_npc, yB_npc,
+          sideA, sideB,
+          label_height_npc_value,
+          gap_line, pad_top, pad_bot,
+          low_bound, high_bound
+        )
+        if (n2$success) {
+          yA <- n2$yA
+          yB <- n2$yB
+          sideA <- n2$sideA
+          sideB <- n2$sideB
+          placement_quality <- n2$placement_quality
+          warnings <- c(warnings, n2$warning)
         } else {
-          # Strategi 2: Hold A fast, flip B til modsatte side
-          new_side_B <- if (sideB == "under") "over" else "under"
-          propB_flipped <- propose_single_label(yB_npc, new_side_B, label_height_npc_value, gap_line, pad_top, pad_bot)
-          verifyB_flipped <- verify_line_gap(propB_flipped$center, yB_npc, propB_flipped$side, label_height_npc_value)
-          test_yB <- if (verifyB_flipped$violated) verifyB_flipped$y else propB_flipped$center
-
-          if (abs(proposed_yA - test_yB) >= label_height_npc_value) {
-            yA <- clamp_to_bounds(proposed_yA, low_bound, high_bound)
-            yB <- clamp_to_bounds(test_yB, low_bound, high_bound)
-            sideB <- propB_flipped$side
-            warnings <- c(warnings, "NIVEAU 2b: Flippet label B til modsatte side - konflikt l\u00f8st")
-            placement_quality <- "acceptable"
-            reduced_gap_successful <- TRUE
-          } else {
-            # Strategi 3: Flip BEGGE labels til modsatte side
-            if (abs(test_yA - test_yB) >= label_height_npc_value) {
-              yA <- clamp_to_bounds(test_yA, low_bound, high_bound)
-              yB <- clamp_to_bounds(test_yB, low_bound, high_bound)
-              sideA <- propA_flipped$side
-              sideB <- propB_flipped$side
-              warnings <- c(warnings, "NIVEAU 2c: Flippet BEGGE labels til modsatte side - konflikt l\u00f8st")
-              placement_quality <- "suboptimal"
-              reduced_gap_successful <- TRUE
-            }
-          }
+          # === NIVEAU 3: Shelf placement as last resort ===
+          warnings <- c(warnings, "NIVEAU 2 fejlede - bruger NIVEAU 3: shelf placement")
+          n3 <- .apply_niveau_3_shelf(
+            proposed_yA, proposed_yB,
+            low_bound, high_bound,
+            priority, cfg$shelf_center_threshold
+          )
+          yA <- n3$yA
+          yB <- n3$yB
+          placement_quality <- n3$placement_quality
         }
-      }
-
-      # === NIVEAU 3: Shelf placement som sidste udvej ===
-      if (!reduced_gap_successful) {
-        warnings <- c(warnings, "NIVEAU 2 fejlede - bruger NIVEAU 3: shelf placement")
-
-        # Brug batch-loaded config
-        shelf_threshold <- cfg$shelf_center_threshold
-
-        # Prioriter den vigtigste label taettest paa sin linje
-        if (priority == "A") {
-          yA <- clamp_to_bounds(proposed_yA, low_bound, high_bound)
-          yB <- if (yA < shelf_threshold) high_bound else low_bound # Modsatte shelf
-        } else {
-          yB <- clamp_to_bounds(proposed_yB, low_bound, high_bound)
-          yA <- if (yB < shelf_threshold) high_bound else low_bound
-        }
-        placement_quality <- "degraded"
       }
     } else {
       # Sikkert at enforce line-gaps uden collision

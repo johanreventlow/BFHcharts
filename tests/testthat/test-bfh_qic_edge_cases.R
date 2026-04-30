@@ -320,6 +320,101 @@ test_that("bfh_qic giver IKKE cl-override advarsel ved cl = NULL", {
   expect_s3_class(result, "bfh_qic_result")
 })
 
+# ============================================================================
+# Tightened input validation (Codex 2026-04-30 / change tighten-bfh_qic-input-validation)
+# ============================================================================
+
+test_that("bfh_qic afviser tomt data.frame med klar 'empty'-fejl", {
+  expect_error(
+    bfh_qic(
+      data.frame(period = integer(0), value = numeric(0)),
+      x = period, y = value, chart_type = "i"
+    ),
+    "empty"
+  )
+})
+
+test_that("bfh_qic afviser non-numerisk y-kolonne før qic-kald", {
+  data <- data.frame(
+    period = 1:5,
+    value = c("a", "b", "c", "d", "e"),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    bfh_qic(data, x = period, y = value, chart_type = "i"),
+    "must be numeric"
+  )
+})
+
+test_that("bfh_qic afviser non-integer part med 'integer'-besked", {
+  data <- data.frame(month = 1:24, value = rnorm(24))
+  expect_error(
+    bfh_qic(data, x = month, y = value, part = 3.5, chart_type = "i"),
+    "integer"
+  )
+})
+
+test_that("bfh_qic afviser duplikerede part-positioner med 'unique'-besked", {
+  data <- data.frame(month = 1:24, value = rnorm(24))
+  expect_error(
+    bfh_qic(data, x = month, y = value, part = c(12, 12), chart_type = "i"),
+    "unique"
+  )
+})
+
+test_that("bfh_qic afviser unsorted part med 'increasing'-besked", {
+  data <- data.frame(month = 1:24, value = rnorm(24))
+  expect_error(
+    bfh_qic(data, x = month, y = value, part = c(12, 6), chart_type = "i"),
+    "increasing"
+  )
+})
+
+test_that("bfh_qic afviser non-integer freeze med 'integer'-besked", {
+  data <- data.frame(month = 1:24, value = rnorm(24))
+  expect_error(
+    suppressWarnings(
+      bfh_qic(data, x = month, y = value, freeze = 5.5, chart_type = "i")
+    ),
+    "integer"
+  )
+})
+
+test_that("bfh_qic afviser duplikerede exclude-positioner med 'unique'-besked", {
+  data <- data.frame(month = 1:24, value = rnorm(24))
+  expect_error(
+    bfh_qic(data, x = month, y = value, exclude = c(2, 2, 5), chart_type = "i"),
+    "unique"
+  )
+})
+
+test_that("bfh_export_pdf afviser non-scalar metadata$target", {
+  chart <- fixture_test_chart()
+  expect_error(
+    bfh_export_pdf(chart, tempfile(fileext = ".pdf"),
+      metadata = list(target = c(1, 2))
+    ),
+    "scalar|length 1"
+  )
+})
+
+test_that("bfh_generate_analysis afviser Inf metadata$target", {
+  chart <- fixture_test_chart()
+  expect_error(
+    bfh_generate_analysis(chart, metadata = list(target = Inf)),
+    "finite"
+  )
+})
+
+test_that("bfh_build_analysis_context afviser NA character metadata$target", {
+  chart <- fixture_test_chart()
+  expect_error(
+    bfh_build_analysis_context(chart, metadata = list(target = NA_character_)),
+    "NA"
+  )
+})
+
+
 test_that("anhoej.signal kan være NA for en kort serie (n=6)", {
   data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 6),

@@ -14,6 +14,13 @@
 #'   or images not bundled in BFHcharts (e.g., proprietary fonts from a private
 #'   package). If the injected directory contains a \code{fonts/} subdirectory
 #'   and \code{font_path} is NULL, \code{font_path} is set automatically.
+#' @param strict_baseline Logical. Default for the session: when TRUE
+#'   (default), every \code{bfh_export_pdf()} call inheriting this session
+#'   errors before render if the result has \code{freeze < MIN_BASELINE_N}
+#'   or any phase shorter than \code{MIN_BASELINE_N} (8) data points. Set
+#'   FALSE to preserve the legacy warning-only behavior across the batch.
+#'   Per-call \code{strict_baseline} on \code{bfh_export_pdf()} overrides
+#'   the session value.
 #'
 #' @return A \code{bfh_export_session} object. Close with \code{close(session)}
 #'   to remove the session tmpdir.
@@ -59,7 +66,8 @@
 #' @seealso
 #'   - [bfh_export_pdf()] for single exports and the full security note
 #'     covering both `inject_assets` and `template_path`
-bfh_create_export_session <- function(font_path = NULL, inject_assets = NULL) {
+bfh_create_export_session <- function(font_path = NULL, inject_assets = NULL,
+                                      strict_baseline = TRUE) {
   if (!is.null(inject_assets) && !is.function(inject_assets)) {
     stop("inject_assets must be a function or NULL", call. = FALSE)
   }
@@ -68,12 +76,16 @@ bfh_create_export_session <- function(font_path = NULL, inject_assets = NULL) {
       stop("font_path must be a single character string or NULL", call. = FALSE)
     }
   }
+  if (!is.logical(strict_baseline) || length(strict_baseline) != 1L ||
+    is.na(strict_baseline)) {
+    stop("strict_baseline must be TRUE or FALSE", call. = FALSE)
+  }
 
   tmpdir <- tempfile("bfh_batch_")
   dir.create(tmpdir, recursive = TRUE)
   # Sikkerhed: tempfile() leverer en per-bruger isoleret sti i tempdir(),
   # og Sys.chmod(0700) fjerner group/other-permissions. UID-baseret
-  # ownership-validering udelades bevidst — UID er shell-intern og typisk
+  # ownership validation is intentionally omitted -- UID is shell-internal and typically
   # ikke eksporteret til R-processer (Rscript, RStudio Server, knitr,
   # Shiny, GitHub Actions).
   Sys.chmod(tmpdir, mode = "0700", use_umask = FALSE)
@@ -99,12 +111,13 @@ bfh_create_export_session <- function(font_path = NULL, inject_assets = NULL) {
 
   closed <- FALSE
 
-  # Brug environment (ikke list) for at reg.finalizer() virker —
-  # R tillader kun finalizers på environments og external pointers.
+  # Use environment (not list) so that reg.finalizer() works --
+  # R only permits finalizers on environments and external pointers.
   session <- new.env(parent = emptyenv())
   session$tmpdir <- tmpdir
   session$template_ready <- TRUE
   session$font_path <- font_path
+  session$strict_baseline <- strict_baseline
   session$closed <- function() closed
   session$close <- function() {
     if (!closed) {
