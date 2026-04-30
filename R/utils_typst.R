@@ -235,7 +235,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
 
   # Build compilation args
   # shQuote() maa IKKE bruges her: system2() med character vector sender
-  # argv-tokens direkte uden shell — shQuote tilfojer literale anforselstegn
+  # argv-tokens direkte uden shell -- shQuote tilfojer literale anforselstegn
   # og bryder stier med mellemrum paa Unix/macOS.
   compile_args <- c("typst", "compile", typst_file, output)
   if (!is.null(font_path)) {

@@ -57,11 +57,18 @@ bfh_qic(
 
 \item{notes}{Character vector of annotations for data points (optional, same length as data)}
 
-\item{part}{Positions for phase splits (optional numeric vector)}
+\item{part}{Positions for phase splits (optional numeric vector). Must be
+positive integers, strictly increasing, unique, and within
+\verb{[2, nrow(data)]}. Non-integer (e.g. \code{3.5}), duplicated, or unsorted
+values raise an error before any qicharts2 call.}
 
-\item{freeze}{Position to freeze baseline (optional integer)}
+\item{freeze}{Position to freeze baseline (optional single integer). Must
+be a positive integer in \verb{[1, nrow(data) - 1]}. Non-integer values
+raise an error.}
 
-\item{exclude}{Integer vector of data point positions to exclude from calculations (optional)}
+\item{exclude}{Integer vector of data point positions to exclude from
+calculations (optional). Must be positive integers, unique, and within
+\verb{[1, nrow(data)]}. Sort order is not required.}
 
 \item{cl}{Numeric value to set a custom centerline instead of calculating from data (optional)}
 
@@ -93,7 +100,19 @@ bfh_qic(
 
 \item{print.summary}{\strong{REMOVED in v0.11.0.} Calling with \code{print.summary = TRUE} raises an error. Use \code{return.data = TRUE} and access \code{result$qic_summary}, or use the default \code{bfh_qic_result} object and access \code{result$summary} directly.}
 
-\item{language}{Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Passed through to analysis and label generation. Default \code{"da"} preserves backward compatibility.}
+\item{language}{Character string specifying output language. One of
+\code{"da"} (Danish, default) or \code{"en"} (English). Controls
+three independent aspects of output (since v0.12.0):
+\itemize{
+\item Translated labels (control limit text, target prefixes)
+\item Y-axis number formatting: decimal separator and thousand
+separator (Danish \verb{1.234,5} vs English \verb{1,234.5}); percent suffix
+(Danish \verb{12,5 \%} vs English \verb{12.5\%})
+\item X-axis date formatting: month/weekday abbreviations match the
+requested locale on a best-effort basis (depends on platform
+locale availability)
+}
+Default \code{"da"} preserves backward compatibility for Danish users.}
 }
 \value{
 \itemize{
@@ -116,30 +135,30 @@ BFH-styled visualization and automatic label placement. Handles the
 entire workflow from raw data to finished plot with intelligent labels.
 }
 \details{
-\strong{Helper map (interne orkestreringsfunktioner):}
+\strong{Helper map (internal orchestration functions):}
 \itemize{
-\item \code{validate_bfh_qic_inputs()} — al input-validering (type, bounds, NSE, denominator, target)
-\item \code{build_qic_args()} — konstruerer argument-liste til \code{qicharts2::qic()}
-\item \code{invoke_qicharts2()} — kalder \code{do.call(qicharts2::qic, ...)} + \code{add_anhoej_signal()}
-\item \code{compute_viewport_base_size()} — enhedskonvertering, responsiv \code{base_size}, label-normalisering
-\item \code{render_bfh_plot()} — plot_config + viewport + \code{bfh_spc_plot()} med warning-suppression
-\item \code{apply_spc_labels_to_export()} — label_size-beregning + \code{add_spc_labels()} med warning-suppression
-\item \code{build_bfh_qic_return()} — returværdi-routing (S3 vs. legacy paths)
+\item \code{validate_bfh_qic_inputs()} -- all input validation (type, bounds, NSE, denominator, target)
+\item \code{build_qic_args()} -- constructs argument list for \code{qicharts2::qic()}
+\item \code{invoke_qicharts2()} -- calls \code{do.call(qicharts2::qic, ...)} + \code{add_anhoej_signal()}
+\item \code{compute_viewport_base_size()} -- unit conversion, responsive \code{base_size}, label normalisation
+\item \code{render_bfh_plot()} -- plot_config + viewport + \code{bfh_spc_plot()} with warning suppression
+\item \code{apply_spc_labels_to_export()} -- label_size computation + \code{add_spc_labels()} with warning suppression
+\item \code{build_bfh_qic_return()} -- return value routing (S3 vs. legacy paths)
 }
 
 \strong{Chart Types:}
 \itemize{
 \item \strong{run}: Run chart (no control limits)
 \item \strong{i}: I-chart (individuals)
-\item \strong{mr}: Moving Range chart — measures point-to-point variability.
+\item \strong{mr}: Moving Range chart -- measures point-to-point variability.
 Typically paired with an I-chart to characterise both process level (I)
 and short-term variation (MR).
 \item \strong{p}: P-chart (proportions, requires n)
-\item \strong{pp}: P-prime chart (Laney-adjusted proportions) — use instead of \code{p}
+\item \strong{pp}: P-prime chart (Laney-adjusted proportions) -- use instead of \code{p}
 when denominators are very large (n > 1000 per subgroup) and standard
 control limits become artificially tight due to over-dispersion. Requires n.
 \item \strong{u}: U-chart (rates, requires n)
-\item \strong{up}: U-prime chart (Laney-adjusted rates) — same rationale as \code{pp},
+\item \strong{up}: U-prime chart (Laney-adjusted rates) -- same rationale as \code{pp},
 applied to count rates. Requires n.
 \item \strong{c}: C-chart (counts)
 \item \strong{g}: G-chart (geometric)
@@ -232,7 +251,7 @@ set \code{multiply = 100} to pass percent values directly.
 A 1.5x upper slack permits legitimate stretch targets above 100\%.
 }
 \examples{
-# Minimal kørbart eksempel med deterministiske data
+# Minimal runnable example with deterministic data
 df <- data.frame(
   maaned = seq.Date(as.Date("2023-01-01"), by = "month", length.out = 12),
   vaerdi = c(10, 12, 11, 13, 10, 14, 11, 12, 10, 13, 11, 12)

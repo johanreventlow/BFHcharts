@@ -336,7 +336,7 @@ test_that("Anhøj rules detect runs correctly", {
 
 * Function names: Engelsk
 * Function documentation: Engelsk
-* Internal comments: Dansk
+* Internal comments: Engelsk (ASCII-only — se ASCII-policy nedenfor)
 * Error messages: Engelsk (standard for R packages)
 
 **Exports:**
@@ -346,7 +346,39 @@ test_that("Anhøj rules detect runs correctly", {
 **Internal terminology (comments):**
 - Serieplot = SPC chart
 - Centrallinje = Center line
-- Kontrolgrænser = Control limits
+- Kontrolgraenser (transliteret) eller Control limits
+
+### ASCII-policy for `R/*.R` (overrider global R_STANDARDS.md)
+
+**Regel:** Alle filer under `R/*.R` SKAL kun indeholde ASCII-bytes (0x00-0x7F).
+Håndhæves automatisk via `tests/testthat/test-source-ascii.R`.
+
+**Begrundelse:** `R CMD check --as-cran` advarer om non-ASCII i R-kilder
+(blokerer warning-clean releases). Global `~/.claude/rules/R_STANDARDS.md`
+siger "Kommentarer: dansk" — den regel **overrides** for `R/*.R` her.
+
+**Hvor er dansk OK?**
+- ✅ `NEWS.md` (UTF-8 markdown)
+- ✅ `vignettes/*.Rmd` (UTF-8 explicit)
+- ✅ `inst/i18n/*.yaml` (runtime-strings)
+- ✅ `README.md`
+- ✅ Roxygen blocks i `R/*.R` — **kun** via translit (æ→ae, ø→oe, å→aa)
+  eller engelsk (`tools::showNonASCIIfile()` flagger UTF-8 i roxygen)
+
+**Hvor SKAL det være ASCII?**
+- ❌ R-kommentarer (`# ...`) i `R/*.R` — engelsk eller transliteret
+- ❌ R-strings i `R/*.R` med dansk indhold — brug `æ`/`ø`/`å`
+  escapes (kompiler-fortolket; runtime-string forbliver UTF-8)
+- ❌ Identifiers — engelsk altid
+
+**Eksempler:**
+```r
+# ✅ Korrekt: ASCII-kommentar + Danish via \u-escape i string
+warning("Kontrolgrænser er statistisk usikre")
+
+# ❌ Forkert: dansk char direkte i source
+warning("Kontrolgrænser er statistisk usikre")  # æ trigger CRAN warning
+```
 
 ---
 

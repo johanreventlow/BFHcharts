@@ -71,4 +71,29 @@ register_bfh_font_aliases <- function() {
 .onLoad <- function(libname, pkgname) {
   register_bfh_font_aliases()
 }
+
+# Soft-check BFHtheme presence at attach time. Non-blocking: missing BFHtheme
+# does not prevent help/docs access, only triggers an error at first plot.
+.onAttach <- function(libname, pkgname) {
+  min_version <- "0.5.0"
+  has_dep <- requireNamespace("BFHtheme", quietly = TRUE)
+  if (!has_dep) {
+    packageStartupMessage(sprintf(
+      "BFHcharts requires BFHtheme >= %s. Install with: remotes::install_github('johanreventlow/BFHtheme@v%s')",
+      min_version, min_version
+    ))
+    return(invisible(NULL))
+  }
+  installed <- tryCatch(
+    utils::packageVersion("BFHtheme"),
+    error = function(e) NULL
+  )
+  if (!is.null(installed) && installed < numeric_version(min_version)) {
+    packageStartupMessage(sprintf(
+      "BFHcharts requires BFHtheme >= %s (installed: %s). Update with: remotes::install_github('johanreventlow/BFHtheme@v%s')",
+      min_version, as.character(installed), min_version
+    ))
+  }
+  invisible(NULL)
+}
 # nocov end

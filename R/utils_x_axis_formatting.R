@@ -8,6 +8,45 @@
 # Created: 2025-12-02
 # ==============================================================================
 
+# Map sprogkode til en ordnet liste af LC_TIME-locales.
+# Forsoeger den foerste der virker; falder tilbage til "C" (engelsk POSIX)
+# hvis ingen platform-locale er tilgaengelig.
+.locales_for_language <- function(language) {
+  switch(language,
+    "en" = c("en_US.UTF-8", "en_US.utf8", "C.UTF-8", "C", "en_GB.UTF-8"),
+    "da" = c("da_DK.UTF-8", "da_DK.utf8", "Danish_Denmark.utf8", "da_DK"),
+    character(0)
+  )
+}
+
+# Wrap en label-funktion saa den evaluerer med passende LC_TIME-locale.
+# Bevarer original locale via on.exit-restore; fejl ved locale-set logges
+# stilfaerdigt (ikke fatal) saa cross-platform robusthed bevares.
+with_lc_time_labeler <- function(label_fn, language = "da") {
+  if (!is.function(label_fn)) {
+    return(label_fn)
+  }
+  candidates <- .locales_for_language(language)
+  if (length(candidates) == 0) {
+    return(label_fn)
+  }
+  function(x) {
+    current <- Sys.getlocale("LC_TIME")
+    on.exit(suppressWarnings(Sys.setlocale("LC_TIME", current)), add = TRUE)
+    for (loc in candidates) {
+      ok <- tryCatch(
+        suppressWarnings({
+          set <- Sys.setlocale("LC_TIME", loc)
+          !identical(set, "")
+        }),
+        error = function(e) FALSE
+      )
+      if (isTRUE(ok)) break
+    }
+    label_fn(x)
+  }
+}
+
 #' Normalize Date or POSIXct to POSIXct
 #'
 #' Converts Date objects to POSIXct while leaving POSIXct unchanged.
@@ -172,13 +211,22 @@ calculate_date_breaks <- function(data_x_min, data_x_max, interval_type,
 #' @return Modified ggplot object with datetime scale
 #' @keywords internal
 #' @noRd
-apply_temporal_x_axis <- function(plot, x_col, data_x_min, data_x_max) {
+apply_temporal_x_axis <- function(plot, x_col, data_x_min, data_x_max,
+                                  language = "da") {
+  .ensure_bfhtheme()
   # Normalize to POSIXct
   x_col <- normalize_to_posixct(x_col)
 
   # Detect interval and get format config
   interval_info <- detect_date_interval(x_col)
   format_config <- get_optimal_formatting(interval_info)
+
+  # Locale-wrap labeler so %b/%a tokens reflect the requested language.
+  # Best-effort: if requested locale is unavailable on the host, falls back
+  # silently to system default. Spec: locale-aware-en-formatting.
+  if (!is.null(format_config$labels)) {
+    format_config$labels <- with_lc_time_labeler(format_config$labels, language)
+  }
 
   # Calculate breaks if we have format config with breaks enabled
   if (!is.null(format_config$breaks) ||
@@ -222,6 +270,7 @@ apply_temporal_x_axis <- function(plot, x_col, data_x_min, data_x_max) {
 #' @keywords internal
 #' @noRd
 apply_numeric_x_axis <- function(plot) {
+  .ensure_bfhtheme()
   plot + BFHtheme::scale_x_continuous_bfh(
     breaks = scales::pretty_breaks(n = 8)
   )

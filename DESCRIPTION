@@ -1,6 +1,6 @@
 Package: BFHcharts
 Title: SPC Visualization for Healthcare Quality Improvement
-Version: 0.11.1
+Version: 0.12.1
 Authors@R: c(
     person(
       "Johan", "Reventlow",
@@ -39,7 +39,8 @@ Imports:
     commonmark (>= 1.9),
     xml2,
     systemfonts,
-    rlang
+    rlang,
+    svglite
 Suggests:
     testthat (>= 3.0.0),
     vdiffr,

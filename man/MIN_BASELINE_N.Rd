@@ -3,7 +3,7 @@
 \docType{data}
 \name{MIN_BASELINE_N}
 \alias{MIN_BASELINE_N}
-\title{Minimum anbefalede baseline-observationer for stabile SPC-kontrolgrænser}
+\title{Minimum recommended baseline observations for stable SPC control limits}
 \format{
 An object of class \code{integer} of length 1.
 }
@@ -11,8 +11,8 @@ An object of class \code{integer} of length 1.
 MIN_BASELINE_N
 }
 \description{
-Anhøj-reglerne og SPC-litteraturen (Anhøj & Olesen 2014) kræver ca. 8+
-punkter for meningsfulde kontrolgrænser og pålidelig signal-detektion.
-Under denne grænse er kontrolgrænserne statistisk usikre.
+The Anhoej rules and SPC literature (Anhoej & Olesen 2014) require approximately
+8+ points for meaningful control limits and reliable signal detection.
+Below this threshold, the control limits are statistically unreliable.
 }
 \keyword{datasets}

@@ -33,6 +33,7 @@ NULL
 #' @keywords internal
 #' @noRd
 apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
+  .ensure_bfhtheme()
   # Use BFHtheme's theme_bfh as base
   plot <- plot +
     BFHtheme::theme_bfh(base_size = base_size) +

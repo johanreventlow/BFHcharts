@@ -18,7 +18,8 @@ bfh_export_pdf(
   font_path = NULL,
   ignore_system_fonts = TRUE,
   inject_assets = NULL,
-  batch_session = NULL
+  batch_session = NULL,
+  strict_baseline
 )
 }
 \arguments{
@@ -37,7 +38,12 @@ Seneste maaned: 60756/88509 * Nuvaerende niveau: 64,5\\%"
 \item \code{author}: Author name (optional)
 \item \code{date}: Report date (default: Sys.Date())
 \item \code{data_definition}: Data definition text (optional)
-\item \code{target}: Target value for analysis context (numeric or character, optional)
+\item \code{target}: Target value for analysis context. Must be either
+NULL, a single finite numeric (\verb{length 1}, no NA/Inf/NaN), or a
+single character string (\verb{length 1}, not NA). Multi-element vectors
+and non-finite numerics are rejected with an informative error. The
+target also auto-flows from \code{bfh_qic(target_text=, target_value=)}
+via the analysis-context fallback chain (since v0.12.0).
 \item \code{footer_content}: Additional content to display below the chart (optional).
 Supports markdown formatting (bold, italic, line breaks).
 }}
@@ -98,6 +104,25 @@ call, which eliminates the dominant I/O cost in batch workflows.
 \item \code{font_path} here overrides \code{session$font_path}.
 \item Close the session with \code{close(session)} after the batch is done.
 }}
+
+\item{strict_baseline}{Logical. When TRUE (default), the function errors
+before render if \code{x$config$freeze < MIN_BASELINE_N} (8) or if any
+phase in \code{x$qic_data} contains fewer than \code{MIN_BASELINE_N}
+points. When FALSE, the export proceeds and the legacy warning-only
+behavior of \code{bfh_qic()} is preserved.
+
+\strong{Rationale:} PDFs from this function typically reach
+quality-improvement leadership where R warnings never surface.
+Anhoej & Olesen (2014) recommend >= 8 baseline points for reliable
+run/crossing detection; charts with shorter baselines have tight but
+statistically unreliable control limits. Strict-by-default forces
+explicit acknowledgement of short-baseline output; the interactive
+\code{bfh_qic()} path remains warning-only because the analyst is
+present.
+
+\strong{Inheritance:} When \code{batch_session} is supplied without an
+explicit per-call value, the session's \code{strict_baseline} is used.
+An explicit per-call value overrides the session.}
 }
 \value{
 The input object \code{x} invisibly, enabling pipe chaining

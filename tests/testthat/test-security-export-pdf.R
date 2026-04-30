@@ -52,23 +52,26 @@ test_that("bfh_export_pdf rejects path traversal in template_path", {
 # SHELL METACHARACTER TESTS
 # ============================================================================
 
-test_that("bfh_export_pdf rejects shell metacharacters in output", {
+test_that("bfh_export_pdf afviser shell-pipeline metachars + LF/CR i output", {
   chart <- fixture_test_chart()
   expect_error(
     bfh_export_pdf(chart, "output.pdf; rm -rf /"),
     "disallowed"
   )
-})
-
-test_that("bfh_compile_typst rejects shell metacharacters", {
-  typst_file <- tempfile(fileext = ".typ")
-  writeLines("#text[test]", typst_file)
-  on.exit(unlink(typst_file))
   expect_error(
-    bfh_compile_typst(typst_file, "output.pdf; rm -rf /"),
+    bfh_export_pdf(chart, "output\nrm -rf /.pdf"),
+    "disallowed"
+  )
+  expect_error(
+    bfh_export_pdf(chart, "output\rm.pdf"),
     "disallowed"
   )
 })
+
+# Bemærk (Codex 2026-04-30 finding #10): parens/brackets/braces/&$'
+# tillades nu i output-stier — hospital-filnavne. ;|<>backtick afvises
+# stadig fordi R's system2(stdout=TRUE) shell-mode kan eksekvere dem.
+# Se test-path-policy.R for fuld dækning.
 
 # ============================================================================
 # SAFE PATH TESTS (should pass)

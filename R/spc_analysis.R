@@ -8,6 +8,33 @@
 # Interne helpers (resolve_target, pluralize_da, ensure_within_max)
 # ---------------------------------------------------------------------------
 
+# Resolve target for analysis context via fallback chain.
+#
+# Order of precedence:
+#   1. metadata$target  (explicit caller-provided override)
+#   2. config$target_text  (string from bfh_qic(target_text = ">= 90%"))
+#   3. config$target_value (numeric from bfh_qic(target_value = 0.9))
+#   4. NULL (no target)
+#
+# Returns raw target input (numeric or character). resolve_target()
+# handles downstream operator parsing and percent normalisation.
+.resolve_analysis_target <- function(metadata, config) {
+  if (!is.null(metadata) && !is.null(metadata$target)) {
+    return(metadata$target)
+  }
+  if (!is.null(config)) {
+    if (!is.null(config$target_text) && length(config$target_text) > 0 &&
+      nzchar(trimws(as.character(config$target_text)))) {
+      return(config$target_text)
+    }
+    if (!is.null(config$target_value)) {
+      return(config$target_value)
+    }
+  }
+  NULL
+}
+
+
 # Parse metadata$target til numerisk vaerdi + optional retning.
 # Genbruger parse_target_input() fra utils_label_helpers.R for at undgaa
 # duplikeret parser-logik. Returnerer altid en liste med value/direction/display.
@@ -74,7 +101,7 @@ resolve_target <- function(target_input) {
 #' the value is divided by 100 so downstream comparisons work on the same
 #' 0-1 proportion scale as the centerline.
 #'
-#' `target_display` is intentionally **not** modified — user-facing text
+#' `target_display` is intentionally **not** modified -- user-facing text
 #' continues to show `">= 90%"` rather than `">= 0.90"`.
 #'
 #' **Heuristic:**
@@ -112,8 +139,8 @@ resolve_target <- function(target_input) {
   if (is.na(value) || !is.numeric(value)) {
     return(value)
   }
-  # Normaliser naar display indeholder "%" ELLER value > 1
-  # (OR-heuristik dækker både streng-input og numerisk input på 0-100 skala)
+  # Normalise when display contains "%" OR value > 1
+  # (OR heuristic covers both string input and numeric input on a 0-100 scale)
   should_normalize <- isTRUE(grepl("%", display, fixed = TRUE)) || isTRUE(value > 1)
   if (should_normalize) value / 100 else value
 }
@@ -182,6 +209,11 @@ ensure_within_max <- function(text, max_chars) {
 #'   - `target`: Target value for the metric. Accepts either numeric (backward
 #'     compatible) or character with optional operator prefix (`"<= 2,5"`,
 #'     `">= 90%"`). Operators are parsed to derive `target_direction`.
+#'     **Fallback chain:** when `metadata$target` is NULL the function falls
+#'     back to `x$config$target_text`, then `x$config$target_value`. This means
+#'     a target supplied to `bfh_qic(target_text = ..., target_value = ...)`
+#'     automatically reaches the analysis context without callers duplicating
+#'     it in `metadata`.
 #'   - `hospital`: Hospital name
 #'   - `department`: Department name
 #'
@@ -217,9 +249,14 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()")
   }
+  .validate_metadata_target(metadata$target)
 
-  # Resolve target-input til value + retning (genbruger parse_target_input)
-  target_info <- resolve_target(metadata$target)
+  # Resolve target-input til value + retning (genbruger parse_target_input).
+  # Fallback chain: metadata$target -> config$target_text -> config$target_value.
+  # Sikrer at target sat via bfh_qic(target_text=, target_value=) automatisk
+  # flyder til analyseteksten uden at caller skal duplikere i metadata-lista.
+  resolved_target <- .resolve_analysis_target(metadata, x$config)
+  target_info <- resolve_target(resolved_target)
 
   # Normaliser percent-target fra 0-100 til 0-1 proportionsskala naar relevant.
   # Bevarer target_display uaendret (brugervendt tekst fortsat ">= 90%").
@@ -356,7 +393,7 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #'
 #' Example message:
 #' ```
-#' [BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() — fields: metadata, qic_data; data_definition, chart_title, ...; use_rag = TRUE
+#' [BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() -- fields: metadata, qic_data; data_definition, chart_title, ...; use_rag = TRUE
 #' ```
 #'
 #' **Opt-out:** Set `options(BFHcharts.suppress_ai_audit_message = TRUE)` to

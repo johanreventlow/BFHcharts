@@ -1,3 +1,151 @@
+# BFHcharts 0.12.1
+
+## Bug fixes
+
+* **`svglite` flyttet fra `Suggests` til `Imports`.** `bfh_export_pdf()`
+  kalder `svglite::svglite()` i `export_chart_svg()` for ggplot→SVG-
+  konvertering før Typst-rendering, men pakken var kun erklæret som
+  `Suggests`. Konsekvens: downstream-pakker (fx `biSPCharts`) der bruger
+  `bfh_export_pdf()` fik ikke `svglite` installeret automatisk via
+  `pak`/`renv` deployments. På Posit Connect Cloud (eller andre
+  minimal-deps environments) fejlede PDF-eksport med
+  `The package "svglite" is required to save as SVG`. PNG-eksport
+  (`bfh_export_png`) var upåvirket fordi `grDevices::png()` ej kræver
+  svglite. (#268)
+
+# BFHcharts 0.12.0
+
+## Breaking changes
+
+* **PDF-eksport defaulter nu til strict-baseline-mode.**
+  `bfh_export_pdf()` og `bfh_create_export_session()` accepterer en ny
+  parameter `strict_baseline` (default `TRUE`). I strict-mode afvises
+  eksport hvor `config$freeze < MIN_BASELINE_N` (8) eller hvor en fase
+  indeholder færre end 8 punkter — fejlen opstår FØR Quarto kaldes og
+  refererer eksplicit `strict_baseline = FALSE` som dokumenteret opt-out.
+  Begrundelse: PDF'er fra eksport-pipelinen lander på QI-leadership-borde
+  hvor R-warnings aldrig når en menneskelig læser. Anhøj & Olesen (2014)
+  anbefaler ≥8 baseline-punkter for pålidelig run/crossing-detection.
+  `bfh_qic()` selv bevarer warning-only-adfærd (interaktiv default —
+  analytiker er til stede). Migration: existing batch-pipelines med korte
+  baselines skal enten passere `strict_baseline = FALSE` per kald eller via
+  `bfh_create_export_session(strict_baseline = FALSE)`. Per-kald værdi
+  overrider session-værdi. (#4 / Codex 2026-04-30)
+
+* **`bfh_qic()` håndhæver strengere input-validering på `part`, `freeze`,
+  `exclude` og `metadata$target`.** Kald der tidligere passerede
+  validatoren men producerede kryptiske downstream-fejl afvises nu med
+  klare beskeder før qicharts2 invokeres:
+  - `part` skal være positive heltal, strengt voksende, unikke, i
+    `[2, nrow(data)]`. Tidligere accepteredes `3.5`, `c(12, 12)`, `c(12, 6)`
+    silently. Hver overtrædelses-type giver sin egen besked
+    ("integer", "unique", "increasing").
+  - `freeze` skal være ét enkelt heltal i `[1, nrow(data) - 1]`.
+    Non-integer afvises med "integer".
+  - `exclude` skal være positive heltal, unikke, i `[1, nrow(data)]`
+    (sortering ikke krævet).
+  - `metadata$target` skal være NULL, ét finit numerisk eller én
+    character-streng. Multi-element vektorer, `Inf`, `NaN`, `NA`
+    afvises.
+  - Tomt `data.frame()` afvises med klar "empty"-besked før qicharts2.
+  - Non-numerisk y-kolonne (character/factor) afvises før qicharts2.
+
+  Migration: kontroller at integer-positioner er hele tal (`5L` ikke `5.5`),
+  at `part` er sorteret unique, og at `metadata$target` er en enkelt
+  scalar-værdi. (#3 / Codex 2026-04-30)
+
+## Forbedringer
+
+* **BFHtheme-afhængighed fanges nu ved load + første brug.** BFHcharts kalder
+  `BFHtheme::` funktioner på 17 sites (theme, colors, scale_x/y); manglende
+  eller for-gammel BFHtheme producerede tidligere kryptiske
+  `could not find function "bfh_cols"`-fejl midt i plot-rendering. Nu:
+  - `.onAttach()` udsender en `packageStartupMessage()` ved `library(BFHcharts)`
+    hvis BFHtheme er fraværende eller `< 0.5.0`.
+  - Ny intern `.ensure_bfhtheme(min_version = "0.5.0")` kaldes ved entry
+    af alle 13 funktioner der bruger `BFHtheme::`. Resultatet caches i
+    package-private env så kun første kald per session betaler
+    `requireNamespace`-omkostningen.
+  - Fejlbeskeden indeholder nu version-kravet og den installerede version
+    samt et `remotes::install_github()`-install-hint.
+  Ingen public-API ændring; korrekt-installerede brugere ser intet nyt.
+  (Codex 2026-04-30 #2)
+
+* **Output-stier accepterer nu parentheses, brackets, braces, ampersand,
+  dollar og single-quote.** Hospital-filnavne som `rapport (final).pdf`,
+  `Q1 [2026].pdf` og `Indikator & resultat.pdf` blev tidligere afvist af
+  `validate_export_path()`. Codex code review 2026-04-30 (#10) flaggede
+  rejection som over-restriktiv. Empirisk verifikation viste dog at R's
+  `system2(... stdout = TRUE, stderr = TRUE)` (som BFHcharts bruger til at
+  capture Quarto-output) faktisk invokerer shell — så shell-pipeline-tegn
+  (`;`, `|`, `<`, `>`, backtick) **forbliver afvist** for at forhindre
+  command-injection. NUL/LF/CR og `..`-traversal afvises også fortsat.
+  Binary-stier (Quarto-binary etc.) forbliver strikt validerede via
+  `.check_metachars_binary()`. (#8 / Codex 2026-04-30 + advisor-justering)
+
+## Bug fixes
+
+* **`language = "en"` producerer nu korrekt engelsk talnotation på y-aksen.**
+  Pakkens dokumenterede engelsk-sprog-support producerede tidligere
+  `1.000,5` (dansk format) selvom labels var oversat — formelt forkert
+  engelsk talnotation der i grænsetilfælde kunne misforstås (engelsk
+  `1.000` betyder ét, ikke ét tusind). Fix: `format_count()`-dispatcher
+  router count-formatering til `format_count_english()` (decimal `.`,
+  thousand `,`) for `language = "en"` og bevarer `format_count_danish()`
+  for `language = "da"`. Percent-formatering bruger nu locale-specifikke
+  separatorer og suffix (`12,5 %` for da vs `12.5%` for en).
+  X-akse-datoer bruger best-effort locale-swap af LC_TIME for at producere
+  engelske månedsforkortelser (`Jan`, `Feb` ...) hhv. danske (`jan`,
+  `feb` ...) — afhængig af platformens locale-tilgængelighed. Default
+  `language = "da"` bevarer eksisterende output for danske brugere.
+  (#6 / Codex 2026-04-30)
+
+* **Auto-analyse respekterer nu chart-target uden duplikering i metadata.**
+  `bfh_build_analysis_context()` læste tidligere kun target fra
+  `metadata$target` og ignorerede `x$config$target_text` /
+  `x$config$target_value`. Konsekvens: PDF-eksport med `auto_analysis = TRUE`
+  viste target-linjen på chartet men producerede analysetekst uden
+  målfortolkning ("centerlinjen ligger på 91 %") når caller ikke duplikerede
+  target i metadata. Fix: ny intern helper `.resolve_analysis_target()`
+  implementerer fallback-kæden `metadata$target` →
+  `config$target_text` → `config$target_value`. Eksisterende kald der
+  duplikerer target i metadata får uændret adfærd; kald uden duplikering får
+  nu korrekt målbaseret analyse. (#1 / Codex 2026-04-30)
+
+## Interne ændringer
+
+* **`place_two_labels_npc()` collision-cascade dekomponeret til navngivne helpers.**
+  Den 565-linjers funktion havde en NIVEAU 1/2/3-collision-resolution-blok
+  med uforklaret magic numbers (0.5/0.3/0.15) og dyb nesting. Refactoreret
+  til 3 pure functions + 1 helper:
+  - `.try_niveau_1_gap_reduction()` — gap-reduktionsforsøg
+  - `.try_niveau_2_flip()` — label-flip i 3 strategier (A, B, BEGGE)
+  - `.apply_niveau_3_shelf()` — sidste-udvej shelf placement
+  - `.verify_line_gap_npc()` — line-gap predicate
+  Magic numbers navngivet i globals.R (`LABEL_PLACEMENT_GAP_REDUCTION_FACTORS`,
+  `LABEL_PLACEMENT_TIGHT_LINES_THRESHOLD_FACTOR`,
+  `LABEL_PLACEMENT_COINCIDENT_THRESHOLD_FACTOR`,
+  `LABEL_PLACEMENT_SHELF_CENTER_THRESHOLD`).
+  Hver helper er individuelt testbar; ny test-suite `test-niveau-resolvers.R`
+  pinner kontrakt med 14 tests. Refactoren er **byte-equivalent**: visual
+  output og warnings er uændrede (verificeret ved direkte sammenligning af
+  vdiffr `.new.svg`-filer mellem inline- og helper-version).
+  Legacy NPC-only API-signatur (`yA_npc=`, `yB_npc=`, `label_height_npc=`)
+  bevaret uændret for biSPCharts-kompatibilitet.
+  (Codex 2026-04-30 #1)
+
+* **R/*.R-kildefiler er nu ASCII-rene.** Alle 14 filer med non-ASCII bytes
+  (124 forekomster) er konverteret: em-dash `—` → `--`, operator-symboler
+  `≥`/`≤` → `>=`/`<=`, danske bogstaver translittereret (æ/ø/å → ae/oe/aa)
+  i implementations-kommentarer, og brugervendte streng-literaler (warning-
+  beskeder) bruger nu `æ`-escapes så bytes på disk er ASCII men runtime-
+  output forbliver dansk UTF-8. Ny test `tests/testthat/test-source-ascii.R`
+  håndhæver politikken og rapporterer file:line:char ved fremtidige
+  overtrædelser. Begrundelse: `R CMD check --as-cran` advarer om non-ASCII
+  i R-kilder, blokerer warning-clean releases og r-universe-distribution.
+  Ingen public-API ændring; ingen semantisk ændring.
+  (Codex 2026-04-30 #2)
+
 # BFHcharts 0.11.1
 
 ## Bug fixes

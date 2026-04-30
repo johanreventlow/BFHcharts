@@ -1,18 +1,61 @@
 ALLOWED_EXPORT_EXTENSIONS <- c("png", "pdf", "svg", "typ")
 
-SHELL_METACHARS_EXPORT <- c(";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r")
+# Output-path policy (argv[1+] til system2()):
+#
+# Begrundelse: hospital-filnavne indeholder rutinemaessigt parens, brackets,
+# braces og ampersand ("rapport (final).pdf", "Q1 [2026].pdf",
+# "Indikator & resultat.pdf"); strict afvisning af alle shell-metacharacters
+# gav falske positiver der frustrerede brugere.
+#
+# **Vigtigt -- shell-mode med stdout/stderr capture:** R's `system2()` med
+# `stdout = TRUE, stderr = TRUE` (som BFHcharts bruger til Quarto-output)
+# invokerer faktisk shell for stream-omdirigering, og argumenter naar shellen
+# UDEN automatisk shQuote() i alle R-versioner. Empiriske test viser at
+# backtick triggrede shell-command-substitution i `output\`sub.pdf`. De
+# stadig-afviste karakterer er derfor de der kan bryde shell-fortolkning:
+#   - `;` `|` `<` `>` backtick -- shell-syntax (kommando-kaeder, redirection,
+#     command-substitution)
+#   - `\n` `\r` -- bryder Quarto's output-parser + log-filer
+#   - NUL -- fil-system-graense
+#   - `..` som path-komponent (separat .check_traversal())
+#
+# Tilladte (var tidligere afvist): spaces, parens `(` `)`, brackets `[` `]`,
+# braces `{` `}`, `&`, `$`, single-quote `'`, og generel Unicode. Disse er
+# enten legitim filnavn-syntax eller har lav blast-radius selv hvis shell
+# fortolker dem (f.eks. `&` uden `;`/`&&` kan ikke kaede destruktive kald).
+#
+# Kontekst: Codex code review 2026-04-30 finding #10 + advisor-justering
+# efter empirisk verifikation 2026-04-30.
+SHELL_METACHARS_OUTPUT_PATH <- c(";", "|", "<", ">", "`", "\n", "\r")
 
-# Metachars der er farlige i shell-kontekst MEN legitime i binary-stier
-# (fx Windows: C:\Program Files (x86)\Quarto\bin\quarto.exe indeholder parens)
-# system2() med vector-args bruger ikke shell, saa parens/braces er OK her.
+# Metachars der er farlige i shell-kontekst -- bruges KUN til binary-stier
+# (argv[0] til system2()) hvor R's interne wrappers kan re-quote i edge cases.
+# Bevares strikt for at beskytte mod platform-specifikke quoting-nuancer.
+# Note: parens/braces tillades i binary-stier (Windows Program Files (x86)),
+# men shell-injection-tegn forbliver afvist.
 SHELL_METACHARS_BINARY <- c(";", "|", "&", "$", "`", "<", ">", "\n", "\r")
 
 #' Validate an export file path
 #'
 #' Checks that `path` is a safe, non-empty character string free of path
-#' traversal components (`..`) and shell metacharacters.  Optionally validates
-#' the file extension and resolves symlinks to verify the resolved path stays
-#' within `allow_root`.
+#' traversal components (`..`), NUL bytes, and characters that can break
+#' shell parsing or output streams. Optionally validates the file extension
+#' and resolves symlinks to verify the resolved path stays within
+#' `allow_root`.
+#'
+#' **Output path policy (relaxed in v0.12.0):** Hospital filenames frequently
+#' contain parens (`rapport (final).pdf`), brackets (`Q1 [2026].pdf`),
+#' ampersands (`Indikator & resultat.pdf`) and spaces. These are now
+#' **permitted**. The remaining rejections -- `;`, `|`, `<`, `>`, backtick,
+#' newline (LF), carriage return (CR), NUL byte -- are kept because R's
+#' `system2(... stdout = TRUE, stderr = TRUE)` invokes shell for
+#' stream-capture and these characters can break shell parsing or chain
+#' commands. `&` and `$` are permitted because without `;`/`&&` chaining (also
+#' rejected) they have low blast-radius even if they reach shell.
+#'
+#' Binary paths (executables invoked as argv[0]) are validated separately
+#' via `.check_metachars_binary()` and remain strictly checked because R's
+#' internal handling of argv[0] varies by platform.
 #'
 #' @param path Character scalar.  The file path to validate.
 #' @param extension Character scalar or `NULL`.  Expected file extension
@@ -99,7 +142,12 @@ validate_export_path <- function(path,
 }
 
 .check_metachars <- function(path) {
-  if (any(vapply(SHELL_METACHARS_EXPORT, function(ch) grepl(ch, path, fixed = TRUE), logical(1L)))) {
+  # NUL-byte kan ikke optraede i R-strings under normale forhold, men kontroller
+  # for sikkerheds skyld (rawToChar/Encoding-edgecases).
+  if (any(charToRaw(path) == as.raw(0L))) {
+    stop("path contains disallowed unsafe characters (NUL byte)", call. = FALSE)
+  }
+  if (any(vapply(SHELL_METACHARS_OUTPUT_PATH, function(ch) grepl(ch, path, fixed = TRUE), logical(1L)))) {
     stop("path contains disallowed unsafe characters", call. = FALSE)
   }
 }

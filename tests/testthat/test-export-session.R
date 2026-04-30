@@ -431,3 +431,91 @@ test_that("on.exit cleanup rydder per-eksport filer op ved fejl (crash recovery)
   # Template-mappen skal stadig eksistere (ikke slettet som per-eksport fil)
   expect_true(dir.exists(file.path(session$tmpdir, "bfh-template")))
 })
+
+
+# ============================================================================
+# strict_baseline session inheritance (Codex 2026-04-30 #4)
+# ============================================================================
+
+test_that("bfh_create_export_session default-strict_baseline = TRUE", {
+  skip_if(!dir.exists(
+    system.file("templates/typst/bfh-template", package = "BFHcharts")
+  ), "template not installed")
+  session <- bfh_create_export_session()
+  on.exit(close(session))
+  expect_true(session$strict_baseline)
+})
+
+test_that("bfh_create_export_session(strict_baseline = FALSE) lagrer pa session", {
+  skip_if(!dir.exists(
+    system.file("templates/typst/bfh-template", package = "BFHcharts")
+  ), "template not installed")
+  session <- bfh_create_export_session(strict_baseline = FALSE)
+  on.exit(close(session))
+  expect_false(session$strict_baseline)
+})
+
+test_that("bfh_create_export_session afviser non-logical strict_baseline", {
+  expect_error(
+    bfh_create_export_session(strict_baseline = "yes"),
+    "strict_baseline must be TRUE or FALSE"
+  )
+  expect_error(
+    bfh_create_export_session(strict_baseline = NA),
+    "strict_baseline must be TRUE or FALSE"
+  )
+})
+
+test_that("bfh_export_pdf arver strict_baseline = FALSE fra session", {
+  skip_if(!dir.exists(
+    system.file("templates/typst/bfh-template", package = "BFHcharts")
+  ), "template not installed")
+  skip_if_not_render_test()
+  skip_if_no_quarto()
+  skip_on_cran()
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  short_chart <- suppressWarnings(
+    bfh_qic(data, x = month, y = value, freeze = 5L, chart_type = "i")
+  )
+
+  session <- bfh_create_export_session(strict_baseline = FALSE)
+  on.exit(close(session))
+
+  temp_file <- tempfile(fileext = ".pdf")
+  expect_no_error(
+    suppressWarnings(
+      bfh_export_pdf(short_chart, temp_file, batch_session = session)
+    )
+  )
+  if (file.exists(temp_file)) unlink(temp_file)
+})
+
+test_that("Per-call strict_baseline = TRUE overrider session strict_baseline = FALSE", {
+  skip_if(!dir.exists(
+    system.file("templates/typst/bfh-template", package = "BFHcharts")
+  ), "template not installed")
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  short_chart <- suppressWarnings(
+    bfh_qic(data, x = month, y = value, freeze = 5L, chart_type = "i")
+  )
+
+  session <- bfh_create_export_session(strict_baseline = FALSE)
+  on.exit(close(session))
+
+  err <- tryCatch(
+    bfh_export_pdf(short_chart, tempfile(fileext = ".pdf"),
+      batch_session = session, strict_baseline = TRUE
+    ),
+    error = function(e) e
+  )
+  expect_s3_class(err, "error")
+  expect_match(err$message, "freeze = 5")
+})

@@ -60,7 +60,9 @@ NULL
 #' # Apply count formatting
 #' apply_y_axis_formatting(count_plot, "count", count_data)
 #' }
-apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL) {
+apply_y_axis_formatting <- function(plot, y_axis_unit = "count",
+                                    qic_data = NULL, language = "da") {
+  .ensure_bfhtheme()
   # Validate inputs
   if (!inherits(plot, "ggplot")) {
     warning("apply_y_axis_formatting: plot is not a ggplot object")
@@ -71,6 +73,7 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
     warning("apply_y_axis_formatting: invalid y_axis_unit, defaulting to 'count'")
     y_axis_unit <- "count"
   }
+  if (!language %in% c("da", "en")) language <- "da"
 
   # Beregn y_range for percent precision context
   y_range <- if (!is.null(qic_data) && "y" %in% names(qic_data)) {
@@ -81,9 +84,9 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
 
   # Apply unit-specific formatting
   switch(y_axis_unit,
-    percent = plot + format_y_axis_percent(y_range),
-    count = plot + format_y_axis_count(),
-    rate = plot + format_y_axis_rate(),
+    percent = plot + format_y_axis_percent(y_range, language = language),
+    count = plot + format_y_axis_count(language = language),
+    rate = plot + format_y_axis_rate(language = language),
     time = plot + format_y_axis_time(qic_data),
     {
       # Unknown unit - warn user
@@ -111,7 +114,13 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count", qic_data = NULL
 #' @return ggplot2 scale layer
 #' @keywords internal
 #' @noRd
-format_y_axis_percent <- function(y_range = NULL) {
+format_y_axis_percent <- function(y_range = NULL, language = "da") {
+  .ensure_bfhtheme()
+  # Locale-aware separators + suffix
+  decimal_mark <- if (identical(language, "en")) "." else ","
+  big_mark <- if (identical(language, "en")) "," else "."
+  pct_suffix <- if (identical(language, "en")) "%" else " %"
+
   # Custom breaks + accuracy der sikrer unikke labels uden huller
   percent_breaks <- function(limits) {
     b <- scales::breaks_pretty(n = 5)(limits)
@@ -126,7 +135,12 @@ format_y_axis_percent <- function(y_range = NULL) {
   # Bestem accuracy baseret paa faktisk break-interval (beregnes dynamisk)
   percent_labels <- function(x) {
     if (length(x) < 2) {
-      return(scales::label_percent(accuracy = 1)(x))
+      return(scales::label_percent(
+        accuracy = 1,
+        decimal.mark = decimal_mark,
+        big.mark = big_mark,
+        suffix = pct_suffix
+      )(x))
     }
 
     # Beregn mindste interval mellem breaks (i procentpoint)
@@ -142,7 +156,12 @@ format_y_axis_percent <- function(y_range = NULL) {
       0.01 # 0.05%, 0.10%
     }
 
-    scales::label_percent(accuracy = accuracy)(x)
+    scales::label_percent(
+      accuracy = accuracy,
+      decimal.mark = decimal_mark,
+      big.mark = big_mark,
+      suffix = pct_suffix
+    )(x)
   }
 
   BFHtheme::scale_y_continuous_bfh(
@@ -163,13 +182,14 @@ format_y_axis_percent <- function(y_range = NULL) {
 #' @return ggplot2 scale layer
 #' @keywords internal
 #' @noRd
-format_y_axis_count <- function() {
+format_y_axis_count <- function(language = "da") {
+  .ensure_bfhtheme()
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
     labels = function(x, ...) {
-      # format_count_danish() er scalar - vektoriser via map_chr for at
+      # format_count() dispatcher er scalar - vektoriser via map_chr for at
       # haandtere ggplot2's vektor-input af breakpoints.
-      purrr::map_chr(x, format_count_danish)
+      purrr::map_chr(x, format_count, language = language)
     }
   )
 }
@@ -179,13 +199,14 @@ format_y_axis_count <- function() {
 #' @return ggplot2 scale layer
 #' @keywords internal
 #' @noRd
-format_y_axis_rate <- function() {
+format_y_axis_rate <- function(language = "da") {
+  .ensure_bfhtheme()
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
     labels = function(x, ...) {
-      # format_rate_danish() er scalar - vektoriser via map_chr for at
+      # format_rate() dispatcher er scalar - vektoriser via map_chr for at
       # haandtere ggplot2's vektor-input af breakpoints.
-      purrr::map_chr(x, format_rate_danish)
+      purrr::map_chr(x, format_rate, language = language)
     }
   )
 }
@@ -207,6 +228,7 @@ format_y_axis_rate <- function() {
 #' @keywords internal
 #' @noRd
 format_y_axis_time <- function(qic_data) {
+  .ensure_bfhtheme()
   if (is.null(qic_data) || !"y" %in% names(qic_data)) {
     warning("format_y_axis_time: missing qic_data or y column, using default")
     return(BFHtheme::scale_y_continuous_bfh(

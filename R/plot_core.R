@@ -82,6 +82,7 @@ bfh_spc_plot <- function(qic_data,
                          plot_config = spc_plot_config(),
                          viewport = viewport_dims(),
                          plot_margin = NULL) {
+  .ensure_bfhtheme()
   # Validate inputs
   if (!is.data.frame(qic_data)) {
     stop("qic_data must be a data frame from qicharts2::qic(return.data = TRUE)")
@@ -240,11 +241,16 @@ bfh_spc_plot <- function(qic_data,
   # Add all layers in single operation (performance optimization)
   plot <- plot + plot_layers
 
+  # Sprog-aware formatering (default "da" for backward compat)
+  plot_lang <- plot_config$language %||% "da"
+
   # Intelligent X-axis formatting ----
-  plot <- apply_x_axis_formatting(plot, qic_data, viewport)
+  plot <- apply_x_axis_formatting(plot, qic_data, viewport, language = plot_lang)
 
   # Y-axis formatting based on unit type ----
-  plot <- apply_y_axis_formatting(plot, plot_config$y_axis_unit, qic_data)
+  plot <- apply_y_axis_formatting(plot, plot_config$y_axis_unit, qic_data,
+    language = plot_lang
+  )
 
   # Collect line positions for note label placement ----
   line_positions <- c(
@@ -306,7 +312,7 @@ bfh_spc_plot <- function(qic_data,
 #' @return Modified ggplot object
 #' @keywords internal
 #' @noRd
-apply_x_axis_formatting <- function(plot, qic_data, viewport) {
+apply_x_axis_formatting <- function(plot, qic_data, viewport, language = "da") {
   x_col <- qic_data$x
 
   # Dispatch to appropriate formatter based on x-column type
@@ -317,7 +323,9 @@ apply_x_axis_formatting <- function(plot, qic_data, viewport) {
     data_x_min <- normalize_to_posixct(data_x_min)
     data_x_max <- normalize_to_posixct(data_x_max)
 
-    apply_temporal_x_axis(plot, x_col, data_x_min, data_x_max)
+    apply_temporal_x_axis(plot, x_col, data_x_min, data_x_max,
+      language = language
+    )
   } else if (is.numeric(x_col)) {
     apply_numeric_x_axis(plot)
   } else {

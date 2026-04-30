@@ -200,6 +200,26 @@ Du mente sandsynligvis target_value = 0.02 (2% som proportion)
 eller target_value = 2.0 med multiply = 100 (2% som procent).
 ```
 
+## Target og auto-analyse (v0.12.0+)
+
+Et target sat på chartet via `target_text` eller `target_value` flyder
+automatisk til auto-analysen:
+
+```{r target-flow, eval = FALSE}
+result <- bfh_qic(data, x = month, y = events, n = n,
+                  chart_type = "p", y_axis_unit = "percent",
+                  target_text = ">= 90%")
+
+# Auto-analyse ser target via fallback-kæden — ingen duplikering nødvendig
+bfh_export_pdf(result, "rapport.pdf",
+               metadata = list(hospital = "BFH"),  # target uden for metadata
+               auto_analysis = TRUE)
+```
+
+Fallback-kæden er: `metadata$target` → `config$target_text` →
+`config$target_value`. Eksplicit `metadata$target` overrider stadig chartets
+target, hvis du ønsker at analysere mod en alternativ benchmark.
+
 ## Se også
 
 - `vignette("chart-types")` — vælg charttype først

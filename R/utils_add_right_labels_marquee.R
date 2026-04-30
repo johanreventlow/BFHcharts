@@ -10,6 +10,7 @@
 .font_cache <- new.env(parent = emptyenv())
 
 .resolve_font_family <- function(family = NULL) {
+  .ensure_bfhtheme()
   # Detekter device-type: "cairo", "postscript" eller "other"
   dev_type <- tryCatch(
     {
@@ -132,6 +133,7 @@ add_right_labels_marquee <- function(
   .built_plot = NULL,
   .mapper = NULL
 ) {
+  .ensure_bfhtheme()
   # Resolve default farver i et opslag (undgaar gentagne bfh_cols-kald)
   if (is.null(gpA) || is.null(gpB)) {
     default_cols <- BFHtheme::bfh_cols(c("hospital_blue", "regionh_dark"))

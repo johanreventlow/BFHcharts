@@ -164,6 +164,7 @@ test_that("Validation provides helpful error messages", {
     bfh_qic(data, x = month, y = value, part = c(999), chart_type = "i"),
     error = function(e) e$message
   )
-  expect_true(grepl("within data bounds \\(1-24\\)", error_msg))
+  # part bounds er [2, nrow] — part=1 ville være "alt før række 1" (meningsløst).
+  expect_true(grepl("within data bounds \\(2-24\\)", error_msg))
   expect_true(grepl("999", error_msg))
 })

@@ -25,6 +25,18 @@
 #' * Modern tidyverse-compatible API
 #' * Comprehensive documentation and examples
 #'
+#' @section BFHtheme dependency:
+#' BFHcharts requires `BFHtheme >= 0.5.0` for theming, color palettes and
+#' scale helpers. `BFHtheme` is hosted as a GitHub-only package via the
+#' `Remotes:` field; install with `pak::pkg_install("johanreventlow/BFHcharts")`
+#' or `remotes::install_github("johanreventlow/BFHtheme@v0.5.0")` to ensure
+#' it is present.
+#'
+#' If `BFHtheme` is missing or older than 0.5.0, BFHcharts emits a
+#' `packageStartupMessage()` at `library(BFHcharts)` and fails fast with an
+#' actionable install hint at the first plot call. The check is cached per
+#' session for performance.
+#'
 #' @examples
 #' \dontrun{
 #' # Quick start
@@ -47,5 +59,11 @@
 "_PACKAGE"
 
 ## usethis namespace: start
+## svglite is loaded indirectly via ggplot2::ggsave(filename = ".svg", ...)
+## inside `bfh_export_pdf()` -> `export_chart_svg()`. Declared in Imports
+## so downstream deployments (Posit Connect, renv) auto-install it; the
+## directive below silences the "Namespace not imported from" R CMD check
+## NOTE without altering call-site behaviour.
+#' @importFrom svglite svglite
 ## usethis namespace: end
 NULL
