@@ -75,20 +75,20 @@
 <polyline points='49.23,197.59 44.97,197.59 ' style='stroke-width: 1.07; stroke: #B3B3B3; stroke-linecap: butt;' />
 <polyline points='49.23,94.01 44.97,94.01 ' style='stroke-width: 1.07; stroke: #B3B3B3; stroke-linecap: butt;' />
 <polyline points='44.97,530.66 648.09,530.66 ' style='stroke-width: 1.07; stroke: #B3B3B3; stroke-linecap: butt;' />
-<text x='61.09' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='23.81px' lengthAdjust='spacingAndGlyphs'>JAN</text>
+<text x='61.09' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='27.31px' lengthAdjust='spacingAndGlyphs'>JAN.</text>
 <text x='61.09' y='559.21' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='28.03px' lengthAdjust='spacingAndGlyphs'>2024</text>
-<text x='110.81' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='24.51px' lengthAdjust='spacingAndGlyphs'>FEB</text>
-<text x='157.32' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='28.01px' lengthAdjust='spacingAndGlyphs'>MAR</text>
-<text x='207.04' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='25.92px' lengthAdjust='spacingAndGlyphs'>APR</text>
-<text x='255.15' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='27.31px' lengthAdjust='spacingAndGlyphs'>MAY</text>
-<text x='304.87' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='24.51px' lengthAdjust='spacingAndGlyphs'>JUN</text>
-<text x='352.99' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='22.42px' lengthAdjust='spacingAndGlyphs'>JUL</text>
-<text x='402.71' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='27.31px' lengthAdjust='spacingAndGlyphs'>AUG</text>
-<text x='452.42' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='25.22px' lengthAdjust='spacingAndGlyphs'>SEP</text>
-<text x='500.54' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='26.60px' lengthAdjust='spacingAndGlyphs'>OCT</text>
-<text x='550.26' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='27.31px' lengthAdjust='spacingAndGlyphs'>NOV</text>
-<text x='598.37' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='26.61px' lengthAdjust='spacingAndGlyphs'>DEC</text>
-<text x='648.09' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='23.81px' lengthAdjust='spacingAndGlyphs'>JAN</text>
+<text x='110.81' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='28.01px' lengthAdjust='spacingAndGlyphs'>FEB.</text>
+<text x='157.32' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='31.51px' lengthAdjust='spacingAndGlyphs'>MAR.</text>
+<text x='207.04' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='29.42px' lengthAdjust='spacingAndGlyphs'>APR.</text>
+<text x='255.15' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='25.21px' lengthAdjust='spacingAndGlyphs'>MAJ</text>
+<text x='304.87' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='28.01px' lengthAdjust='spacingAndGlyphs'>JUN.</text>
+<text x='352.99' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='25.92px' lengthAdjust='spacingAndGlyphs'>JUL.</text>
+<text x='402.71' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='30.81px' lengthAdjust='spacingAndGlyphs'>AUG.</text>
+<text x='452.42' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='28.72px' lengthAdjust='spacingAndGlyphs'>SEP.</text>
+<text x='500.54' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='29.41px' lengthAdjust='spacingAndGlyphs'>OKT.</text>
+<text x='550.26' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='30.81px' lengthAdjust='spacingAndGlyphs'>NOV.</text>
+<text x='598.37' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='30.11px' lengthAdjust='spacingAndGlyphs'>DEC.</text>
+<text x='648.09' y='545.60' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='27.31px' lengthAdjust='spacingAndGlyphs'>JAN.</text>
 <text x='648.09' y='559.21' text-anchor='middle' style='font-size: 12.60px; fill: #4D4D4D; font-family: sans;' textLength='28.03px' lengthAdjust='spacingAndGlyphs'>2025</text>
 <path d='M 23.67 15.81 L 22.35 15.81 L 22.35 23.19 L 22.32 24.03 L 22.23 24.74 L 22.06 25.32 L 21.80 25.78 L 21.44 26.13 L 20.96 26.38 L 20.36 26.52 L 19.61 26.56 L 18.86 26.52 L 18.25 26.38 L 17.76 26.13 L 17.37 25.78 L 17.09 25.32 L 16.91 24.74 L 16.80 24.03 L 16.77 23.19 L 16.77 15.81 L 15.44 15.81 L 15.44 23.14 L 15.50 24.35 L 15.69 25.35 L 16.01 26.16 L 16.46 26.79 L 17.04 27.26 L 17.76 27.58 L 18.62 27.76 L 19.61 27.81 L 20.60 27.76 L 21.45 27.57 L 22.15 27.25 L 22.71 26.78 L 23.14 26.15 L 23.44 25.34 L 23.62 24.34 L 23.67 23.14 Z' style='fill-rule: nonzero; fill: #000000; stroke-width: 0.75; stroke: none;' />
 <path d='M 29.77 21.81 L 25.68 21.81 L 25.68 22.81 L 29.77 22.81 Z' style='fill-rule: nonzero; fill: #000000; stroke-width: 0.75; stroke: none;' />
