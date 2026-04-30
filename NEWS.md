@@ -1,4 +1,19 @@
-# BFHcharts 0.12.0 (development)
+# BFHcharts 0.12.1
+
+## Bug fixes
+
+* **`svglite` flyttet fra `Suggests` til `Imports`.** `bfh_export_pdf()`
+  kalder `svglite::svglite()` i `export_chart_svg()` for ggplot→SVG-
+  konvertering før Typst-rendering, men pakken var kun erklæret som
+  `Suggests`. Konsekvens: downstream-pakker (fx `biSPCharts`) der bruger
+  `bfh_export_pdf()` fik ikke `svglite` installeret automatisk via
+  `pak`/`renv` deployments. På Posit Connect Cloud (eller andre
+  minimal-deps environments) fejlede PDF-eksport med
+  `The package "svglite" is required to save as SVG`. PNG-eksport
+  (`bfh_export_png`) var upåvirket fordi `grDevices::png()` ej kræver
+  svglite. (#268)
+
+# BFHcharts 0.12.0
 
 ## Breaking changes
 

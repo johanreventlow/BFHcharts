@@ -59,5 +59,11 @@
 "_PACKAGE"
 
 ## usethis namespace: start
+## svglite is loaded indirectly via ggplot2::ggsave(filename = ".svg", ...)
+## inside `bfh_export_pdf()` -> `export_chart_svg()`. Declared in Imports
+## so downstream deployments (Posit Connect, renv) auto-install it; the
+## directive below silences the "Namespace not imported from" R CMD check
+## NOTE without altering call-site behaviour.
+#' @importFrom svglite svglite
 ## usethis namespace: end
 NULL
