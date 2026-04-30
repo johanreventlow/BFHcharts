@@ -43,6 +43,19 @@ install.packages("BFHcharts", repos = "https://johanreventlow.r-universe.dev")
 devtools::install_github("johanreventlow/BFHcharts")
 ```
 
+### BFHtheme dependency
+
+BFHcharts depends on `BFHtheme (>= 0.5.0)` for theming and color palettes.
+`BFHtheme` lives in the `Remotes:` field (not on CRAN), so it installs
+automatically when you use `pak::pkg_install()` or
+`remotes::install_github()` -- but **not** with the bare `install.packages()`
+form. If you see a startup message
+`BFHcharts requires BFHtheme >= 0.5.0`, install it explicitly:
+
+```r
+remotes::install_github("johanreventlow/BFHtheme@v0.5.0")
+```
+
 ## Font Requirements
 
 BFHcharts PDF export uses the **Mari font** for hospital branding when available.

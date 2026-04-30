@@ -108,7 +108,8 @@ spc_plot_config <- function(
   ylab = "",
   xlab = "",
   subtitle = NULL,
-  caption = NULL
+  caption = NULL,
+  language = "da"
 ) {
   # Validation
   if (!chart_type %in% CHART_TYPES_EN) {
@@ -134,6 +135,14 @@ spc_plot_config <- function(
     stop_config_error("target_value must be a single finite numeric value or NULL")
   }
 
+  if (!is.character(language) || length(language) != 1L ||
+    !language %in% c("da", "en")) {
+    stop_config_error(sprintf(
+      "language must be 'da' or 'en', got: %s",
+      paste(language, collapse = "/")
+    ))
+  }
+
   structure(
     list(
       chart_type = chart_type,
@@ -145,7 +154,8 @@ spc_plot_config <- function(
       ylab = ylab,
       xlab = xlab,
       subtitle = subtitle,
-      caption = caption
+      caption = caption,
+      language = language
     ),
     class = "spc_plot_config"
   )
