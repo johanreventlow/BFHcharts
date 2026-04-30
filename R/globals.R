@@ -86,12 +86,49 @@ PDF_LABEL_SIZE <- 6
 # SPC ANALYSIS CONSTANTS
 # ============================================================================
 
-# Vindue for seneste observationer i outlier-tæller (6 er standard i SPC-litteraturen)
+# Window of most-recent observations used by the outlier counter (6 is standard in SPC literature)
 RECENT_OBS_WINDOW <- 6L
 
-#' Minimum anbefalede baseline-observationer for stabile SPC-kontrolgrænser
+#' Minimum recommended baseline observations for stable SPC control limits
 #'
-#' Anhøj-reglerne og SPC-litteraturen (Anhøj & Olesen 2014) kræver ca. 8+
-#' punkter for meningsfulde kontrolgrænser og pålidelig signal-detektion.
-#' Under denne grænse er kontrolgrænserne statistisk usikre.
+#' The Anhoej rules and SPC literature (Anhoej & Olesen 2014) require approximately
+#' 8+ points for meaningful control limits and reliable signal detection.
+#' Below this threshold, the control limits are statistically unreliable.
 MIN_BASELINE_N <- 8L
+
+# ============================================================================
+# LABEL PLACEMENT CONSTANTS
+# ============================================================================
+# Constants used by `place_two_labels_npc()` (R/utils_label_placement.R) for
+# multi-niveau collision resolution. Values mirror the historical defaults
+# in the function body's `default_cfg` list and are also overridable via
+# `get_label_placement_config()` at runtime.
+
+#' Gap-reduction factors for NIVEAU 1 collision resolution
+#'
+#' When the initial label placement creates a line-gap collision, NIVEAU 1
+#' incrementally shrinks the inter-label gap by these factors (50%, then 30%,
+#' then 15% of the configured `gap_labels`). The first factor that resolves
+#' the collision is used.
+LABEL_PLACEMENT_GAP_REDUCTION_FACTORS <- c(0.5, 0.3, 0.15)
+
+#' Tight-lines threshold factor for early flip-strategy
+#'
+#' When `abs(yA_npc - yB_npc) < min_center_gap * THIS_FACTOR`, lines are
+#' considered too close for both labels to share a side; pref_pos is rewritten
+#' so one label sits above and the other below.
+LABEL_PLACEMENT_TIGHT_LINES_THRESHOLD_FACTOR <- 0.5
+
+#' Coincident-lines threshold factor
+#'
+#' When `abs(yA_npc - yB_npc) < label_height_npc * THIS_FACTOR`, lines are
+#' treated as effectively coincident; labels are placed one above and one
+#' below the same line position.
+LABEL_PLACEMENT_COINCIDENT_THRESHOLD_FACTOR <- 0.1
+
+#' Shelf-center threshold for NIVEAU 3 placement
+#'
+#' During NIVEAU 3 (last-resort shelf placement), the non-priority label is
+#' pushed to the opposite shelf (top vs bottom of panel) based on whether
+#' the priority label center is below this NPC threshold.
+LABEL_PLACEMENT_SHELF_CENTER_THRESHOLD <- 0.5
