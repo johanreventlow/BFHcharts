@@ -26,9 +26,16 @@ NULL
 #' @param target_value Numeric target value (optional)
 #' @param target_text Target label text (optional)
 #' @param notes Character vector of annotations for data points (optional, same length as data)
-#' @param part Positions for phase splits (optional numeric vector)
-#' @param freeze Position to freeze baseline (optional integer)
-#' @param exclude Integer vector of data point positions to exclude from calculations (optional)
+#' @param part Positions for phase splits (optional numeric vector). Must be
+#'   positive integers, strictly increasing, unique, and within
+#'   `[2, nrow(data)]`. Non-integer (e.g. `3.5`), duplicated, or unsorted
+#'   values raise an error before any qicharts2 call.
+#' @param freeze Position to freeze baseline (optional single integer). Must
+#'   be a positive integer in `[1, nrow(data) - 1]`. Non-integer values
+#'   raise an error.
+#' @param exclude Integer vector of data point positions to exclude from
+#'   calculations (optional). Must be positive integers, unique, and within
+#'   `[1, nrow(data)]`. Sort order is not required.
 #' @param cl Numeric value to set a custom centerline instead of calculating from data (optional)
 #' @param multiply Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)
 #' @param agg.fun Aggregation function for run/I charts with multiple observations per subgroup: "mean" (default), "median", "sum", "sd"
@@ -44,7 +51,19 @@ NULL
 #' @param caption Plot caption text (default: NULL for no caption)
 #' @param return.data Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result object. If FALSE (default), return bfh_qic_result S3 object. Legacy parameter maintained for backwards compatibility.
 #' @param print.summary \strong{REMOVED in v0.11.0.} Calling with \code{print.summary = TRUE} raises an error. Use \code{return.data = TRUE} and access \code{result$qic_summary}, or use the default \code{bfh_qic_result} object and access \code{result$summary} directly.
-#' @param language Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Passed through to analysis and label generation. Default \code{"da"} preserves backward compatibility.
+#' @param language Character string specifying output language. One of
+#'   \code{"da"} (Danish, default) or \code{"en"} (English). Controls
+#'   three independent aspects of output (since v0.12.0):
+#'   \itemize{
+#'     \item Translated labels (control limit text, target prefixes)
+#'     \item Y-axis number formatting: decimal separator and thousand
+#'       separator (Danish `1.234,5` vs English `1,234.5`); percent suffix
+#'       (Danish `12,5 %` vs English `12.5%`)
+#'     \item X-axis date formatting: month/weekday abbreviations match the
+#'       requested locale on a best-effort basis (depends on platform
+#'       locale availability)
+#'   }
+#'   Default \code{"da"} preserves backward compatibility for Danish users.
 #'
 #' @return
 #' - Default (return.data = FALSE): \code{bfh_qic_result} S3 object with components:
@@ -57,27 +76,27 @@ NULL
 #' - return.data = TRUE: data.frame with qic calculations (legacy behavior)
 #'
 #' @details
-#' **Helper map (interne orkestreringsfunktioner):**
-#' - `validate_bfh_qic_inputs()` — al input-validering (type, bounds, NSE, denominator, target)
-#' - `build_qic_args()` — konstruerer argument-liste til `qicharts2::qic()`
-#' - `invoke_qicharts2()` — kalder `do.call(qicharts2::qic, ...)` + `add_anhoej_signal()`
-#' - `compute_viewport_base_size()` — enhedskonvertering, responsiv `base_size`, label-normalisering
-#' - `render_bfh_plot()` — plot_config + viewport + `bfh_spc_plot()` med warning-suppression
-#' - `apply_spc_labels_to_export()` — label_size-beregning + `add_spc_labels()` med warning-suppression
-#' - `build_bfh_qic_return()` — returværdi-routing (S3 vs. legacy paths)
+#' **Helper map (internal orchestration functions):**
+#' - `validate_bfh_qic_inputs()` -- all input validation (type, bounds, NSE, denominator, target)
+#' - `build_qic_args()` -- constructs argument list for `qicharts2::qic()`
+#' - `invoke_qicharts2()` -- calls `do.call(qicharts2::qic, ...)` + `add_anhoej_signal()`
+#' - `compute_viewport_base_size()` -- unit conversion, responsive `base_size`, label normalisation
+#' - `render_bfh_plot()` -- plot_config + viewport + `bfh_spc_plot()` with warning suppression
+#' - `apply_spc_labels_to_export()` -- label_size computation + `add_spc_labels()` with warning suppression
+#' - `build_bfh_qic_return()` -- return value routing (S3 vs. legacy paths)
 #'
 #' **Chart Types:**
 #' - **run**: Run chart (no control limits)
 #' - **i**: I-chart (individuals)
-#' - **mr**: Moving Range chart — measures point-to-point variability.
+#' - **mr**: Moving Range chart -- measures point-to-point variability.
 #'   Typically paired with an I-chart to characterise both process level (I)
 #'   and short-term variation (MR).
 #' - **p**: P-chart (proportions, requires n)
-#' - **pp**: P-prime chart (Laney-adjusted proportions) — use instead of `p`
+#' - **pp**: P-prime chart (Laney-adjusted proportions) -- use instead of `p`
 #'   when denominators are very large (n > 1000 per subgroup) and standard
 #'   control limits become artificially tight due to over-dispersion. Requires n.
 #' - **u**: U-chart (rates, requires n)
-#' - **up**: U-prime chart (Laney-adjusted rates) — same rationale as `pp`,
+#' - **up**: U-prime chart (Laney-adjusted rates) -- same rationale as `pp`,
 #'   applied to count rates. Requires n.
 #' - **c**: C-chart (counts)
 #' - **g**: G-chart (geometric)
@@ -155,7 +174,7 @@ NULL
 #' @export
 #' @importFrom BFHtheme theme_bfh add_bfh_logo
 #' @examples
-#' # Minimal kørbart eksempel med deterministiske data
+#' # Minimal runnable example with deterministic data
 #' df <- data.frame(
 #'   maaned = seq.Date(as.Date("2023-01-01"), by = "month", length.out = 12),
 #'   vaerdi = c(10, 12, 11, 13, 10, 14, 11, 12, 10, 13, 11, 12)
@@ -619,7 +638,7 @@ bfh_qic <- function(data,
   )
   qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
 
-  # Advar når custom cl overskriver den dataestimerede procesmiddel i Anhøj-beregning
+  # Warn when custom cl overrides the data-estimated process mean in Anhoej calculation
   if (!is.null(cl) && any(c("runs.signal", "crossings.signal") %in% names(qic_data))) {
     warning(
       "Custom cl supplied: Anhoej run/crossing signals are computed against ",
@@ -654,7 +673,8 @@ bfh_qic <- function(data,
     subtitle = subtitle,
     caption = caption,
     base_size = vp$base_size,
-    plot_margin = plot_margin
+    plot_margin = plot_margin,
+    language = language
   )
 
   # ---- Tilfoej SPC labels ----
