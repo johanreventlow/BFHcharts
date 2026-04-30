@@ -48,7 +48,8 @@ Suggests:
     withr,
     BFHllm,
     knitr,
-    rmarkdown
+    rmarkdown,
+    svglite
 VignetteBuilder: knitr
 Remotes:
     johanreventlow/BFHtheme,

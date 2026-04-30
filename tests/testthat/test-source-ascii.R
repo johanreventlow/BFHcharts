@@ -13,11 +13,12 @@ test_that("R/*.R sources contain only ASCII bytes", {
   pkg_root <- testthat::test_path("..", "..")
   r_dir <- file.path(pkg_root, "R")
 
-  # When tests run from an installed package, R/ may not exist; skip gracefully.
+  # When tests run from an installed package (covr, R CMD check installed
+  # tests), R/ may not exist or may be empty; skip gracefully so the guard
+  # only enforces the policy in source-tree contexts (devtools::test()).
   skip_if_not(dir.exists(r_dir), "R/ source directory not present")
-
   r_files <- list.files(r_dir, pattern = "\\.R$", full.names = TRUE)
-  expect_gt(length(r_files), 0L)
+  skip_if(length(r_files) == 0L, "R/ source directory is empty (installed-package context)")
 
   offenders <- list()
   for (f in r_files) {
