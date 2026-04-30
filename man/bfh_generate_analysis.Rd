@@ -94,7 +94,7 @@ uses the stable tag \verb{[BFHcharts/AI]} for log-grep-ability and lists:
 
 Example message:
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{[BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() — fields: metadata, qic_data; data_definition, chart_title, ...; use_rag = TRUE
+\if{html}{\out{<div class="sourceCode">}}\preformatted{[BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() -- fields: metadata, qic_data; data_definition, chart_title, ...; use_rag = TRUE
 }\if{html}{\out{</div>}}
 
 \strong{Opt-out:} Set \code{options(BFHcharts.suppress_ai_audit_message = TRUE)} to

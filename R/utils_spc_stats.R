@@ -143,9 +143,9 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
     qd <- qd[qd$part == latest_part, ]
   }
 
-  # Sortér efter x saa raekkefølgen af input-data ikke påvirker
-  # recency-vinduet. Rækkefølgen er ubetydelig for outliers_actual (sum),
-  # men afgørende for den positionsbaserede slice i outliers_recent_count.
+  # Sorter efter x saa raekkefoelgen af input-data ikke paavirker
+  # recency-vinduet. Raekkefoelgen er ubetydelig for outliers_actual (sum),
+  # men afgoerende for den positionsbaserede slice i outliers_recent_count.
   if ("x" %in% names(qd)) {
     qd <- qd[order(qd$x, na.last = TRUE), ]
   }

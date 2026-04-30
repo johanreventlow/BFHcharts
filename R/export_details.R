@@ -50,7 +50,7 @@ bfh_generate_details <- function(x, language = "da") {
   qic_data <- x$qic_data
   config <- x$config
 
-  # Validér at x-kolonnen indeholder mindst én brugbar værdi
+  # Validate that the x column contains at least one usable value
   x_col <- qic_data$x
   has_valid_x <- if (inherits(x_col, c("Date", "POSIXct", "POSIXlt"))) {
     any(!is.na(x_col))

@@ -24,7 +24,7 @@ the value is divided by 100 so downstream comparisons work on the same
 0-1 proportion scale as the centerline.
 }
 \details{
-\code{target_display} is intentionally \strong{not} modified — user-facing text
+\code{target_display} is intentionally \strong{not} modified -- user-facing text
 continues to show \code{">= 90\%"} rather than \code{">= 0.90"}.
 
 \strong{Heuristic:}

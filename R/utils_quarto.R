@@ -86,7 +86,7 @@ find_quarto <- function() {
       assign("quarto_path", validated, envir = .quarto_cache)
       return(validated)
     }
-    # Validering fejlede — advarsel allerede udsendt, fortsaet til naeste kilde
+    # Validering fejlede -- advarsel allerede udsendt, fortsaet til naeste kilde
   }
 
   # 2. Check environment variable
@@ -97,7 +97,7 @@ find_quarto <- function() {
       assign("quarto_path", validated, envir = .quarto_cache)
       return(validated)
     }
-    # Validering fejlede — advarsel allerede udsendt, fortsaet til naeste kilde
+    # Validering fejlede -- advarsel allerede udsendt, fortsaet til naeste kilde
   }
 
   # 3. Check if quarto is in PATH
