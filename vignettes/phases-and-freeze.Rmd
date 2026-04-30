@@ -170,8 +170,38 @@ bfh_qic(data,
 Punkter under LCL efter periode 9 demonstrerer signifikant forbedring; baseline
 fastfrosset så reduktion er visuelt tydelig.
 
+## Strict baseline mode (PDF-eksport, v0.12.0+)
+
+Fra v0.12.0 defaulter `bfh_export_pdf()` til **strict-baseline-mode**:
+eksport afvises hvis `freeze < 8` eller hvis en fase har færre end 8
+datapunkter. Begrundelsen er at PDF'er fra eksport-pipelinen lander på
+QI-leadership-borde hvor R-warnings aldrig når en menneskelig læser, og
+Anhøj & Olesen (2014) anbefaler `>= 8` baseline-punkter for pålidelig
+run-/crossing-detection.
+
+```{r strict-baseline, eval = FALSE}
+result <- bfh_qic(data, x = month, y = errors, freeze = 5L, chart_type = "i")
+
+# Default: error før render
+bfh_export_pdf(result, "rapport.pdf")
+#> Error: freeze = 5: baseline har faerre end 8 punkter ...
+#> Saet strict_baseline = FALSE for at acceptere kortere baseline ...
+
+# Eksplicit opt-out (warning-only-adfærd):
+bfh_export_pdf(result, "rapport.pdf", strict_baseline = FALSE)
+
+# Batch med session-niveau opt-out:
+session <- bfh_create_export_session(strict_baseline = FALSE)
+bfh_export_pdf(result, "rapport.pdf", batch_session = session)
+```
+
+`bfh_qic()` selv bevarer warning-only-adfærd — interaktiv brug giver
+analytikeren mulighed for at se warnings og træffe en informed beslutning.
+Strict-mode rammer kun eksport-pipelinen.
+
 ## Se også
 
 - `vignette("chart-types")` — vælg den rigtige charttype først
 - `vignette("targets-and-percent")` — sat realistiske mål
 - `?bfh_qic` — `@param part`, `@param freeze` parameter-detaljer
+- `?bfh_export_pdf` — `@param strict_baseline` for fuld kontrakt
