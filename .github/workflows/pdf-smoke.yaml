@@ -117,6 +117,21 @@ jobs:
           echo "[SMOKE OK] Production template is git-tracked: $TMPL"
         shell: bash
 
+      - name: Run production template smoke (BFHCHARTS_TEST_RENDER=true)
+        continue-on-error: true
+        env:
+          BFHCHARTS_TEST_RENDER: "true"
+          BFHCHARTS_TEST_FULL: "true"
+        run: |
+          Rscript -e "
+            devtools::load_all('.')
+            testthat::test_file(
+              'tests/testthat/test-production-template-renders.R',
+              reporter = testthat::ProgressReporter
+            )
+          "
+        shell: bash
+
       - name: Upload smoke artifacts (on failure)
         if: failure()
         uses: actions/upload-artifact@v4
