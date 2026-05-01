@@ -17,25 +17,19 @@
 #   - Visuel korrekthed (kræver Mari-fonts — håndteres af vdiffr)
 #   - Tekst-præcision i PDF-output (håndteres af render-tests.yaml)
 #
-# Font-strategi (Strategi B):
-#   På CI bruges tests/smoke/test-template.typ som kun refererer DejaVu Sans.
-#   Production bfh-template.typ (med Mari-fonts) bruges IKKE på CI —
-#   den kræver proprietære fonts som ikke kan distribueres i public repo.
+# Font/template strategy:
+#   BFHCHARTS_SMOKE_USE_PRODUCTION_TEMPLATE=true:
+#     Use inst/templates/typst/bfh-template/bfh-template.typ.
+#     pdf-smoke.yaml sets this; continue-on-error=true until
+#     fix-pdf-template-asset-contract is merged.
+#   CI default (env var unset): test-template.typ (only DejaVu Sans).
+#   Local (CI unset): production bfh-template via bfh_export_pdf default.
 #
-#   CI-detection: Sys.getenv("CI") != "" → brug test-template + system fonts.
-#   Lokalt (CI ikke sat): brug production bfh-template (kræver Mari lokalt).
+#   BFHCHARTS_SMOKE_FONT_PATH (optional on CI):
+#     Point to /usr/share/fonts to scope Typst font search to apt-installed fonts.
 #
-#   ignore_system_fonts:
-#     - CI (med test-template): FALSE — lad Typst finde DejaVu via system
-#     - Lokalt (production template): TRUE — brug kun fonts fra font_path
-#       (konsistent rendering på dev-maskiner med evt. ekstra Mari-varianter)
-#
-#   BFHCHARTS_SMOKE_FONT_PATH (valgfri på CI):
-#     Kan sættes til /usr/share/fonts for eksplicit at begrænse Typst's
-#     font-søgning til apt-installerede fonts. Hvis ikke sat og is_ci=TRUE,
-#     bruges ignore_system_fonts=FALSE så Typst finder DejaVu selv.
-#
-# Kilde: openspec/changes/enable-ci-safe-pdf-smoke-render (Strategi B)
+# Sources: openspec/changes/enable-ci-safe-pdf-smoke-render (Strategi B)
+#          openspec/changes/strengthen-ci-render-pipeline (task 3.2)
 # =============================================================================
 
 # ---- Setup ------------------------------------------------------------------
@@ -96,36 +90,63 @@ if (is.na(font_path_override) || !nzchar(font_path_override)) {
   font_path_override <- NULL
 }
 
-# Template-strategi (Strategi B):
-#   CI: brug minimal test-template (tests/smoke/test-template.typ) med kun DejaVu Sans.
-#       ignore_system_fonts=FALSE så Typst kan bruge apt-installerede fonts.
-#   Lokalt: brug production bfh-template (NULL → bfh_export_pdf default).
-#       ignore_system_fonts=TRUE for konsistent rendering på dev-maskiner.
-if (is_ci) {
-  # Find test-template relativt til script-placering
+# Template-selection strategy:
+#
+#   BFHCHARTS_SMOKE_USE_PRODUCTION_TEMPLATE=true (env var):
+#     Use inst/templates/typst/bfh-template/bfh-template.typ (production template).
+#     Requires either Mari fonts (proprietary) or open fallback fonts installed.
+#     Set by pdf-smoke.yaml (with continue-on-error=true until asset-contract
+#     change is merged; see openspec: fix-pdf-template-asset-contract).
+#
+#   Default CI (is_ci=TRUE, env var not set):
+#     Use tests/smoke/test-template.typ (only references DejaVu Sans).
+#     ignore_system_fonts=FALSE so Typst can find DejaVu via system fontconfig.
+#
+#   Local (is_ci=FALSE):
+#     Use production bfh-template (NULL -> bfh_export_pdf default).
+#     ignore_system_fonts=TRUE for consistent rendering on dev machines.
+use_production_template <- nzchar(Sys.getenv("BFHCHARTS_SMOKE_USE_PRODUCTION_TEMPLATE"))
+
+if (use_production_template) {
+  # Production template path - relative to package root
+  template_path_arg <- file.path(
+    "inst", "templates", "typst", "bfh-template", "bfh-template.typ"
+  )
+  if (!file.exists(template_path_arg)) {
+    stop(
+      "[SMOKE FAIL] Production template not found.\n",
+      "  Expected: inst/templates/typst/bfh-template/bfh-template.typ\n",
+      "  Working dir: ", getwd(),
+      call. = FALSE
+    )
+  }
+  ignore_system_fonts_arg <- FALSE # Use system fonts (DejaVu fallback on CI)
+  cat(sprintf("[SMOKE] PRODUCTION template mode: %s\n", template_path_arg))
+} else if (is_ci) {
+  # Find test-template relative to script location
   script_dir <- tryCatch(
     dirname(normalizePath(sys.frame(0)$ofile, mustWork = FALSE)),
     error = function(e) "tests/smoke"
   )
   template_path_arg <- file.path(script_dir, "test-template.typ")
   if (!file.exists(template_path_arg)) {
-    # Fallback: find fra working directory (ved Rscript fra package root)
+    # Fallback: find from working directory (when run via Rscript from package root)
     template_path_arg <- file.path("tests", "smoke", "test-template.typ")
   }
   if (!file.exists(template_path_arg)) {
     stop(
-      "[SMOKE FAIL] test-template.typ ikke fundet på CI.\n",
-      "  Forventet sti: tests/smoke/test-template.typ\n",
-      "  Arbejdsmappe: ", getwd(),
+      "[SMOKE FAIL] test-template.typ not found on CI.\n",
+      "  Expected: tests/smoke/test-template.typ\n",
+      "  Working dir: ", getwd(),
       call. = FALSE
     )
   }
-  ignore_system_fonts_arg <- FALSE # Lad Typst finde DejaVu fra system
-  cat(sprintf("[SMOKE] CI=TRUE: bruger test-template: %s\n", template_path_arg))
+  ignore_system_fonts_arg <- FALSE # Let Typst find DejaVu from system
+  cat(sprintf("[SMOKE] CI=TRUE: using test-template: %s\n", template_path_arg))
 } else {
-  template_path_arg <- NULL # Brug production bfh-template
-  ignore_system_fonts_arg <- TRUE # Konsistent rendering lokalt
-  cat("[SMOKE] CI=FALSE: bruger production bfh-template\n")
+  template_path_arg <- NULL # Use production bfh-template (local default)
+  ignore_system_fonts_arg <- TRUE # Consistent rendering on dev machines
+  cat("[SMOKE] CI=FALSE: using production bfh-template\n")
 }
 
 # ---- Eksempeldata -----------------------------------------------------------
