@@ -24,6 +24,8 @@
 ^BISPCHARTS\.png$
 ^Rplots\.pdf$
 ^tests/testthat/Rplots\.pdf$
+^tests/testthat/_problems$
+^tests/testthat/output; rm -rf
 ^\.claude$
 ^\.claude/
 ^\.worktrees$

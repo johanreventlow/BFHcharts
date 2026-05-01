@@ -1,3 +1,31 @@
+# BFHcharts (development)
+
+## Interne ændringer
+
+* **Test-isolation og graphics-device cleanup.** `tests/testthat/setup.R`
+  åbner nu en persistent PDF-device via `teardown_env()` så `bfh_qic()`'s
+  interne `ggplot_gtable()`-kald aldrig trigger R's default `Rplots.pdf`.
+  Ny `helper-graphics.R` eksponerer `with_clean_graphics()` wrapper til
+  device-tunge tests. Print/plot-tests i `test-bfh_qic_result.R` bruger
+  wrapperen eksplicit.
+
+* **Withr-konvertering af test-cleanup.** `if (file.exists(x)) unlink(x)`
+  anti-mønsteret erstattet med `withr::local_tempfile()` i
+  `test-export_pdf.R` (6 steder), `test-security-export-pdf.R` (4 steder),
+  `test-export_png.R` (4 steder), `test-export-session.R` (1 sted).
+  Cleanup sker nu garanteret selv ved test-fejl.
+
+* **Shell-injection test assertion.** `test-quarto-isolation.R` asserter nu
+  eksplicit at ingen `output*`-mappe oprettes ved shell-injection-tests
+  (validering sker foer `dir.create()`).
+
+* **`dev/clean_workdir.R`.** Nyt R-script der idempotent fjerner kendte
+  build- og test-artefakter: `BFHcharts.Rcheck/`, tarballs, `doc/`, `Meta/`,
+  `Rplots.pdf` (alle niveauer), `tests/testthat/_problems/`.
+
+* **`.gitignore` og `.Rbuildignore` udvidet** med patterns for
+  `tests/testthat/_problems/` og `tests/testthat/output; rm -rf `.
+
 # BFHcharts 0.12.1
 
 ## Bug fixes
