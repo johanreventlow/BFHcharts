@@ -75,30 +75,74 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
     panel_row$b, panel_row$r
   )
 
-  measure <- function() {
-    grid::grid.newpage()
-    grid::grid.draw(gt)
-    grid::grid.force()
+  # Hvis device_ready = TRUE, brug allerede-aktiv device (caller har aabnet den)
+  # Ellers aabn en off-screen Cairo PDF device for measurements
+  if (!device_ready) {
+    # Gem den nuvaerende device
+    current_dev <- grDevices::dev.cur()
 
-    tryCatch(
-      grid::seekViewport(panel_vp_name),
-      error = function(e) grid::seekViewport("panel")
-    )
+    temp_file <- tempfile(fileext = ".pdf")
+    grDevices::cairo_pdf(filename = temp_file, width = device_width, height = device_height)
+    temp_dev <- grDevices::dev.cur()
 
-    panel_height <- grid::convertHeight(
-      grid::unit(1, "npc"),
-      "inches",
-      valueOnly = TRUE
+    on.exit(
+      {
+        # Luk vores temp device hvis den stadig er aktiv
+        if (grDevices::dev.cur() == temp_dev) {
+          grDevices::dev.off()
+        }
+
+        # Vend tilbage til oprindelig device hvis den var reel
+        if (current_dev > 1 && current_dev != temp_dev) {
+          if (current_dev %in% grDevices::dev.list()) {
+            tryCatch(
+              {
+                grDevices::dev.set(current_dev)
+              },
+              error = function(e) {
+                # Ignorer hvis device ikke findes
+              }
+            )
+          }
+        }
+
+        # Slet temp fil
+        unlink(temp_file, force = TRUE)
+      },
+      add = TRUE
     )
-    grid::upViewport(0)
-    panel_height
   }
 
-  if (device_ready) {
-    measure()
-  } else {
-    with_temporary_device(device_width, device_height, measure())
-  }
+  # Render plot til device
+  grid::grid.newpage()
+  grid::grid.draw(gt)
+
+  # Force all grobs to be evaluated
+  grid::grid.force()
+
+  # Navigate til panel viewport
+  # NOTE: seekViewport() finder viewport i hele tree
+  tryCatch(
+    {
+      grid::seekViewport(panel_vp_name)
+    },
+    error = function(e) {
+      # Fallback: proev generisk "panel" navn
+      grid::seekViewport("panel")
+    }
+  )
+
+  # Maal hoejde i current (panel) viewport
+  panel_height <- grid::convertHeight(
+    grid::unit(1, "npc"),
+    "inches",
+    valueOnly = TRUE
+  )
+
+  # Navigate tilbage til ROOT
+  grid::upViewport(0)
+
+  return(panel_height)
 }
 
 #' INTERN: Maal label hoejde med aktiv device (ingen device management)

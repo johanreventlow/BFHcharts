@@ -132,31 +132,3 @@ LABEL_PLACEMENT_COINCIDENT_THRESHOLD_FACTOR <- 0.1
 #' pushed to the opposite shelf (top vs bottom of panel) based on whether
 #' the priority label center is below this NPC threshold.
 LABEL_PLACEMENT_SHELF_CENTER_THRESHOLD <- 0.5
-
-# ============================================================================
-# AUDIT + CONSENT CONSTANTS
-# ============================================================================
-
-#' Required value for `data_consent` when `use_ai = TRUE`
-#'
-#' Caller must pass exactly this string to acknowledge AI-egress of clinical
-#' data. Used by `bfh_generate_analysis()`.
-DATA_CONSENT_EXPLICIT <- "explicit"
-
-#' Audit event type for AI-egress events
-#'
-#' Used as the `event` field of audit records produced by
-#' `.emit_audit_event()` when AI analysis is invoked.
-AUDIT_EVENT_AI_EGRESS <- "ai_egress"
-
-#' Option name: path to audit log file
-#'
-#' When set, `.emit_audit_event()` appends JSON-line records to this path.
-#' Otherwise events are emitted via `message()`.
-BFHCHARTS_OPT_AUDIT_LOG <- "BFHcharts.audit_log"
-
-#' Option name: opt-out for globalenv inject_assets warning
-#'
-#' When `TRUE`, suppresses the warning emitted by `.validate_inject_assets()`
-#' for functions defined in `.GlobalEnv` (development convenience).
-BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT <- "BFHcharts.allow_globalenv_inject"

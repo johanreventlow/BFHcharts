@@ -65,7 +65,7 @@
 .emit_audit_event <- function(event_data) {
   json_line <- .list_to_json_line(event_data)
 
-  log_path <- getOption(BFHCHARTS_OPT_AUDIT_LOG, default = "")
+  log_path <- getOption("BFHcharts.audit_log", default = "")
   if (is.character(log_path) && nzchar(log_path)) {
     tryCatch(
       cat(json_line, "\n", file = log_path, append = TRUE, sep = ""),
