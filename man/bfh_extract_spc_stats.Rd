@@ -79,6 +79,7 @@ stats_summary_only <- bfh_extract_spc_stats(result$summary)
 \code{\link[=bfh_qic]{bfh_qic()}} for creating SPC charts
 
 Other utility-functions: 
+\code{\link{bfh_create_typst_document}()},
 \code{\link{bfh_generate_details}()},
 \code{\link{bfh_merge_metadata}()}
 }
