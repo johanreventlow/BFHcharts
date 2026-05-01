@@ -351,9 +351,32 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #'   analysis sends `qic_data`, metadata, baseline, department and hospital
 #'   data to `BFHllm::bfhllm_spc_suggestion()`. In healthcare contexts,
 #'   implicit external data processing is unacceptable. Always set
-#'   `use_ai = TRUE` deliberately.
+#'   `use_ai = TRUE` deliberately, and always supply `data_consent = "explicit"`.
 #'   - `FALSE` (default): Use standard texts only - no external data sharing
-#'   - `TRUE`: Use AI (requires BFHllm package; error if not installed)
+#'   - `TRUE`: Use AI (requires BFHllm package and `data_consent = "explicit"`; error if not satisfied)
+#' @param data_consent Character. Required when `use_ai = TRUE`. Must be
+#'   `"explicit"` to acknowledge that `qic_data`, metadata, and context are
+#'   transmitted to `BFHllm::bfhllm_spc_suggestion()`. Any other value
+#'   (including the default `NULL`) raises an error. Ignored when
+#'   `use_ai = FALSE`.
+#'
+#'   **GDPR/HIPAA context:** `qic_data` may contain aggregated clinical
+#'   indicators, department names, and hospital identifiers. In healthcare
+#'   deployments, processing this data via an external AI service requires
+#'   documented consent and a data processing agreement. Setting
+#'   `data_consent = "explicit"` is the caller's attestation that the
+#'   appropriate legal basis exists. An audit event is emitted automatically
+#'   via `.emit_audit_event()` for traceability.
+#' @param use_rag Logical. Controls whether `BFHllm::bfhllm_spc_suggestion()`
+#'   is invoked with retrieval-augmented generation (RAG) enabled.
+#'   Default is `FALSE` (privacy-preserving: one-shot LLM call only).
+#'   Set `TRUE` to allow broader context from a vector store.
+#'
+#'   **Privacy implication:** When `use_rag = TRUE`, query data may be stored
+#'   in or matched against a vector store maintained by BFHllm's backend.
+#'   This is a separate compliance concern from the one-shot LLM call.
+#'   Only enable when your data processing agreement explicitly covers
+#'   vector-store usage. The value is always recorded in the audit event.
 #' @param min_chars Minimum characters in AI-generated output. Default 300.
 #' @param max_chars Maximum characters in AI-generated output. Default 375.
 #' @param target_tolerance Fractional tolerance for `at_target` classification
@@ -367,42 +390,40 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #'
 #' @details
 #' **Security policy:** AI analysis is opt-in only (`use_ai = FALSE` by
-#' default). Setting `use_ai = TRUE` requires BFHllm to be installed; an
-#' informative error is raised if it is not. This prevents accidental data
-#' exposure in environments where BFHllm uses network calls, RAG, or
-#' third-party services.
+#' default). Setting `use_ai = TRUE` requires BFHllm to be installed and
+#' `data_consent = "explicit"` to be supplied; an informative error is raised
+#' if either condition is not met. This prevents accidental data exposure in
+#' environments where BFHllm uses network calls, RAG, or third-party services.
 #'
 #' **Installing BFHllm:** BFHllm is not on CRAN and must be installed
 #' manually from GitHub before using `use_ai = TRUE`:
 #' \preformatted{remotes::install_github("johanreventlow/BFHllm")}
 #'
-#' When `use_ai = TRUE` and BFHllm is installed, the function:
-#' 1. Builds context from the `bfh_qic_result` and metadata
-#' 2. Calls `BFHllm::bfhllm_spc_suggestion()` for AI-generated analysis
-#' 3. Falls back to standard texts if AI call fails
+#' When `use_ai = TRUE` and all preconditions are met, the function:
+#' 1. Validates `data_consent = "explicit"`
+#' 2. Emits a structured audit event via `.emit_audit_event()`
+#' 3. Builds context from the `bfh_qic_result` and metadata
+#' 4. Calls `BFHllm::bfhllm_spc_suggestion()` for AI-generated analysis
+#' 5. Falls back to standard texts if AI call fails
 #'
 #' When `use_ai = FALSE` (default):
 #' - Returns Danish standard texts based on Anhoej SPC rules
+#' - `data_consent` is not checked
 #'
-#' @section AI audit signal:
-#' When `use_ai = TRUE` and BFHllm is installed, a `message()` is emitted
-#' immediately before calling `BFHllm::bfhllm_spc_suggestion()`. The message
-#' uses the stable tag `[BFHcharts/AI]` for log-grep-ability and lists:
-#' - the names of the `spc_result` and `llm_context` fields transmitted
-#' - the `use_rag` value
+#' @section AI audit event:
+#' When `use_ai = TRUE` and BFHllm is installed, a structured audit event is
+#' emitted via `.emit_audit_event()` before calling
+#' `BFHllm::bfhllm_spc_suggestion()`. The event includes: timestamp, event
+#' type (`"ai_egress"`), package, target function, fields transmitted,
+#' `use_rag` value, hostname, and user.
 #'
-#' Example message:
-#' ```
-#' [BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() -- fields: metadata, qic_data; data_definition, chart_title, ...; use_rag = TRUE
-#' ```
-#'
-#' **Opt-out:** Set `options(BFHcharts.suppress_ai_audit_message = TRUE)` to
-#' suppress the message (e.g. in interactive sessions or when the calling
-#' application maintains its own audit trail).
+#' If `options(BFHcharts.audit_log = "/path/to/audit.jsonl")` is set, the
+#' event is appended as a JSON line. Otherwise it is emitted via `message()`
+#' with prefix `[BFHcharts/audit]`.
 #'
 #' **Rationale:** Hospital deployments need an audit trail when patient-context
-#' SPC data is sent to an external LLM. The message provides minimal-cost
-#' observability (defense-in-depth) without blocking the feature.
+#' SPC data is sent to an external LLM. The structured event is parseable and
+#' cannot be globally suppressed unlike `message()`.
 #'
 #' @examples
 #' \dontrun{
@@ -411,13 +432,21 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #' # Use standard texts (no AI)
 #' analysis <- bfh_generate_analysis(result, use_ai = FALSE)
 #'
-#' # Use AI if available
+#' # Use AI with explicit data consent
 #' analysis <- bfh_generate_analysis(result,
 #'   metadata = list(
 #'     data_definition = "Antal infektioner pr. 1000 patientdage",
 #'     target = 2.5
 #'   ),
-#'   use_ai = TRUE
+#'   use_ai = TRUE,
+#'   data_consent = "explicit"
+#' )
+#'
+#' # Use AI with RAG enabled (vector-store context)
+#' analysis <- bfh_generate_analysis(result,
+#'   use_ai = TRUE,
+#'   data_consent = "explicit",
+#'   use_rag = TRUE
 #' )
 #' }
 #'
@@ -425,6 +454,8 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 bfh_generate_analysis <- function(x,
                                   metadata = list(),
                                   use_ai = FALSE,
+                                  data_consent = NULL,
+                                  use_rag = FALSE,
                                   min_chars = 300,
                                   max_chars = 375,
                                   target_tolerance = 0.05,
@@ -451,8 +482,20 @@ bfh_generate_analysis <- function(x,
   # Byg kontekst
   context <- bfh_build_analysis_context(x, metadata)
 
-  # Check AI tilgaengelighed - ingen auto-detektion (eksplicit opt-in kraeves)
+  # Check AI availability and consent - explicit opt-in required
   if (isTRUE(use_ai)) {
+    # data_consent must be "explicit" before any AI egress
+    if (!identical(data_consent, "explicit")) {
+      stop(
+        "AI analysis requires data_consent = \"explicit\".\n",
+        "  Set data_consent = \"explicit\" to acknowledge that qic_data, metadata,\n",
+        "  and context are sent to BFHllm::bfhllm_spc_suggestion().\n",
+        "  In healthcare settings, ensure a data processing agreement is in place\n",
+        "  before enabling AI analysis. Use use_ai = FALSE for local-only analysis.",
+        call. = FALSE
+      )
+    }
+
     if (!requireNamespace("BFHllm", quietly = TRUE)) {
       stop(
         "use_ai = TRUE requires the BFHllm package to be installed.\n",
@@ -504,18 +547,21 @@ bfh_generate_analysis <- function(x,
       baseline_analysis = baseline_analysis
     )
 
-    # Audit-signal: emit message naar AI-egress sker, medmindre opt-out
-    if (!isTRUE(getOption("BFHcharts.suppress_ai_audit_message"))) {
-      spc_fields <- paste(names(spc_result), collapse = ", ")
-      ctx_fields <- paste(names(llm_context), collapse = ", ")
-      message(
-        "[BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() ",
-        "-- fields: ", spc_fields, "; ", ctx_fields,
-        "; use_rag = TRUE"
-      )
-    }
+    # Structured audit event: always emitted before AI egress (non-suppressible).
+    # Written as JSON-line to BFHcharts.audit_log if set, else via message().
+    .emit_audit_event(list(
+      timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3Z"),
+      event = "ai_egress",
+      package = "BFHcharts",
+      target = "BFHllm::bfhllm_spc_suggestion",
+      fields_sent = names(spc_result),
+      context_keys = names(llm_context),
+      use_rag = use_rag,
+      hostname = Sys.info()[["nodename"]],
+      user = Sys.info()[["user"]]
+    ))
 
-    # Kald BFHllm
+    # Call BFHllm
     analysis <- tryCatch(
       {
         BFHllm::bfhllm_spc_suggestion(
@@ -523,7 +569,7 @@ bfh_generate_analysis <- function(x,
           context = llm_context,
           min_chars = min_chars,
           max_chars = max_chars,
-          use_rag = TRUE,
+          use_rag = use_rag,
           timeout = 30
         )
       },

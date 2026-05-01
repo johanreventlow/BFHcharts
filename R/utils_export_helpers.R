@@ -221,12 +221,15 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
 #'
 #' @noRd
 prepare_export_metadata <- function(x, metadata, auto_analysis, use_ai,
-                                    analysis_min_chars, analysis_max_chars) {
+                                    analysis_min_chars, analysis_max_chars,
+                                    data_consent = NULL, use_rag = FALSE) {
   if (isTRUE(auto_analysis) && is.null(metadata$analysis)) {
     metadata$analysis <- bfh_generate_analysis(
       x = x,
       metadata = metadata,
       use_ai = use_ai,
+      data_consent = data_consent,
+      use_rag = use_rag,
       min_chars = analysis_min_chars,
       max_chars = analysis_max_chars
     )
