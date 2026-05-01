@@ -1,6 +1,6 @@
 # BFHcharts
 
-[![codecov](https://codecov.io/gh/johanreventlow/BFHcharts/branch/main/graph/badge.svg)](https://codecov.io/gh/johanreventlow/BFHcharts)
+[![codecov](https://codecov.io/gh/johanreventlow/BFHcharts/branch/main/graph/badge.svg)](https://codecov.io/gh/johanreventlow/BFHcharts) [![PDF smoke](https://github.com/johanreventlow/BFHcharts/actions/workflows/pdf-smoke.yaml/badge.svg)](https://github.com/johanreventlow/BFHcharts/actions/workflows/pdf-smoke.yaml)
 
 > Modern SPC Visualization for Healthcare Quality Improvement
 

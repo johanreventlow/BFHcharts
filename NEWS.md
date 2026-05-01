@@ -1,3 +1,26 @@
+# BFHcharts 0.12.2
+
+## Interne ændringer
+
+* **CI-render-pipeline styrket** (`strengthen-ci-render-pipeline`):
+  - Quarto installeres nu i `R-CMD-check.yaml` (pre-release channel, Typst 0.13+
+    krævet for `--ignore-system-fonts`). Render-afhængige tests der hidtil
+    skippede med `skip_if_no_quarto()` eksekveres nu i hovedjobbet.
+  - `pdf-smoke.yaml` anvender nu production-template
+    (`inst/templates/typst/bfh-template/bfh-template.typ`) fremfor
+    CI-only test-template. `continue-on-error: true` på render-step
+    midlertidigt til `fix-pdf-template-asset-contract` er merget.
+  - Ny workflow `git-archive-render.yaml`: installerer pakken fra
+    `git archive HEAD`-output og renderer smoke-tests. Opdager
+    render-afhængigheder af untracked filer tidligt.
+  - `tests/smoke/render_smoke.R` understøtter nu
+    `BFHCHARTS_SMOKE_USE_PRODUCTION_TEMPLATE`-env-var til eksplicit
+    production-template-mode på CI.
+  - `CONTRIBUTING.md` oprettet med CI Pipeline-sektion, beskrivelse af
+    PR-blocking jobs og manuelt trin til branch protection-konfiguration
+    i GitHub UI.
+  - README: tilføjet `pdf-smoke`-statusbadge.
+
 # BFHcharts 0.12.1
 
 ## Bug fixes
