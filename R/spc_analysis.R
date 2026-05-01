@@ -485,7 +485,7 @@ bfh_generate_analysis <- function(x,
   # Check AI availability and consent - explicit opt-in required
   if (isTRUE(use_ai)) {
     # data_consent must be "explicit" before any AI egress
-    if (!identical(data_consent, "explicit")) {
+    if (!identical(data_consent, DATA_CONSENT_EXPLICIT)) {
       stop(
         "AI analysis requires data_consent = \"explicit\".\n",
         "  Set data_consent = \"explicit\" to acknowledge that qic_data, metadata,\n",
@@ -551,7 +551,7 @@ bfh_generate_analysis <- function(x,
     # Written as JSON-line to BFHcharts.audit_log if set, else via message().
     .emit_audit_event(list(
       timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3Z"),
-      event = "ai_egress",
+      event = AUDIT_EVENT_AI_EGRESS,
       package = "BFHcharts",
       target = "BFHllm::bfhllm_spc_suggestion",
       fields_sent = names(spc_result),

@@ -493,7 +493,7 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
     stop("inject_assets must be a function or NULL", call. = FALSE)
   }
 
-  if (!isTRUE(getOption("BFHcharts.allow_globalenv_inject", default = FALSE))) {
+  if (!isTRUE(getOption(BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT, default = FALSE))) {
     fn_env <- environment(fn)
     # Heuristic: warn if function's top-level enclosure is .GlobalEnv.
     # Functions from a package namespace have topenv() == that namespace.
