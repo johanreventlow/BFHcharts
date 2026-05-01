@@ -1,3 +1,69 @@
+# BFHcharts 0.13.0
+
+## Breaking changes
+
+* **`bfh_generate_analysis(use_ai = TRUE)` kræver nu `data_consent = "explicit"`.**
+  Alle kald med `use_ai = TRUE` uden eksplicit samtykke fejler nu med en
+  informativ fejlbesked der refererer GDPR/HIPAA-konteksten. Formålet er at
+  sikre at klinikdata ikke sendes til et eksternt AI-system uden at kalderen
+  eksplicit erkender det.
+
+  Migration:
+  ```r
+  # Før:
+  bfh_generate_analysis(result, use_ai = TRUE)
+
+  # Efter:
+  bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
+  ```
+
+  `use_ai = FALSE` (standard) er uændret og påvirkes ikke.
+
+* **`bfh_generate_analysis()`: `use_rag` defaulter nu til `FALSE`.**
+  Tidligere var `use_rag = TRUE` hardcoded i kaldet til
+  `BFHllm::bfhllm_spc_suggestion()`. Det er nu ændret til `FALSE` som
+  privacy-bevarende standard. RAG (retrieval-augmented generation) lagrer
+  forespørgselsdata i et vektor-store — en separat compliance-overvejelse fra
+  det engangs-LLM-kald. Kald med `use_rag = TRUE` bevarer den tidligere adfærd.
+
+  Migration for kald der ønsker RAG:
+  ```r
+  bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit",
+                        use_rag = TRUE)
+  ```
+
+## Nye features
+
+* **Runtime-guard for `inject_assets`:** `bfh_export_pdf()` og
+  `bfh_create_export_session()` advarer nu hvis `inject_assets`-funktionen
+  stammer fra `.GlobalEnv` eller et direkte child-environment. Dette er et
+  signal om mulig utilsigtet eksponering (fx Shiny-binding af en
+  top-level-funktion til parameteren). Advarslen kan undertrykkes med
+  `options(BFHcharts.allow_globalenv_inject = TRUE)` i udviklingsflows.
+
+* **Struktureret AI-egress audit-log:** Erstattet `message("[BFHcharts/AI] ...")`
+  med `.emit_audit_event()` der producerer et struktureret JSON-objekt. Skrives
+  til `getOption("BFHcharts.audit_log")` som JSON-line (append) hvis optionen
+  er sat; ellers via `message()` med prefix `[BFHcharts/audit]`. Indeholder:
+  timestamp, event-type, package, target-funktion, felter sendt, context-nøgler,
+  `use_rag`-værdi, hostname og bruger.
+
+* **`bfh_generate_analysis()`: ny `data_consent`-parameter** (se Breaking
+  changes) og ny `use_rag`-parameter (se Breaking changes).
+
+* **Opdateret security-dokumentation:** `@section Security:` i
+  `bfh_export_pdf()` og `bfh_create_export_session()` udvider nu med
+  eksplicitte acceptable/uacceptable kilder for `inject_assets`, inkl. RCE-
+  advarsel. README-sektionen "Branding for Organizational Deployments" har fået
+  en prominent security-note.
+
+## Interne ændringer
+
+* Ny `R/utils_audit.R` med `.emit_audit_event()` og base-R JSON-serialisering
+  (ingen jsonlite-afhængighed).
+
+---
+
 # BFHcharts 0.12.1
 
 ## Bug fixes
