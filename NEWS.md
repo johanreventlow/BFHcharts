@@ -146,29 +146,6 @@
     i GitHub UI.
   - README: tilføjet `pdf-smoke`-statusbadge.
 
-* **Label-placement monolith opdelt i 3-lags arkitektur.**
-  `place_two_labels_npc()` (520L) er reduceret til en ~90L orkestrator
-  ved at ekstrahere tre rene hjælpefunktioner:
-  `.validate_placement_inputs()`, `.resolve_placement_config()` og
-  `.compute_placement_strategy()`. Den rene strategi-funktion har ingen
-  device-kald og kan testes uden et grafik-device.
-
-* **Deterministisk device-håndtering i `add_right_labels_marquee()`.**
-  Tre separate `on.exit`-blokke for viewport-device er konsolideret til
-  én. Redundant normal-path cleanup (L613-619) fjernet.
-
-* **`with_temporary_device()` tilføjet** (`utils_panel_measurement.R`):
-  ren wrapper der åbner Cairo PDF-device, kører kode og lukker
-  deterministisk via `on.exit` uanset fejl.
-
-* **`clamp01()` slettet** — aldrig brugt i produktionskode.
-
-* **`height_safety_margin` fallback** alignet med konfigurationsværdi
-  (begge nu 1.0, ingen ekstra margin ved korrekte panel-maalinger).
-
-* 27 nye kontrakt-tests dækker placement-strategi-laget isoleret
-  (ingen device-krav). Se `tests/testthat/test-placement-strategy-contract.R`.
-
 * **Output-stier med spaces/parens/brackets virker nu også i praksis.**
   v0.12.0 relaxede path-validatoren til at tillade hospital-typiske filnavne
   (`rapport (final).pdf`, `Q1 [2026].pdf`, `Indikator & resultat.pdf`), men

@@ -3,6 +3,34 @@
 # Refs: #89, #91, #92, #93, #94
 
 # ==============================================================================
+# clamp01
+# ==============================================================================
+
+test_that("clamp01 clamps til [0, 1]", {
+  expect_equal(clamp01(0.5), 0.5)
+  expect_equal(clamp01(-0.1), 0)
+  expect_equal(clamp01(1.5), 1)
+  expect_equal(clamp01(0), 0)
+  expect_equal(clamp01(1), 1)
+})
+
+test_that("clamp01 håndterer vektorer", {
+  expect_equal(clamp01(c(-1, 0.5, 2)), c(0, 0.5, 1))
+})
+
+test_that("clamp01 afviser NULL, tom vektor og ikke-numerisk", {
+  expect_error(clamp01(NULL), "NULL")
+  expect_error(clamp01(numeric(0)), "tom")
+  expect_error(clamp01("a"), "numerisk")
+})
+
+test_that("clamp01 håndterer Inf med warning", {
+  expect_warning(result <- clamp01(c(0.5, Inf)), "Ikke-finite")
+  expect_equal(result[1], 0.5)
+  expect_true(is.na(result[2]))
+})
+
+# ==============================================================================
 # clamp_to_bounds
 # ==============================================================================
 
@@ -341,12 +369,12 @@ test_that("place_two_labels_npc validerer input korrekt", {
   # Ikke-numerisk
   expect_error(
     place_two_labels_npc(yA_npc = "a", yB_npc = 0.5, label_height_npc = 0.1),
-    "numeric"
+    "numerisk"
   )
   # Negativ label height
   expect_error(
     place_two_labels_npc(yA_npc = 0.5, yB_npc = 0.5, label_height_npc = -0.1),
-    "positive"
+    "positiv"
   )
   # Ugyldig priority
   expect_error(

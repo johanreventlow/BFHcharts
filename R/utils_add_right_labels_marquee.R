@@ -198,7 +198,7 @@ add_right_labels_marquee <- function(
 
   # Detekter device stoerrelse for korrekt panel height measurement
   # STRATEGI:
-  # 1. Hvis viewport dimensions provided -> brug dem (with_temporary_device() hvis noedvendigt)
+  # 1. Hvis viewport dimensions provided -> brug dem (aabn temporary device hvis noedvendigt)
   # 2. Ellers -> detekter existing device (fallback for legacy callers)
 
   device_size <- NULL
@@ -233,23 +233,19 @@ add_right_labels_marquee <- function(
         message("[VIEWPORT_STRATEGY] Opening temporary Cairo PDF device for grob measurements")
       }
       temp_pdf <- tempfile(fileext = ".pdf")
-      grDevices::cairo_pdf(
-        filename = temp_pdf,
-        width = viewport_width, height = viewport_height
-      )
+      grDevices::cairo_pdf(filename = temp_pdf, width = viewport_width, height = viewport_height)
       temp_dev_num <- grDevices::dev.cur()
       temp_device_opened <- TRUE
 
-      # Single on.exit covers both error path and normal path cleanup
+      # on.exit lukker specifikt den device vi aabnede (ikke blot current device)
       on.exit(
         {
-          if (temp_dev_num %in% grDevices::dev.list()) {
+          if (temp_device_opened && temp_dev_num %in% grDevices::dev.list()) {
             tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)
           }
-          unlink(temp_pdf, force = TRUE)
+          if (exists("temp_pdf")) unlink(temp_pdf, force = TRUE)
         },
-        add = TRUE,
-        after = FALSE
+        add = TRUE
       )
     }
 
@@ -610,6 +606,16 @@ add_right_labels_marquee <- function(
     if (!has_colour_scale) {
       result <- result + ggplot2::scale_color_identity()
     }
+  }
+
+  # Normal-path cleanup: luk specifik device og marker som lukket
+  # (on.exit haandterer error-path; vi saetter flag til FALSE saa on.exit er no-op)
+  if (temp_device_opened && exists("temp_dev_num")) {
+    if (temp_dev_num %in% grDevices::dev.list()) {
+      tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)
+    }
+    if (exists("temp_pdf")) unlink(temp_pdf, force = TRUE)
+    temp_device_opened <- FALSE
   }
 
   # Attach metadata
