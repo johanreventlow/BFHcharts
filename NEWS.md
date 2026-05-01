@@ -1,3 +1,29 @@
+# BFHcharts 0.13.1
+
+## Bug fixes
+
+* **`result$summary$sigma_signal` rapporterer nu korrekt `TRUE` for en fase
+  når *et vilkårligt punkt* i fasen er et outlier.** Tidligere tog
+  `format_qic_summary()` `sigma.signal`-værdien fra den *første* rad i fasen
+  frem for at aggregere med `any()` over alle rader. For faser hvor det
+  første punkt ikke er et outlier men et eller flere efterfølgende er det,
+  ville `sigma_signal` fejlagtigt vise `FALSE`. `runs.signal` var allerede
+  korrekt aggregeret med `any()` — `sigma.signal` er nu tilsvarende rettet.
+  Downstream-pakker (fx biSPCharts) der viser `result$summary` eller auto-
+  genereret analysetekst baseret på `sigma_signal` vil se rettede værdier.
+  (OpenSpec 2026-05-01-verify-anhoej-summary-vs-qic-data-consistency, ADR-002)
+
+## Interne ændringer
+
+* **ADR-002 oprettet** (`inst/adr/ADR-002-anhoej-summary-source.md`):
+  dokumenterer Anhoej-statistik-proveniens, verifikation af konsistens
+  mellem `result$summary` og `result$qic_data`, og baggrund for rettelsen
+  af `sigma.signal`-aggregeringen.
+* **22 nye konsistenstests** (`tests/testthat/test-summary-anhoej-consistency.R`):
+  asserterer at hvert Anhoej-felt i `result$summary` matcher aggregeringen
+  af det tilsvarende felt i `result$qic_data` per fase — for alle chart-typer
+  og edge cases (enkelt fase, fase med faa punkter, exclude).
+
 # BFHcharts 0.12.1
 
 ## Bug fixes

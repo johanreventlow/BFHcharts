@@ -114,6 +114,11 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
       if ("runs.signal" %in% names(x)) {
         row$runs.signal <- any(x$runs.signal, na.rm = TRUE)
       }
+      # sigma.signal varies per row (unlike longest.run which is per-phase constant).
+      # Aggregate with any() so a single outlier in the phase is correctly reflected.
+      if ("sigma.signal" %in% names(x)) {
+        row$sigma.signal <- any(x$sigma.signal, na.rm = TRUE)
+      }
       row
     }))
   } else {
