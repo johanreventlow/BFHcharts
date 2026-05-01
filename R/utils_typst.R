@@ -252,6 +252,23 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
       warning("font_path directory does not exist: ", font_path, call. = FALSE)
       font_path <- NULL
     }
+  } else {
+    # Auto-detect fonts/ subdirectory in the staged template tempdir.
+    # Companion packages (e.g. BFHchartsAssets) inject fonts into a fonts/
+    # subdirectory alongside the .typ file. Without auto-detect, these are
+    # silently ignored and the compile falls back to system fonts only.
+    staged_fonts_dir <- file.path(dirname(typst_file), "bfh-template", "fonts")
+    if (dir.exists(staged_fonts_dir)) {
+      font_extensions <- c("\\.ttf$", "\\.otf$", "\\.woff$", "\\.woff2$")
+      font_pattern <- paste(font_extensions, collapse = "|")
+      font_files <- list.files(staged_fonts_dir,
+        pattern = font_pattern,
+        ignore.case = TRUE, full.names = FALSE
+      )
+      if (length(font_files) > 0) {
+        font_path <- staged_fonts_dir
+      }
+    }
   }
 
   # Create output directory if needed
