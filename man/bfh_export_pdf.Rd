@@ -12,6 +12,8 @@ bfh_export_pdf(
   template_path = NULL,
   auto_analysis = FALSE,
   use_ai = FALSE,
+  data_consent = NULL,
+  use_rag = FALSE,
   analysis_min_chars = 300,
   analysis_max_chars = 375,
   dpi = 150,
@@ -61,10 +63,20 @@ Default is FALSE for backward compatibility.}
 \item{use_ai}{Logical. Controls AI usage for auto-analysis:
 \itemize{
 \item \code{FALSE} (default): Use standard texts only - no external data sharing
-\item \code{TRUE}: Use AI via BFHllm (requires BFHllm installed; error if not)
+\item \code{TRUE}: Use AI via BFHllm (requires BFHllm installed and \code{data_consent = "explicit"}; error if not satisfied)
 }
 Only used when \code{auto_analysis = TRUE}. See \code{bfh_generate_analysis()}
 for security policy details.}
+
+\item{data_consent}{Character. Required when \code{use_ai = TRUE} and
+\code{auto_analysis = TRUE}. Must be \code{"explicit"} to acknowledge that
+clinical data is sent to \code{BFHllm}. Passed through to
+\code{bfh_generate_analysis()}. Ignored when \code{use_ai = FALSE}.
+See \code{\link{bfh_generate_analysis}} for full GDPR/HIPAA context.}
+
+\item{use_rag}{Logical. Controls RAG for AI analysis. Default \code{FALSE}
+(privacy-preserving). Only used when \code{auto_analysis = TRUE} and
+\code{use_ai = TRUE}. See \code{\link{bfh_generate_analysis}}.}
 
 \item{analysis_min_chars}{Minimum characters for AI-generated analysis. Default 300.
 Only used when \code{auto_analysis = TRUE}.}
@@ -180,25 +192,42 @@ Typst templates for hospital branding. Requires Quarto CLI for compilation.
 }
 \section{Security}{
 
-Both \code{inject_assets} and \code{template_path} are designed for
-advanced use cases (proprietary fonts, organization-specific templates)
-and \strong{must be treated as trusted-code-only}:
+\strong{\code{inject_assets} is full code execution.} The supplied function
+runs with the same privileges as the calling R session, with full file-system
+and network access. It MUST NOT come from user input (Shiny inputs, REST API
+parameters, configuration files of unknown provenance).
+
+Acceptable sources:
 \itemize{
-\item \code{inject_assets} is invoked with full filesystem access in
-the template directory. Whatever R code the callback contains runs
-with the same privileges as the calling process -- equivalent to
-sourcing arbitrary R from disk.
-\item \code{template_path} is compiled by the Typst binary. A custom
-template can read and write arbitrary paths during compilation.
+\item A function exported from a controlled companion package installed via
+\code{pak::pkg_install("private/repo")}.
+\item A function defined in your application's source code, version-controlled.
 }
-Treat both parameters with the same trust contract you would apply to
-\code{source()}: pass only code-reviewed, organizationally controlled
-values. \strong{Never} forward user-supplied input (Shiny inputs,
+
+Unacceptable sources:
+\itemize{
+\item \code{parse(text = input$user_code)}
+\item A function loaded from an unverified URL
+\item A function deserialized from an untrusted RDS file
+}
+
+When in doubt, do not pass \code{inject_assets}.
+
+\code{template_path} is compiled by the Typst binary. A custom
+template can read and write arbitrary paths during compilation -- treat
+it with the same trust contract as \code{source()}.
+
+\strong{Never} forward user-supplied input (Shiny inputs,
 query parameters, untrusted uploads) to either parameter -- doing so
 creates a privilege-escalation vector. If your application surface
 needs to expose template customization to end users, validate against
 a fixed allow-list of approved templates and callbacks before invoking
 \code{bfh_export_pdf()}.
+
+A runtime heuristic warns when \code{inject_assets} originates from
+\code{.GlobalEnv} or a direct child environment (typical of
+accidental Shiny exposure). Suppress with
+\code{options(BFHcharts.allow_globalenv_inject = TRUE)} in development.
 
 The same trust requirement applies to \code{inject_assets} when passed
 to \code{\link{bfh_create_export_session}()}.

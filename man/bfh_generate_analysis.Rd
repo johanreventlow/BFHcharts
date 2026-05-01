@@ -8,6 +8,8 @@ bfh_generate_analysis(
   x,
   metadata = list(),
   use_ai = FALSE,
+  data_consent = NULL,
+  use_rag = FALSE,
   min_chars = 300,
   max_chars = 375,
   target_tolerance = 0.05,
@@ -33,11 +35,36 @@ bfh_generate_analysis(
 analysis sends \code{qic_data}, metadata, baseline, department and hospital
 data to \code{BFHllm::bfhllm_spc_suggestion()}. In healthcare contexts,
 implicit external data processing is unacceptable. Always set
-\code{use_ai = TRUE} deliberately.
+\code{use_ai = TRUE} deliberately, and always supply \code{data_consent = "explicit"}.
 \itemize{
 \item \code{FALSE} (default): Use standard texts only - no external data sharing
-\item \code{TRUE}: Use AI (requires BFHllm package; error if not installed)
+\item \code{TRUE}: Use AI (requires BFHllm package and \code{data_consent = "explicit"}; error if not satisfied)
 }}
+
+\item{data_consent}{Character. Required when \code{use_ai = TRUE}. Must be
+\code{"explicit"} to acknowledge that \code{qic_data}, metadata, and context are
+transmitted to \code{BFHllm::bfhllm_spc_suggestion()}. Any other value
+(including the default \code{NULL}) raises an error. Ignored when
+\code{use_ai = FALSE}.
+
+\strong{GDPR/HIPAA context:} \code{qic_data} may contain aggregated clinical
+indicators, department names, and hospital identifiers. In healthcare
+deployments, processing this data via an external AI service requires
+documented consent and a data processing agreement. Setting
+\code{data_consent = "explicit"} is the caller's attestation that the
+appropriate legal basis exists. An audit event is emitted automatically
+via \code{.emit_audit_event()} for traceability.}
+
+\item{use_rag}{Logical. Controls whether \code{BFHllm::bfhllm_spc_suggestion()}
+is invoked with retrieval-augmented generation (RAG) enabled.
+Default is \code{FALSE} (privacy-preserving: one-shot LLM call only).
+Set \code{TRUE} to allow broader context from a vector store.
+
+\strong{Privacy implication:} When \code{use_rag = TRUE}, query data may be stored
+in or matched against a vector store maintained by BFHllm's backend.
+This is a separate compliance concern from the one-shot LLM call.
+Only enable when your data processing agreement explicitly covers
+vector-store usage. The value is always recorded in the audit event.}
 
 \item{min_chars}{Minimum characters in AI-generated output. Default 300.}
 
@@ -61,17 +88,19 @@ with automatic fallback to Danish standard texts.
 }
 \details{
 \strong{Security policy:} AI analysis is opt-in only (\code{use_ai = FALSE} by
-default). Setting \code{use_ai = TRUE} requires BFHllm to be installed; an
-informative error is raised if it is not. This prevents accidental data
-exposure in environments where BFHllm uses network calls, RAG, or
-third-party services.
+default). Setting \code{use_ai = TRUE} requires BFHllm to be installed and
+\code{data_consent = "explicit"} to be supplied; an informative error is raised
+if either condition is not met. This prevents accidental data exposure in
+environments where BFHllm uses network calls, RAG, or third-party services.
 
 \strong{Installing BFHllm:} BFHllm is not on CRAN and must be installed
 manually from GitHub before using \code{use_ai = TRUE}:
 \preformatted{remotes::install_github("johanreventlow/BFHllm")}
 
-When \code{use_ai = TRUE} and BFHllm is installed, the function:
+When \code{use_ai = TRUE} and all preconditions are met, the function:
 \enumerate{
+\item Validates \code{data_consent = "explicit"}
+\item Emits a structured audit event via \code{.emit_audit_event()}
 \item Builds context from the \code{bfh_qic_result} and metadata
 \item Calls \code{BFHllm::bfhllm_spc_suggestion()} for AI-generated analysis
 \item Falls back to standard texts if AI call fails
@@ -80,30 +109,24 @@ When \code{use_ai = TRUE} and BFHllm is installed, the function:
 When \code{use_ai = FALSE} (default):
 \itemize{
 \item Returns Danish standard texts based on Anhoej SPC rules
+\item \code{data_consent} is not checked
 }
 }
-\section{AI audit signal}{
+\section{AI audit event}{
 
-When \code{use_ai = TRUE} and BFHllm is installed, a \code{message()} is emitted
-immediately before calling \code{BFHllm::bfhllm_spc_suggestion()}. The message
-uses the stable tag \verb{[BFHcharts/AI]} for log-grep-ability and lists:
-\itemize{
-\item the names of the \code{spc_result} and \code{llm_context} fields transmitted
-\item the \code{use_rag} value
-}
+When \code{use_ai = TRUE} and BFHllm is installed, a structured audit event is
+emitted via \code{.emit_audit_event()} before calling
+\code{BFHllm::bfhllm_spc_suggestion()}. The event includes: timestamp, event
+type (\code{"ai_egress"}), package, target function, fields transmitted,
+\code{use_rag} value, hostname, and user.
 
-Example message:
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{[BFHcharts/AI] invoking BFHllm::bfhllm_spc_suggestion() -- fields: metadata, qic_data; data_definition, chart_title, ...; use_rag = TRUE
-}\if{html}{\out{</div>}}
-
-\strong{Opt-out:} Set \code{options(BFHcharts.suppress_ai_audit_message = TRUE)} to
-suppress the message (e.g. in interactive sessions or when the calling
-application maintains its own audit trail).
+If \code{options(BFHcharts.audit_log = "/path/to/audit.jsonl")} is set, the
+event is appended as a JSON line. Otherwise it is emitted via \code{message()}
+with prefix \verb{[BFHcharts/audit]}.
 
 \strong{Rationale:} Hospital deployments need an audit trail when patient-context
-SPC data is sent to an external LLM. The message provides minimal-cost
-observability (defense-in-depth) without blocking the feature.
+SPC data is sent to an external LLM. The structured event is parseable and
+cannot be globally suppressed unlike \code{message()}.
 }
 
 \examples{
@@ -113,13 +136,21 @@ result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 # Use standard texts (no AI)
 analysis <- bfh_generate_analysis(result, use_ai = FALSE)
 
-# Use AI if available
+# Use AI with explicit data consent
 analysis <- bfh_generate_analysis(result,
   metadata = list(
     data_definition = "Antal infektioner pr. 1000 patientdage",
     target = 2.5
   ),
-  use_ai = TRUE
+  use_ai = TRUE,
+  data_consent = "explicit"
+)
+
+# Use AI with RAG enabled (vector-store context)
+analysis <- bfh_generate_analysis(result,
+  use_ai = TRUE,
+  data_consent = "explicit",
+  use_rag = TRUE
 )
 }
 
