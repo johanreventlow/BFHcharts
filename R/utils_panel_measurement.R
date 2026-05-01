@@ -19,7 +19,6 @@
 #' @noRd
 with_temporary_device <- function(width_in, height_in, code) {
   previous_dev <- grDevices::dev.cur()
-  devices_before <- grDevices::dev.list()
 
   temp_pdf <- tempfile(fileext = ".pdf")
   grDevices::cairo_pdf(filename = temp_pdf, width = width_in, height = height_in)
@@ -215,10 +214,12 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
     # message(sprintf(
   }
 
-  # Safety margin fra config (altid tilgaengelig i pakken)
+  # Safety margin fra config (altid tilgaengelig i pakken).
+  # Config vaerdi er 1.0 (ingen margin) - korrekt for panel-baserede maalinger.
+  # Fallback 1.0 matcher config; bevar kobling saa begge enten aendres atomisk.
   cfg <- get_label_placement_config()
   value <- cfg[["height_safety_margin"]]
-  safety_margin <- if (is.null(value)) 1.05 else value
+  safety_margin <- if (is.null(value)) 1.0 else value
   h_npc <- h_npc * safety_margin
   h_inches_with_margin <- h_inches * safety_margin
 
