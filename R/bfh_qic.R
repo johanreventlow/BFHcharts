@@ -85,6 +85,39 @@ NULL
 #' - `apply_spc_labels_to_export()` -- label_size computation + `add_spc_labels()` with warning suppression
 #' - `build_bfh_qic_return()` -- return value routing (S3 vs. legacy paths)
 #'
+#' **SPC Statistics Provenance:**
+#'
+#' Every field in `result$summary` is derived from `result$qic_data` via
+#' `format_qic_summary()`. The aggregation function and scope for each field:
+#'
+#' | Field | Source column | Aggregation | Scope | Chart types |
+#' |---|---|---|---|---|
+#' | `laengste_loeb` | `longest.run` | `max()` per phase | per-phase | all |
+#' | `laengste_loeb_max` | `longest.run.max` | `max()` global | global | all |
+#' | `antal_kryds` | `n.crossings` | `max()` per phase | per-phase | all |
+#' | `antal_kryds_min` | `n.crossings.min` | `max()` global | global | all |
+#' | `loebelaengde_signal` | `runs.signal` | `any()` per phase | per-phase | all |
+#' | `sigma_signal` | `sigma.signal` | `any()` per phase | per-phase | non-run charts |
+#' | `centerlinje` | `cl` | first row per phase | per-phase | all |
+#' | `nedre_kontrolgraense` | `lcl` | first row per phase | per-phase | non-run (constant limits) |
+#' | `oevre_kontrolgraense` | `ucl` | first row per phase | per-phase | non-run (constant limits) |
+#' | `nedre_kontrolgraense_min/max` | `lcl` | `min()`/`max()` per phase | per-phase | non-run (variable limits) |
+#' | `oevre_kontrolgraense_min/max` | `ucl` | `min()`/`max()` per phase | per-phase | non-run (variable limits) |
+#' | `kontrolgraenser_konstante` | `lcl`+`ucl` | all-equal check per phase | per-phase | non-run charts |
+#' | `antal_observationer` | `n.obs` | first row per phase | per-phase | all |
+#' | `anvendelige_observationer` | `n.useful` | first row per phase | per-phase | all |
+#' | `antal_outliers` | `sigma.signal` | `sum()` per phase | per-phase | non-run charts |
+#' | `forventede_outliers` | (constant 0) | literal 0 | per-phase | non-run charts |
+#'
+#' Notes:
+#' - `longest.run` is stored by qicharts2 as a per-phase constant (all rows within
+#'   a phase hold the same value). `max()` over those rows is equivalent to the value.
+#' - `sigma.signal` is per-row (varies within a phase). `any()` aggregation is correct.
+#' - Limit columns use scalar form when limits are constant within all phases (e.g.
+#'   I-chart, C-chart). Variable-denominator charts (P, U) use min/max column pairs.
+#' - Run charts (`chart_type = "run"`) produce no `sigma_signal`, `lcl`/`ucl`, or
+#'   outlier columns in `result$summary`.
+#'
 #' **Chart Types:**
 #' - **run**: Run chart (no control limits)
 #' - **i**: I-chart (individuals)
