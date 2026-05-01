@@ -21,20 +21,17 @@ test_that("bfh_export_pdf requires Quarto", {
     bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
   )
 
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # Should error if Quarto not available
   expect_error(
     bfh_export_pdf(result, temp_file),
     "Quarto CLI not found"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_pdf validates input class", {
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # Invalid input: not a bfh_qic_result
   expect_error(
@@ -46,9 +43,6 @@ test_that("bfh_export_pdf validates input class", {
     bfh_export_pdf(data.frame(x = 1:10), temp_file),
     "x must be a bfh_qic_result object"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_pdf validates output path", {
@@ -90,16 +84,13 @@ test_that("bfh_export_pdf validates metadata", {
     bfh_qic(data, month, infections, chart_type = "i")
   )
 
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # metadata must be a list
   expect_error(
     bfh_export_pdf(result, temp_file, metadata = "not a list"),
     "metadata must be a list"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_pdf creates PDF file", {
@@ -734,7 +725,7 @@ test_that("bfh_export_pdf validates custom template_path", {
     bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
   )
 
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # Non-existent custom template should error
   expect_error(
@@ -747,9 +738,6 @@ test_that("bfh_export_pdf validates custom template_path", {
     bfh_export_pdf(result, temp_file, template_path = 123),
     "template_path must be a single character string"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_pdf passes date metadata to template", {
@@ -980,15 +968,12 @@ test_that("bfh_export_pdf validates input structure", {
   )
   class(bad_result) <- "bfh_qic_result"
 
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # Should fail validation or during ggsave
   expect_error(
     bfh_export_pdf(bad_result, temp_file)
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_compile_typst reports Quarto compilation failures", {
@@ -997,23 +982,19 @@ test_that("bfh_compile_typst reports Quarto compilation failures", {
   skip_on_cran()
 
   # Create invalid Typst file that will fail compilation
-  temp_typst <- tempfile(fileext = ".typ")
+  temp_typst <- withr::local_tempfile(fileext = ".typ")
   writeLines(c(
     "#let invalid_syntax = ", # Incomplete statement
     "This will cause a Typst error"
   ), temp_typst)
 
-  temp_pdf <- tempfile(fileext = ".pdf")
+  temp_pdf <- withr::local_tempfile(fileext = ".pdf")
 
   # Should report compilation failure with exit code or missing PDF
   expect_error(
     BFHcharts:::bfh_compile_typst(temp_typst, temp_pdf),
     "compilation failed|PDF compilation failed"
   )
-
-  # Cleanup
-  unlink(temp_typst)
-  if (file.exists(temp_pdf)) unlink(temp_pdf)
 })
 
 # ===========================================================================
@@ -1871,13 +1852,12 @@ test_that("bfh_export_pdf strict_baseline=FALSE tillader short freeze (warning-o
     bfh_qic(data, x = month, y = value, freeze = 5L, chart_type = "i")
   )
 
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
   expect_no_error(
     suppressWarnings(
       bfh_export_pdf(short_freeze_chart, temp_file, strict_baseline = FALSE)
     )
   )
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_pdf strict-mode afviser fase med faerre end MIN_BASELINE_N punkter", {
@@ -1938,7 +1918,7 @@ test_that("bfh_export_pdf accepts custom analysis length parameters", {
     bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
   )
 
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # Should not error with custom analysis length parameters
   expect_no_error(
@@ -1951,6 +1931,4 @@ test_that("bfh_export_pdf accepts custom analysis length parameters", {
       analysis_max_chars = 500
     )
   )
-
-  if (file.exists(temp_file)) unlink(temp_file)
 })

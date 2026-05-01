@@ -48,6 +48,28 @@ options(OutDec = ".")
 # Collation: "C" sikrer stabil sort-rækkefølge på tværs af miljøer
 Sys.setlocale("LC_COLLATE", "C")
 
+# Graphics device: open a persistent null device for the test session so that
+# ggplot2/grid rendering (including internal ggplot_gtable calls inside bfh_qic)
+# never triggers creation of Rplots.pdf in tests/testthat/.
+# withr::defer(expr, envir = teardown_env()) runs cleanup after all tests.
+local({
+  tmp <- tempfile(fileext = ".pdf")
+  tryCatch(
+    {
+      grDevices::pdf(tmp, width = 7, height = 5)
+      dev_id <- grDevices::dev.cur()
+      withr::defer(
+        {
+          tryCatch(grDevices::dev.off(dev_id), error = function(e) NULL)
+          unlink(tmp)
+        },
+        envir = teardown_env()
+      )
+    },
+    error = function(e) NULL
+  )
+})
+
 # Registrer proprietære fonts som aliaser i PostScript- og PDF-font-databaser.
 # BFHtheme bruger Mari-fonts der eksisterer som screen-fonts men ikke er
 # registreret i R's interne font-databaser. Manglende registrering giver

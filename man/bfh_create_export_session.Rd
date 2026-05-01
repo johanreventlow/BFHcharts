@@ -60,14 +60,20 @@ for (dept in departments) {
 }
 \section{Security}{
 
-\code{inject_assets} is invoked with full filesystem access in the
-template directory and runs whatever R code the callback contains.
+\strong{\code{inject_assets} is full code execution.} The supplied function
+runs with the same privileges as the calling R session, with full file-system
+and network access. It MUST NOT come from user input (Shiny inputs, REST API
+parameters, configuration files of unknown provenance).
 \strong{Treat it as trusted-code-only}: pass only code-reviewed,
-organizationally controlled callbacks. Never forward user-supplied
-input (Shiny inputs, query parameters, untrusted uploads) to this
-parameter -- the same trust contract as \code{source()} applies. See
-\code{\link{bfh_export_pdf}} for the full rationale and the parallel
-warning for \code{template_path}.
+organizationally controlled callbacks.
+
+A runtime heuristic warns when \code{inject_assets} originates from
+\code{.GlobalEnv} or a direct child environment. Suppress with
+\code{options(BFHcharts.allow_globalenv_inject = TRUE)} in development.
+
+See \code{\link{bfh_export_pdf}} for the full security rationale,
+acceptable/unacceptable sources, and the parallel note for
+\code{template_path}.
 
 \strong{Recommended: companion package for proprietary branding.}
 Organizations that need consistent proprietary branding across batch

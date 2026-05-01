@@ -1,3 +1,201 @@
+# BFHcharts 0.13.0
+
+## Breaking changes
+
+* **`bfh_generate_analysis(use_ai = TRUE)` kræver nu `data_consent = "explicit"`.**
+  Alle kald med `use_ai = TRUE` uden eksplicit samtykke fejler nu med en
+  informativ fejlbesked der refererer GDPR/HIPAA-konteksten. Formålet er at
+  sikre at klinikdata ikke sendes til et eksternt AI-system uden at kalderen
+  eksplicit erkender det.
+
+  Migration:
+  ```r
+  # Før:
+  bfh_generate_analysis(result, use_ai = TRUE)
+
+  # Efter:
+  bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
+  ```
+
+  `use_ai = FALSE` (standard) er uændret og påvirkes ikke.
+
+* **`bfh_generate_analysis()`: `use_rag` defaulter nu til `FALSE`.**
+  Tidligere var `use_rag = TRUE` hardcoded i kaldet til
+  `BFHllm::bfhllm_spc_suggestion()`. Det er nu ændret til `FALSE` som
+  privacy-bevarende standard. RAG (retrieval-augmented generation) lagrer
+  forespørgselsdata i et vektor-store — en separat compliance-overvejelse fra
+  det engangs-LLM-kald. Kald med `use_rag = TRUE` bevarer den tidligere adfærd.
+
+  Migration for kald der ønsker RAG:
+  ```r
+  bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit",
+                        use_rag = TRUE)
+  ```
+
+* **PDF asset-kontrakt dokumenteret og håndhævet (ADR-001, Option A).** Den
+  publicerede pakke garanterer nu eksplicit at `bfh_export_pdf()` producerer en
+  gyldig PDF med system-tilgængelige fallback-fonts (Roboto, Arial, Helvetica,
+  sans-serif) — uden at kræve companion-pakken `BFHchartsAssets` eller
+  proprietære Mari-fonts. Font-chain i production-template er uændret
+  `("Mari", "Roboto", "Arial", "Helvetica", "sans-serif")`; Mari er stadig
+  første prioritet når companion-pakken injecter assets via `inject_assets`.
+  Brugere der allerede bruger `inject_assets = BFHchartsAssets::inject_bfh_assets`
+  er upåvirkede. Brugere der ikke bruger companion-pakken får nu konsistent
+  fallback-rendering i stedet for runtime-fejl ved manglende Mari. (#TBD)
+
+## Nye features
+
+* **`bfh_compile_typst()` auto-detekterer staged fonts/** Funktionen registrerer
+  automatisk en `fonts/`-undermappe i det stagede template-tempdir og videregiver
+  den som `--font-path` til Typst-compileren — forudsat at `font_path`-argumentet
+  ikke er sat eksplicit. Companion-injectede fonts (fx Mari via `inject_assets`)
+  opdages dermed uden at kalleren behøver at angive `font_path`. Eksplicit
+  `font_path`-argument har stadig forrang. (#TBD)
+
+* **Runtime-guard for `inject_assets`:** `bfh_export_pdf()` og
+  `bfh_create_export_session()` advarer nu hvis `inject_assets`-funktionen
+  stammer fra `.GlobalEnv` eller et direkte child-environment. Dette er et
+  signal om mulig utilsigtet eksponering (fx Shiny-binding af en
+  top-level-funktion til parameteren). Advarslen kan undertrykkes med
+  `options(BFHcharts.allow_globalenv_inject = TRUE)` i udviklingsflows.
+
+* **Struktureret AI-egress audit-log:** Erstattet `message("[BFHcharts/AI] ...")`
+  med `.emit_audit_event()` der producerer et struktureret JSON-objekt. Skrives
+  til `getOption("BFHcharts.audit_log")` som JSON-line (append) hvis optionen
+  er sat; ellers via `message()` med prefix `[BFHcharts/audit]`. Indeholder:
+  timestamp, event-type, package, target-funktion, felter sendt, context-nøgler,
+  `use_rag`-værdi, hostname og bruger.
+
+* **`bfh_generate_analysis()`: ny `data_consent`-parameter** (se Breaking
+  changes) og ny `use_rag`-parameter (se Breaking changes).
+
+* **Opdateret security-dokumentation:** `@section Security:` i
+  `bfh_export_pdf()` og `bfh_create_export_session()` udvider nu med
+  eksplicitte acceptable/uacceptable kilder for `inject_assets`, inkl. RCE-
+  advarsel. README-sektionen "Branding for Organizational Deployments" har fået
+  en prominent security-note.
+
+## Bug fixes
+
+* **`result$summary$sigma_signal` rapporterer nu korrekt `TRUE` for en fase
+  når *et vilkårligt punkt* i fasen er et outlier.** Tidligere tog
+  `format_qic_summary()` `sigma.signal`-værdien fra den *første* rad i fasen
+  frem for at aggregere med `any()` over alle rader. For faser hvor det
+  første punkt ikke er et outlier men et eller flere efterfølgende er det,
+  ville `sigma_signal` fejlagtigt vise `FALSE`. `runs.signal` var allerede
+  korrekt aggregeret med `any()` — `sigma.signal` er nu tilsvarende rettet.
+  Downstream-pakker (fx biSPCharts) der viser `result$summary` eller auto-
+  genereret analysetekst baseret på `sigma_signal` vil se rettede værdier.
+  (OpenSpec 2026-05-01-verify-anhoej-summary-vs-qic-data-consistency, ADR-002)
+
+## Interne ændringer
+
+* **ADR-002 oprettet** (`inst/adr/ADR-002-anhoej-summary-source.md`):
+  dokumenterer Anhoej-statistik-proveniens, verifikation af konsistens
+  mellem `result$summary` og `result$qic_data`, og baggrund for rettelsen
+  af `sigma.signal`-aggregeringen.
+* **22 nye konsistenstests** (`tests/testthat/test-summary-anhoej-consistency.R`):
+  asserterer at hvert Anhoej-felt i `result$summary` matcher aggregeringen
+  af det tilsvarende felt i `result$qic_data` per fase — for alle chart-typer
+  og edge cases (enkelt fase, fase med faa punkter, exclude).
+
+# BFHcharts 0.12.2
+
+## Interne ændringer
+
+* **Test-isolation og graphics-device cleanup.** `tests/testthat/setup.R`
+  åbner nu en persistent PDF-device via `teardown_env()` så `bfh_qic()`'s
+  interne `ggplot_gtable()`-kald aldrig trigger R's default `Rplots.pdf`.
+  Ny `helper-graphics.R` eksponerer `with_clean_graphics()` wrapper til
+  device-tunge tests. Print/plot-tests i `test-bfh_qic_result.R` bruger
+  wrapperen eksplicit.
+
+* **Withr-konvertering af test-cleanup.** `if (file.exists(x)) unlink(x)`
+  anti-mønsteret erstattet med `withr::local_tempfile()` i
+  `test-export_pdf.R` (6 steder), `test-security-export-pdf.R` (4 steder),
+  `test-export_png.R` (4 steder), `test-export-session.R` (1 sted).
+  Cleanup sker nu garanteret selv ved test-fejl.
+
+* **Shell-injection test assertion.** `test-quarto-isolation.R` asserter nu
+  eksplicit at ingen `output*`-mappe oprettes ved shell-injection-tests
+  (validering sker foer `dir.create()`).
+
+* **`dev/clean_workdir.R`.** Nyt R-script der idempotent fjerner kendte
+  build- og test-artefakter: `BFHcharts.Rcheck/`, tarballs, `doc/`, `Meta/`,
+  `Rplots.pdf` (alle niveauer), `tests/testthat/_problems/`.
+
+* **`.gitignore` og `.Rbuildignore` udvidet** med patterns for
+  `tests/testthat/_problems/` og `tests/testthat/output; rm -rf `.
+
+* **CI-render-pipeline styrket** (`strengthen-ci-render-pipeline`):
+  - Quarto installeres nu i `R-CMD-check.yaml` (pre-release channel, Typst 0.13+
+    krævet for `--ignore-system-fonts`). Render-afhængige tests der hidtil
+    skippede med `skip_if_no_quarto()` eksekveres nu i hovedjobbet.
+  - `pdf-smoke.yaml` anvender nu production-template
+    (`inst/templates/typst/bfh-template/bfh-template.typ`) fremfor
+    CI-only test-template. `continue-on-error: true` på render-step
+    midlertidigt til `fix-pdf-template-asset-contract` er merget.
+  - Ny workflow `git-archive-render.yaml`: installerer pakken fra
+    `git archive HEAD`-output og renderer smoke-tests. Opdager
+    render-afhængigheder af untracked filer tidligt.
+  - `tests/smoke/render_smoke.R` understøtter nu
+    `BFHCHARTS_SMOKE_USE_PRODUCTION_TEMPLATE`-env-var til eksplicit
+    production-template-mode på CI.
+  - `CONTRIBUTING.md` oprettet med CI Pipeline-sektion, beskrivelse af
+    PR-blocking jobs og manuelt trin til branch protection-konfiguration
+    i GitHub UI.
+  - README: tilføjet `pdf-smoke`-statusbadge.
+
+* **Label-placement monolith opdelt i 3-lags arkitektur.**
+  `place_two_labels_npc()` (520L) er reduceret til en ~90L orkestrator
+  ved at ekstrahere tre rene hjælpefunktioner:
+  `.validate_placement_inputs()`, `.resolve_placement_config()` og
+  `.compute_placement_strategy()`. Den rene strategi-funktion har ingen
+  device-kald og kan testes uden et grafik-device.
+
+* **Deterministisk device-håndtering i `add_right_labels_marquee()`.**
+  Tre separate `on.exit`-blokke for viewport-device er konsolideret til
+  én. Redundant normal-path cleanup (L613-619) fjernet.
+
+* **`with_temporary_device()` tilføjet** (`utils_panel_measurement.R`):
+  ren wrapper der åbner Cairo PDF-device, kører kode og lukker
+  deterministisk via `on.exit` uanset fejl.
+
+* **`clamp01()` slettet** — aldrig brugt i produktionskode.
+
+* **`height_safety_margin` fallback** alignet med konfigurationsværdi
+  (begge nu 1.0, ingen ekstra margin ved korrekte panel-maalinger).
+
+* 27 nye kontrakt-tests dækker placement-strategi-laget isoleret
+  (ingen device-krav). Se `tests/testthat/test-placement-strategy-contract.R`.
+
+* **Output-stier med spaces/parens/brackets virker nu også i praksis.**
+  v0.12.0 relaxede path-validatoren til at tillade hospital-typiske filnavne
+  (`rapport (final).pdf`, `Q1 [2026].pdf`, `Indikator & resultat.pdf`), men
+  `bfh_compile_typst()` sendte stadig stier ukvotered til `system2()`.
+  `system2(stdout = TRUE, stderr = TRUE)` invoker `/bin/sh` på macOS/Linux
+  for stream-capture; parens og brackets i argumenter udløste
+  "syntax error near unexpected token '('" og PDF'en blev aldrig skabt.
+  Rettes ved ny intern `.safe_system2_capture()`-wrapper der anvender
+  `shQuote()` på path-argumenter (men ikke flag-argumenter som
+  `--ignore-system-fonts`). `$`-tegn i filnavne (fx `data_$HOME_test.pdf`)
+  behandles nu som literals; `shQuote()` single-quote-wrapper forhindrer
+  shell-variable-expansion. Verificeret på macOS med live Quarto/Typst.
+  Windows-adfærd for UNC-stier og paths >260 tegn er ikke empirisk testet
+  i nuværende CI-setup.
+
+* **ADR-001 oprettet** (`inst/adr/ADR-001-pdf-asset-policy.md`): dokumenterer
+  valg af Option A (open-fallback default) og konsekvenser for biSPCharts-deploy.
+* **CI smoke-test udvidet**: `pdf-smoke.yaml` kører nu også
+  `test-production-template-renders.R` via `BFHCHARTS_TEST_RENDER=true` for at
+  validere production-template på hver PR. Testen skipper automatisk når
+  `images/`-mappen mangler (known gap, se ADR-001).
+* **README**: ny sektion "PDF Asset Policy" dokumenterer pakke-kontrakten,
+  companion-mønsteret og en verificeringskommando.
+
+* Ny `R/utils_audit.R` med `.emit_audit_event()` og base-R JSON-serialisering
+  (ingen jsonlite-afhængighed).
+
 # BFHcharts 0.12.1
 
 ## Bug fixes

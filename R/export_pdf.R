@@ -35,10 +35,18 @@
 #' @param use_ai Logical. Controls AI usage for auto-analysis:
 #'   \itemize{
 #'     \item \code{FALSE} (default): Use standard texts only - no external data sharing
-#'     \item \code{TRUE}: Use AI via BFHllm (requires BFHllm installed; error if not)
+#'     \item \code{TRUE}: Use AI via BFHllm (requires BFHllm installed and \code{data_consent = "explicit"}; error if not satisfied)
 #'   }
 #'   Only used when \code{auto_analysis = TRUE}. See \code{bfh_generate_analysis()}
 #'   for security policy details.
+#' @param data_consent Character. Required when \code{use_ai = TRUE} and
+#'   \code{auto_analysis = TRUE}. Must be \code{"explicit"} to acknowledge that
+#'   clinical data is sent to \code{BFHllm}. Passed through to
+#'   \code{bfh_generate_analysis()}. Ignored when \code{use_ai = FALSE}.
+#'   See \code{\link{bfh_generate_analysis}} for full GDPR/HIPAA context.
+#' @param use_rag Logical. Controls RAG for AI analysis. Default \code{FALSE}
+#'   (privacy-preserving). Only used when \code{auto_analysis = TRUE} and
+#'   \code{use_ai = TRUE}. See \code{\link{bfh_generate_analysis}}.
 #' @param analysis_min_chars Minimum characters for AI-generated analysis. Default 300.
 #'   Only used when \code{auto_analysis = TRUE}.
 #' @param analysis_max_chars Maximum characters for AI-generated analysis. Default 375.
@@ -128,25 +136,42 @@
 #' - Interval labels adapt to data frequency (month, week, day, etc.)
 #'
 #' @section Security:
-#' Both \code{inject_assets} and \code{template_path} are designed for
-#' advanced use cases (proprietary fonts, organization-specific templates)
-#' and \strong{must be treated as trusted-code-only}:
+#' \strong{\code{inject_assets} is full code execution.} The supplied function
+#' runs with the same privileges as the calling R session, with full file-system
+#' and network access. It MUST NOT come from user input (Shiny inputs, REST API
+#' parameters, configuration files of unknown provenance).
+#'
+#' Acceptable sources:
 #' \itemize{
-#'   \item \code{inject_assets} is invoked with full filesystem access in
-#'     the template directory. Whatever R code the callback contains runs
-#'     with the same privileges as the calling process -- equivalent to
-#'     sourcing arbitrary R from disk.
-#'   \item \code{template_path} is compiled by the Typst binary. A custom
-#'     template can read and write arbitrary paths during compilation.
+#'   \item A function exported from a controlled companion package installed via
+#'     \code{pak::pkg_install("private/repo")}.
+#'   \item A function defined in your application's source code, version-controlled.
 #' }
-#' Treat both parameters with the same trust contract you would apply to
-#' \code{source()}: pass only code-reviewed, organizationally controlled
-#' values. \strong{Never} forward user-supplied input (Shiny inputs,
+#'
+#' Unacceptable sources:
+#' \itemize{
+#'   \item \code{parse(text = input$user_code)}
+#'   \item A function loaded from an unverified URL
+#'   \item A function deserialized from an untrusted RDS file
+#' }
+#'
+#' When in doubt, do not pass \code{inject_assets}.
+#'
+#' \code{template_path} is compiled by the Typst binary. A custom
+#' template can read and write arbitrary paths during compilation -- treat
+#' it with the same trust contract as \code{source()}.
+#'
+#' \strong{Never} forward user-supplied input (Shiny inputs,
 #' query parameters, untrusted uploads) to either parameter -- doing so
 #' creates a privilege-escalation vector. If your application surface
 #' needs to expose template customization to end users, validate against
 #' a fixed allow-list of approved templates and callbacks before invoking
 #' \code{bfh_export_pdf()}.
+#'
+#' A runtime heuristic warns when \code{inject_assets} originates from
+#' \code{.GlobalEnv} or a direct child environment (typical of
+#' accidental Shiny exposure). Suppress with
+#' \code{options(BFHcharts.allow_globalenv_inject = TRUE)} in development.
 #'
 #' The same trust requirement applies to \code{inject_assets} when passed
 #' to \code{\link{bfh_create_export_session}()}.
@@ -233,6 +258,8 @@ bfh_export_pdf <- function(x,
                            template_path = NULL,
                            auto_analysis = FALSE,
                            use_ai = FALSE,
+                           data_consent = NULL,
+                           use_rag = FALSE,
                            analysis_min_chars = 300,
                            analysis_max_chars = 375,
                            dpi = 150,
@@ -249,6 +276,9 @@ bfh_export_pdf <- function(x,
   validate_bfh_export_pdf_inputs(
     x, output, metadata, dpi, font_path, inject_assets, batch_session, template_path
   )
+
+  # ---- 1a. Runtime security guard for inject_assets --------------------------
+  .validate_inject_assets(inject_assets)
 
   # ---- 1b. Resolv strict_baseline + valider strict-mode --------------------
   if (!strict_baseline_supplied) {
@@ -267,7 +297,8 @@ bfh_export_pdf <- function(x,
 
   # ---- 2. Metadata (auto-analysis + auto-details) ----------------------------
   metadata <- prepare_export_metadata(
-    x, metadata, auto_analysis, use_ai, analysis_min_chars, analysis_max_chars
+    x, metadata, auto_analysis, use_ai, analysis_min_chars, analysis_max_chars,
+    data_consent = data_consent, use_rag = use_rag
   )
 
   # ---- 3. Security + fil-validering af custom template -----------------------
@@ -438,6 +469,49 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
   )
 
   return(plot_with_labels)
+}
+
+
+# ============================================================================
+# INJECT_ASSETS RUNTIME GUARD
+# ============================================================================
+
+# Validate inject_assets argument: must be NULL or a function.
+# Warns (does not error) when the function environment indicates it originates
+# from .GlobalEnv or a direct child, which signals likely accidental exposure
+# (e.g., a Shiny reactive binding a top-level helper to inject_assets).
+# Suppress with options(BFHcharts.allow_globalenv_inject = TRUE) in dev flows.
+#
+# @param fn The inject_assets argument (NULL or function).
+# @return fn invisibly.
+# @noRd
+.validate_inject_assets <- function(fn) {
+  if (is.null(fn)) {
+    return(invisible(NULL))
+  }
+  if (!is.function(fn)) {
+    stop("inject_assets must be a function or NULL", call. = FALSE)
+  }
+
+  if (!isTRUE(getOption(BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT, default = FALSE))) {
+    fn_env <- environment(fn)
+    # Heuristic: warn if function's top-level enclosure is .GlobalEnv.
+    # Functions from a package namespace have topenv() == that namespace.
+    if (!is.null(fn_env) &&
+      (identical(fn_env, globalenv()) ||
+        identical(topenv(fn_env), globalenv()))) {
+      warning(
+        "inject_assets supplied from global environment. ",
+        "Production usage should pass functions from a controlled namespace ",
+        "(e.g., MyOrgAssets::inject_my_assets). ",
+        "If this is intentional in development, suppress with ",
+        "options(BFHcharts.allow_globalenv_inject = TRUE).",
+        call. = FALSE
+      )
+    }
+  }
+
+  invisible(fn)
 }
 
 

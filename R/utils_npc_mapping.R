@@ -61,10 +61,7 @@
 # - estimate_label_height_npc()
 # - place_two_labels_npc()
 # - propose_single_label()
-# - clamp01()
-#
-# NOTE: Cache management functions removed in v0.4.1 (see GitHub issue #42)
-# Caching was disabled by default and added complexity without measurable benefit.
+# - clamp_to_bounds()
 #
 # ==============================================================================
 
@@ -72,30 +69,6 @@
 # ==============================================================================
 # HELPER FUNCTIONS
 # ==============================================================================
-
-#' Clamp vaerdi til interval `[0, 1]`
-#'
-#' @param x Numerisk vaerdi eller vektor
-#' @return Vaerdi begraenset til `[0, 1]`
-#' @keywords internal
-#' @noRd
-clamp01 <- function(x) {
-  # Input validation
-  if (is.null(x) || length(x) == 0) {
-    stop("clamp01: x m\u00e5 ikke v\u00e6re NULL eller tom")
-  }
-
-  if (!is.numeric(x)) {
-    stop("clamp01: x skal v\u00e6re numerisk, modtog: ", class(x)[1])
-  }
-
-  if (any(!is.finite(x[!is.na(x)]))) {
-    warning("clamp01: Ikke-finite v\u00e6rdier (Inf/-Inf) detekteret")
-    x[!is.finite(x)] <- NA_real_
-  }
-
-  pmax(0, pmin(1, x))
-}
 
 #' Clamp vaerdi til custom bounds interval
 #'

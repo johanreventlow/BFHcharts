@@ -44,6 +44,9 @@ inst/templates/typst/bfh-template/fonts/Mari*.woff2
 .claude/settings.local.json
 # Test artifacts
 tests/testthat/Rplots.pdf
+tests/testthat/_problems/
+# Shell-injection test directory (deliberate malformed name from security tests)
+tests/testthat/output; rm -rf
 # Log files
 *.log
 # Demo output

@@ -1,0 +1,108 @@
+# git-archive-render: verify package installs and renders from tracked-source only.
+#
+# Formal:
+#   1. Archives tracked source via `git archive HEAD`
+#   2. Extracts to a clean directory (no working-tree untracked files)
+#   3. Installs the extracted package
+#   4. Runs tests/smoke/render_smoke.R against the production template
+#
+# Rationale (openspec: strengthen-ci-render-pipeline task 5):
+#   Prevents regressions where a PR passes CI by relying on locally untracked files
+#   (fonts, images, template assets). git archive exports only git-tracked content,
+#   so any rendering that depends on untracked files fails here.
+#
+# Security: uses only safe inputs (github.run_id as integer, secrets.GITHUB_TOKEN).
+# No untrusted user-input forwarded to run-steps.
+
+name: git-archive-render
+
+on:
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  git-archive-render:
+    runs-on: ubuntu-latest
+    name: git-archive-render (ubuntu-latest)
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # Use CI test-template (DejaVu fonts). Mari is proprietary and only
+      # available via BFHchartsAssets companion package; production-template
+      # render is not validated on CI. This smoke still verifies tracked-source
+      # install + Quarto pipeline integrity.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system fonts (DejaVu as Mari substitute)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            fonts-dejavu \
+            fonts-liberation \
+            fonts-liberation2 \
+            fonts-noto \
+            fonts-noto-core \
+            fonts-roboto \
+            fontconfig
+          fc-cache -f -v
+        shell: bash
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: "pre-release"
+
+      - name: Verify Quarto installation
+        run: quarto --version
+        shell: bash
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "release"
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          # Install deps from working tree DESCRIPTION before switching to archive
+          extra-packages: any::pdftools any::pkgload any::withr local::.
+          needs: check
+
+      - name: Archive tracked source
+        run: |
+          git archive HEAD -o /tmp/bfhcharts-archive.tar.gz
+          mkdir -p /tmp/bfhcharts-clean
+          tar xf /tmp/bfhcharts-archive.tar.gz -C /tmp/bfhcharts-clean
+          echo "Archive contents (top-level):"
+          ls /tmp/bfhcharts-clean
+        shell: bash
+
+      - name: Install package from archive (not working tree)
+        run: |
+          R CMD INSTALL /tmp/bfhcharts-clean
+        shell: bash
+
+      - name: Run smoke render from archive
+        run: |
+          cd /tmp/bfhcharts-clean
+          Rscript tests/smoke/render_smoke.R
+        shell: bash
+        env:
+          BFHCHARTS_SMOKE_FONT_PATH: /usr/share/fonts
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-archive-render-failures-${{ github.run_id }}
+          path: |
+            /tmp/bfhcharts_smoke_*.pdf
+            /tmp/bfhcharts-clean/**/*.typ
+            /tmp/bfhcharts-clean/**/*.tex.log
+          retention-days: 7
+          if-no-files-found: warn

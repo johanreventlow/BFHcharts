@@ -103,7 +103,7 @@ test_that("bfh_export_png works in pipe workflow", {
 })
 
 test_that("bfh_export_png validates input class", {
-  temp_file <- tempfile(fileext = ".png")
+  temp_file <- withr::local_tempfile(fileext = ".png")
 
   # Invalid input: not a bfh_qic_result
   expect_error(
@@ -131,9 +131,6 @@ test_that("bfh_export_png validates input class", {
     bfh_export_png(plot, temp_file),
     "x must be a bfh_qic_result object"
   )
-
-  # Cleanup (in case file was created)
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_png validates output path", {
@@ -181,7 +178,7 @@ test_that("bfh_export_png validates dimensions", {
     bfh_qic(data, month, infections, chart_type = "run")
   )
 
-  temp_file <- tempfile(fileext = ".png")
+  temp_file <- withr::local_tempfile(fileext = ".png")
 
   # Negative width
   expect_error(
@@ -212,9 +209,6 @@ test_that("bfh_export_png validates dimensions", {
     bfh_export_png(result, temp_file, width_mm = c(100, 200)),
     "width_mm must be a positive number"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_png validates DPI", {
@@ -227,7 +221,7 @@ test_that("bfh_export_png validates DPI", {
     bfh_qic(data, month, infections, chart_type = "run")
   )
 
-  temp_file <- tempfile(fileext = ".png")
+  temp_file <- withr::local_tempfile(fileext = ".png")
 
   # Negative DPI
   expect_error(
@@ -246,9 +240,6 @@ test_that("bfh_export_png validates DPI", {
     bfh_export_png(result, temp_file, dpi = "96"),
     "dpi must be a positive number"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_png warns on unusual dimensions", {
@@ -261,7 +252,7 @@ test_that("bfh_export_png warns on unusual dimensions", {
     bfh_qic(data, month, infections, chart_type = "run")
   )
 
-  temp_file <- tempfile(fileext = ".png")
+  temp_file <- withr::local_tempfile(fileext = ".png")
 
   # Very large dimensions (> 50 inches / ~1270mm) trigger ggplot2 error.
   # Note: ggplot2 throws an error for dimensions > 50 inches, so we can't
@@ -273,9 +264,6 @@ test_that("bfh_export_png warns on unusual dimensions", {
   expect_error(
     bfh_export_png(result, temp_file, width_mm = 3000, height_mm = 2500)
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_png warns on unusual DPI", {
@@ -288,7 +276,7 @@ test_that("bfh_export_png warns on unusual DPI", {
     bfh_qic(data, month, infections, chart_type = "run")
   )
 
-  temp_file <- tempfile(fileext = ".png")
+  temp_file <- withr::local_tempfile(fileext = ".png")
 
   # Very low DPI should warn
   expect_warning(
@@ -301,9 +289,6 @@ test_that("bfh_export_png warns on unusual DPI", {
     bfh_export_png(result, temp_file, dpi = 1200),
     "Unusual DPI value"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_png creates directory if needed", {
