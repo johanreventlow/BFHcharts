@@ -41,8 +41,11 @@ test_that("auto-detect: fonts/ dir with .ttf file sets font_path", {
     label = "--font-path flag present in compile args"
   )
   fp_idx <- which(args == "--font-path")
+  # Strip shQuote wrapping (single-quotes on POSIX, double-quotes on Windows)
+  # added by .safe_system2_capture() before path comparison.
+  raw_path <- gsub('^["\']|["\']$', "", args[[fp_idx + 1]])
   expect_equal(
-    normalizePath(args[[fp_idx + 1]], mustWork = FALSE),
+    normalizePath(raw_path, mustWork = FALSE),
     normalizePath(fonts_dir, mustWork = FALSE),
     label = "auto-detected font_path matches staged fonts dir"
   )
@@ -177,8 +180,9 @@ test_that("explicit font_path overrides auto-detect", {
   args <- captured[[1]]
   fp_idx <- which(args == "--font-path")
   expect_true(length(fp_idx) > 0, label = "--font-path present")
+  raw_path <- gsub('^["\']|["\']$', "", args[[fp_idx + 1]])
   expect_equal(
-    normalizePath(args[[fp_idx + 1]], mustWork = FALSE),
+    normalizePath(raw_path, mustWork = FALSE),
     normalizePath(explicit_fonts_dir, mustWork = FALSE),
     label = "explicit font_path used, not auto-detected"
   )
