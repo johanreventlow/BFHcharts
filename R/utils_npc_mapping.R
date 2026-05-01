@@ -61,10 +61,7 @@
 # - estimate_label_height_npc()
 # - place_two_labels_npc()
 # - propose_single_label()
-# - clamp01()
-#
-# NOTE: Cache management functions removed in v0.4.1 (see GitHub issue #42)
-# Caching was disabled by default and added complexity without measurable benefit.
+# - clamp_to_bounds()
 #
 # ==============================================================================
 
