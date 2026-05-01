@@ -143,67 +143,75 @@ test_that("new_bfh_qic_result validates inputs", {
 test_that("print.bfh_qic_result displays plot", {
   skip_if_fonts_unavailable()
 
-  data <- data.frame(
-    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
-    infections = rpois(12, lambda = 15)
-  )
-
-  result_obj <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "run",
-      y_axis_unit = "count"
+  # bfh_qic() triggers ggplot_gtable internally (for label placement),
+  # which can open a default device (Rplots.pdf) if none is open.
+  # Wrap the entire test in with_clean_graphics() to prevent the leak.
+  with_clean_graphics({
+    data <- data.frame(
+      month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+      infections = rpois(12, lambda = 15)
     )
-  )
 
-  plot <- result_obj$plot
+    result_obj <- suppressWarnings(
+      bfh_qic(
+        data = data,
+        x = month,
+        y = infections,
+        chart_type = "run",
+        y_axis_unit = "count"
+      )
+    )
 
-  result <- new_bfh_qic_result(
-    plot = plot,
-    summary = data.frame(centerlinje = 15.2),
-    qic_data = data.frame(x = 1:10, y = 1:10),
-    config = list(chart_type = "run")
-  )
+    plot <- result_obj$plot
 
-  # Print should return invisibly for pipe chaining
-  # (print triggers rendering som kræver fonts — wrap i tryCatch)
-  printed <- tryCatch(print(result), error = function(e) result)
-  expect_identical(printed, result)
+    result <- new_bfh_qic_result(
+      plot = plot,
+      summary = data.frame(centerlinje = 15.2),
+      qic_data = data.frame(x = 1:10, y = 1:10),
+      config = list(chart_type = "run")
+    )
+
+    # Print should return invisibly for pipe chaining.
+    printed <- tryCatch(print(result), error = function(e) result)
+    expect_identical(printed, result)
+  })
 })
 
 test_that("plot.bfh_qic_result displays plot", {
   skip_if_fonts_unavailable()
 
-  data <- data.frame(
-    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
-    infections = rpois(12, lambda = 15)
-  )
-
-  result_obj <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "run",
-      y_axis_unit = "count"
+  # bfh_qic() triggers ggplot_gtable internally (for label placement),
+  # which can open a default device (Rplots.pdf) if none is open.
+  # Wrap the entire test in with_clean_graphics() to prevent the leak.
+  with_clean_graphics({
+    data <- data.frame(
+      month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+      infections = rpois(12, lambda = 15)
     )
-  )
 
-  plot <- result_obj$plot
+    result_obj <- suppressWarnings(
+      bfh_qic(
+        data = data,
+        x = month,
+        y = infections,
+        chart_type = "run",
+        y_axis_unit = "count"
+      )
+    )
 
-  result <- new_bfh_qic_result(
-    plot = plot,
-    summary = data.frame(centerlinje = 15.2),
-    qic_data = data.frame(x = 1:10, y = 1:10),
-    config = list(chart_type = "run")
-  )
+    plot <- result_obj$plot
 
-  # Plot should return the ggplot object invisibly
-  # (rendering kan fejle pga. manglende fonts — test kun return-type)
-  plotted <- tryCatch(plot(result), error = function(e) result$plot)
-  expect_s3_class(plotted, "ggplot")
+    result <- new_bfh_qic_result(
+      plot = plot,
+      summary = data.frame(centerlinje = 15.2),
+      qic_data = data.frame(x = 1:10, y = 1:10),
+      config = list(chart_type = "run")
+    )
+
+    # Plot should return the ggplot object invisibly.
+    plotted <- tryCatch(plot(result), error = function(e) result$plot)
+    expect_s3_class(plotted, "ggplot")
+  })
 })
 
 test_that("accessor functions work", {
