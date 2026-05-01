@@ -395,7 +395,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
     panel_height_inches <- label_height_npc$panel_height_inches
 
     if (is.null(panel_height_inches) || is.na(panel_height_inches)) {
-      warning("panel_height_inches ikke tilgængelig - falder tilbage til NPC-baseret gap")
+      warning("panel_height_inches not available - falling back to NPC-based gap")
       label_height_is_list <- FALSE
       label_height_inches <- NA_real_
     }
@@ -411,16 +411,16 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
       return(invisible(NULL))
     }
     if (!is.numeric(value)) {
-      stop(sprintf("%s skal være numerisk, modtog: %s", name, class(value)[1]))
+      stop(sprintf("%s must be numeric, got: %s", name, class(value)[1]))
     }
     if (length(value) != 1) {
-      stop(sprintf("%s skal være en enkelt værdi, modtog: %d værdier", name, length(value)))
+      stop(sprintf("%s must be a single value, got %d values", name, length(value)))
     }
     if (!allow_na && is.na(value)) {
-      stop(sprintf("%s må ikke være NA", name))
+      stop(sprintf("%s must not be NA", name))
     }
     if (!is.na(value) && !is.finite(value)) {
-      stop(sprintf("%s skal være finite (ikke Inf/-Inf), modtog: %s", name, value))
+      stop(sprintf("%s must be finite (not Inf/-Inf), got: %s", name, value))
     }
     invisible(NULL)
   }
@@ -435,7 +435,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 
   if (!is.null(label_height_npc_value)) {
     if (label_height_npc_value <= 0) {
-      stop("label_height_npc skal være positiv, modtog: ", label_height_npc_value)
+      stop("label_height_npc must be positive, got: ", label_height_npc_value)
     }
     if (label_height_npc_value > 0.5) {
       warning(sprintf(
@@ -446,16 +446,16 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
   }
 
   if (!is.null(pad_top) && (pad_top < 0 || pad_top > 0.2)) {
-    stop("pad_top skal være mellem 0 og 0.2, modtog: ", pad_top)
+    stop("pad_top must be between 0 and 0.2, got: ", pad_top)
   }
   if (!is.null(pad_bot) && (pad_bot < 0 || pad_bot > 0.2)) {
-    stop("pad_bot skal være mellem 0 og 0.2, modtog: ", pad_bot)
+    stop("pad_bot must be between 0 and 0.2, got: ", pad_bot)
   }
 
   priority <- match.arg(priority, choices = c("A", "B"))
 
   if (!is.character(pref_pos) || length(pref_pos) == 0) {
-    stop("pref_pos skal være en character vektor")
+    stop("pref_pos must be a character vector")
   }
   pref_pos <- rep_len(pref_pos, 2)
   if (!all(pref_pos %in% c("under", "over"))) {
@@ -463,7 +463,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
   }
 
   if (!is.logical(debug) || length(debug) != 1) {
-    stop("debug skal være en enkelt logical værdi")
+    stop("debug must be a single logical value")
   }
 
   list(
@@ -604,7 +604,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
   # Tight-lines strategy: flip pref_pos so one is over, one is under
   if (line_gap_npc < min_center_gap * tight_threshold_factor) {
     warnings <- c(warnings, paste0(
-      "Linjer meget tætte (gap=", round(line_gap_npc, 3), ") - bruger over/under strategi"
+      "Lines very close (gap=", round(line_gap_npc, 3), ") - using over/under strategy"
     ))
     if (yA_npc > yB_npc) {
       pref_pos[1] <- "over"
@@ -626,7 +626,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
   # Coincident lines: place one over, one under
   coincident_threshold <- label_height_npc_value * cfg$coincident_threshold_factor
   if (abs(yA_npc - yB_npc) < coincident_threshold) {
-    warnings <- c(warnings, "Sammenfaldende linjer - placerer labels over/under")
+    warnings <- c(warnings, "Coincident lines - placing labels over/under")
     if (pref_pos[1] == "under") {
       yA <- clamp_to_bounds(yA_npc - gap_line - half, low_bound, high_bound)
       yB <- clamp_to_bounds(yA_npc + gap_line + half, low_bound, high_bound)
@@ -715,7 +715,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
     proposed_yB <- if (verifyB$violated) verifyB$y else yB
 
     if (abs(proposed_yA - proposed_yB) < min_center_gap) {
-      warnings <- c(warnings, "Line-gap enforcement ville skabe collision - forsøger multi-level fallback")
+      warnings <- c(warnings, "Line-gap enforcement would cause collision - trying multi-level fallback")
 
       n1 <- .try_niveau_1_gap_reduction(
         proposed_yA, proposed_yB,
@@ -729,7 +729,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
         placement_quality <- n1$placement_quality
         warnings <- c(warnings, n1$warning)
       } else {
-        warnings <- c(warnings, "NIVEAU 1 fejlede - forsøger NIVEAU 2: flip labels til modsatte side")
+        warnings <- c(warnings, "NIVEAU 1 failed - trying NIVEAU 2: flip labels to opposite side")
         n2 <- .try_niveau_2_flip(
           proposed_yA, proposed_yB,
           yA_npc, yB_npc,
@@ -746,7 +746,7 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
           placement_quality <- n2$placement_quality
           warnings <- c(warnings, n2$warning)
         } else {
-          warnings <- c(warnings, "NIVEAU 2 fejlede - bruger NIVEAU 3: shelf placement")
+          warnings <- c(warnings, "NIVEAU 2 failed - using NIVEAU 3: shelf placement")
           n3 <- .apply_niveau_3_shelf(
             proposed_yA, proposed_yB,
             low_bound, high_bound,

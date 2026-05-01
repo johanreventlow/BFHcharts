@@ -79,7 +79,7 @@ test_that("coincident lines produce over/under split", {
     cfg = make_cfg()
   )
   expect_true(result$sideA != result$sideB)
-  expect_true(any(grepl("Sammenfaldende", result$warnings)))
+  expect_true(any(grepl("Coincident", result$warnings)))
 })
 
 test_that("coincident strategy produces non-overlapping labels", {
