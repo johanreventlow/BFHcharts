@@ -2,15 +2,16 @@
 # BFHllm mock-tests for bfh_generate_analysis(use_ai = TRUE)
 # ============================================================================
 #
-# Dækker AI-path der ellers kun rammes når BFHllm er installeret og nås
-# faktisk. Mocker BFHllm::bfhllm_spc_suggestion for at teste success, failure
-# og empty-response scenarier deterministisk.
+# Covers AI-path that is only reached when BFHllm is installed.
+# Mocks BFHllm::bfhllm_spc_suggestion for deterministic testing of
+# success, failure and empty-response scenarios.
+# Also covers data_consent, use_rag, and audit-event contracts.
 #
-# Reference: openspec/changes/strengthen-test-infrastructure (Fase 2 task 12)
-# Spec: test-infrastructure, "External dependencies SHALL be testable in isolation"
+# Reference: openspec/changes/strengthen-test-infrastructure (Phase 2 task 12)
+# Updated: openspec/changes/2026-05-01-harden-inject-assets-trust-contract
 
 # ----------------------------------------------------------------------------
-# Helper: minimal bfh_qic_result til AI-analyse
+# Helper: minimal bfh_qic_result for AI analysis
 # ----------------------------------------------------------------------------
 
 make_test_result_for_analysis <- function() {
@@ -26,10 +27,106 @@ make_test_result_for_analysis <- function() {
 }
 
 # ============================================================================
-# SUCCESS PATH: BFHllm returnerer tekst → bruges direkte
+# data_consent CONTRACT
 # ============================================================================
 
-test_that("bfh_generate_analysis(use_ai=TRUE) bruger BFHllm-output ved success", {
+test_that("bfh_generate_analysis(use_ai=TRUE) errors without data_consent", {
+  skip_if_not_installed("BFHllm")
+
+  result <- make_test_result_for_analysis()
+
+  expect_error(
+    bfh_generate_analysis(result, use_ai = TRUE),
+    regexp = "data_consent"
+  )
+})
+
+test_that("bfh_generate_analysis(use_ai=TRUE) errors when data_consent != 'explicit'", {
+  skip_if_not_installed("BFHllm")
+
+  result <- make_test_result_for_analysis()
+
+  expect_error(
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "deny"),
+    regexp = "data_consent"
+  )
+  expect_error(
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "yes"),
+    regexp = "data_consent"
+  )
+})
+
+test_that("bfh_generate_analysis(use_ai=FALSE) ignores data_consent (no error)", {
+  result <- make_test_result_for_analysis()
+
+  # All data_consent values should be accepted when use_ai = FALSE
+  expect_type(bfh_generate_analysis(result, use_ai = FALSE), "character")
+  expect_type(
+    bfh_generate_analysis(result, use_ai = FALSE, data_consent = NULL),
+    "character"
+  )
+  expect_type(
+    bfh_generate_analysis(result, use_ai = FALSE, data_consent = "deny"),
+    "character"
+  )
+})
+
+# ============================================================================
+# use_rag PARAMETER
+# ============================================================================
+
+test_that("bfh_generate_analysis: default use_rag = FALSE sent to BFHllm", {
+  skip_if_not_installed("BFHllm")
+
+  result <- make_test_result_for_analysis()
+  captured_use_rag <- NULL
+
+  testthat::local_mocked_bindings(
+    bfhllm_spc_suggestion = function(spc_result, context, min_chars, max_chars,
+                                     use_rag = TRUE, timeout = 30, ...) {
+      captured_use_rag <<- use_rag
+      "mocked output"
+    },
+    .package = "BFHllm"
+  )
+
+  suppressMessages(
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
+  )
+
+  expect_false(captured_use_rag, label = "default use_rag must be FALSE")
+})
+
+test_that("bfh_generate_analysis: use_rag = TRUE passed to BFHllm when set", {
+  skip_if_not_installed("BFHllm")
+
+  result <- make_test_result_for_analysis()
+  captured_use_rag <- NULL
+
+  testthat::local_mocked_bindings(
+    bfhllm_spc_suggestion = function(spc_result, context, min_chars, max_chars,
+                                     use_rag = FALSE, timeout = 30, ...) {
+      captured_use_rag <<- use_rag
+      "mocked output"
+    },
+    .package = "BFHllm"
+  )
+
+  suppressMessages(
+    bfh_generate_analysis(
+      result,
+      use_ai = TRUE, data_consent = "explicit", use_rag = TRUE
+    )
+  )
+
+  expect_true(captured_use_rag, label = "explicit use_rag = TRUE must be forwarded")
+})
+
+# ============================================================================
+# SUCCESS PATH: BFHllm returns text -> used directly
+# ============================================================================
+
+test_that("bfh_generate_analysis(use_ai=TRUE) uses BFHllm output on success", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -40,33 +137,37 @@ test_that("bfh_generate_analysis(use_ai=TRUE) bruger BFHllm-output ved success",
     .package = "BFHllm"
   )
 
-  analysis <- bfh_generate_analysis(result, use_ai = TRUE)
+  analysis <- suppressMessages(
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
+  )
 
   expect_equal(analysis, mock_output)
 })
 
-test_that("bfh_generate_analysis(use_ai=TRUE) accepterer lang AI-output", {
+test_that("bfh_generate_analysis(use_ai=TRUE) accepts long AI output", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
-  long_output <- paste(rep("AI analyse sætning. ", 20), collapse = "")
+  long_output <- paste(rep("AI analyse saetning. ", 20), collapse = "")
 
   testthat::local_mocked_bindings(
     bfhllm_spc_suggestion = function(...) long_output,
     .package = "BFHllm"
   )
 
-  analysis <- bfh_generate_analysis(result, use_ai = TRUE)
+  analysis <- suppressMessages(
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
+  )
 
   expect_type(analysis, "character")
   expect_gt(nchar(analysis), 100)
 })
 
 # ============================================================================
-# FAILURE PATH: BFHllm kaster fejl → fall-back til standardtekst
+# FAILURE PATH: BFHllm throws error -> fall back to standard text
 # ============================================================================
 
-test_that("bfh_generate_analysis(use_ai=TRUE) falder tilbage ved BFHllm-fejl", {
+test_that("bfh_generate_analysis(use_ai=TRUE) falls back on BFHllm error", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -78,23 +179,23 @@ test_that("bfh_generate_analysis(use_ai=TRUE) falder tilbage ved BFHllm-fejl", {
     .package = "BFHllm"
   )
 
-  # Warning forventes (tryCatch wrapper omdanner fejl til warning)
-  analysis <- suppressWarnings(
-    bfh_generate_analysis(result, use_ai = TRUE)
-  )
+  # Warning expected (tryCatch wrapper converts error to warning)
+  analysis <- suppressWarnings(suppressMessages(
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
+  ))
 
-  # Fallback-analyse returneres — ikke den fejlede AI-tekst
   expect_type(analysis, "character")
   expect_gt(nchar(analysis), 0)
-  # Fallback-teksten indeholder typisk "stabil" eller "signal"-sprog
   expect_true(
-    grepl("stabil|signal|serie|over|under|m\u00e5l|observation", analysis,
+    grepl(
+      "stabil|signal|serie|over|under|mål|observation",
+      analysis,
       ignore.case = TRUE
     )
   )
 })
 
-test_that("bfh_generate_analysis(use_ai=TRUE) warner ved BFHllm-fejl", {
+test_that("bfh_generate_analysis(use_ai=TRUE) warns on BFHllm error", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -107,16 +208,18 @@ test_that("bfh_generate_analysis(use_ai=TRUE) warner ved BFHllm-fejl", {
   )
 
   expect_warning(
-    bfh_generate_analysis(result, use_ai = TRUE),
+    suppressMessages(
+      bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
+    ),
     "AI analyse fejlede"
   )
 })
 
 # ============================================================================
-# EMPTY RESPONSE: BFHllm returnerer tom streng → fall-back
+# EMPTY RESPONSE: BFHllm returns empty string -> fall back
 # ============================================================================
 
-test_that("bfh_generate_analysis(use_ai=TRUE) falder tilbage ved tom AI-response", {
+test_that("bfh_generate_analysis(use_ai=TRUE) falls back on empty AI response", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -126,13 +229,15 @@ test_that("bfh_generate_analysis(use_ai=TRUE) falder tilbage ved tom AI-response
     .package = "BFHllm"
   )
 
-  analysis <- bfh_generate_analysis(result, use_ai = TRUE)
+  analysis <- suppressMessages(
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
+  )
 
   expect_type(analysis, "character")
-  expect_gt(nchar(analysis), 0) # Fallback-tekst (ikke tom)
+  expect_gt(nchar(analysis), 0)
 })
 
-test_that("bfh_generate_analysis(use_ai=TRUE) falder tilbage ved NULL AI-response", {
+test_that("bfh_generate_analysis(use_ai=TRUE) falls back on NULL AI response", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -142,17 +247,19 @@ test_that("bfh_generate_analysis(use_ai=TRUE) falder tilbage ved NULL AI-respons
     .package = "BFHllm"
   )
 
-  analysis <- bfh_generate_analysis(result, use_ai = TRUE)
+  analysis <- suppressMessages(
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
+  )
 
   expect_type(analysis, "character")
   expect_gt(nchar(analysis), 0)
 })
 
 # ============================================================================
-# ARG-passing: BFHllm kaldes med korrekte parametre
+# ARG-passing: BFHllm called with correct parameters
 # ============================================================================
 
-test_that("bfh_generate_analysis(use_ai=TRUE) sender min_chars/max_chars til BFHllm", {
+test_that("bfh_generate_analysis(use_ai=TRUE) sends min_chars/max_chars to BFHllm", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -160,7 +267,7 @@ test_that("bfh_generate_analysis(use_ai=TRUE) sender min_chars/max_chars til BFH
 
   testthat::local_mocked_bindings(
     bfhllm_spc_suggestion = function(spc_result, context, min_chars, max_chars,
-                                     use_rag = TRUE, timeout = 30, ...) {
+                                     use_rag = FALSE, timeout = 30, ...) {
       captured_args <<- list(
         min_chars = min_chars,
         max_chars = max_chars,
@@ -175,17 +282,22 @@ test_that("bfh_generate_analysis(use_ai=TRUE) sender min_chars/max_chars til BFH
     .package = "BFHllm"
   )
 
-  bfh_generate_analysis(result, use_ai = TRUE, min_chars = 250, max_chars = 400)
+  suppressMessages(
+    bfh_generate_analysis(
+      result,
+      use_ai = TRUE, data_consent = "explicit", min_chars = 250, max_chars = 400
+    )
+  )
 
   expect_equal(captured_args$min_chars, 250)
   expect_equal(captured_args$max_chars, 400)
   expect_equal(captured_args$chart_title, "Test Analysis")
-  expect_equal(captured_args$use_rag, TRUE)
+  expect_false(captured_args$use_rag) # default FALSE
   expect_equal(captured_args$timeout, 30)
   expect_type(captured_args$n_points, "integer")
 })
 
-test_that("bfh_generate_analysis(use_ai=TRUE) sender baseline_analysis til BFHllm", {
+test_that("bfh_generate_analysis(use_ai=TRUE) sends baseline_analysis to BFHllm", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -199,13 +311,15 @@ test_that("bfh_generate_analysis(use_ai=TRUE) sender baseline_analysis til BFHll
     .package = "BFHllm"
   )
 
-  bfh_generate_analysis(result, use_ai = TRUE)
+  suppressMessages(
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
+  )
 
   expect_type(captured_baseline, "character")
   expect_gt(nchar(captured_baseline), 0)
-  # Baseline indeholder fallback-analyse-sprog
   expect_true(
-    grepl("stabil|signal|serie|over|under|m\u00e5l|observation",
+    grepl(
+      "stabil|signal|serie|over|under|mål|observation",
       captured_baseline,
       ignore.case = TRUE
     )
@@ -213,10 +327,10 @@ test_that("bfh_generate_analysis(use_ai=TRUE) sender baseline_analysis til BFHll
 })
 
 # ============================================================================
-# DEFAULT: use_ai = FALSE — aldrig kalder BFHllm uden eksplicit opt-in
+# DEFAULT: use_ai = FALSE -- never calls BFHllm without explicit opt-in
 # ============================================================================
 
-test_that("bfh_generate_analysis(use_ai=FALSE) kalder aldrig BFHllm", {
+test_that("bfh_generate_analysis(use_ai=FALSE) never calls BFHllm", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -230,7 +344,6 @@ test_that("bfh_generate_analysis(use_ai=FALSE) kalder aldrig BFHllm", {
     .package = "BFHllm"
   )
 
-  # Default (use_ai = FALSE) og eksplicit FALSE: begge må ikke kalde BFHllm
   bfh_generate_analysis(result)
   expect_false(ai_called, label = "default use_ai = FALSE must not call BFHllm")
 
@@ -239,10 +352,10 @@ test_that("bfh_generate_analysis(use_ai=FALSE) kalder aldrig BFHllm", {
 })
 
 # ============================================================================
-# AUDIT SIGNAL: AI-egress message emitteres på AI-branch
+# AUDIT EVENT: structured [BFHcharts/audit] emitted on AI branch
 # ============================================================================
 
-test_that("bfh_generate_analysis(use_ai=TRUE) emitter [BFHcharts/AI]-besked", {
+test_that("bfh_generate_analysis(use_ai=TRUE) emits [BFHcharts/audit] message", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -253,12 +366,12 @@ test_that("bfh_generate_analysis(use_ai=TRUE) emitter [BFHcharts/AI]-besked", {
   )
 
   expect_message(
-    bfh_generate_analysis(result, use_ai = TRUE),
-    regexp = "\\[BFHcharts/AI\\]"
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit"),
+    regexp = "\\[BFHcharts/audit\\]"
   )
 })
 
-test_that("bfh_generate_analysis(use_ai=TRUE) audit-besked navngiver felter", {
+test_that("bfh_generate_analysis(use_ai=TRUE) audit event contains required fields", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -270,54 +383,51 @@ test_that("bfh_generate_analysis(use_ai=TRUE) audit-besked navngiver felter", {
   )
 
   withCallingHandlers(
-    bfh_generate_analysis(result, use_ai = TRUE),
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit"),
     message = function(m) {
-      if (grepl("\\[BFHcharts/AI\\]", conditionMessage(m))) {
+      if (grepl("\\[BFHcharts/audit\\]", conditionMessage(m))) {
         captured_msg <<- conditionMessage(m)
         invokeRestart("muffleMessage")
       }
     }
   )
 
-  expect_false(is.null(captured_msg), label = "[BFHcharts/AI]-besked skal emitteres")
-  # spc_result-felter
+  expect_false(is.null(captured_msg), label = "[BFHcharts/audit] message must be emitted")
+  # Required JSON fields
+  expect_match(captured_msg, "ai_egress")
+  expect_match(captured_msg, "BFHcharts")
+  expect_match(captured_msg, "bfhllm_spc_suggestion")
   expect_match(captured_msg, "metadata")
   expect_match(captured_msg, "qic_data")
-  # llm_context-felter
-  expect_match(captured_msg, "data_definition")
-  expect_match(captured_msg, "chart_title")
-  # use_rag
-  expect_match(captured_msg, "use_rag = TRUE")
+  expect_match(captured_msg, "use_rag")
 })
 
-test_that("suppress_ai_audit_message = TRUE undertrykker [BFHcharts/AI]-besked", {
+test_that("bfh_generate_analysis(use_ai=TRUE) audit event records use_rag = false by default", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
+  captured_msg <- NULL
 
   testthat::local_mocked_bindings(
     bfhllm_spc_suggestion = function(...) "AI output",
     .package = "BFHllm"
   )
 
-  withr::with_options(
-    list(BFHcharts.suppress_ai_audit_message = TRUE),
-    {
-      msgs <- character(0)
-      withCallingHandlers(
-        bfh_generate_analysis(result, use_ai = TRUE),
-        message = function(m) {
-          msgs <<- c(msgs, conditionMessage(m))
-          invokeRestart("muffleMessage")
-        }
-      )
-      ai_msgs <- grep("\\[BFHcharts/AI\\]", msgs, value = TRUE)
-      expect_length(ai_msgs, 0)
+  withCallingHandlers(
+    bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit"),
+    message = function(m) {
+      if (grepl("\\[BFHcharts/audit\\]", conditionMessage(m))) {
+        captured_msg <<- conditionMessage(m)
+        invokeRestart("muffleMessage")
+      }
     }
   )
+
+  # Default use_rag = FALSE should be in the JSON line
+  expect_match(captured_msg, '"use_rag": false')
 })
 
-test_that("bfh_generate_analysis(use_ai=FALSE) emitter ingen [BFHcharts/AI]-besked", {
+test_that("bfh_generate_analysis(use_ai=FALSE) emits no [BFHcharts/audit] message", {
   skip_if_not_installed("BFHllm")
 
   result <- make_test_result_for_analysis()
@@ -335,6 +445,6 @@ test_that("bfh_generate_analysis(use_ai=FALSE) emitter ingen [BFHcharts/AI]-besk
       invokeRestart("muffleMessage")
     }
   )
-  ai_msgs <- grep("\\[BFHcharts/AI\\]", msgs, value = TRUE)
-  expect_length(ai_msgs, 0)
+  audit_msgs <- grep("\\[BFHcharts/audit\\]", msgs, value = TRUE)
+  expect_length(audit_msgs, 0)
 })

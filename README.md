@@ -72,6 +72,15 @@ PDFs will be fully functional and readable, but without Region Hovedstaden speci
 
 Healthcare organizations that need consistent proprietary branding (custom fonts, hospital logos) across their BFHcharts deployments should distribute those assets via a **private companion R package** rather than bundling them in their consumer application or hardcoding paths.
 
+> **Security warning:** `inject_assets` is **full code execution**. The supplied
+> function runs with the same privileges as the calling R session, with full
+> file-system and network access. It **must not** come from user input (Shiny
+> inputs, REST API parameters, configuration files of unknown provenance).
+> **Never** forward user-supplied values to `inject_assets` — doing so creates a
+> remote code execution (RCE) vector. Only pass functions from version-controlled
+> application code or a controlled companion package.
+> See `?bfh_export_pdf` (Security section) for acceptable/unacceptable sources.
+
 **Pattern:**
 
 1. Create a private R package (e.g. `MyOrgAssets`) hosting fonts and images in `inst/assets/`
@@ -81,7 +90,7 @@ Healthcare organizations that need consistent proprietary branding (custom fonts
 ```r
 BFHcharts::bfh_export_pdf(
   result, "report.pdf",
-  inject_assets = MyOrgAssets::inject_my_assets
+  inject_assets = MyOrgAssets::inject_my_assets   # safe: from companion package
 )
 ```
 
