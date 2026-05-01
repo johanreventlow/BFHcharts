@@ -176,7 +176,7 @@ bfh_create_typst_document <- function(chart_image,
 }
 
 # Wrapper around system2() that ensures path-like arguments are properly
-# shell-quoted when stdout/stderr capture is requested.
+# shell-quoted when stdout/stderr capture is requested on POSIX systems.
 #
 # Background: R's system2() with stdout=TRUE or stderr=TRUE routes through
 # /bin/sh -c on macOS/Linux (the shell is needed for stream capture). This
@@ -184,14 +184,21 @@ bfh_create_typst_document <- function(chart_image,
 # shell-special characters (spaces, parens, brackets, $, &, ') will be
 # misinterpreted by the shell unless quoted.
 #
-# Strategy: Apply shQuote() to any arg that does NOT begin with "--" (i.e.
-# path-like positional args). Flag args (e.g. "--ignore-system-fonts") are
+# Windows: R's system2() does NOT route through cmd.exe -c for stdout/stderr
+# capture; argv-tokens are passed directly to the child process. Adding
+# literal quotes via shQuote() would corrupt the argument values (Quarto sees
+# the quotes as part of the path). Therefore quoting is POSIX-only.
+#
+# Strategy: On POSIX, apply shQuote() to any arg that does NOT begin with "--"
+# (i.e. path-like positional args). Flag args ("--ignore-system-fonts") are
 # safe as-is; quoting them could break Quarto's flag parser.
 #
 # The .system2 parameter is the dependency-injection hook inherited from
 # bfh_compile_typst() so mock injection works end-to-end.
 .safe_system2_capture <- function(cmd, args, ..., .system2 = system2) {
-  # Determine if any args need quoting (non-flag positional args)
+  if (.Platform$OS.type == "windows") {
+    return(.system2(cmd, args = args, ...))
+  }
   quoted_args <- vapply(args, function(arg) {
     if (startsWith(arg, "--")) {
       arg
