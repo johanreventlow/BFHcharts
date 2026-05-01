@@ -40,54 +40,9 @@ estimate_label_heights_npc <- function(
     )
   }
 
-  # Hvis device_ready = TRUE, brug allerede-aktiv device (caller har aabnet den)
-  # Ellers aabn en off-screen Cairo PDF device for measurements
-  if (!device_ready) {
-    # Gem reference til nuvaerende device
-    current_dev <- grDevices::dev.cur()
-
-    # Bestem device stoerrelse til maalinger
-    using_fallback <- is.null(device_width) || is.null(device_height)
-
-    if (using_fallback && getOption("spc.debug.label_placement", FALSE)) {
-      message(
-        "[LABEL_HEIGHT_ESTIMATE] WARNING: No actual device dimensions provided - ",
-        "using fallback 8x4.5\" (this should not happen in production with viewport guard)"
-      )
-    }
-
-    meas_width <- if (!is.null(device_width)) device_width else 8
-    meas_height <- if (!is.null(device_height)) device_height else 4.5
-
-    # Open ONE off-screen Cairo PDF device for all measurements
-    temp_pdf <- tempfile(fileext = ".pdf")
-    grDevices::cairo_pdf(filename = temp_pdf, width = meas_width, height = meas_height)
-    temp_dev <- grDevices::dev.cur()
-
-    # CRITICAL: on.exit for device cleanup + file removal + device restore
-    on.exit(
-      {
-        # Luk temp device hvis den stadig er aktiv
-        if (grDevices::dev.cur() == temp_dev) {
-          tryCatch(grDevices::dev.off(), error = function(e) NULL)
-        }
-        # Restore original device
-        if (current_dev > 1 && current_dev != temp_dev &&
-          current_dev %in% grDevices::dev.list()) {
-          tryCatch(grDevices::dev.set(current_dev), error = function(e) NULL)
-        }
-        # Slet temp fil
-        unlink(temp_pdf, force = TRUE)
-      },
-      add = TRUE,
-      after = FALSE
-    )
-  }
-
-  # Measure all texts with shared device
-  results <- purrr::map(texts, ~ {
-    tryCatch(
-      {
+  measure_all <- function() {
+    purrr::map(texts, ~ {
+      tryCatch(
         .estimate_label_height_npc_internal(
           text = .x,
           style = style,
@@ -97,23 +52,38 @@ estimate_label_heights_npc <- function(
           marquee_size = marquee_size,
           fallback_npc = fallback_npc,
           return_details = return_details
-        )
-      },
-      error = function(e) {
-        warning(
-          "Grob-baseret h\u00f8jdem\u00e5ling fejlede: ", e$message,
-          " - bruger fallback"
-        )
-        if (return_details) {
-          list(npc = fallback_npc, inches = NA_real_, panel_height_inches = panel_height_inches)
-        } else {
-          fallback_npc
+        ),
+        error = function(e) {
+          warning(
+            "Grob-baseret h\u00f8jdem\u00e5ling fejlede: ", e$message,
+            " - bruger fallback"
+          )
+          if (return_details) {
+            list(npc = fallback_npc, inches = NA_real_, panel_height_inches = panel_height_inches)
+          } else {
+            fallback_npc
+          }
         }
-      }
-    )
-  })
+      )
+    })
+  }
 
-  return(results)
+  if (device_ready) {
+    return(measure_all())
+  }
+
+  using_fallback <- is.null(device_width) || is.null(device_height)
+  if (using_fallback && getOption("spc.debug.label_placement", FALSE)) {
+    message(
+      "[LABEL_HEIGHT_ESTIMATE] WARNING: No actual device dimensions provided - ",
+      "using fallback 8x4.5\" (this should not happen in production with viewport guard)"
+    )
+  }
+
+  meas_width <- if (!is.null(device_width)) device_width else 8
+  meas_height <- if (!is.null(device_height)) device_height else 4.5
+
+  with_temporary_device(meas_width, meas_height, measure_all())
 }
 
 
