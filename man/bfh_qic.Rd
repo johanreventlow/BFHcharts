@@ -146,6 +146,41 @@ entire workflow from raw data to finished plot with intelligent labels.
 \item \code{build_bfh_qic_return()} -- return value routing (S3 vs. legacy paths)
 }
 
+\strong{SPC Statistics Provenance:}
+
+Every field in \code{result$summary} is derived from \code{result$qic_data} via
+\code{format_qic_summary()}. The aggregation function and scope for each field:\tabular{lllll}{
+   Field \tab Source column \tab Aggregation \tab Scope \tab Chart types \cr
+   \code{laengste_loeb} \tab \code{longest.run} \tab \code{max()} per phase \tab per-phase \tab all \cr
+   \code{laengste_loeb_max} \tab \code{longest.run.max} \tab \code{max()} global \tab global \tab all \cr
+   \code{antal_kryds} \tab \code{n.crossings} \tab \code{max()} per phase \tab per-phase \tab all \cr
+   \code{antal_kryds_min} \tab \code{n.crossings.min} \tab \code{max()} global \tab global \tab all \cr
+   \code{loebelaengde_signal} \tab \code{runs.signal} \tab \code{any()} per phase \tab per-phase \tab all \cr
+   \code{sigma_signal} \tab \code{sigma.signal} \tab \code{any()} per phase \tab per-phase \tab non-run charts \cr
+   \code{centerlinje} \tab \code{cl} \tab first row per phase \tab per-phase \tab all \cr
+   \code{nedre_kontrolgraense} \tab \code{lcl} \tab first row per phase \tab per-phase \tab non-run (constant limits) \cr
+   \code{oevre_kontrolgraense} \tab \code{ucl} \tab first row per phase \tab per-phase \tab non-run (constant limits) \cr
+   \code{nedre_kontrolgraense_min/max} \tab \code{lcl} \tab \code{min()}/\code{max()} per phase \tab per-phase \tab non-run (variable limits) \cr
+   \code{oevre_kontrolgraense_min/max} \tab \code{ucl} \tab \code{min()}/\code{max()} per phase \tab per-phase \tab non-run (variable limits) \cr
+   \code{kontrolgraenser_konstante} \tab \code{lcl}+\code{ucl} \tab all-equal check per phase \tab per-phase \tab non-run charts \cr
+   \code{antal_observationer} \tab \code{n.obs} \tab first row per phase \tab per-phase \tab all \cr
+   \code{anvendelige_observationer} \tab \code{n.useful} \tab first row per phase \tab per-phase \tab all \cr
+   \code{antal_outliers} \tab \code{sigma.signal} \tab \code{sum()} per phase \tab per-phase \tab non-run charts \cr
+   \code{forventede_outliers} \tab (constant 0) \tab literal 0 \tab per-phase \tab non-run charts \cr
+}
+
+
+Notes:
+\itemize{
+\item \code{longest.run} is stored by qicharts2 as a per-phase constant (all rows within
+a phase hold the same value). \code{max()} over those rows is equivalent to the value.
+\item \code{sigma.signal} is per-row (varies within a phase). \code{any()} aggregation is correct.
+\item Limit columns use scalar form when limits are constant within all phases (e.g.
+I-chart, C-chart). Variable-denominator charts (P, U) use min/max column pairs.
+\item Run charts (\code{chart_type = "run"}) produce no \code{sigma_signal}, \code{lcl}/\code{ucl}, or
+outlier columns in \code{result$summary}.
+}
+
 \strong{Chart Types:}
 \itemize{
 \item \strong{run}: Run chart (no control limits)

@@ -1,3 +1,13 @@
+# BFHcharts 0.14.0
+
+## Nye features
+
+* Eksport af `bfh_create_typst_document()` til public API. Funktionen var
+  tidligere kun tilgaengelig via `getFromNamespace()`. Downstream-pakker
+  (fx biSPCharts) kan nu kalde den direkte uden at bryde CRAN-konventioner.
+  `bfh_extract_spc_stats()` og `bfh_merge_metadata()` var allerede
+  eksporteret og er uaendrede. Relateret: biSPCharts #423.
+
 # BFHcharts 0.13.0
 
 ## Breaking changes
