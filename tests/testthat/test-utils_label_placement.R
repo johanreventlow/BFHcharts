@@ -341,12 +341,12 @@ test_that("place_two_labels_npc validerer input korrekt", {
   # Ikke-numerisk
   expect_error(
     place_two_labels_npc(yA_npc = "a", yB_npc = 0.5, label_height_npc = 0.1),
-    "numerisk"
+    "numeric"
   )
   # Negativ label height
   expect_error(
     place_two_labels_npc(yA_npc = 0.5, yB_npc = 0.5, label_height_npc = -0.1),
-    "positiv"
+    "positive"
   )
   # Ugyldig priority
   expect_error(
