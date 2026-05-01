@@ -31,7 +31,7 @@ test_that("bfh_export_pdf rejects path traversal in output", {
 
 test_that("bfh_export_pdf rejects path traversal in template_path", {
   chart <- fixture_test_chart()
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # Path traversal in template_path
   expect_error(
@@ -43,9 +43,6 @@ test_that("bfh_export_pdf rejects path traversal in template_path", {
     bfh_export_pdf(chart, temp_file, template_path = "../../../sensitive/template.typ"),
     "path traversal"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 # ============================================================================
@@ -145,7 +142,7 @@ test_that("bfh_export_pdf allows paths with underscores and dashes", {
 
 test_that("bfh_export_pdf validates metadata field types", {
   chart <- fixture_test_chart()
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # Numeric value (invalid)
   expect_error(
@@ -158,9 +155,6 @@ test_that("bfh_export_pdf validates metadata field types", {
     bfh_export_pdf(chart, temp_file, metadata = list(department = TRUE)),
     "must be a character string"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_pdf allows Date objects for date field", {
@@ -169,20 +163,17 @@ test_that("bfh_export_pdf allows Date objects for date field", {
   skip_on_cran()
 
   chart <- fixture_test_chart()
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # Date object is allowed for 'date' field
   expect_no_error(suppressWarnings(
     bfh_export_pdf(chart, temp_file, metadata = list(date = Sys.Date()))
   ))
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_pdf enforces metadata string length limits", {
   chart <- fixture_test_chart()
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # String exceeding 10,000 characters
   long_string <- paste(rep("A", 10001), collapse = "")
@@ -191,9 +182,6 @@ test_that("bfh_export_pdf enforces metadata string length limits", {
     bfh_export_pdf(chart, temp_file, metadata = list(analysis = long_string)),
     "exceeds maximum length of 10,000 characters"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("bfh_export_pdf warns about unknown metadata fields", {
@@ -202,14 +190,11 @@ test_that("bfh_export_pdf warns about unknown metadata fields", {
   skip_on_cran()
 
   chart <- fixture_test_chart()
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
 
   # Unknown field should trigger warning
   expect_warning(
     bfh_export_pdf(chart, temp_file, metadata = list(unknown_field = "value")),
     "Unknown metadata fields will be ignored: unknown_field"
   )
-
-  # Cleanup
-  if (file.exists(temp_file)) unlink(temp_file)
 })

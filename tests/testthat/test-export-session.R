@@ -485,13 +485,12 @@ test_that("bfh_export_pdf arver strict_baseline = FALSE fra session", {
   session <- bfh_create_export_session(strict_baseline = FALSE)
   on.exit(close(session))
 
-  temp_file <- tempfile(fileext = ".pdf")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
   expect_no_error(
     suppressWarnings(
       bfh_export_pdf(short_chart, temp_file, batch_session = session)
     )
   )
-  if (file.exists(temp_file)) unlink(temp_file)
 })
 
 test_that("Per-call strict_baseline = TRUE overrider session strict_baseline = FALSE", {
