@@ -357,6 +357,426 @@ propose_single_label <- function(y_line_npc, pref_side, label_h, gap, pad_top, p
 
 
 # ==============================================================================
+# LABEL PLACEMENT - PURE HELPERS (lag 1 + lag 2)
+# ==============================================================================
+
+#' Parse og valider inputs til place_two_labels_npc
+#'
+#' Ren valideringsfunktion: parses label_height_npc (numerisk eller list),
+#' validerer alle NPC-parametre og returnerer en struktureret parsed-record.
+#'
+#' @return List med: label_height_npc_value, label_height_inches,
+#'   panel_height_inches, label_height_is_list, yA_npc, yB_npc,
+#'   pref_pos (normaliseret til length 2)
+#'
+#' @keywords internal
+#' @noRd
+.validate_placement_inputs <- function(
+  yA_npc,
+  yB_npc,
+  label_height_npc,
+  gap_line,
+  gap_labels,
+  pad_top,
+  pad_bot,
+  priority,
+  pref_pos,
+  debug
+) {
+  # Parse label_height_npc - kan vaere enten numerisk eller list
+  label_height_is_list <- is.list(label_height_npc)
+
+  if (label_height_is_list) {
+    if (!all(c("npc", "inches", "panel_height_inches") %in% names(label_height_npc))) {
+      stop("label_height_npc list skal indeholde 'npc', 'inches', og 'panel_height_inches'")
+    }
+    label_height_npc_value <- label_height_npc$npc
+    label_height_inches <- label_height_npc$inches
+    panel_height_inches <- label_height_npc$panel_height_inches
+
+    if (is.null(panel_height_inches) || is.na(panel_height_inches)) {
+      warning("panel_height_inches not available - falling back to NPC-based gap")
+      label_height_is_list <- FALSE
+      label_height_inches <- NA_real_
+    }
+  } else {
+    label_height_npc_value <- label_height_npc
+    label_height_inches <- NA_real_
+    panel_height_inches <- NULL
+  }
+
+  # Helper: validate single NPC param
+  validate_npc_param <- function(value, name, allow_na = TRUE) {
+    if (is.null(value)) {
+      return(invisible(NULL))
+    }
+    if (!is.numeric(value)) {
+      stop(sprintf("%s must be numeric, got: %s", name, class(value)[1]))
+    }
+    if (length(value) != 1) {
+      stop(sprintf("%s must be a single value, got %d values", name, length(value)))
+    }
+    if (!allow_na && is.na(value)) {
+      stop(sprintf("%s must not be NA", name))
+    }
+    if (!is.na(value) && !is.finite(value)) {
+      stop(sprintf("%s must be finite (not Inf/-Inf), got: %s", name, value))
+    }
+    invisible(NULL)
+  }
+
+  validate_npc_param(yA_npc, "yA_npc", allow_na = TRUE)
+  validate_npc_param(yB_npc, "yB_npc", allow_na = TRUE)
+  validate_npc_param(label_height_npc_value, "label_height_npc", allow_na = FALSE)
+  validate_npc_param(gap_line, "gap_line", allow_na = FALSE)
+  validate_npc_param(gap_labels, "gap_labels", allow_na = FALSE)
+  validate_npc_param(pad_top, "pad_top", allow_na = FALSE)
+  validate_npc_param(pad_bot, "pad_bot", allow_na = FALSE)
+
+  if (!is.null(label_height_npc_value)) {
+    if (label_height_npc_value <= 0) {
+      stop("label_height_npc must be positive, got: ", label_height_npc_value)
+    }
+    if (label_height_npc_value > 0.5) {
+      warning(sprintf(
+        "Label optager %.0f%% af panel - degraded placement forventet",
+        label_height_npc_value * 100
+      ))
+    }
+  }
+
+  if (!is.null(pad_top) && (pad_top < 0 || pad_top > 0.2)) {
+    stop("pad_top must be between 0 and 0.2, got: ", pad_top)
+  }
+  if (!is.null(pad_bot) && (pad_bot < 0 || pad_bot > 0.2)) {
+    stop("pad_bot must be between 0 and 0.2, got: ", pad_bot)
+  }
+
+  priority <- match.arg(priority, choices = c("A", "B"))
+
+  if (!is.character(pref_pos) || length(pref_pos) == 0) {
+    stop("pref_pos must be a character vector")
+  }
+  pref_pos <- rep_len(pref_pos, 2)
+  if (!all(pref_pos %in% c("under", "over"))) {
+    stop("pref_pos skal indeholde 'under' eller 'over', modtog: ", paste(pref_pos, collapse = ", "))
+  }
+
+  if (!is.logical(debug) || length(debug) != 1) {
+    stop("debug must be a single logical value")
+  }
+
+  list(
+    label_height_npc_value = label_height_npc_value,
+    label_height_inches = label_height_inches,
+    panel_height_inches = panel_height_inches,
+    label_height_is_list = label_height_is_list,
+    yA_npc = yA_npc,
+    yB_npc = yB_npc,
+    pref_pos = pref_pos,
+    priority = priority
+  )
+}
+
+#' Resolve config og beregn afledte gap-vaerdier
+#'
+#' Ren konfigurationsfunktion: loader label-placement-config og beregner
+#' gap_line, gap_labels, pad_top, pad_bot baseret paa label dimensions.
+#'
+#' @return List med: gap_line, gap_labels, pad_top, pad_bot, cfg
+#'
+#' @keywords internal
+#' @noRd
+.resolve_placement_config <- function(
+  label_height_npc_value,
+  label_height_inches,
+  panel_height_inches,
+  label_height_is_list,
+  gap_line,
+  gap_labels,
+  pad_top,
+  pad_bot,
+  debug = FALSE
+) {
+  default_cfg <- list(
+    relative_gap_line = 0.08,
+    relative_gap_labels = 0.30,
+    pad_top = 0.01,
+    pad_bot = 0.01,
+    tight_lines_threshold_factor = LABEL_PLACEMENT_TIGHT_LINES_THRESHOLD_FACTOR,
+    coincident_threshold_factor = LABEL_PLACEMENT_COINCIDENT_THRESHOLD_FACTOR,
+    gap_reduction_factors = LABEL_PLACEMENT_GAP_REDUCTION_FACTORS,
+    shelf_center_threshold = LABEL_PLACEMENT_SHELF_CENTER_THRESHOLD
+  )
+  cfg <- default_cfg
+  loaded_cfg <- get_label_placement_config()
+  if (!is.null(loaded_cfg)) {
+    for (name in names(default_cfg)) {
+      value <- loaded_cfg[[name]]
+      if (!is.null(value)) cfg[[name]] <- value
+    }
+  }
+
+  if (is.null(gap_line)) {
+    if (label_height_is_list && !is.na(label_height_inches)) {
+      gap_line_inches <- label_height_inches * cfg$relative_gap_line
+      min_gap_inches <- 0.01
+      gap_line_inches <- max(gap_line_inches, min_gap_inches)
+      gap_line <- gap_line_inches / panel_height_inches
+      if (debug) {
+        message(sprintf(
+          "[DEBUG] gap_line beregnet fra config (NY API): %.4f inches x %.2f = %.4f inches (min: %.2f) = %.4f NPC",
+          label_height_inches, cfg$relative_gap_line, gap_line_inches, min_gap_inches, gap_line
+        ))
+      }
+    } else {
+      gap_line <- label_height_npc_value * cfg$relative_gap_line
+      if (debug) {
+        message(sprintf(
+          "[DEBUG] gap_line beregnet fra config (LEGACY API): %.4f NPC x %.2f = %.4f NPC",
+          label_height_npc_value, cfg$relative_gap_line, gap_line
+        ))
+      }
+    }
+  } else {
+    if (debug) {
+      message(sprintf("[DEBUG] gap_line var eksplicit sat til: %.4f NPC (config IKKE brugt)", gap_line))
+    }
+  }
+
+  if (is.null(gap_labels)) {
+    if (label_height_is_list && !is.na(label_height_inches)) {
+      gap_labels_inches <- label_height_inches * cfg$relative_gap_labels
+      gap_labels <- gap_labels_inches / panel_height_inches
+    } else {
+      gap_labels <- label_height_npc_value * cfg$relative_gap_labels
+    }
+  }
+
+  if (is.null(pad_top)) pad_top <- cfg$pad_top
+  if (is.null(pad_bot)) pad_bot <- cfg$pad_bot
+
+  list(gap_line = gap_line, gap_labels = gap_labels, pad_top = pad_top, pad_bot = pad_bot, cfg = cfg)
+}
+
+#' Pure placement strategi: beregn endelige label-positioner
+#'
+#' Implementerer den fulde collision-avoidance algoritme som en ren funktion.
+#' Ingen side effects, ingen device-kald, ingen config-lookup.
+#'
+#' @param yA_npc,yB_npc Linje-positioner (NPC, begge antages non-NA)
+#' @param pref_pos Normaliseret c("under"/"over", "under"/"over")
+#' @param label_height_npc_value Numerisk label hoejde (NPC)
+#' @param gap_line Minimum gap fra label-kant til linje (NPC)
+#' @param gap_labels Minimum gap mellem labels (NPC)
+#' @param pad_top,pad_bot Panel padding (NPC)
+#' @param priority "A" eller "B"
+#' @param cfg Config-list med coincident_threshold_factor, tight_lines_threshold_factor,
+#'   gap_reduction_factors, shelf_center_threshold
+#'
+#' @return List med: yA, yB, sideA, sideB, placement_quality, warnings
+#'
+#' @keywords internal
+#' @noRd
+.compute_placement_strategy <- function(
+  yA_npc,
+  yB_npc,
+  pref_pos,
+  label_height_npc_value,
+  gap_line,
+  gap_labels,
+  pad_top,
+  pad_bot,
+  priority,
+  cfg
+) {
+  warnings <- character(0)
+  placement_quality <- "optimal"
+
+  half <- label_height_npc_value / 2
+  low_bound <- pad_bot + half
+  high_bound <- 1 - pad_top - half
+
+  line_gap_npc <- abs(yA_npc - yB_npc)
+  min_center_gap <- label_height_npc_value + gap_labels
+  tight_threshold_factor <- cfg$tight_lines_threshold_factor
+
+  # Tight-lines strategy: flip pref_pos so one is over, one is under
+  if (line_gap_npc < min_center_gap * tight_threshold_factor) {
+    warnings <- c(warnings, paste0(
+      "Lines very close (gap=", round(line_gap_npc, 3), ") - using over/under strategy"
+    ))
+    if (yA_npc > yB_npc) {
+      pref_pos[1] <- "over"
+      pref_pos[2] <- "under"
+    } else {
+      pref_pos[1] <- "under"
+      pref_pos[2] <- "over"
+    }
+  }
+
+  # Initial proposals
+  propA <- propose_single_label(yA_npc, pref_pos[1], label_height_npc_value, gap_line, pad_top, pad_bot)
+  propB <- propose_single_label(yB_npc, pref_pos[2], label_height_npc_value, gap_line, pad_top, pad_bot)
+  yA <- propA$center
+  yB <- propB$center
+  sideA <- propA$side
+  sideB <- propB$side
+
+  # Coincident lines: place one over, one under
+  coincident_threshold <- label_height_npc_value * cfg$coincident_threshold_factor
+  if (abs(yA_npc - yB_npc) < coincident_threshold) {
+    warnings <- c(warnings, "Coincident lines - placing labels over/under")
+    if (pref_pos[1] == "under") {
+      yA <- clamp_to_bounds(yA_npc - gap_line - half, low_bound, high_bound)
+      yB <- clamp_to_bounds(yA_npc + gap_line + half, low_bound, high_bound)
+      sideA <- "under"
+      sideB <- "over"
+    } else {
+      yA <- clamp_to_bounds(yA_npc + gap_line + half, low_bound, high_bound)
+      yB <- clamp_to_bounds(yA_npc - gap_line - half, low_bound, high_bound)
+      sideA <- "over"
+      sideB <- "under"
+    }
+    if (yA == low_bound || yA == high_bound || yB == low_bound || yB == high_bound) {
+      warnings <- c(warnings, "Label(s) justeret til bounds")
+      placement_quality <- "acceptable"
+    }
+    return(list(
+      yA = yA, yB = yB, sideA = sideA, sideB = sideB,
+      warnings = warnings, placement_quality = placement_quality
+    ))
+  }
+
+  # Early exit: no collision
+  if (abs(yA - yB) >= min_center_gap) {
+    return(list(
+      yA = yA, yB = yB, sideA = sideA, sideB = sideB,
+      warnings = warnings, placement_quality = "optimal"
+    ))
+  }
+
+  # Collision detected: push upper up or lower down
+  warnings <- c(warnings, "Label kollision detekteret - justerer placering")
+  if (yA_npc < yB_npc) {
+    lower_y <- yA
+    upper_y <- yB
+    lower_is_A <- TRUE
+  } else {
+    lower_y <- yB
+    upper_y <- yA
+    lower_is_A <- FALSE
+  }
+
+  new_upper <- lower_y + min_center_gap
+  if (new_upper <= high_bound) {
+    upper_y <- new_upper
+  } else {
+    new_lower <- upper_y - min_center_gap
+    if (new_lower >= low_bound) {
+      lower_y <- new_lower
+    } else {
+      warnings <- c(warnings, "Umuligt at opfylde alle constraints - bruger shelf placement")
+      placement_quality <- "suboptimal"
+      if (priority == "A") {
+        if (lower_is_A) {
+          lower_y <- max(low_bound, min(propA$center, high_bound))
+          upper_y <- high_bound
+        } else {
+          lower_y <- low_bound
+          upper_y <- min(high_bound, max(propA$center, low_bound))
+        }
+      } else {
+        if (lower_is_A) {
+          lower_y <- low_bound
+          upper_y <- min(high_bound, max(propB$center, low_bound))
+        } else {
+          lower_y <- max(low_bound, min(propB$center, high_bound))
+          upper_y <- high_bound
+        }
+      }
+    }
+  }
+
+  if (lower_is_A) {
+    yA <- lower_y
+    yB <- upper_y
+  } else {
+    yA <- upper_y
+    yB <- lower_y
+  }
+
+  # Line-gap enforcement with multi-level fallback
+  verifyA <- .verify_line_gap_npc(yA, yA_npc, sideA, label_height_npc_value, gap_line)
+  verifyB <- .verify_line_gap_npc(yB, yB_npc, sideB, label_height_npc_value, gap_line)
+
+  if (verifyA$violated || verifyB$violated) {
+    proposed_yA <- if (verifyA$violated) verifyA$y else yA
+    proposed_yB <- if (verifyB$violated) verifyB$y else yB
+
+    if (abs(proposed_yA - proposed_yB) < min_center_gap) {
+      warnings <- c(warnings, "Line-gap enforcement would cause collision - trying multi-level fallback")
+
+      n1 <- .try_niveau_1_gap_reduction(
+        proposed_yA, proposed_yB,
+        label_height_npc_value, gap_labels,
+        low_bound, high_bound,
+        cfg$gap_reduction_factors
+      )
+      if (n1$success) {
+        yA <- n1$yA
+        yB <- n1$yB
+        placement_quality <- n1$placement_quality
+        warnings <- c(warnings, n1$warning)
+      } else {
+        warnings <- c(warnings, "NIVEAU 1 failed - trying NIVEAU 2: flip labels to opposite side")
+        n2 <- .try_niveau_2_flip(
+          proposed_yA, proposed_yB,
+          yA_npc, yB_npc,
+          sideA, sideB,
+          label_height_npc_value,
+          gap_line, pad_top, pad_bot,
+          low_bound, high_bound
+        )
+        if (n2$success) {
+          yA <- n2$yA
+          yB <- n2$yB
+          sideA <- n2$sideA
+          sideB <- n2$sideB
+          placement_quality <- n2$placement_quality
+          warnings <- c(warnings, n2$warning)
+        } else {
+          warnings <- c(warnings, "NIVEAU 2 failed - using NIVEAU 3: shelf placement")
+          n3 <- .apply_niveau_3_shelf(
+            proposed_yA, proposed_yB,
+            low_bound, high_bound,
+            priority, cfg$shelf_center_threshold
+          )
+          yA <- n3$yA
+          yB <- n3$yB
+          placement_quality <- n3$placement_quality
+        }
+      }
+    } else {
+      if (verifyA$violated) {
+        warnings <- c(warnings, "Label A justeret for line-gap compliance")
+        yA <- clamp_to_bounds(verifyA$y, low_bound, high_bound)
+      }
+      if (verifyB$violated) {
+        warnings <- c(warnings, "Label B justeret for line-gap compliance")
+        yB <- clamp_to_bounds(verifyB$y, low_bound, high_bound)
+      }
+    }
+  }
+
+  list(
+    yA = yA, yB = yB, sideA = sideA, sideB = sideB,
+    warnings = warnings, placement_quality = placement_quality
+  )
+}
+
+
+# ==============================================================================
 # LABEL PLACEMENT - CORE ALGORITHM
 # ==============================================================================
 
@@ -478,220 +898,53 @@ place_two_labels_npc <- function(
   yA_npc,
   yB_npc,
   label_height_npc = 0.114,
-  gap_line = NULL, # NU: Auto-beregnes fra config
-  gap_labels = NULL, # NU: Auto-beregnes fra config
-  pad_top = NULL, # NU: Hentes fra config
-  pad_bot = NULL, # NU: Hentes fra config
+  gap_line = NULL,
+  gap_labels = NULL,
+  pad_top = NULL,
+  pad_bot = NULL,
   priority = c("A", "B")[1],
   pref_pos = c("under", "under"),
   debug = FALSE
 ) {
-  # ============================================================================
-  # INPUT VALIDATION & PARSING
-  # ============================================================================
-
-  # Parse label_height_npc - kan vaere enten numerisk eller list
-  label_height_is_list <- is.list(label_height_npc)
-
-  if (label_height_is_list) {
-    # Ny API: List med details
-    if (!all(c("npc", "inches", "panel_height_inches") %in% names(label_height_npc))) {
-      stop("label_height_npc list skal indeholde 'npc', 'inches', og 'panel_height_inches'")
-    }
-
-    label_height_npc_value <- label_height_npc$npc
-    label_height_inches <- label_height_npc$inches
-    panel_height_inches <- label_height_npc$panel_height_inches
-
-    # Valider at panel_height er tilgaengelig for absolute gap beregning
-    if (is.null(panel_height_inches) || is.na(panel_height_inches)) {
-      warning("panel_height_inches ikke tilg\u00e6ngelig - falder tilbage til NPC-baseret gap")
-      label_height_is_list <- FALSE
-      label_height_inches <- NA_real_
-    }
-  } else {
-    # Legacy API: Enkelt numerisk vaerdi
-    label_height_npc_value <- label_height_npc
-    label_height_inches <- NA_real_
-    panel_height_inches <- NULL
-  }
-
-  # Helper function for NPC parameter validation
-  validate_npc_param <- function(value, name, allow_na = TRUE) {
-    if (is.null(value)) {
-      return(invisible(NULL))
-    }
-
-    if (!is.numeric(value)) {
-      stop(sprintf("%s skal v\u00e6re numerisk, modtog: %s", name, class(value)[1]))
-    }
-
-    if (length(value) != 1) {
-      stop(sprintf("%s skal v\u00e6re en enkelt v\u00e6rdi, modtog: %d v\u00e6rdier", name, length(value)))
-    }
-
-    if (!allow_na && is.na(value)) {
-      stop(sprintf("%s m\u00e5 ikke v\u00e6re NA", name))
-    }
-
-    if (!is.na(value) && !is.finite(value)) {
-      stop(sprintf("%s skal v\u00e6re finite (ikke Inf/-Inf), modtog: %s", name, value))
-    }
-
-    invisible(NULL)
-  }
-
-  # Valider alle NPC inputs
-  validate_npc_param(yA_npc, "yA_npc", allow_na = TRUE)
-  validate_npc_param(yB_npc, "yB_npc", allow_na = TRUE)
-  validate_npc_param(label_height_npc_value, "label_height_npc", allow_na = FALSE)
-  validate_npc_param(gap_line, "gap_line", allow_na = FALSE)
-  validate_npc_param(gap_labels, "gap_labels", allow_na = FALSE)
-  validate_npc_param(pad_top, "pad_top", allow_na = FALSE)
-  validate_npc_param(pad_bot, "pad_bot", allow_na = FALSE)
-
-  # Bounds validation for label_height_npc
-  if (!is.null(label_height_npc_value)) {
-    if (label_height_npc_value <= 0) {
-      stop("label_height_npc skal v\u00e6re positiv, modtog: ", label_height_npc_value)
-    }
-    if (label_height_npc_value > 0.5) {
-      # FIX (#92): Tillad store labels paa smaa paneler/facets med degraded placement
-      # Tidligere: hard stop. Nu: warning + best-effort.
-      # Konsistent med estimate_label_height_npc() der allerede tillader >50%.
-      warning(sprintf(
-        "Label optager %.0f%% af panel - degraded placement forventet",
-        label_height_npc_value * 100
-      ))
-    }
-  }
-
-  # Bounds validation for padding
-  if (!is.null(pad_top) && (pad_top < 0 || pad_top > 0.2)) {
-    stop("pad_top skal v\u00e6re mellem 0 og 0.2, modtog: ", pad_top)
-  }
-  if (!is.null(pad_bot) && (pad_bot < 0 || pad_bot > 0.2)) {
-    stop("pad_bot skal v\u00e6re mellem 0 og 0.2, modtog: ", pad_bot)
-  }
-
-  # Priority validation
-  priority <- match.arg(priority, choices = c("A", "B"))
-
-  # pref_pos validation
-  if (!is.character(pref_pos) || length(pref_pos) == 0) {
-    stop("pref_pos skal v\u00e6re en character vektor")
-  }
-  pref_pos <- rep_len(pref_pos, 2)
-  if (!all(pref_pos %in% c("under", "over"))) {
-    stop("pref_pos skal indeholde 'under' eller 'over', modtog: ", paste(pref_pos, collapse = ", "))
-  }
-
-  # debug validation
-  if (!is.logical(debug) || length(debug) != 1) {
-    stop("debug skal v\u00e6re en enkelt logical v\u00e6rdi")
-  }
-
-  # ============================================================================
-  # CONFIGURATION LOADING
-  # ============================================================================
-
-  default_cfg <- list(
-    relative_gap_line = 0.08,
-    relative_gap_labels = 0.30,
-    pad_top = 0.01,
-    pad_bot = 0.01,
-    tight_lines_threshold_factor = LABEL_PLACEMENT_TIGHT_LINES_THRESHOLD_FACTOR,
-    coincident_threshold_factor = LABEL_PLACEMENT_COINCIDENT_THRESHOLD_FACTOR,
-    gap_reduction_factors = LABEL_PLACEMENT_GAP_REDUCTION_FACTORS,
-    shelf_center_threshold = LABEL_PLACEMENT_SHELF_CENTER_THRESHOLD
+  # Lag 1: validate + parse inputs
+  parsed <- .validate_placement_inputs(
+    yA_npc, yB_npc, label_height_npc,
+    gap_line, gap_labels, pad_top, pad_bot,
+    priority, pref_pos, debug
   )
+  yA_npc <- parsed$yA_npc
+  yB_npc <- parsed$yB_npc
+  pref_pos <- parsed$pref_pos
+  priority <- parsed$priority
 
-  cfg <- default_cfg
-
-  # Hent config (altid tilgaengelig i pakken)
-  loaded_cfg <- get_label_placement_config()
-
-  if (!is.null(loaded_cfg)) {
-    for (name in names(default_cfg)) {
-      value <- loaded_cfg[[name]]
-      if (!is.null(value)) {
-        cfg[[name]] <- value
-      }
-    }
-  }
-
-  # Beregn defaults fra config
-  # VIGTIG FORBEDRING: Beregn gap baseret paa absolute inches hvis tilgaengelig
-  if (is.null(gap_line)) {
-    if (label_height_is_list && !is.na(label_height_inches)) {
-      # Ny API: Beregn gap som fast % af absolute label hoejde
-      gap_line_inches <- label_height_inches * cfg$relative_gap_line
-
-      # FIX: Absolut minimum gap for at undgaa labels der klistrer til linjer
-      # Reduceret til 0.01 inches (~1 pixel @ 96dpi) for at tillade smaa gaps
-      # naar relative_gap_line er lille (fx 0.05 = 5%)
-      min_gap_inches <- 0.01
-      gap_line_inches <- max(gap_line_inches, min_gap_inches)
-
-      gap_line <- gap_line_inches / panel_height_inches # Konverter til NPC
-      if (debug) {
-        message(sprintf(
-          "[DEBUG] gap_line beregnet fra config (NY API): %.4f inches x %.2f = %.4f inches (min: %.2f) = %.4f NPC",
-          label_height_inches, cfg$relative_gap_line, gap_line_inches, min_gap_inches, gap_line
-        ))
-      }
-    } else {
-      # Legacy API: Beregn gap som % af NPC
-      gap_line <- label_height_npc_value * cfg$relative_gap_line
-      if (debug) {
-        message(sprintf(
-          "[DEBUG] gap_line beregnet fra config (LEGACY API): %.4f NPC x %.2f = %.4f NPC",
-          label_height_npc_value, cfg$relative_gap_line, gap_line
-        ))
-      }
-    }
-  } else {
-    if (debug) {
-      message(sprintf("[DEBUG] gap_line var eksplicit sat til: %.4f NPC (config IKKE brugt)", gap_line))
-    }
-  }
-
-  if (is.null(gap_labels)) {
-    if (label_height_is_list && !is.na(label_height_inches)) {
-      # Ny API: Beregn gap som fast % af absolute label hoejde
-      gap_labels_inches <- label_height_inches * cfg$relative_gap_labels
-      gap_labels <- gap_labels_inches / panel_height_inches # Konverter til NPC
-    } else {
-      # Legacy API: Beregn gap som % af NPC
-      gap_labels <- label_height_npc_value * cfg$relative_gap_labels
-    }
-  }
-
-  if (is.null(pad_top)) {
-    pad_top <- cfg$pad_top
-  }
-
-  if (is.null(pad_bot)) {
-    pad_bot <- cfg$pad_bot
-  }
+  # Lag 1: resolve config + derived gaps
+  resolved <- .resolve_placement_config(
+    parsed$label_height_npc_value,
+    parsed$label_height_inches,
+    parsed$panel_height_inches,
+    parsed$label_height_is_list,
+    gap_line, gap_labels, pad_top, pad_bot,
+    debug
+  )
+  gap_line <- resolved$gap_line
+  gap_labels <- resolved$gap_labels
+  pad_top <- resolved$pad_top
+  pad_bot <- resolved$pad_bot
+  cfg <- resolved$cfg
+  label_height_npc_value <- parsed$label_height_npc_value
 
   warnings <- character(0)
-  placement_quality <- "optimal"
 
-  # Haandter NA vaerdier
+  # Handle NA / out-of-bounds inputs before entering pure strategy
   if (is.na(yA_npc) && is.na(yB_npc)) {
-    warnings <- c(warnings, "Begge linjer er NA - ingen labels placeret")
     return(list(
-      yA = NA_real_,
-      yB = NA_real_,
-      sideA = NA_character_,
-      sideB = NA_character_,
-      warnings = warnings,
+      yA = NA_real_, yB = NA_real_,
+      sideA = NA_character_, sideB = NA_character_,
+      warnings = c(warnings, "Begge linjer er NA - ingen labels placeret"),
       placement_quality = "failed"
     ))
   }
 
-  # Haandter out-of-bounds
   if (!is.na(yA_npc) && (yA_npc < 0 || yA_npc > 1)) {
     warnings <- c(warnings, paste0("Label A linje uden for panel (", round(yA_npc, 3), ")"))
     yA_npc <- NA_real_
@@ -701,297 +954,64 @@ place_two_labels_npc <- function(
     yB_npc <- NA_real_
   }
 
-  # Re-check: begge kan vaere NA efter out-of-bounds conversion
   if (is.na(yA_npc) && is.na(yB_npc)) {
-    warnings <- c(warnings, "Begge linjer uden for panel - ingen labels placeret")
     return(list(
-      yA = NA_real_,
-      yB = NA_real_,
-      sideA = NA_character_,
-      sideB = NA_character_,
-      warnings = warnings,
+      yA = NA_real_, yB = NA_real_,
+      sideA = NA_character_, sideB = NA_character_,
+      warnings = c(warnings, "Begge linjer uden for panel - ingen labels placeret"),
       placement_quality = "failed"
     ))
   }
 
-  # Hvis kun en linje er valid
+  # Single-label cases
   if (is.na(yA_npc) && !is.na(yB_npc)) {
-    yB <- propose_single_label(yB_npc, pref_pos[2], label_height_npc_value, gap_line, pad_top, pad_bot)
+    yB_res <- propose_single_label(yB_npc, pref_pos[2], label_height_npc_value, gap_line, pad_top, pad_bot)
     return(list(
-      yA = NA_real_,
-      yB = yB$center,
-      sideA = NA_character_,
-      sideB = yB$side,
+      yA = NA_real_, yB = yB_res$center,
+      sideA = NA_character_, sideB = yB_res$side,
       warnings = c(warnings, "Kun label B placeret"),
       placement_quality = "degraded"
     ))
   }
   if (is.na(yB_npc) && !is.na(yA_npc)) {
-    yA <- propose_single_label(yA_npc, pref_pos[1], label_height_npc_value, gap_line, pad_top, pad_bot)
+    yA_res <- propose_single_label(yA_npc, pref_pos[1], label_height_npc_value, gap_line, pad_top, pad_bot)
     return(list(
-      yA = yA$center,
-      yB = NA_real_,
-      sideA = yA$side,
-      sideB = NA_character_,
+      yA = yA_res$center, yB = NA_real_,
+      sideA = yA_res$side, sideB = NA_character_,
       warnings = c(warnings, "Kun label A placeret"),
       placement_quality = "degraded"
     ))
   }
 
-  # Begge linjer er valid - fuld placeringsalgoritme
-  half <- label_height_npc_value / 2
-  low_bound <- pad_bot + half
-  high_bound <- 1 - pad_top - half
-
-  # pref_pos allerede normaliseret til length 2 ved input validation (linje 1047)
-
-  # Hvis linjer er meget taette, flip strategy: en over, en under
-  line_gap_npc <- abs(yA_npc - yB_npc)
-  min_center_gap <- label_height_npc_value + gap_labels
-
-  # Brug batch-loaded config
-  tight_threshold_factor <- cfg$tight_lines_threshold_factor
-
-  if (line_gap_npc < min_center_gap * tight_threshold_factor) {
-    # Linjer er for taette til begge at vaere paa samme side
-    warnings <- c(warnings, paste0("Linjer meget t\u00e6tte (gap=", round(line_gap_npc, 3), ") - bruger over/under strategi"))
-
-    # Placer den oeverste linje's label OVER, den nederste UNDER
-    if (yA_npc > yB_npc) {
-      # A er hoejere
-      pref_pos[1] <- "over" # A over
-      pref_pos[2] <- "under" # B under
-    } else {
-      # B er hoejere
-      pref_pos[1] <- "under" # A under
-      pref_pos[2] <- "over" # B over
-    }
-  }
-
-  # Initial proposals
-  propA <- propose_single_label(yA_npc, pref_pos[1], label_height_npc_value, gap_line, pad_top, pad_bot)
-  propB <- propose_single_label(yB_npc, pref_pos[2], label_height_npc_value, gap_line, pad_top, pad_bot)
-
-  yA <- propA$center
-  yB <- propB$center
-  sideA <- propA$side
-  sideB <- propB$side
-
-  # Tjek for coincident lines (meget taette)
-  # Brug batch-loaded config
-  coincident_threshold <- label_height_npc_value * cfg$coincident_threshold_factor
-
-  if (abs(yA_npc - yB_npc) < coincident_threshold) {
-    warnings <- c(warnings, "Sammenfaldende linjer - placerer labels over/under")
-
-    # Placer den ene label over, den anden under samme linje
-    # Prioriter CL (A) til foretrukken side
-    if (pref_pos[1] == "under") {
-      # CL under, Target over
-      yA <- clamp_to_bounds(yA_npc - gap_line - half, low_bound, high_bound)
-      yB <- clamp_to_bounds(yA_npc + gap_line + half, low_bound, high_bound)
-      sideA <- "under"
-      sideB <- "over"
-    } else {
-      # CL over, Target under
-      yA <- clamp_to_bounds(yA_npc + gap_line + half, low_bound, high_bound)
-      yB <- clamp_to_bounds(yA_npc - gap_line - half, low_bound, high_bound)
-      sideA <- "over"
-      sideB <- "under"
-    }
-
-    # Verificer at begge labels er inden for bounds (clamp_to_bounds sikrer dette)
-    if (yA == low_bound || yA == high_bound || yB == low_bound || yB == high_bound) {
-      warnings <- c(warnings, "Label(s) justeret til bounds")
-      placement_quality <- "acceptable"
-    }
-
-    return(list(
-      yA = yA,
-      yB = yB,
-      sideA = sideA,
-      sideB = sideB,
-      warnings = warnings,
-      placement_quality = placement_quality
-    ))
-  }
-
-  # Collision detection (min_center_gap allerede beregnet ovenfor)
-
-  # Early exit hvis ingen kollision
-  if (abs(yA - yB) >= min_center_gap) {
-    return(list(
-      yA = yA,
-      yB = yB,
-      sideA = sideA,
-      sideB = sideB,
-      warnings = warnings,
-      placement_quality = "optimal"
-    ))
-  }
-
-  # Kollision detekteret - resolution logic
-  warnings <- c(warnings, "Label kollision detekteret - justerer placering")
-  {
-    # Sorter efter linje-position (lower foerst)
-    if (yA_npc < yB_npc) {
-      lower_y <- yA
-      upper_y <- yB
-      lower_is_A <- TRUE
-    } else {
-      lower_y <- yB
-      upper_y <- yA
-      lower_is_A <- FALSE
-    }
-
-    # Proev at skubbe upper opad
-    new_upper <- lower_y + min_center_gap
-    if (new_upper <= high_bound) {
-      upper_y <- new_upper
-    } else {
-      # Proev at skubbe lower nedad
-      new_lower <- upper_y - min_center_gap
-      if (new_lower >= low_bound) {
-        lower_y <- new_lower
-      } else {
-        # Kan ikke opfylde begge constraints - brug shelf placement
-        warnings <- c(warnings, "Umuligt at opfylde alle constraints - bruger shelf placement")
-        placement_quality <- "suboptimal"
-
-        # Prioriter den vigtigste label taettest paa sin linje
-        if (priority == "A") {
-          if (lower_is_A) {
-            lower_y <- max(low_bound, min(propA$center, high_bound))
-            upper_y <- high_bound
-          } else {
-            lower_y <- low_bound
-            upper_y <- min(high_bound, max(propA$center, low_bound))
-          }
-        } else {
-          if (lower_is_A) {
-            lower_y <- low_bound
-            upper_y <- min(high_bound, max(propB$center, low_bound))
-          } else {
-            lower_y <- max(low_bound, min(propB$center, high_bound))
-            upper_y <- high_bound
-          }
-        }
-      }
-    }
-
-    # Map tilbage til A/B
-    if (lower_is_A) {
-      yA <- lower_y
-      yB <- upper_y
-    } else {
-      yA <- upper_y
-      yB <- lower_y
-    }
-  }
-
-  # Final verification: line-gap enforcement
-  # MEN: Prioriter collision avoidance over line-gap hvis konflikt
-  verify_line_gap <- function(y_center, y_line, side, label_h) {
-    half <- label_h / 2
-    if (side == "under") {
-      required_max <- y_line - gap_line - half
-      if (y_center > required_max) {
-        return(list(y = required_max, violated = TRUE))
-      }
-    } else {
-      required_min <- y_line + gap_line + half
-      if (y_center < required_min) {
-        return(list(y = required_min, violated = TRUE))
-      }
-    }
-    return(list(y = y_center, violated = FALSE))
-  }
-
-  verifyA <- verify_line_gap(yA, yA_npc, sideA, label_height_npc_value)
-  verifyB <- verify_line_gap(yB, yB_npc, sideB, label_height_npc_value)
-
-  # Tjek om line-gap enforcement vil skabe ny collision
-  if (verifyA$violated || verifyB$violated) {
-    proposed_yA <- if (verifyA$violated) verifyA$y else yA
-    proposed_yB <- if (verifyB$violated) verifyB$y else yB
-
-    # Vil dette skabe collision?
-    if (abs(proposed_yA - proposed_yB) < min_center_gap) {
-      warnings <- c(warnings, "Line-gap enforcement ville skabe collision - fors\u00f8ger multi-level fallback")
-
-      # === NIVEAU 1: Reduce gap_labels to widen spacing ===
-      n1 <- .try_niveau_1_gap_reduction(
-        proposed_yA, proposed_yB,
-        label_height_npc_value, gap_labels,
-        low_bound, high_bound,
-        cfg$gap_reduction_factors
-      )
-      if (n1$success) {
-        yA <- n1$yA
-        yB <- n1$yB
-        placement_quality <- n1$placement_quality
-        warnings <- c(warnings, n1$warning)
-      } else {
-        # === NIVEAU 2: Flip labels to opposite side ===
-        warnings <- c(warnings, "NIVEAU 1 fejlede - fors\u00f8ger NIVEAU 2: flip labels til modsatte side")
-        n2 <- .try_niveau_2_flip(
-          proposed_yA, proposed_yB,
-          yA_npc, yB_npc,
-          sideA, sideB,
-          label_height_npc_value,
-          gap_line, pad_top, pad_bot,
-          low_bound, high_bound
-        )
-        if (n2$success) {
-          yA <- n2$yA
-          yB <- n2$yB
-          sideA <- n2$sideA
-          sideB <- n2$sideB
-          placement_quality <- n2$placement_quality
-          warnings <- c(warnings, n2$warning)
-        } else {
-          # === NIVEAU 3: Shelf placement as last resort ===
-          warnings <- c(warnings, "NIVEAU 2 fejlede - bruger NIVEAU 3: shelf placement")
-          n3 <- .apply_niveau_3_shelf(
-            proposed_yA, proposed_yB,
-            low_bound, high_bound,
-            priority, cfg$shelf_center_threshold
-          )
-          yA <- n3$yA
-          yB <- n3$yB
-          placement_quality <- n3$placement_quality
-        }
-      }
-    } else {
-      # Sikkert at enforce line-gaps uden collision
-      if (verifyA$violated) {
-        warnings <- c(warnings, "Label A justeret for line-gap compliance")
-        yA <- clamp_to_bounds(verifyA$y, low_bound, high_bound)
-      }
-      if (verifyB$violated) {
-        warnings <- c(warnings, "Label B justeret for line-gap compliance")
-        yB <- clamp_to_bounds(verifyB$y, low_bound, high_bound)
-      }
-    }
-  }
-
-  list(
-    yA = yA,
-    yB = yB,
-    sideA = sideA,
-    sideB = sideB,
-    warnings = warnings,
-    placement_quality = placement_quality,
-    debug_info = if (debug) {
-      list(
-        yA_npc = yA_npc,
-        yB_npc = yB_npc,
-        propA = propA,
-        propB = propB,
-        bounds = c(low_bound, high_bound)
-      )
-    } else {
-      NULL
-    }
+  # Lag 2: pure placement strategy (begge linjer er valid)
+  strat <- .compute_placement_strategy(
+    yA_npc, yB_npc,
+    pref_pos,
+    label_height_npc_value,
+    gap_line, gap_labels,
+    pad_top, pad_bot,
+    priority, cfg
   )
+
+  result <- list(
+    yA = strat$yA,
+    yB = strat$yB,
+    sideA = strat$sideA,
+    sideB = strat$sideB,
+    warnings = c(warnings, strat$warnings),
+    placement_quality = strat$placement_quality
+  )
+
+  if (debug) {
+    result$debug_info <- list(
+      yA_npc = yA_npc,
+      yB_npc = yB_npc,
+      bounds = c(
+        pad_bot + label_height_npc_value / 2,
+        1 - pad_top - label_height_npc_value / 2
+      )
+    )
+  }
+
+  result
 }
