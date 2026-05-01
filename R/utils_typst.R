@@ -175,6 +175,33 @@ bfh_create_typst_document <- function(chart_image,
   substr(paste(output, collapse = "\n"), 1L, max)
 }
 
+# Wrapper around system2() that ensures path-like arguments are properly
+# shell-quoted when stdout/stderr capture is requested.
+#
+# Background: R's system2() with stdout=TRUE or stderr=TRUE routes through
+# /bin/sh -c on macOS/Linux (the shell is needed for stream capture). This
+# means all args are joined into a shell command string. Paths that contain
+# shell-special characters (spaces, parens, brackets, $, &, ') will be
+# misinterpreted by the shell unless quoted.
+#
+# Strategy: Apply shQuote() to any arg that does NOT begin with "--" (i.e.
+# path-like positional args). Flag args (e.g. "--ignore-system-fonts") are
+# safe as-is; quoting them could break Quarto's flag parser.
+#
+# The .system2 parameter is the dependency-injection hook inherited from
+# bfh_compile_typst() so mock injection works end-to-end.
+.safe_system2_capture <- function(cmd, args, ..., .system2 = system2) {
+  # Determine if any args need quoting (non-flag positional args)
+  quoted_args <- vapply(args, function(arg) {
+    if (startsWith(arg, "--")) {
+      arg
+    } else {
+      shQuote(arg)
+    }
+  }, character(1L))
+  .system2(cmd, args = quoted_args, ...)
+}
+
 
 #' Compile Typst Document to PDF
 #'
@@ -233,10 +260,12 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  # Build compilation args
-  # shQuote() maa IKKE bruges her: system2() med character vector sender
-  # argv-tokens direkte uden shell -- shQuote tilfojer literale anforselstegn
-  # og bryder stier med mellemrum paa Unix/macOS.
+  # Build compilation args.
+  # Note: shQuote() is applied inside .safe_system2_capture() for path-like
+  # args. system2(stdout=TRUE, stderr=TRUE) routes through /bin/sh on
+  # macOS/Linux for stream capture, so paths with spaces/parens/brackets/$
+  # must be quoted. Flag args (--ignore-system-fonts, --font-path) are
+  # passed through without quoting so Quarto's flag parser sees them intact.
   compile_args <- c("typst", "compile", typst_file, output)
   if (!is.null(font_path)) {
     compile_args <- c(compile_args, "--font-path", font_path)
@@ -248,11 +277,12 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   # Use quarto typst compile (not quarto render which expects .qmd files)
   quarto_cmd <- .quarto_path %||% get_quarto_path()
   result <- tryCatch(
-    .system2(
+    .safe_system2_capture(
       quarto_cmd,
       args = compile_args,
       stdout = TRUE,
-      stderr = TRUE
+      stderr = TRUE,
+      .system2 = .system2
     ),
     error = function(e) {
       stop(

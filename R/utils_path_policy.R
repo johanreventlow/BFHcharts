@@ -43,15 +43,63 @@ SHELL_METACHARS_BINARY <- c(";", "|", "&", "$", "`", "<", ">", "\n", "\r")
 #' and resolves symlinks to verify the resolved path stays within
 #' `allow_root`.
 #'
-#' **Output path policy (relaxed in v0.12.0):** Hospital filenames frequently
-#' contain parens (`rapport (final).pdf`), brackets (`Q1 [2026].pdf`),
-#' ampersands (`Indikator & resultat.pdf`) and spaces. These are now
-#' **permitted**. The remaining rejections -- `;`, `|`, `<`, `>`, backtick,
-#' newline (LF), carriage return (CR), NUL byte -- are kept because R's
-#' `system2(... stdout = TRUE, stderr = TRUE)` invokes shell for
-#' stream-capture and these characters can break shell parsing or chain
-#' commands. `&` and `$` are permitted because without `;`/`&&` chaining (also
-#' rejected) they have low blast-radius even if they reach shell.
+#' @details
+#' ## Path policy: character classes
+#'
+#' `system2(stdout = TRUE, stderr = TRUE)` routes through `/bin/sh` on
+#' macOS/Linux for stream capture. `bfh_compile_typst()` therefore passes all
+#' path-like args through `.safe_system2_capture()`, which applies
+#' `shQuote()` to ensure the shell sees each path as a single token.
+#'
+#' ### Verified-functional characters
+#'
+#' The following characters are accepted by the validator **and** confirmed to
+#' produce an actual PDF in end-to-end tests (see
+#' `tests/testthat/test-quarto-isolation.R` and `test-path-policy.R`):
+#'
+#' - Spaces (` `) -- e.g. `rapport (final).pdf`
+#' - Parentheses (`(`, `)`) -- e.g. `rapport (final).pdf`
+#' - Square brackets (`[`, `]`) -- e.g. `Q1 [2026].pdf`
+#' - Curly braces (`{`, `}`) -- e.g. `kvalitet {draft}.pdf`
+#' - Ampersand (`&`) -- e.g. `Indikator & resultat.pdf`
+#' - Dollar sign (`$`) -- treated as literal; `shQuote()` prevents expansion
+#' - Single quote (`'`) -- embedded in double-quoted shell token via `shQuote()`
+#' - General Unicode (Danish aesc/oslash/aring, etc.)
+#'
+#' ### Rejected by validator
+#'
+#' The following characters are blocked before any system call is made (see
+#' `tests/testthat/test-path-policy.R` "afviser stadig shell-pipeline"):
+#'
+#' - Semicolon (`;`) -- command chaining
+#' - Pipe (`|`) -- command chaining / redirection
+#' - Less-than (`<`) -- stdin redirection
+#' - Greater-than (`>`) -- stdout redirection
+#' - Backtick (`` ` ``) -- command substitution
+#' - Newline (LF `\n`) -- breaks Quarto output parser and log files
+#' - Carriage return (CR `\r`) -- same as above
+#' - NUL byte -- filesystem boundary; R strings rarely contain NUL but checked
+#'   defensively
+#' - `..` as a standalone path component -- path traversal (checked separately
+#'   via `.check_traversal()`)
+#'
+#' ### Edge-case characters (accepted, with caveats)
+#'
+#' - `$` -- accepted; without `;`/`&&` (both rejected) shell expansion cannot
+#'   chain destructive commands. `shQuote()` uses single-quote wrapping on
+#'   Unix which prevents `$`-expansion entirely. Verified in
+#'   `tests/testthat/test-path-policy.R` ("dollar sign does not trigger shell
+#'   substitution").
+#' - `&` -- accepted; background-execution requires a trailing `&` which is
+#'   impossible here since the semicolon-separated chaining characters are
+#'   rejected. Verified in `tests/testthat/test-path-policy.R`.
+#'
+#' ### Windows note
+#'
+#' On Windows, `system2()` does not invoke `/bin/sh`; `shQuote()` uses
+#' double-quote style. Paths with spaces and parens are expected to work.
+#' UNC paths (`\\\\server\\share\\`) and paths longer than 260 characters
+#' have not been empirically tested in the current CI setup.
 #'
 #' Binary paths (executables invoked as argv[0]) are validated separately
 #' via `.check_metachars_binary()` and remain strictly checked because R's
