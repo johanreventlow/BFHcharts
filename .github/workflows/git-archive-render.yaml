@@ -30,8 +30,10 @@ jobs:
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      # Use production template to verify tracked-source rendering
-      BFHCHARTS_SMOKE_USE_PRODUCTION_TEMPLATE: "true"
+      # Use CI test-template (DejaVu fonts). Mari is proprietary and only
+      # available via BFHchartsAssets companion package; production-template
+      # render is not validated on CI. This smoke still verifies tracked-source
+      # install + Quarto pipeline integrity.
 
     steps:
       - uses: actions/checkout@v4
