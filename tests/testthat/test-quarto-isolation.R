@@ -233,12 +233,20 @@ test_that("bfh_compile_typst afviser shell-metacharacters i typst_file-sti", {
 })
 
 test_that("bfh_compile_typst afviser shell-metacharacters i output-sti", {
-  typst_file <- tempfile(fileext = ".typ")
+  typst_file <- withr::local_tempfile(fileext = ".typ")
   writeLines("#text[test]", typst_file)
-  withr::defer(unlink(typst_file))
+
+  # Ensure any accidentally-created directories are removed on test exit.
+  # Validation happens before dir.create(), so these should never exist,
+  # but we assert that explicitly at the end.
+  withr::defer({
+    for (d in c("output; rm -rf ", "output | cat", "output`cmd`")) {
+      if (dir.exists(d)) unlink(d, recursive = TRUE)
+    }
+  })
 
   # ;|backtick<> = shell-syntax (kommando-kæder, redirection, substitution).
-  # R's system2(stdout=TRUE, stderr=TRUE) shell-mode kan eksekvere disse —
+  # R's system2(stdout=TRUE, stderr=TRUE) shell-mode kan eksekvere disse --
   # validering forhindrer det.
   expect_error(
     BFHcharts:::bfh_compile_typst(typst_file, "output; rm -rf /.pdf"),
@@ -251,6 +259,12 @@ test_that("bfh_compile_typst afviser shell-metacharacters i output-sti", {
   expect_error(
     BFHcharts:::bfh_compile_typst(typst_file, "output`cmd`.pdf"),
     "disallowed unsafe characters"
+  )
+
+  # Assert: validation fires before dir.create() -- no output* dirs should exist.
+  expect_false(
+    any(dir.exists(c("output; rm -rf ", "output | cat", "output`cmd`"))),
+    info = "Shell-injection paths must not create directories before validation fires"
   )
 })
 
