@@ -89,6 +89,58 @@ This keeps proprietary assets out of public BFHcharts and out of your consumer a
 
 For the BFH/Region Hovedstaden reference deployment, the `BFHchartsAssets` private companion package (separate repository, hospital-internal access) implements this pattern. See its repository documentation for setup details.
 
+## PDF Asset Policy
+
+This section documents exactly what the public `BFHcharts` package bundles, what requires
+a companion package, and how to verify your setup.
+
+### What the public package guarantees
+
+- **Typst template:** `inst/templates/typst/bfh-template/bfh-template.typ` is bundled
+  and used by default for all `bfh_export_pdf()` calls.
+- **Font fallback chain:** The template specifies `("Mari", "Roboto", "Arial", "Helvetica", "sans-serif")`.
+  If Mari is absent, Typst falls through to the next available font automatically. Roboto,
+  Arial, and Helvetica are widely available on Ubuntu, macOS, and Windows.
+- **No proprietary assets in package:** Mari fonts and hospital logos are gitignored and
+  never committed to the public repository. A clean `pak::pkg_install()` from GitHub
+  produces a package that renders PDFs with system-available fonts.
+- **Auto-detect staged fonts:** `bfh_compile_typst()` automatically detects a `fonts/`
+  subdirectory placed by `inject_assets` callbacks and passes it as `--font-path` to the
+  Typst compiler — no extra configuration needed.
+
+### What companion packages supply
+
+- **Mari font files** (proprietary, Region Hovedstaden): `BFHchartsAssets::inject_bfh_assets`
+  copies Mari `.otf`/`.ttf` files into the staged template directory before compile.
+- **Hospital logo** (`images/Hospital_Maerke_RGB_A1_str.png`): supplied by the companion
+  package alongside fonts.
+
+Without a companion package, PDFs render correctly using system fonts but without the
+hospital logo and Mari branding.
+
+### Verifying your setup
+
+```r
+# Check which fonts Typst will find on your system
+systemfonts::system_fonts()[grepl("Mari|Roboto", systemfonts::system_fonts()$family), "family"]
+
+# Smoke-render a PDF to verify the full pipeline works
+result <- bfh_qic(
+  data.frame(x = 1:20, y = runif(20, 0.05, 0.15), n = rep(100, 20)),
+  x = "x", y = "y", n = "n", chart_type = "p"
+)
+bfh_export_pdf(result, tempfile(fileext = ".pdf"))
+message("PDF rendered successfully")
+```
+
+### Known limitation (images/)
+
+The `images/` directory containing the hospital logo is currently untracked in the public
+repository. A `git archive HEAD` tarball will produce a package where the default template
+references an absent image. Rendering will succeed only when companion assets are injected
+via `inject_assets`. A future release will add a conditional image reference or placeholder
+asset to close this gap (see `inst/adr/ADR-001-pdf-asset-policy.md`).
+
 ## Quick Start
 
 ```r

@@ -1,4 +1,26 @@
-# BFHcharts 0.12.3
+# BFHcharts 0.13.0
+
+## Breaking changes
+
+* **PDF asset-kontrakt dokumenteret og håndhævet (ADR-001, Option A).** Den
+  publicerede pakke garanterer nu eksplicit at `bfh_export_pdf()` producerer en
+  gyldig PDF med system-tilgængelige fallback-fonts (Roboto, Arial, Helvetica,
+  sans-serif) — uden at kræve companion-pakken `BFHchartsAssets` eller
+  proprietære Mari-fonts. Font-chain i production-template er uændret
+  `("Mari", "Roboto", "Arial", "Helvetica", "sans-serif")`; Mari er stadig
+  første prioritet når companion-pakken injecter assets via `inject_assets`.
+  Brugere der allerede bruger `inject_assets = BFHchartsAssets::inject_bfh_assets`
+  er upåvirkede. Brugere der ikke bruger companion-pakken får nu konsistent
+  fallback-rendering i stedet for runtime-fejl ved manglende Mari. (#TBD)
+
+## Nye features
+
+* **`bfh_compile_typst()` auto-detekterer staged fonts/** Funktionen registrerer
+  automatisk en `fonts/`-undermappe i det stagede template-tempdir og videregiver
+  den som `--font-path` til Typst-compileren — forudsat at `font_path`-argumentet
+  ikke er sat eksplicit. Companion-injectede fonts (fx Mari via `inject_assets`)
+  opdages dermed uden at kalleren behøver at angive `font_path`. Eksplicit
+  `font_path`-argument har stadig forrang. (#TBD)
 
 ## Bug fixes
 
@@ -108,6 +130,15 @@
   shell-variable-expansion. Verificeret på macOS med live Quarto/Typst.
   Windows-adfærd for UNC-stier og paths >260 tegn er ikke empirisk testet
   i nuværende CI-setup.
+
+* **ADR-001 oprettet** (`inst/adr/ADR-001-pdf-asset-policy.md`): dokumenterer
+  valg af Option A (open-fallback default) og konsekvenser for biSPCharts-deploy.
+* **CI smoke-test udvidet**: `pdf-smoke.yaml` kører nu også
+  `test-production-template-renders.R` via `BFHCHARTS_TEST_RENDER=true` for at
+  validere production-template på hver PR. Testen skipper automatisk når
+  `images/`-mappen mangler (known gap, se ADR-001).
+* **README**: ny sektion "PDF Asset Policy" dokumenterer pakke-kontrakten,
+  companion-mønsteret og en verificeringskommando.
 
 # BFHcharts 0.12.1
 
