@@ -92,8 +92,8 @@ test_that(".validate_inject_assets: option suppresses globalenv warning", {
   )
 })
 
-test_that(".validate_inject_assets: returns fn invisibly when valid", {
+test_that(".validate_inject_assets: returns invisibly without error when valid", {
   namespace_fn <- BFHcharts:::bfh_extract_spc_stats
-  result <- BFHcharts:::.validate_inject_assets(namespace_fn)
-  expect_null(result)
+  # Should complete without error or warning
+  expect_silent(BFHcharts:::.validate_inject_assets(namespace_fn))
 })

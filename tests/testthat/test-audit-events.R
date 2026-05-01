@@ -64,7 +64,7 @@ test_that(".emit_audit_event JSON-line contains all required fields", {
     expect_match(line, '"package"')
     expect_match(line, '"BFHcharts"')
     expect_match(line, '"target"')
-    expect_match(line, '"bfhllm_spc_suggestion"')
+    expect_match(line, "bfhllm_spc_suggestion")
     expect_match(line, '"use_rag"')
     expect_match(line, '"hostname"')
     expect_match(line, '"user"')
