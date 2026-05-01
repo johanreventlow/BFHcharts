@@ -1,3 +1,22 @@
+# BFHcharts 0.12.2
+
+## Bug fixes
+
+* **Output-stier med spaces/parens/brackets virker nu også i praksis.**
+  v0.12.0 relaxede path-validatoren til at tillade hospital-typiske filnavne
+  (`rapport (final).pdf`, `Q1 [2026].pdf`, `Indikator & resultat.pdf`), men
+  `bfh_compile_typst()` sendte stadig stier ukvotered til `system2()`.
+  `system2(stdout = TRUE, stderr = TRUE)` invoker `/bin/sh` på macOS/Linux
+  for stream-capture; parens og brackets i argumenter udløste
+  "syntax error near unexpected token '('" og PDF'en blev aldrig skabt.
+  Rettes ved ny intern `.safe_system2_capture()`-wrapper der anvender
+  `shQuote()` på path-argumenter (men ikke flag-argumenter som
+  `--ignore-system-fonts`). `$`-tegn i filnavne (fx `data_$HOME_test.pdf`)
+  behandles nu som literals; `shQuote()` single-quote-wrapper forhindrer
+  shell-variable-expansion. Verificeret på macOS med live Quarto/Typst.
+  Windows-adfærd for UNC-stier og paths >260 tegn er ikke empirisk testet
+  i nuværende CI-setup.
+
 # BFHcharts 0.12.1
 
 ## Bug fixes

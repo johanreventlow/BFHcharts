@@ -185,3 +185,115 @@ test_that("validate_export_path fejler ved ikke-character input", {
   expect_error(validate_export_path(""), "non-empty character")
   expect_error(validate_export_path(c("a", "b")), "non-empty character")
 })
+
+# ============================================================================
+# $-SUBSTITUTION: literal dollar sign in paths (mock-based)
+# ============================================================================
+#
+# Verifies that .safe_system2_capture() passes $ as a literal character to
+# the shell, not as a variable-expansion trigger. shQuote() on Unix wraps
+# the path in single quotes which suppresses $-expansion entirely.
+#
+# Reference: openspec/changes/2026-05-01-validate-output-paths-against-runtime
+# Spec: pdf-export, "$ in output path does not trigger shell substitution"
+
+test_that("$ in output path does not trigger shell substitution (mock)", {
+  skip_on_os("windows") # shQuote style differs; substitution semantics differ
+
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[dollar test]", typst_file)
+  withr::defer(unlink(typst_file))
+
+  # Path contains literal $HOME -- must NOT be expanded to actual home dir
+  out_path <- file.path(tempdir(), paste0("test_", "$HOME", "_dummy.pdf"))
+  withr::defer(unlink(out_path))
+
+  captured_args <- NULL
+  success_mock <- function(command, args, ...) {
+    captured_args <<- args
+    file.create(out_path)
+    character(0)
+  }
+
+  expect_no_error(
+    BFHcharts:::bfh_compile_typst(
+      typst_file, out_path,
+      .system2 = success_mock, .quarto_path = "/fake/quarto"
+    )
+  )
+
+  # The arg sent to system2 must contain the literal "$HOME" string
+  output_arg <- captured_args[4]
+  expect_true(
+    grepl("$HOME", output_arg, fixed = TRUE),
+    info = paste("Expected literal $HOME in arg, got:", output_arg)
+  )
+  # On Unix, shQuote wraps in single quotes which suppresses $ expansion
+  expect_true(
+    startsWith(output_arg, "'"),
+    info = "Unix: shQuote must wrap with single quotes to prevent $-expansion"
+  )
+})
+
+test_that("${USER} and backtick in filename are handled safely (mock)", {
+  skip_on_os("windows")
+
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[subst test]", typst_file)
+  withr::defer(unlink(typst_file))
+
+  # ${USER} literal path
+  out_user <- file.path(tempdir(), paste0("report_", "${USER}", ".pdf"))
+  withr::defer(unlink(out_user))
+
+  captured_args <- NULL
+  mock_user <- function(command, args, ...) {
+    captured_args <<- args
+    file.create(out_user)
+    character(0)
+  }
+
+  expect_no_error(
+    BFHcharts:::bfh_compile_typst(
+      typst_file, out_user,
+      .system2 = mock_user, .quarto_path = "/fake/quarto"
+    )
+  )
+  output_arg_user <- captured_args[4]
+  # Literal ${USER} must survive in the quoted arg
+  expect_true(
+    grepl("${USER}", output_arg_user, fixed = TRUE),
+    info = paste("Expected literal ${USER} in arg, got:", output_arg_user)
+  )
+
+  # Note: backtick (`) is rejected by validate_export_path() so it never
+  # reaches .safe_system2_capture(). Test that the validator blocks it.
+  expect_error(
+    validate_export_path(paste0(tempdir(), "/report`cmd`.pdf")),
+    "disallowed",
+    info = "Backtick must be rejected by validator before reaching system2"
+  )
+})
+
+test_that("$ in output path renders actual PDF with literal filename (live Quarto)", {
+  skip_if_not_render_test()
+  skip_if_no_quarto()
+  skip_on_os("windows")
+
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[dollar live test]", typst_file)
+  withr::defer(unlink(typst_file))
+
+  out_dollar <- file.path(tempdir(), paste0("data_", "$HOME", "_test.pdf"))
+  withr::defer(unlink(out_dollar))
+
+  expect_no_error(BFHcharts:::bfh_compile_typst(typst_file, out_dollar))
+  expect_true(file.exists(out_dollar))
+  expect_gt(file.size(out_dollar), 0L)
+
+  # Confirm literal $HOME is in the filename (not expanded to actual home path)
+  expect_true(
+    grepl("$HOME", basename(out_dollar), fixed = TRUE),
+    info = "Filename must contain literal $HOME, not expanded home directory"
+  )
+})
