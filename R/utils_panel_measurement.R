@@ -3,6 +3,51 @@
 # ==============================================================================
 
 
+#' Kjoer kode i en midlertidig Cairo PDF device og luk den deterministisk
+#'
+#' Aabner en off-screen Cairo PDF device med de angivne dimensioner, udforer
+#' `code` (en udtryksblok), og sikrer at enheden lukkes og temp-filen slettes
+#' uanset om `code` fejler. Restorer den tidligere aktive device.
+#'
+#' @param width_in Device bredde i inches
+#' @param height_in Device hoejde i inches
+#' @param code Udtryksblok der skal koeres med den aktive device
+#'
+#' @return Vaerdien af `code`
+#'
+#' @keywords internal
+#' @noRd
+with_temporary_device <- function(width_in, height_in, code) {
+  previous_dev <- grDevices::dev.cur()
+  devices_before <- grDevices::dev.list()
+
+  temp_pdf <- tempfile(fileext = ".pdf")
+  grDevices::cairo_pdf(filename = temp_pdf, width = width_in, height = height_in)
+  temp_dev <- grDevices::dev.cur()
+
+  on.exit(
+    {
+      # Close temp device if still open
+      if (temp_dev %in% grDevices::dev.list()) {
+        tryCatch(grDevices::dev.off(temp_dev), error = function(e) NULL)
+      }
+      # Restore previous device if it still exists
+      if (previous_dev > 1 && previous_dev != temp_dev &&
+        previous_dev %in% grDevices::dev.list()) {
+        tryCatch(grDevices::dev.set(previous_dev), error = function(e) NULL)
+      }
+      # Remove temp file
+      unlink(temp_pdf, force = TRUE)
+    },
+    add = TRUE,
+    after = FALSE
+  )
+
+  result <- code
+  result
+}
+
+
 #' Maal panel hoejde fra gtable
 #'
 #' Kernefunktion der maaler panel hoejde fra en pre-built gtable.
