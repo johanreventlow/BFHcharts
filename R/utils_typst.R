@@ -11,20 +11,50 @@ NULL
 #' Create Typst Document for SPC Chart
 #'
 #' Generates a Typst document (.typ) using BFH hospital template with
-#' chart image and metadata.
+#' chart image and metadata. Downstream packages (e.g. biSPCharts) can use
+#' this function directly instead of accessing it via
+#' \code{getFromNamespace()}.
 #'
 #' @param chart_image Path to chart image (SVG or PNG)
 #' @param output Path for output .typ file
-#' @param metadata List with template parameters (hospital, department, title, etc.)
-#' @param spc_stats List with SPC statistics (runs, crossings, outliers)
+#' @param metadata List with template parameters (hospital, department, title,
+#'   analysis, details, author, date, data_definition, footer_content).
+#'   See \code{\link{bfh_merge_metadata}} for a convenient way to build this
+#'   list with defaults filled in.
+#' @param spc_stats List with SPC statistics (runs_expected, runs_actual,
+#'   crossings_expected, crossings_actual, outliers_expected,
+#'   outliers_actual, is_run_chart). See \code{\link{bfh_extract_spc_stats}}
+#'   for how to produce this list from a \code{bfh_qic_result} object.
 #' @param template Template name (default: "bfh-diagram")
 #' @param template_path Optional custom template path. When provided, overrides
 #'   the packaged template (default: NULL uses packaged template)
+#' @param skip_template_copy Logical. If TRUE, skip copying the template
+#'   directory (assumes it is already present in the output directory).
+#'   Default: FALSE.
 #'
 #' @return Path to created .typ file (invisibly)
 #'
-#' @keywords internal
-#' @noRd
+#' @export
+#' @family utility-functions
+#' @seealso \code{\link{bfh_extract_spc_stats}}, \code{\link{bfh_merge_metadata}}
+#' @examples
+#' \dontrun{
+#' result <- bfh_qic(data, x = date, y = value, chart_type = "i")
+#' metadata <- bfh_merge_metadata(
+#'   list(department = "Quality"),
+#'   chart_title = result$config$chart_title
+#' )
+#' spc_stats <- bfh_extract_spc_stats(result)
+#' tmp_dir <- tempdir()
+#' chart_png <- file.path(tmp_dir, "chart.png")
+#' ggplot2::ggsave(chart_png, result$plot, width = 8, height = 5)
+#' typ_file <- bfh_create_typst_document(
+#'   chart_image = chart_png,
+#'   output      = file.path(tmp_dir, "document.typ"),
+#'   metadata    = metadata,
+#'   spc_stats   = spc_stats
+#' )
+#' }
 bfh_create_typst_document <- function(chart_image,
                                       output,
                                       metadata,
