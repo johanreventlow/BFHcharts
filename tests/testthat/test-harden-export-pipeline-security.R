@@ -258,10 +258,29 @@ test_that("escape_typst_string bevarer eksisterende escaping af backslash og anf
   expect_true(grepl('\\"', result, fixed = TRUE))
 })
 
-test_that("escape_typst_string bevarer eksisterende escaping af < og >", {
-  result <- BFHcharts:::escape_typst_string("a<b>c")
-  expect_true(grepl("\\<", result, fixed = TRUE))
-  expect_true(grepl("\\>", result, fixed = TRUE))
+test_that("escape_typst_string lader < og > passere uaendret (string-literal kontekst)", {
+  # < og > er almindelige tegn i Typst string literals - de kan ikke terminere
+  # strengen, og tidligere `\<` / `\>` escapes var invalide Typst-escapes som
+  # blev gengivet med literal backslash i PDF (fx "p \< 0.05").
+  expect_equal(BFHcharts:::escape_typst_string("a<b>c"), "a<b>c")
+})
+
+test_that("escape_typst_string bevarer realistisk klinisk tekst med < og >", {
+  # Regression: sikrer at indholdsfelter (hospital, department, details, author,
+  # data_definition, chart_title) ikke faar literal backslash i PDF-output.
+  expect_equal(
+    BFHcharts:::escape_typst_string("p < 0.05 og n > 30"),
+    "p < 0.05 og n > 30"
+  )
+})
+
+test_that("escape_typst_string bevarer kombineret < > og quote-escaping", {
+  # Kombineret realistisk input: backslash + quote skal stadig escapes,
+  # men < og > skal ikke faa literal backslash.
+  expect_equal(
+    BFHcharts:::escape_typst_string("p < 0.05 (\"primary\")"),
+    "p < 0.05 (\\\"primary\\\")"
+  )
 })
 
 test_that("escape_typst_string haandterer NULL og tom streng", {

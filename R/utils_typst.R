@@ -523,13 +523,12 @@ escape_typst_string <- function(s) {
   # perl-regex \\x00 matcher NUL uden at skulle indlejre literal NUL i kildefil.
   s <- gsub("\\x00", "", s, perl = TRUE)
 
-  # Escape backslashes and quotes
+  # Escape backslashes and quotes (only valid escapes in Typst string literals
+  # are \\, \", \n, \r, \t, \u{...}; control chars handled above).
+  # Other characters - including < and > - pass through unchanged: they are
+  # ordinary characters inside a string literal and cannot terminate it.
   s <- gsub("\\\\", "\\\\\\\\", s)
   s <- gsub('"', '\\\\"', s)
-
-  # Escape Typst special characters
-  s <- gsub("<", "\\\\<", s)
-  s <- gsub(">", "\\\\>", s)
 
   return(s)
 }
