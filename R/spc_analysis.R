@@ -656,7 +656,7 @@ bfh_generate_analysis <- function(x,
 }
 
 
-# Allokér tegnbudget til stability/target/action dele af fallback-analysen.
+# Allokerer tegnbudget til stability/target/action dele af fallback-analysen.
 #
 # Med target: stability ~50%, target ~25%, action ~25%.
 # Uden target: target-budgettet realloceres til stability (65%) + action (35%).
@@ -680,12 +680,12 @@ bfh_generate_analysis <- function(x,
 }
 
 
-# Vælg i18n-nøgle til stabilitets-arm af fallback-analysen.
+# Vaelg i18n-noegle til stabilitets-arm af fallback-analysen.
 #
 # Pure dispatch: tager named-logical flags (has_runs, has_crossings,
 # has_outliers) og returnerer character scalar, der refererer til
-# `texts$stability[[key]]` i sprog-YAML'en. Caller håndterer
-# no_variation-grenen separat (dén bruger sin egen no_variation key
+# `texts$stability[[key]]` i sprog-YAML'en. Caller haandterer
+# no_variation-grenen separat (den bruger sin egen no_variation key
 # med centerline-placeholder).
 #
 # Mulige returvaerdier: "no_signals", "runs_only", "crossings_only",
@@ -712,7 +712,7 @@ bfh_generate_analysis <- function(x,
 }
 
 
-# Vælg i18n-nøgle til handlings-arm af fallback-analysen.
+# Vaelg i18n-noegle til handlings-arm af fallback-analysen.
 #
 # Pure dispatch: tager flags + target-evaluation og returnerer character
 # scalar key til `texts$action[[key]]`. Tre dispatch-veje:
@@ -754,6 +754,77 @@ bfh_generate_analysis <- function(x,
   } else {
     if (is_stable) "stable_no_target" else "unstable_no_target"
   }
+}
+
+
+# Evaluer maalvurderings-arm af fallback-analysen.
+#
+# Returnerer named list (target_text, goal_met, at_target). Bruges af
+# orchestrator + .select_action_key().
+#
+# Tre dispatch-veje (matcher .select_action_key()'s tre cascade-grene):
+#   1. has_target + target_direction: retningsbevidst goal_met-evaluering
+#      via centerline-vs-target sammenligning.
+#   2. has_target uden target_direction: vaerdineutral at_target/over/under
+#      med tolerance.
+#   3. !has_target: target_text = "".
+#
+# i18n-lookup foregaar her (ikke i orchestrator) for at holde
+# orchestrator fri af cascade-strukturer.
+.evaluate_target_arm <- function(context, flags, texts, target_budget,
+                                 target_tolerance) {
+  result <- list(target_text = "", goal_met = FALSE, at_target = FALSE)
+  if (!flags$has_target) {
+    return(result)
+  }
+
+  target_value <- context$target_value
+  target_direction <- context$target_direction
+  centerline <- context$centerline
+
+  # Foretraek display-streng fra input (fx "<= 2,5"), ellers format numerisk
+  display_target <- if (!is.null(context$target_display) &&
+    nzchar(context$target_display)) {
+    context$target_display
+  } else {
+    format_target_value(target_value, y_axis_unit = context$y_axis_unit)
+  }
+
+  if (!is.null(target_direction)) {
+    # Retningsbevidst: "higher" -> CL >= target, "lower" -> CL <= target
+    result$goal_met <- switch(target_direction,
+      "higher" = centerline >= target_value,
+      "lower"  = centerline <= target_value,
+      FALSE
+    )
+    key <- if (result$goal_met) "goal_met" else "goal_not_met"
+    result$target_text <- pick_text(texts$target[[key]],
+      data = list(target = display_target),
+      budget = target_budget
+    )
+  } else {
+    # Vaerdineutral (bagudkompatibel): at/over/under target
+    tolerance <- max(abs(target_value) * target_tolerance, 0.01)
+    if (abs(centerline - target_value) <= tolerance) {
+      result$target_text <- pick_text(texts$target$at_target,
+        data = list(target = display_target),
+        budget = target_budget
+      )
+      result$at_target <- TRUE
+    } else if (centerline > target_value) {
+      result$target_text <- pick_text(texts$target$over_target,
+        data = list(target = display_target),
+        budget = target_budget
+      )
+    } else {
+      result$target_text <- pick_text(texts$target$under_target,
+        data = list(target = display_target),
+        budget = target_budget
+      )
+    }
+  }
+
+  result
 }
 
 
@@ -837,55 +908,13 @@ build_fallback_analysis <- function(context,
   }
 
   # --- 2. Maalvurdering ---
-  target_text <- ""
-  at_target <- FALSE # bruges af v\u00e6rdineutral action-sti
-  goal_met <- FALSE # bruges af retningsbevidst action-sti
-
-  if (has_target) {
-    # Foretraek display-streng fra input (fx "<= 2,5"), ellers format numerisk
-    display_target <- if (!is.null(context$target_display) &&
-      nzchar(context$target_display)) {
-      context$target_display
-    } else {
-      format_target_value(target_value, y_axis_unit = context$y_axis_unit)
-    }
-
-    if (!is.null(target_direction)) {
-      # === RETNINGSBEVIDST LOGIK ===
-      # "higher" -> CL skal vaere >= target for at opfylde maalet.
-      # "lower"  -> CL skal vaere <= target.
-      goal_met <- switch(target_direction,
-        "higher" = centerline >= target_value,
-        "lower"  = centerline <= target_value,
-        FALSE
-      )
-      key <- if (goal_met) "goal_met" else "goal_not_met"
-      target_text <- pick_text(texts$target[[key]],
-        data = list(target = display_target),
-        budget = target_budget
-      )
-    } else {
-      # === VAERDINEUTRAL LOGIK (bagudkompatibel) ===
-      tolerance <- max(abs(target_value) * target_tolerance, 0.01)
-      if (abs(centerline - target_value) <= tolerance) {
-        target_text <- pick_text(texts$target$at_target,
-          data = list(target = display_target),
-          budget = target_budget
-        )
-        at_target <- TRUE
-      } else if (centerline > target_value) {
-        target_text <- pick_text(texts$target$over_target,
-          data = list(target = display_target),
-          budget = target_budget
-        )
-      } else {
-        target_text <- pick_text(texts$target$under_target,
-          data = list(target = display_target),
-          budget = target_budget
-        )
-      }
-    }
-  }
+  target_eval <- .evaluate_target_arm(
+    context, flags, texts,
+    target_budget, target_tolerance
+  )
+  target_text <- target_eval$target_text
+  goal_met <- target_eval$goal_met
+  at_target <- target_eval$at_target
 
   # --- 3. Handlingsforslag ---
   action_key <- .select_action_key(flags, target_direction, goal_met, at_target)

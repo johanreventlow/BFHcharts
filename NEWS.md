@@ -1,3 +1,16 @@
+# BFHcharts (development)
+
+## Internal changes
+
+* Decompose `build_fallback_analysis()` (`R/spc_analysis.R`, ~210-line
+  boolean cascade) into orchestrator (~98 lines) plus 5 named pure
+  helpers: `.detect_signal_flags()`, `.allocate_text_budget()`,
+  `.select_stability_key()`, `.select_action_key()`,
+  `.evaluate_target_arm()`. Pure refactor; fallback narrative output
+  unchanged. Adding a new cascade arm now becomes a single new test
+  row + one new key + one new i18n string instead of a multi-place edit.
+  Implements OpenSpec change `decompose-fallback-analysis`.
+
 # BFHcharts 0.14.3
 
 ## Breaking changes
