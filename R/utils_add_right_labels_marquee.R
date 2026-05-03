@@ -9,6 +9,45 @@
 # (systemfonts-registrering != PostScript font database)
 .font_cache <- new.env(parent = emptyenv())
 
+# Resolve label geometry parameters from label_size + cached placement config.
+#
+# Pure given inputs. Returns named list med:
+#   scale_factor          (numeric, label_size / PDF_LABEL_SIZE)
+#   marquee_lineheight    (numeric, fra config eller default 0.9)
+#   right_aligned_style   (marquee style object, cachet)
+#   marquee_size_factor   (numeric, fra config eller default 6)
+#   marquee_size          (numeric, marquee_size_factor * scale_factor)
+#
+# Erstatter inline geometri-blok i orchestrator (lines ~148-170 i tidligere
+# version). Bruges ogsaa direkte af unit-tests uden device side-effects.
+.resolve_label_geometry <- function(label_size, placement_cfg) {
+  scale_factor <- label_size / PDF_LABEL_SIZE
+
+  marquee_lineheight <- if (!is.null(placement_cfg$marquee_lineheight)) {
+    placement_cfg$marquee_lineheight
+  } else {
+    0.9
+  }
+
+  right_aligned_style <- get_right_aligned_marquee_style(lineheight = marquee_lineheight)
+
+  marquee_size_factor <- if (!is.null(placement_cfg$marquee_size_factor)) {
+    placement_cfg$marquee_size_factor
+  } else {
+    6
+  }
+  marquee_size <- marquee_size_factor * scale_factor
+
+  list(
+    scale_factor = scale_factor,
+    marquee_lineheight = marquee_lineheight,
+    right_aligned_style = right_aligned_style,
+    marquee_size_factor = marquee_size_factor,
+    marquee_size = marquee_size
+  )
+}
+
+
 .resolve_font_family <- function(family = NULL) {
   .ensure_bfhtheme()
   # Detekter device-type: "cairo", "postscript" eller "other"
@@ -145,29 +184,15 @@ add_right_labels_marquee <- function(
     }
   }
 
-  # Beregn responsive stoerrelser baseret paa label_size (baseline = PDF_LABEL_SIZE)
-  scale_factor <- label_size / PDF_LABEL_SIZE
-
   # PERFORMANCE: Load config EN gang i starten
   placement_cfg <- get_label_placement_config()
 
-  # Hent marquee_lineheight fra config
-  marquee_lineheight <- if (!is.null(placement_cfg$marquee_lineheight)) {
-    placement_cfg$marquee_lineheight
-  } else {
-    0.9
-  }
-
-  # PERFORMANCE: Hent cached right-aligned style
-  right_aligned_style <- get_right_aligned_marquee_style(lineheight = marquee_lineheight)
-
-  # Beregn marquee_size tidligt, saa vi kan bruge den til maalinger
-  marquee_size_factor <- if (!is.null(placement_cfg$marquee_size_factor)) {
-    placement_cfg$marquee_size_factor
-  } else {
-    6
-  }
-  marquee_size <- marquee_size_factor * scale_factor
+  # Beregn responsive stoerrelser + cache style i samlet helper
+  geom <- .resolve_label_geometry(label_size, placement_cfg)
+  scale_factor <- geom$scale_factor
+  marquee_lineheight <- geom$marquee_lineheight
+  right_aligned_style <- geom$right_aligned_style
+  marquee_size <- geom$marquee_size
 
   # PERFORMANCE: Use cached build if provided, otherwise build plot
   built_plot <- if (!is.null(.built_plot)) {
