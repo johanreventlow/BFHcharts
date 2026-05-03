@@ -90,11 +90,11 @@ add_spc_labels <- function(
   .ensure_bfhtheme()
   # Input validation ----
   if (!inherits(plot, "gg")) {
-    stop("plot skal v\u00e6re et ggplot object")
+    stop("plot must be a ggplot object", call. = FALSE)
   }
 
   if (!is.data.frame(qic_data)) {
-    stop("qic_data skal v\u00e6re en data.frame")
+    stop("qic_data must be a data frame", call. = FALSE)
   }
 
   # Validate y_axis_unit
@@ -186,7 +186,10 @@ add_spc_labels <- function(
 
   # Valider at vi har mindst en vaerdi ----
   if (is.na(cl_value) && is.na(target_value)) {
-    warning("Ingen CL eller Target v\u00e6rdier fundet i qic_data. Returnerer plot u\u00e6ndret.")
+    warning(
+      "No CL or Target values found in qic_data; returning plot unchanged.",
+      call. = FALSE
+    )
     return(plot)
   }
 
