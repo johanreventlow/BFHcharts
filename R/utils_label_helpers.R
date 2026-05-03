@@ -250,8 +250,8 @@ create_responsive_label <- function(header, value, label_size = 6, header_pt = 1
     value
   }
 
-  # Compute scaled sizes (baseline: label_size = 6)
-  scale_factor <- label_size / 6
+  # Compute scaled sizes (baseline: PDF_LABEL_SIZE)
+  scale_factor <- label_size / PDF_LABEL_SIZE
   header_size <- round(header_pt * scale_factor)
   value_size <- round(value_pt * scale_factor)
 

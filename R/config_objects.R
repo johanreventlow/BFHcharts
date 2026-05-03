@@ -120,7 +120,7 @@ spc_plot_config <- function(
     ))
   }
 
-  valid_units <- c("count", "percent", "rate", "time")
+  valid_units <- Y_AXIS_UNITS
   if (!y_axis_unit %in% valid_units) {
     stop_config_error(sprintf(
       "Invalid y_axis_unit: '%s'. Valid units are: %s",

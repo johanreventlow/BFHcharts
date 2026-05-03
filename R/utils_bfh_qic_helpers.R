@@ -332,7 +332,7 @@ validate_bfh_qic_inputs <- function(data,
     ), call. = FALSE)
   }
 
-  valid_units <- c("count", "percent", "rate", "time")
+  valid_units <- Y_AXIS_UNITS
   if (!y_axis_unit %in% valid_units) {
     stop(sprintf(
       "y_axis_unit must be one of: %s",
