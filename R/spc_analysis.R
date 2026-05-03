@@ -680,6 +680,38 @@ bfh_generate_analysis <- function(x,
 }
 
 
+# Vælg i18n-nøgle til stabilitets-arm af fallback-analysen.
+#
+# Pure dispatch: tager named-logical flags (has_runs, has_crossings,
+# has_outliers) og returnerer character scalar, der refererer til
+# `texts$stability[[key]]` i sprog-YAML'en. Caller håndterer
+# no_variation-grenen separat (dén bruger sin egen no_variation key
+# med centerline-placeholder).
+#
+# Mulige returvaerdier: "no_signals", "runs_only", "crossings_only",
+# "outliers_only", "runs_crossings", "runs_outliers",
+# "crossings_outliers", "all_signals".
+.select_stability_key <- function(flags) {
+  if (!flags$has_runs && !flags$has_crossings && !flags$has_outliers) {
+    "no_signals"
+  } else if (flags$has_runs && !flags$has_crossings && !flags$has_outliers) {
+    "runs_only"
+  } else if (!flags$has_runs && flags$has_crossings && !flags$has_outliers) {
+    "crossings_only"
+  } else if (!flags$has_runs && !flags$has_crossings && flags$has_outliers) {
+    "outliers_only"
+  } else if (flags$has_runs && flags$has_crossings && !flags$has_outliers) {
+    "runs_crossings"
+  } else if (flags$has_runs && !flags$has_crossings && flags$has_outliers) {
+    "runs_outliers"
+  } else if (!flags$has_runs && flags$has_crossings && flags$has_outliers) {
+    "crossings_outliers"
+  } else {
+    "all_signals"
+  }
+}
+
+
 # Intern funktion: Byg komplet fallback-analysetekst
 # Allokerer tegnbudget til stability/target/action dele
 # og vaelger passende variant for hver del. Naar context$target_direction
@@ -752,23 +784,7 @@ build_fallback_analysis <- function(context,
       budget = stability_budget
     )
   } else {
-    key <- if (!has_runs && !has_crossings && !has_outliers) {
-      "no_signals"
-    } else if (has_runs && !has_crossings && !has_outliers) {
-      "runs_only"
-    } else if (!has_runs && has_crossings && !has_outliers) {
-      "crossings_only"
-    } else if (!has_runs && !has_crossings && has_outliers) {
-      "outliers_only"
-    } else if (has_runs && has_crossings && !has_outliers) {
-      "runs_crossings"
-    } else if (has_runs && !has_crossings && has_outliers) {
-      "runs_outliers"
-    } else if (!has_runs && has_crossings && has_outliers) {
-      "crossings_outliers"
-    } else {
-      "all_signals"
-    }
+    key <- .select_stability_key(flags)
     stability <- pick_text(texts$stability[[key]],
       data = placeholder_data,
       budget = stability_budget
