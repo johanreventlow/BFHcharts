@@ -1,3 +1,19 @@
+# BFHcharts (development)
+
+## Internal changes
+
+* Decompose `add_right_labels_marquee()` (`R/utils_add_right_labels_marquee.R`,
+  510-line god function with 11 distinct responsibilities) into
+  orchestrator (~217 lines) plus 5 named private helpers:
+  `.resolve_label_geometry()`, `.acquire_device_for_measurement()`,
+  `.measure_label_heights()`, `.detect_x_axis_type()`,
+  `.build_label_data()`. Pure refactor; visual regression baselines
+  unchanged (zero `.new.svg` files produced by full pre-push test run).
+  `.acquire_device_for_measurement()` returns a `cleanup_fn` closure
+  that the orchestrator binds via `on.exit(..., add = TRUE)` for
+  unwind-safe device cleanup. Implements OpenSpec change
+  `decompose-marquee-labels`.
+
 # BFHcharts 0.14.4
 
 ## Internal changes
