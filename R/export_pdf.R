@@ -467,8 +467,8 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
   config <- x$config
   label_config <- config$label_config
 
-  # Beregn label_size: brug eksplicit vaerdi eller beregn fra target-dimensioner
-  new_label_size <- label_size %||% compute_label_size_for_viewport(
+  # Beregn label_size: brug eksplicit vaerdi eller resolve fra target-dimensioner
+  new_label_size <- label_size %||% resolve_label_size(
     target_width_inches, target_height_inches
   )
 

@@ -145,8 +145,8 @@ add_right_labels_marquee <- function(
     }
   }
 
-  # Beregn responsive stoerrelser baseret paa label_size (baseline = 6)
-  scale_factor <- label_size / 6
+  # Beregn responsive stoerrelser baseret paa label_size (baseline = PDF_LABEL_SIZE)
+  scale_factor <- label_size / PDF_LABEL_SIZE
 
   # PERFORMANCE: Load config EN gang i starten
   placement_cfg <- get_label_placement_config()

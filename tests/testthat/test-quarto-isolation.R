@@ -158,7 +158,7 @@ test_that("find_quarto respekterer QUARTO_PATH environment-variabel", {
   expect_equal(result, fake_path)
 })
 
-test_that("find_quarto respekterer bfhcharts.quarto_path option naar fil er eksekverbar", {
+test_that("find_quarto respekterer BFHcharts.quarto_path option naar fil er eksekverbar", {
   # Validering kræver eksekverbar fil paa Unix/macOS (harden-export-pipeline-security).
   skip_on_os("windows") # Execbit-check springes over paa Windows
 
@@ -170,7 +170,7 @@ test_that("find_quarto respekterer bfhcharts.quarto_path option naar fil er ekse
   withr::defer(unlink(fake_path))
 
   withr::local_envvar(QUARTO_PATH = "") # Ryd environment foerst
-  withr::local_options(bfhcharts.quarto_path = fake_path)
+  withr::local_options(BFHcharts.quarto_path = fake_path)
 
   # Options har nu prioritet over PATH (overrides checks foerst)
   # Paa systemer med quarto i PATH: options-override bor stadig returneres
@@ -188,7 +188,7 @@ test_that("find_quarto emitter warning og falder tilbage naar options-sti ikke e
   withr::defer(unlink(fake_path))
 
   withr::local_envvar(QUARTO_PATH = "")
-  withr::local_options(bfhcharts.quarto_path = fake_path)
+  withr::local_options(BFHcharts.quarto_path = fake_path)
 
   expect_warning(
     result <- BFHcharts:::find_quarto(),

@@ -60,13 +60,15 @@ test_that("return.data = TRUE returns data.frame with qic calculations", {
   expect_true("lcl" %in% names(result))
 })
 
-test_that("print.summary = TRUE giver stop() med klar migreringsbesked (fjernet i v0.11.0)", {
+test_that("print.summary parameter is no longer accepted (fully removed in v0.14.3)", {
   set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
   )
 
+  # Parameter removed entirely from formals in v0.14.3 (deprecated v0.11.0).
+  # Calling with print.summary triggers R's "unused argument" error.
   expect_error(
     suppressWarnings(
       bfh_qic(
@@ -78,7 +80,7 @@ test_that("print.summary = TRUE giver stop() med klar migreringsbesked (fjernet 
         print.summary = TRUE
       )
     ),
-    "print.summary = TRUE has been removed in v0.11.0"
+    "unused argument"
   )
 })
 
@@ -339,52 +341,10 @@ test_that("return.data parameter validation works", {
   )
 })
 
-test_that("print.summary parameter validation works", {
-  set.seed(42)
-  data <- data.frame(
-    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
-    infections = rpois(12, lambda = 15)
-  )
-
-  expect_error(
-    suppressWarnings(
-      bfh_qic(
-        data = data,
-        x = month,
-        y = infections,
-        chart_type = "run",
-        print.summary = "yes"
-      )
-    ),
-    "print.summary must be TRUE or FALSE"
-  )
-
-  expect_error(
-    suppressWarnings(
-      bfh_qic(
-        data = data,
-        x = month,
-        y = infections,
-        chart_type = "run",
-        print.summary = c(TRUE, FALSE)
-      )
-    ),
-    "print.summary must be TRUE or FALSE"
-  )
-
-  expect_error(
-    suppressWarnings(
-      bfh_qic(
-        data = data,
-        x = month,
-        y = infections,
-        chart_type = "run",
-        print.summary = NA
-      )
-    ),
-    "print.summary must be TRUE or FALSE"
-  )
-})
+# print.summary parameter validation tests removed: parameter no longer
+# exists on bfh_qic() formals (removed v0.14.3, deprecated v0.11.0). The
+# regression that asserts the parameter is gone lives in
+# tests/testthat/test-public-api-contract.R.
 
 test_that("Anhøj statistics are included in summary", {
   set.seed(42)

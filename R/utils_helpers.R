@@ -24,19 +24,6 @@ safe_max <- function(v) {
   max(v)
 }
 
-#' Safe Min - returnerer NA_real_ i stedet for Inf naar alle vaerdier er NA
-#' @param v Numerisk vektor
-#' @return Numerisk skalar
-#' @keywords internal
-#' @noRd
-safe_min <- function(v) {
-  v <- v[!is.na(v)]
-  if (length(v) == 0) {
-    return(NA_real_)
-  }
-  min(v)
-}
-
 # ============================================================================
 # ARROW SYMBOL DETECTION
 # ============================================================================

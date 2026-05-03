@@ -75,19 +75,29 @@ test_that("print.bfh_export_session shows open/closed status", {
 })
 
 # ---- inject_assets and font_path -------------------------------------------
+#
+# These tests define inject_assets callbacks inline, which puts them in the
+# test environment (resolves to .GlobalEnv-equivalent under H1 hardening from
+# v0.14.2). Production callers must pass functions from package namespaces;
+# tests opt-in to the dev escape hatch via BFHcharts.allow_globalenv_inject.
 
 test_that("inject_assets callback is called with template dir", {
   skip_if(!dir.exists(
     system.file("templates/typst/bfh-template", package = "BFHcharts")
   ), "template not installed")
 
-  called_with <- NULL
-  session <- bfh_create_export_session(inject_assets = function(path) {
-    called_with <<- path
-  })
-  on.exit(close(session))
+  withr::with_options(
+    list(BFHcharts.allow_globalenv_inject = TRUE),
+    {
+      called_with <- NULL
+      session <- bfh_create_export_session(inject_assets = function(path) {
+        called_with <<- path
+      })
+      on.exit(close(session))
 
-  expect_equal(called_with, file.path(session$tmpdir, "bfh-template"))
+      expect_equal(called_with, file.path(session$tmpdir, "bfh-template"))
+    }
+  )
 })
 
 test_that("inject_assets auto-sets font_path from injected fonts/", {
@@ -95,12 +105,20 @@ test_that("inject_assets auto-sets font_path from injected fonts/", {
     system.file("templates/typst/bfh-template", package = "BFHcharts")
   ), "template not installed")
 
-  session <- bfh_create_export_session(inject_assets = function(path) {
-    dir.create(file.path(path, "fonts"), showWarnings = FALSE)
-  })
-  on.exit(close(session))
+  withr::with_options(
+    list(BFHcharts.allow_globalenv_inject = TRUE),
+    {
+      session <- bfh_create_export_session(inject_assets = function(path) {
+        dir.create(file.path(path, "fonts"), showWarnings = FALSE)
+      })
+      on.exit(close(session))
 
-  expect_equal(session$font_path, file.path(session$tmpdir, "bfh-template", "fonts"))
+      expect_equal(
+        session$font_path,
+        file.path(session$tmpdir, "bfh-template", "fonts")
+      )
+    }
+  )
 })
 
 test_that("explicit font_path takes precedence over inject_assets auto-detect", {
@@ -108,16 +126,21 @@ test_that("explicit font_path takes precedence over inject_assets auto-detect", 
     system.file("templates/typst/bfh-template", package = "BFHcharts")
   ), "template not installed")
 
-  explicit_path <- tempdir()
-  session <- bfh_create_export_session(
-    font_path = explicit_path,
-    inject_assets = function(path) {
-      dir.create(file.path(path, "fonts"), showWarnings = FALSE)
+  withr::with_options(
+    list(BFHcharts.allow_globalenv_inject = TRUE),
+    {
+      explicit_path <- tempdir()
+      session <- bfh_create_export_session(
+        font_path = explicit_path,
+        inject_assets = function(path) {
+          dir.create(file.path(path, "fonts"), showWarnings = FALSE)
+        }
+      )
+      on.exit(close(session))
+
+      expect_equal(session$font_path, explicit_path)
     }
   )
-  on.exit(close(session))
-
-  expect_equal(session$font_path, explicit_path)
 })
 
 # ---- bfh_create_export_session: validation ---------------------------------

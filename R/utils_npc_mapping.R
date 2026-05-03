@@ -20,49 +20,8 @@
 # - ggplot2
 # - stringr
 #
-# USAGE:
-# library(ggplot2)
-#
-# # Opret plot
-# p <- ggplot(mtcars, aes(x = wt, y = mpg)) +
-#   geom_point() +
-#   geom_hline(yintercept = 20, color = "blue") +
-#   geom_hline(yintercept = 25, color = "red") +
-#   theme_minimal()
-#
-# # Opret NPC mapper
-# mapper <- npc_mapper_from_built(ggplot2::ggplot_build(p), original_plot = p)
-#
-# # Definer labels (marquee format)
-# label_A <- "{.8 **CL**}  \n{.24 **20 mpg**}"
-# label_B <- "{.8 **Target**}  \n{.24 **25 mpg**}"
-#
-# # Auto-beregn label height
-# label_height <- estimate_label_height_npc(label_A)
-#
-# # Placer labels
-# result <- place_two_labels_npc(
-#   yA_npc = mapper$y_to_npc(20),
-#   yB_npc = mapper$y_to_npc(25),
-#   label_height_npc = label_height,
-#   gap_line = label_height * 0.08,     # 8% af label height
-#   gap_labels = label_height * 0.3,    # 30% af label height
-#   priority = "A",
-#   pref_pos = c("under", "under")
-# )
-#
-# # Konverter NPC tilbage til data coordinates
-# yA_data <- mapper$npc_to_y(result$yA)
-# yB_data <- mapper$npc_to_y(result$yB)
-#
-# EXPORTS:
-# Core placement functions:
-# - npc_mapper_from_built()
-# - estimate_label_height_npc()
-# - place_two_labels_npc()
-# - propose_single_label()
-# - clamp_to_bounds()
-#
+# Per-function roxygen blocks document API usage. See `place_two_labels_npc()`
+# and `npc_mapper_from_built()` for examples.
 # ==============================================================================
 
 

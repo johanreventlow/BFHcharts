@@ -133,7 +133,7 @@ smart_convert_to_inches <- function(width, height, dpi = 96) {
   }
 
   # Udsend besked om auto-detektion med mindre supprimeret via option
-  if (!isTRUE(getOption("BFHcharts.suppress_unit_auto_detect_message"))) {
+  if (!isTRUE(getOption(BFHCHARTS_OPT_SUPPRESS_UNIT_AUTO_DETECT))) {
     message(
       "Auto-detected units: ", detected_unit,
       " (pass units = '", detected_unit, "' to silence this message)"

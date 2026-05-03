@@ -160,3 +160,21 @@ BFHCHARTS_OPT_AUDIT_LOG <- "BFHcharts.audit_log"
 #' When `TRUE`, suppresses the warning emitted by `.validate_inject_assets()`
 #' for functions defined in `.GlobalEnv` (development convenience).
 BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT <- "BFHcharts.allow_globalenv_inject"
+
+#' Option name: explicit Quarto binary path
+#'
+#' When set, `find_quarto()` uses this path instead of running auto-detection.
+#' The path is shell-metachar validated and existence-checked before use.
+BFHCHARTS_OPT_QUARTO_PATH <- "BFHcharts.quarto_path"
+
+#' Option name: suppress unit auto-detection message
+#'
+#' When `TRUE`, `bfh_export_pdf()` and friends do not emit the informational
+#' message "Auto-detected units: ..." when units are inferred from filename.
+BFHCHARTS_OPT_SUPPRESS_UNIT_AUTO_DETECT <- "BFHcharts.suppress_unit_auto_detect_message"
+
+#' Option name: debug logging for label-placement fallback paths
+#'
+#' When `TRUE`, `place_two_labels_npc()` emits diagnostic messages when the
+#' niveau cascade falls back to legacy NPC-based gap calculation.
+BFHCHARTS_OPT_DEBUG_LABEL_PLACEMENT <- "BFHcharts.debug.label_placement"

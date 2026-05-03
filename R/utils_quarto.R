@@ -79,9 +79,12 @@ find_quarto <- function() {
   }
 
   # 1. Check option (prioritet: eksplicit override slaar PATH-fund)
-  opt_path <- getOption("bfhcharts.quarto_path")
+  opt_path <- getOption(BFHCHARTS_OPT_QUARTO_PATH)
   if (!is.null(opt_path)) {
-    validated <- .validate_binary_path(opt_path, source = "options(bfhcharts.quarto_path)")
+    validated <- .validate_binary_path(
+      opt_path,
+      source = sprintf("options(%s)", BFHCHARTS_OPT_QUARTO_PATH)
+    )
     if (!is.null(validated)) {
       assign("quarto_path", validated, envir = .quarto_cache)
       return(validated)
