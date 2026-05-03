@@ -123,6 +123,171 @@
 }
 
 
+# Acquire a graphics device suitable for label measurement + measure panel
+# height from the supplied gtable.
+#
+# Two strategies (matches behavior i tidligere inline-blok i orchestrator):
+#   1. Hvis viewport_width + viewport_height er angivet:
+#      - Hvis aktiv device matcher (1% tolerance), genbrug det.
+#      - Ellers aabn temp Cairo PDF med viewport-dimensioner.
+#   2. Hvis viewport-dims mangler:
+#      - Brug aktiv device hvis tilgaengeligt.
+#      - Ellers giv NA-device_size + warning.
+#
+# Returnerer named list:
+#   device_size        list(width, height, actual, source)
+#   panel_height_inches numeric eller NULL (NULL hvis device ikke kunne maale)
+#   temp_device_opened logical
+#   cleanup_fn         closure som lukker temp-device + sletter temp-fil
+#                      (orchestrator binder via withr::defer)
+.acquire_device_for_measurement <- function(viewport_width, viewport_height,
+                                            gtable, verbose = FALSE) {
+  device_size <- NULL
+  temp_device_opened <- FALSE
+  cleanup_fn <- function() invisible(NULL)
+
+  if (!is.null(viewport_width) && !is.null(viewport_height)) {
+    # STRATEGY 1: Viewport dimensions provided (PRIMARY PATH)
+    if (verbose) {
+      message(sprintf(
+        "[VIEWPORT_STRATEGY] Using provided viewport dimensions: %.2f x %.2f inches",
+        viewport_width, viewport_height
+      ))
+    }
+
+    # Check if device is already open with correct dimensions
+    device_already_open <- FALSE
+    if (grDevices::dev.cur() > 1) {
+      current_size <- grDevices::dev.size("in")
+      if (abs(current_size[1] - viewport_width) / viewport_width < 0.01 &&
+        abs(current_size[2] - viewport_height) / viewport_height < 0.01) {
+        device_already_open <- TRUE
+        if (verbose) {
+          message("[VIEWPORT_STRATEGY] Device already open with matching dimensions")
+        }
+      }
+    }
+
+    if (!device_already_open) {
+      if (verbose) {
+        message("[VIEWPORT_STRATEGY] Opening temporary Cairo PDF device for grob measurements")
+      }
+      temp_pdf <- tempfile(fileext = ".pdf")
+      grDevices::cairo_pdf(
+        filename = temp_pdf,
+        width = viewport_width, height = viewport_height
+      )
+      temp_dev_num <- grDevices::dev.cur()
+      temp_device_opened <- TRUE
+
+      cleanup_fn <- function() {
+        if (temp_dev_num %in% grDevices::dev.list()) {
+          tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)
+        }
+        unlink(temp_pdf, force = TRUE)
+      }
+    }
+
+    device_size <- list(
+      width = viewport_width,
+      height = viewport_height,
+      actual = TRUE,
+      source = "viewport"
+    )
+  } else {
+    # STRATEGY 2: Fallback to existing device detection (LEGACY PATH)
+    if (verbose) {
+      message("[DEVICE_FALLBACK] No viewport dimensions - attempting device detection")
+    }
+
+    device_size <- tryCatch(
+      {
+        if (grDevices::dev.cur() > 1) {
+          dev_inches <- grDevices::dev.size("in")
+          list(
+            width = dev_inches[1],
+            height = dev_inches[2],
+            actual = TRUE,
+            source = "device"
+          )
+        } else {
+          if (verbose) {
+            warning(
+              "[DEVICE_FALLBACK] No graphics device open - label measurements may be inaccurate"
+            )
+          }
+          list(
+            width = NA_real_,
+            height = NA_real_,
+            actual = FALSE,
+            source = "none"
+          )
+        }
+      },
+      error = function(e) {
+        warning(
+          "[DEVICE_FALLBACK] Device size detection failed: ", e$message
+        )
+        list(
+          width = NA_real_,
+          height = NA_real_,
+          actual = FALSE,
+          source = "error"
+        )
+      }
+    )
+  }
+
+  if (verbose) {
+    if (device_size$actual) {
+      message(sprintf(
+        "Device size: %.2f x %.2f inches (ACTUAL measurements)",
+        device_size$width, device_size$height
+      ))
+    } else {
+      message("[DEVICE_SIZE] WARNING: No actual device size available - proceeding without measurements")
+    }
+  }
+
+  # Maal panel hoejde med faktisk device stoerrelse (kun hvis device er klar)
+  panel_height_inches <- NULL
+  if (device_size$actual) {
+    panel_height_inches <- tryCatch(
+      {
+        measure_panel_height_from_gtable(
+          gtable,
+          device_width = device_size$width,
+          device_height = device_size$height,
+          device_ready = temp_device_opened
+        )
+      },
+      error = function(e) {
+        if (verbose) {
+          message("Panel height measurement failed: ", e$message)
+        }
+        NULL
+      }
+    )
+
+    if (verbose && !is.null(panel_height_inches)) {
+      message(sprintf(
+        "Panel height: %.3f inches (measured from actual device)",
+        panel_height_inches
+      ))
+    }
+  } else if (verbose) {
+    message("[PANEL_HEIGHT] Cannot measure without actual device size - skipping measurement")
+  }
+
+  list(
+    device_size = device_size,
+    panel_height_inches = panel_height_inches,
+    temp_device_opened = temp_device_opened,
+    cleanup_fn = cleanup_fn
+  )
+}
+
+
 .resolve_font_family <- function(family = NULL) {
   .ensure_bfhtheme()
   # Detekter device-type: "cairo", "postscript" eller "other"
@@ -296,158 +461,18 @@ add_right_labels_marquee <- function(
     )
   }
 
-  # Detekter device stoerrelse for korrekt panel height measurement
-  # STRATEGI:
-  # 1. Hvis viewport dimensions provided -> brug dem (with_temporary_device() hvis noedvendigt)
-  # 2. Ellers -> detekter existing device (fallback for legacy callers)
-
-  device_size <- NULL
-  temp_device_opened <- FALSE
-
-  if (!is.null(viewport_width) && !is.null(viewport_height)) {
-    # STRATEGY 1: Viewport dimensions provided (PRIMARY PATH)
-    if (verbose) {
-      message(sprintf(
-        "[VIEWPORT_STRATEGY] Using provided viewport dimensions: %.2f x %.2f inches",
-        viewport_width, viewport_height
-      ))
-    }
-
-    # Check if device is already open with correct dimensions
-    device_already_open <- FALSE
-    if (grDevices::dev.cur() > 1) {
-      current_size <- grDevices::dev.size("in")
-      # Allow 1% tolerance for dimension matching
-      if (abs(current_size[1] - viewport_width) / viewport_width < 0.01 &&
-        abs(current_size[2] - viewport_height) / viewport_height < 0.01) {
-        device_already_open <- TRUE
-        if (verbose) {
-          message("[VIEWPORT_STRATEGY] Device already open with matching dimensions")
-        }
-      }
-    }
-
-    # Open temporary device if needed for grob measurements
-    if (!device_already_open) {
-      if (verbose) {
-        message("[VIEWPORT_STRATEGY] Opening temporary Cairo PDF device for grob measurements")
-      }
-      temp_pdf <- tempfile(fileext = ".pdf")
-      grDevices::cairo_pdf(
-        filename = temp_pdf,
-        width = viewport_width, height = viewport_height
-      )
-      temp_dev_num <- grDevices::dev.cur()
-      temp_device_opened <- TRUE
-
-      # Single on.exit covers both error path and normal path cleanup
-      on.exit(
-        {
-          if (temp_dev_num %in% grDevices::dev.list()) {
-            tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)
-          }
-          unlink(temp_pdf, force = TRUE)
-        },
-        add = TRUE,
-        after = FALSE
-      )
-    }
-
-    device_size <- list(
-      width = viewport_width,
-      height = viewport_height,
-      actual = TRUE,
-      source = "viewport"
-    )
-  } else {
-    # STRATEGY 2: Fallback to existing device detection (LEGACY PATH)
-    if (verbose) {
-      message("[DEVICE_FALLBACK] No viewport dimensions - attempting device detection")
-    }
-
-    device_size <- tryCatch(
-      {
-        if (grDevices::dev.cur() > 1) {
-          dev_inches <- grDevices::dev.size("in")
-          list(
-            width = dev_inches[1],
-            height = dev_inches[2],
-            actual = TRUE,
-            source = "device"
-          )
-        } else {
-          if (verbose) {
-            warning(
-              "[DEVICE_FALLBACK] No graphics device open - label measurements may be inaccurate"
-            )
-          }
-          list(
-            width = NA_real_,
-            height = NA_real_,
-            actual = FALSE,
-            source = "none"
-          )
-        }
-      },
-      error = function(e) {
-        warning(
-          "[DEVICE_FALLBACK] Device size detection failed: ", e$message
-        )
-        list(
-          width = NA_real_,
-          height = NA_real_,
-          actual = FALSE,
-          source = "error"
-        )
-      }
-    )
-  }
-
-  if (verbose) {
-    if (device_size$actual) {
-      message(sprintf(
-        "Device size: %.2f x %.2f inches (ACTUAL measurements)",
-        device_size$width, device_size$height
-      ))
-    } else {
-      message("[DEVICE_SIZE] WARNING: No actual device size available - proceeding without measurements")
-    }
-  }
-
-  # Maal panel hoejde med faktisk device stoerrelse (kun hvis device er klar)
-  panel_height_inches <- NULL
-
-  if (device_size$actual) {
-    # Faktiske maalinger tilgaengelige - maal panel height
-    panel_height_inches <- tryCatch(
-      {
-        measure_panel_height_from_gtable(
-          gtable,
-          device_width = device_size$width,
-          device_height = device_size$height,
-          device_ready = temp_device_opened
-        )
-      },
-      error = function(e) {
-        if (verbose) {
-          message("Panel height measurement failed: ", e$message)
-        }
-        NULL
-      }
-    )
-
-    if (verbose && !is.null(panel_height_inches)) {
-      message(sprintf(
-        "Panel height: %.3f inches (measured from actual device)",
-        panel_height_inches
-      ))
-    }
-  } else {
-    # Ingen faktiske device dimensioner - kan ikke maale panel height
-    if (verbose) {
-      message("[PANEL_HEIGHT] Cannot measure without actual device size - skipping measurement")
-    }
-  }
+  # Acquire measurement device + panel height (helper handles
+  # viewport-vs-fallback strategy + device-leak cleanup)
+  dev_ctx <- .acquire_device_for_measurement(
+    viewport_width = viewport_width,
+    viewport_height = viewport_height,
+    gtable = gtable,
+    verbose = verbose
+  )
+  on.exit(dev_ctx$cleanup_fn(), add = TRUE, after = FALSE)
+  device_size <- dev_ctx$device_size
+  panel_height_inches <- dev_ctx$panel_height_inches
+  temp_device_opened <- dev_ctx$temp_device_opened
 
   # Auto-beregn label_height
   if (is.null(params$label_height_npc)) {
