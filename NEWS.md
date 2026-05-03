@@ -1,3 +1,39 @@
+# BFHcharts 0.14.5
+
+## Internal changes
+
+* Decompose `add_right_labels_marquee()` (`R/utils_add_right_labels_marquee.R`,
+  510-line god function with 11 distinct responsibilities) into
+  orchestrator (~217 lines) plus 5 named private helpers:
+  `.resolve_label_geometry()`, `.acquire_device_for_measurement()`,
+  `.measure_label_heights()`, `.detect_x_axis_type()`,
+  `.build_label_data()`. Pure refactor; visual regression baselines
+  unchanged (zero `.new.svg` files produced by full pre-push test run).
+  `.acquire_device_for_measurement()` returns a `cleanup_fn` closure
+  that the orchestrator binds via `on.exit(..., add = TRUE)` for
+  unwind-safe device cleanup. Implements OpenSpec change
+  `decompose-marquee-labels`.
+
+* Decompose `build_fallback_analysis()` (`R/spc_analysis.R`, ~210-line
+  boolean cascade) into orchestrator (~98 lines) plus 5 named pure
+  helpers: `.detect_signal_flags()`, `.allocate_text_budget()`,
+  `.select_stability_key()`, `.select_action_key()`,
+  `.evaluate_target_arm()`. Pure refactor; fallback narrative output
+  unchanged. Adding a new cascade arm now becomes a single new test
+  row + one new key + one new i18n string instead of a multi-place edit.
+  Implements OpenSpec change `decompose-fallback-analysis`.
+
+# BFHcharts 0.14.4
+
+## Internal changes
+
+* Extract Danish text-formatting helpers (`pluralize_da()`,
+  `ensure_within_max()`, `substitute_placeholders()`, `pick_text()`,
+  `pad_to_minimum()`) from `R/spc_analysis.R` into a dedicated
+  `R/utils_text_da.R`. Pure relocation; no behavioral change.
+  `R/spc_analysis.R` shrinks by ~130 lines. Implements OpenSpec change
+  `extract-utils-text-da`.
+
 # BFHcharts 0.14.3
 
 ## Breaking changes

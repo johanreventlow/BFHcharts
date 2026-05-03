@@ -9,6 +9,410 @@
 # (systemfonts-registrering != PostScript font database)
 .font_cache <- new.env(parent = emptyenv())
 
+# Resolve label geometry parameters from label_size + cached placement config.
+#
+# Pure given inputs. Returns named list med:
+#   scale_factor          (numeric, label_size / PDF_LABEL_SIZE)
+#   marquee_lineheight    (numeric, fra config eller default 0.9)
+#   right_aligned_style   (marquee style object, cachet)
+#   marquee_size_factor   (numeric, fra config eller default 6)
+#   marquee_size          (numeric, marquee_size_factor * scale_factor)
+#
+# Erstatter inline geometri-blok i orchestrator (lines ~148-170 i tidligere
+# version). Bruges ogsaa direkte af unit-tests uden device side-effects.
+.resolve_label_geometry <- function(label_size, placement_cfg) {
+  scale_factor <- label_size / PDF_LABEL_SIZE
+
+  marquee_lineheight <- if (!is.null(placement_cfg$marquee_lineheight)) {
+    placement_cfg$marquee_lineheight
+  } else {
+    0.9
+  }
+
+  right_aligned_style <- get_right_aligned_marquee_style(lineheight = marquee_lineheight)
+
+  marquee_size_factor <- if (!is.null(placement_cfg$marquee_size_factor)) {
+    placement_cfg$marquee_size_factor
+  } else {
+    6
+  }
+  marquee_size <- marquee_size_factor * scale_factor
+
+  list(
+    scale_factor = scale_factor,
+    marquee_lineheight = marquee_lineheight,
+    right_aligned_style = right_aligned_style,
+    marquee_size_factor = marquee_size_factor,
+    marquee_size = marquee_size
+  )
+}
+
+
+# Maal label-hoejder for textA og textB med marquee + estimate_label_heights_npc.
+#
+# Returnerer named list (height_A, height_B, label_height_npc) hvor
+# label_height_npc er den udvalgte hoejde til gap-beregninger:
+#   - Hvis begge tekster er tomme: brug height_A som fallback.
+#   - Hvis kun A er tom: brug height_B.
+#   - Hvis kun B er tom: brug height_A.
+#   - Begge non-empty: max(height_A$npc, height_B$npc).
+#
+# Pure given inputs. Ingen device side effects (estimator skal vaere
+# device-aware, men det er callers ansvar at have device aabent foer kald).
+# marquee_height_estimator default = estimate_label_heights_npc; injectable
+# for tests.
+.measure_label_heights <- function(textA, textB, style, panel_height_inches,
+                                   device_size, marquee_size,
+                                   temp_device_opened,
+                                   marquee_height_estimator = estimate_label_heights_npc,
+                                   verbose = FALSE) {
+  # VIGTIGT: Hvis device ikke er klar (actual=FALSE), er estimater unoejagtige
+  if (!device_size$actual && verbose) {
+    warning(
+      "[LABEL_HEIGHT] Estimating label heights without actual device measurements - ",
+      "results may be inaccurate!"
+    )
+  }
+
+  # Konverter NA til NULL for estimate_label_heights_npc's fallback mechanism
+  device_width_for_estimate <- if (device_size$actual) device_size$width else NULL
+  device_height_for_estimate <- if (device_size$actual) device_size$height else NULL
+
+  heights <- marquee_height_estimator(
+    texts = c(textA, textB),
+    style = style,
+    panel_height_inches = panel_height_inches,
+    device_width = device_width_for_estimate,
+    device_height = device_height_for_estimate,
+    marquee_size = marquee_size,
+    return_details = TRUE,
+    device_ready = temp_device_opened
+  )
+  height_A <- heights[[1]]
+  height_B <- heights[[2]]
+
+  # Vaelg label_height_npc baseret paa empty-label fallback-regler
+  textA_is_empty <- is.null(textA) || nchar(trimws(textA)) == 0
+  textB_is_empty <- is.null(textB) || nchar(trimws(textB)) == 0
+
+  label_height_npc <- if (textA_is_empty && textB_is_empty) {
+    height_A # Ingen labels - fallback
+  } else if (textB_is_empty) {
+    height_A # Kun textA
+  } else if (textA_is_empty) {
+    height_B # Kun textB
+  } else {
+    if (height_A$npc > height_B$npc) height_A else height_B
+  }
+
+  if (verbose) {
+    message(
+      "Auto-beregnet label_height_npc: ", round(label_height_npc$npc, 4),
+      " (A: ", round(height_A$npc, 4), ", B: ", round(height_B$npc, 4), ")",
+      " [", round(label_height_npc$inches, 4), " inches]",
+      if (textA_is_empty) " [A tom]" else "",
+      if (textB_is_empty) " [B tom]" else ""
+    )
+  }
+
+  list(
+    height_A = height_A,
+    height_B = height_B,
+    label_height_npc = label_height_npc
+  )
+}
+
+
+# Acquire a graphics device suitable for label measurement + measure panel
+# height from the supplied gtable.
+#
+# Two strategies (matches behavior i tidligere inline-blok i orchestrator):
+#   1. Hvis viewport_width + viewport_height er angivet:
+#      - Hvis aktiv device matcher (1% tolerance), genbrug det.
+#      - Ellers aabn temp Cairo PDF med viewport-dimensioner.
+#   2. Hvis viewport-dims mangler:
+#      - Brug aktiv device hvis tilgaengeligt.
+#      - Ellers giv NA-device_size + warning.
+#
+# Returnerer named list:
+#   device_size        list(width, height, actual, source)
+#   panel_height_inches numeric eller NULL (NULL hvis device ikke kunne maale)
+#   temp_device_opened logical
+#   cleanup_fn         closure som lukker temp-device + sletter temp-fil
+#                      (orchestrator binder via withr::defer)
+.acquire_device_for_measurement <- function(viewport_width, viewport_height,
+                                            gtable, verbose = FALSE) {
+  device_size <- NULL
+  temp_device_opened <- FALSE
+  cleanup_fn <- function() invisible(NULL)
+
+  if (!is.null(viewport_width) && !is.null(viewport_height)) {
+    # STRATEGY 1: Viewport dimensions provided (PRIMARY PATH)
+    if (verbose) {
+      message(sprintf(
+        "[VIEWPORT_STRATEGY] Using provided viewport dimensions: %.2f x %.2f inches",
+        viewport_width, viewport_height
+      ))
+    }
+
+    # Check if device is already open with correct dimensions
+    device_already_open <- FALSE
+    if (grDevices::dev.cur() > 1) {
+      current_size <- grDevices::dev.size("in")
+      if (abs(current_size[1] - viewport_width) / viewport_width < 0.01 &&
+        abs(current_size[2] - viewport_height) / viewport_height < 0.01) {
+        device_already_open <- TRUE
+        if (verbose) {
+          message("[VIEWPORT_STRATEGY] Device already open with matching dimensions")
+        }
+      }
+    }
+
+    if (!device_already_open) {
+      if (verbose) {
+        message("[VIEWPORT_STRATEGY] Opening temporary Cairo PDF device for grob measurements")
+      }
+      temp_pdf <- tempfile(fileext = ".pdf")
+      grDevices::cairo_pdf(
+        filename = temp_pdf,
+        width = viewport_width, height = viewport_height
+      )
+      temp_dev_num <- grDevices::dev.cur()
+      temp_device_opened <- TRUE
+
+      cleanup_fn <- function() {
+        if (temp_dev_num %in% grDevices::dev.list()) {
+          tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)
+        }
+        unlink(temp_pdf, force = TRUE)
+      }
+    }
+
+    device_size <- list(
+      width = viewport_width,
+      height = viewport_height,
+      actual = TRUE,
+      source = "viewport"
+    )
+  } else {
+    # STRATEGY 2: Fallback to existing device detection (LEGACY PATH)
+    if (verbose) {
+      message("[DEVICE_FALLBACK] No viewport dimensions - attempting device detection")
+    }
+
+    device_size <- tryCatch(
+      {
+        if (grDevices::dev.cur() > 1) {
+          dev_inches <- grDevices::dev.size("in")
+          list(
+            width = dev_inches[1],
+            height = dev_inches[2],
+            actual = TRUE,
+            source = "device"
+          )
+        } else {
+          if (verbose) {
+            warning(
+              "[DEVICE_FALLBACK] No graphics device open - label measurements may be inaccurate"
+            )
+          }
+          list(
+            width = NA_real_,
+            height = NA_real_,
+            actual = FALSE,
+            source = "none"
+          )
+        }
+      },
+      error = function(e) {
+        warning(
+          "[DEVICE_FALLBACK] Device size detection failed: ", e$message
+        )
+        list(
+          width = NA_real_,
+          height = NA_real_,
+          actual = FALSE,
+          source = "error"
+        )
+      }
+    )
+  }
+
+  if (verbose) {
+    if (device_size$actual) {
+      message(sprintf(
+        "Device size: %.2f x %.2f inches (ACTUAL measurements)",
+        device_size$width, device_size$height
+      ))
+    } else {
+      message("[DEVICE_SIZE] WARNING: No actual device size available - proceeding without measurements")
+    }
+  }
+
+  # Maal panel hoejde med faktisk device stoerrelse (kun hvis device er klar)
+  panel_height_inches <- NULL
+  if (device_size$actual) {
+    panel_height_inches <- tryCatch(
+      {
+        measure_panel_height_from_gtable(
+          gtable,
+          device_width = device_size$width,
+          device_height = device_size$height,
+          device_ready = temp_device_opened
+        )
+      },
+      error = function(e) {
+        if (verbose) {
+          message("Panel height measurement failed: ", e$message)
+        }
+        NULL
+      }
+    )
+
+    if (verbose && !is.null(panel_height_inches)) {
+      message(sprintf(
+        "Panel height: %.3f inches (measured from actual device)",
+        panel_height_inches
+      ))
+    }
+  } else if (verbose) {
+    message("[PANEL_HEIGHT] Cannot measure without actual device size - skipping measurement")
+  }
+
+  list(
+    device_size = device_size,
+    panel_height_inches = panel_height_inches,
+    temp_device_opened = temp_device_opened,
+    cleanup_fn = cleanup_fn
+  )
+}
+
+
+# Detekter x-aksens type (Date / POSIXct datetime / numeric) ud fra
+# built_plot. Returnerer named list (x_max, x_is_date, x_is_datetime).
+#
+# x_max er konverteret tilbage til source-typen (Date / POSIXct / numeric)
+# via scale's inverse-transformation, saa label_data tibble kan bruge
+# samme x-type som diagrammet.
+.detect_x_axis_type <- function(built_plot) {
+  x_range <- built_plot$layout$panel_params[[1]]$x.range
+  x_max_value <- x_range[2]
+
+  x_is_date <- FALSE
+  x_is_datetime <- FALSE
+  x_scale <- NULL
+
+  tryCatch(
+    {
+      x_scale <- built_plot$layout$panel_scales_x[[1]]
+
+      if (!is.null(x_scale)) {
+        scale_class <- class(x_scale)[1]
+        trans_name <- if (!is.null(x_scale$trans)) x_scale$trans$name else ""
+
+        if (grepl("^date$", tolower(trans_name)) ||
+          (grepl("Date", scale_class) && !grepl("Time|time", scale_class))) {
+          x_is_date <- TRUE
+        } else if (grepl("time|hms", tolower(trans_name)) ||
+          grepl("Time", scale_class)) {
+          x_is_datetime <- TRUE
+        }
+      }
+    },
+    error = function(e) {
+      # Fallback: hvis scale detection fejler, antag numerisk
+    }
+  )
+
+  x_max <- if (x_is_date && !is.null(x_scale)) {
+    if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
+      converted <- x_scale$trans$inverse(x_max_value)
+      if (!inherits(converted, "Date")) {
+        as.Date(converted, origin = "1970-01-01")
+      } else {
+        converted
+      }
+    } else {
+      as.Date(x_max_value, origin = "1970-01-01")
+    }
+  } else if (x_is_datetime && !is.null(x_scale)) {
+    tz <- if (!is.null(x_scale$timezone)) x_scale$timezone else "UTC"
+    if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
+      converted <- x_scale$trans$inverse(x_max_value)
+      converted <- as.POSIXct(converted, origin = "1970-01-01")
+      attr(converted, "tzone") <- tz
+      converted
+    } else {
+      as.POSIXct(x_max_value, origin = "1970-01-01", tz = tz)
+    }
+  } else {
+    x_max_value
+  }
+
+  list(
+    x_max = x_max,
+    x_is_date = x_is_date,
+    x_is_datetime = x_is_datetime
+  )
+}
+
+
+# Byg label_data tibble med korrekt x-type (Date / POSIXct / numeric).
+# Returnerer tom tibble hvis baade yA_data og yB_data er NA.
+.build_label_data <- function(textA, textB, yA_data, yB_data, x_max,
+                              x_is_date, x_is_datetime, gpA, gpB) {
+  label_data <- if (x_is_date) {
+    tibble::tibble(
+      x = as.Date(character()),
+      y = numeric(),
+      label = character(),
+      color = character()
+    )
+  } else if (x_is_datetime) {
+    tibble::tibble(
+      x = as.POSIXct(character()),
+      y = numeric(),
+      label = character(),
+      color = character()
+    )
+  } else {
+    tibble::tibble(
+      x = numeric(),
+      y = numeric(),
+      label = character(),
+      color = character()
+    )
+  }
+
+  color_A <- if (!is.null(gpA$col)) gpA$col else "#009CE8"
+  color_B <- if (!is.null(gpB$col)) gpB$col else "#565656"
+
+  if (!is.na(yA_data)) {
+    label_data <- label_data |>
+      dplyr::bind_rows(tibble::tibble(
+        x = x_max,
+        y = yA_data,
+        label = textA,
+        color = color_A,
+        vjust = 0.5
+      ))
+  }
+
+  if (!is.na(yB_data)) {
+    label_data <- label_data |>
+      dplyr::bind_rows(tibble::tibble(
+        x = x_max,
+        y = yB_data,
+        label = textB,
+        color = color_B,
+        vjust = 0.5
+      ))
+  }
+
+  label_data
+}
+
+
 .resolve_font_family <- function(family = NULL) {
   .ensure_bfhtheme()
   # Detekter device-type: "cairo", "postscript" eller "other"
@@ -145,29 +549,15 @@ add_right_labels_marquee <- function(
     }
   }
 
-  # Beregn responsive stoerrelser baseret paa label_size (baseline = PDF_LABEL_SIZE)
-  scale_factor <- label_size / PDF_LABEL_SIZE
-
   # PERFORMANCE: Load config EN gang i starten
   placement_cfg <- get_label_placement_config()
 
-  # Hent marquee_lineheight fra config
-  marquee_lineheight <- if (!is.null(placement_cfg$marquee_lineheight)) {
-    placement_cfg$marquee_lineheight
-  } else {
-    0.9
-  }
-
-  # PERFORMANCE: Hent cached right-aligned style
-  right_aligned_style <- get_right_aligned_marquee_style(lineheight = marquee_lineheight)
-
-  # Beregn marquee_size tidligt, saa vi kan bruge den til maalinger
-  marquee_size_factor <- if (!is.null(placement_cfg$marquee_size_factor)) {
-    placement_cfg$marquee_size_factor
-  } else {
-    6
-  }
-  marquee_size <- marquee_size_factor * scale_factor
+  # Beregn responsive stoerrelser + cache style i samlet helper
+  geom <- .resolve_label_geometry(label_size, placement_cfg)
+  scale_factor <- geom$scale_factor
+  marquee_lineheight <- geom$marquee_lineheight
+  right_aligned_style <- geom$right_aligned_style
+  marquee_size <- geom$marquee_size
 
   # PERFORMANCE: Use cached build if provided, otherwise build plot
   built_plot <- if (!is.null(.built_plot)) {
@@ -196,220 +586,32 @@ add_right_labels_marquee <- function(
     )
   }
 
-  # Detekter device stoerrelse for korrekt panel height measurement
-  # STRATEGI:
-  # 1. Hvis viewport dimensions provided -> brug dem (with_temporary_device() hvis noedvendigt)
-  # 2. Ellers -> detekter existing device (fallback for legacy callers)
-
-  device_size <- NULL
-  temp_device_opened <- FALSE
-
-  if (!is.null(viewport_width) && !is.null(viewport_height)) {
-    # STRATEGY 1: Viewport dimensions provided (PRIMARY PATH)
-    if (verbose) {
-      message(sprintf(
-        "[VIEWPORT_STRATEGY] Using provided viewport dimensions: %.2f x %.2f inches",
-        viewport_width, viewport_height
-      ))
-    }
-
-    # Check if device is already open with correct dimensions
-    device_already_open <- FALSE
-    if (grDevices::dev.cur() > 1) {
-      current_size <- grDevices::dev.size("in")
-      # Allow 1% tolerance for dimension matching
-      if (abs(current_size[1] - viewport_width) / viewport_width < 0.01 &&
-        abs(current_size[2] - viewport_height) / viewport_height < 0.01) {
-        device_already_open <- TRUE
-        if (verbose) {
-          message("[VIEWPORT_STRATEGY] Device already open with matching dimensions")
-        }
-      }
-    }
-
-    # Open temporary device if needed for grob measurements
-    if (!device_already_open) {
-      if (verbose) {
-        message("[VIEWPORT_STRATEGY] Opening temporary Cairo PDF device for grob measurements")
-      }
-      temp_pdf <- tempfile(fileext = ".pdf")
-      grDevices::cairo_pdf(
-        filename = temp_pdf,
-        width = viewport_width, height = viewport_height
-      )
-      temp_dev_num <- grDevices::dev.cur()
-      temp_device_opened <- TRUE
-
-      # Single on.exit covers both error path and normal path cleanup
-      on.exit(
-        {
-          if (temp_dev_num %in% grDevices::dev.list()) {
-            tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)
-          }
-          unlink(temp_pdf, force = TRUE)
-        },
-        add = TRUE,
-        after = FALSE
-      )
-    }
-
-    device_size <- list(
-      width = viewport_width,
-      height = viewport_height,
-      actual = TRUE,
-      source = "viewport"
-    )
-  } else {
-    # STRATEGY 2: Fallback to existing device detection (LEGACY PATH)
-    if (verbose) {
-      message("[DEVICE_FALLBACK] No viewport dimensions - attempting device detection")
-    }
-
-    device_size <- tryCatch(
-      {
-        if (grDevices::dev.cur() > 1) {
-          dev_inches <- grDevices::dev.size("in")
-          list(
-            width = dev_inches[1],
-            height = dev_inches[2],
-            actual = TRUE,
-            source = "device"
-          )
-        } else {
-          if (verbose) {
-            warning(
-              "[DEVICE_FALLBACK] No graphics device open - label measurements may be inaccurate"
-            )
-          }
-          list(
-            width = NA_real_,
-            height = NA_real_,
-            actual = FALSE,
-            source = "none"
-          )
-        }
-      },
-      error = function(e) {
-        warning(
-          "[DEVICE_FALLBACK] Device size detection failed: ", e$message
-        )
-        list(
-          width = NA_real_,
-          height = NA_real_,
-          actual = FALSE,
-          source = "error"
-        )
-      }
-    )
-  }
-
-  if (verbose) {
-    if (device_size$actual) {
-      message(sprintf(
-        "Device size: %.2f x %.2f inches (ACTUAL measurements)",
-        device_size$width, device_size$height
-      ))
-    } else {
-      message("[DEVICE_SIZE] WARNING: No actual device size available - proceeding without measurements")
-    }
-  }
-
-  # Maal panel hoejde med faktisk device stoerrelse (kun hvis device er klar)
-  panel_height_inches <- NULL
-
-  if (device_size$actual) {
-    # Faktiske maalinger tilgaengelige - maal panel height
-    panel_height_inches <- tryCatch(
-      {
-        measure_panel_height_from_gtable(
-          gtable,
-          device_width = device_size$width,
-          device_height = device_size$height,
-          device_ready = temp_device_opened
-        )
-      },
-      error = function(e) {
-        if (verbose) {
-          message("Panel height measurement failed: ", e$message)
-        }
-        NULL
-      }
-    )
-
-    if (verbose && !is.null(panel_height_inches)) {
-      message(sprintf(
-        "Panel height: %.3f inches (measured from actual device)",
-        panel_height_inches
-      ))
-    }
-  } else {
-    # Ingen faktiske device dimensioner - kan ikke maale panel height
-    if (verbose) {
-      message("[PANEL_HEIGHT] Cannot measure without actual device size - skipping measurement")
-    }
-  }
+  # Acquire measurement device + panel height (helper handles
+  # viewport-vs-fallback strategy + device-leak cleanup)
+  dev_ctx <- .acquire_device_for_measurement(
+    viewport_width = viewport_width,
+    viewport_height = viewport_height,
+    gtable = gtable,
+    verbose = verbose
+  )
+  on.exit(dev_ctx$cleanup_fn(), add = TRUE, after = FALSE)
+  device_size <- dev_ctx$device_size
+  panel_height_inches <- dev_ctx$panel_height_inches
+  temp_device_opened <- dev_ctx$temp_device_opened
 
   # Auto-beregn label_height
   if (is.null(params$label_height_npc)) {
-    # VIGTIGT: Hvis device ikke er klar (actual=FALSE), er estimater unoejagtige
-    if (!device_size$actual && verbose) {
-      warning(
-        "[LABEL_HEIGHT] Estimating label heights without actual device measurements - ",
-        "results may be inaccurate!"
-      )
-    }
-
-    # Konverter NA til NULL for estimate_label_heights_npc's fallback mechanism
-    # (fallbacks aktiveres kun ved NULL, ikke NA)
-    device_width_for_estimate <- if (device_size$actual) device_size$width else NULL
-    device_height_for_estimate <- if (device_size$actual) device_size$height else NULL
-
-    heights <- estimate_label_heights_npc(
-      texts = c(textA, textB),
+    height_result <- .measure_label_heights(
+      textA = textA,
+      textB = textB,
       style = right_aligned_style,
       panel_height_inches = panel_height_inches,
-      device_width = device_width_for_estimate,
-      device_height = device_height_for_estimate,
+      device_size = device_size,
       marquee_size = marquee_size,
-      return_details = TRUE,
-      device_ready = temp_device_opened
+      temp_device_opened = temp_device_opened,
+      verbose = verbose
     )
-    height_A <- heights[[1]]
-    height_B <- heights[[2]]
-
-    # FIX: Ignorer empty labels ved valg af hoejde til gap calculation
-    # Hvis textB er tom (kun CL label), brug kun height_A
-    # Dette sikrer at gap er baseret paa faktisk synlig label hoejde
-    textA_is_empty <- is.null(textA) || nchar(trimws(textA)) == 0
-    textB_is_empty <- is.null(textB) || nchar(trimws(textB)) == 0
-
-    if (textA_is_empty && textB_is_empty) {
-      # Ingen labels - brug fallback
-      params$label_height_npc <- height_A
-    } else if (textB_is_empty) {
-      # Kun textA - brug height_A uanset stoerrelse
-      params$label_height_npc <- height_A
-    } else if (textA_is_empty) {
-      # Kun textB - brug height_B uanset stoerrelse
-      params$label_height_npc <- height_B
-    } else {
-      # Begge labels - brug max
-      if (height_A$npc > height_B$npc) {
-        params$label_height_npc <- height_A
-      } else {
-        params$label_height_npc <- height_B
-      }
-    }
-
-    if (verbose) {
-      message(
-        "Auto-beregnet label_height_npc: ", round(params$label_height_npc$npc, 4),
-        " (A: ", round(height_A$npc, 4), ", B: ", round(height_B$npc, 4), ")",
-        " [", round(params$label_height_npc$inches, 4), " inches]",
-        if (textA_is_empty) " [A tom]" else "",
-        if (textB_is_empty) " [B tom]" else ""
-      )
-    }
+    params$label_height_npc <- height_result$label_height_npc
   }
 
   # Default parameters
@@ -475,116 +677,21 @@ add_right_labels_marquee <- function(
     yB_data <- NA_real_
   }
 
-  # Hent x-koordinater og detekter type
-  x_range <- built_plot$layout$panel_params[[1]]$x.range
-  x_max_value <- x_range[2]
+  # Detekter x-akse type + max-vaerdi i source-type
+  x_axis <- .detect_x_axis_type(built_plot)
 
-  # Detekter om x-aksen er Date, POSIXct/datetime, eller numerisk
-  # CRITICAL: Efter ggplot_build() er temporal vaerdier transformeret til plain numeric.
-  # Vi skelner Date fra POSIXct for at undgaa unoedvendig POSIXct-coercion paa Date-skalaer
-  # (som kan introducere timezone/DST-forskydninger).
-  x_is_date <- FALSE
-  x_is_datetime <- FALSE
-  x_scale <- NULL
-
-  tryCatch(
-    {
-      x_scale <- built_plot$layout$panel_scales_x[[1]]
-
-      if (!is.null(x_scale)) {
-        scale_class <- class(x_scale)[1]
-        trans_name <- if (!is.null(x_scale$trans)) x_scale$trans$name else ""
-
-        # Date-skalaer: trans name er typisk "date" (uden "time")
-        # Datetime-skalaer: trans name er typisk "time" eller "hms"
-        if (grepl("^date$", tolower(trans_name)) ||
-          (grepl("Date", scale_class) && !grepl("Time|time", scale_class))) {
-          x_is_date <- TRUE
-        } else if (grepl("time|hms", tolower(trans_name)) ||
-          grepl("Time", scale_class)) {
-          x_is_datetime <- TRUE
-        }
-      }
-    },
-    error = function(e) {
-      # Fallback: hvis scale detection fejler, antag numerisk
-    }
+  # Byg label_data tibble med korrekt x-type
+  label_data <- .build_label_data(
+    textA = textA,
+    textB = textB,
+    yA_data = yA_data,
+    yB_data = yB_data,
+    x_max = x_axis$x_max,
+    x_is_date = x_axis$x_is_date,
+    x_is_datetime = x_axis$x_is_datetime,
+    gpA = gpA,
+    gpB = gpB
   )
-
-  if (x_is_date && !is.null(x_scale)) {
-    # Date path: konverter direkte til Date (ingen timezone involveret)
-    if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
-      x_max <- x_scale$trans$inverse(x_max_value)
-      if (!inherits(x_max, "Date")) {
-        x_max <- as.Date(x_max, origin = "1970-01-01")
-      }
-    } else {
-      x_max <- as.Date(x_max_value, origin = "1970-01-01")
-    }
-  } else if (x_is_datetime && !is.null(x_scale)) {
-    # POSIXct path: brug scale's inverse transformation + timezone
-    tz <- if (!is.null(x_scale$timezone)) x_scale$timezone else "UTC"
-
-    if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
-      x_max <- x_scale$trans$inverse(x_max_value)
-      x_max <- as.POSIXct(x_max, origin = "1970-01-01")
-      attr(x_max, "tzone") <- tz
-    } else {
-      x_max <- as.POSIXct(x_max_value, origin = "1970-01-01", tz = tz)
-    }
-  } else {
-    # Numerisk x-akse - brug vaerdi direkte
-    x_max <- x_max_value
-  }
-
-  # Opret label data med korrekt x-type (matcher den detekterede scale)
-  if (x_is_date) {
-    label_data <- tibble::tibble(
-      x = as.Date(character()),
-      y = numeric(),
-      label = character(),
-      color = character()
-    )
-  } else if (x_is_datetime) {
-    label_data <- tibble::tibble(
-      x = as.POSIXct(character()),
-      y = numeric(),
-      label = character(),
-      color = character()
-    )
-  } else {
-    label_data <- tibble::tibble(
-      x = numeric(),
-      y = numeric(),
-      label = character(),
-      color = character()
-    )
-  }
-
-  color_A <- if (!is.null(gpA$col)) gpA$col else "#009CE8"
-  color_B <- if (!is.null(gpB$col)) gpB$col else "#565656"
-
-  if (!is.na(yA_data)) {
-    label_data <- label_data |>
-      dplyr::bind_rows(tibble::tibble(
-        x = x_max,
-        y = yA_data,
-        label = textA,
-        color = color_A,
-        vjust = 0.5
-      ))
-  }
-
-  if (!is.na(yB_data)) {
-    label_data <- label_data |>
-      dplyr::bind_rows(tibble::tibble(
-        x = x_max,
-        y = yB_data,
-        label = textB,
-        color = color_B,
-        vjust = 0.5
-      ))
-  }
 
   # Tilfoej labels (marquee_size already calculated above)
   result <- p
