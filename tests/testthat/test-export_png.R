@@ -12,15 +12,13 @@ test_that("bfh_export_png creates PNG file", {
   )
 
   # Create chart
-  result <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "i",
-      y_axis_unit = "count",
-      chart_title = "Test Chart"
-    )
+  result <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "Test Chart"
   )
 
   # Create temporary file path
@@ -58,9 +56,7 @@ test_that("bfh_export_png respects dimension parameters", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "run")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "run")
 
   temp_file <- tempfile(fileext = ".png")
 
@@ -139,9 +135,7 @@ test_that("bfh_export_png validates output path", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "run")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "run")
 
   # Empty string
   expect_error(
@@ -174,9 +168,7 @@ test_that("bfh_export_png validates dimensions", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "run")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "run")
 
   temp_file <- withr::local_tempfile(fileext = ".png")
 
@@ -217,9 +209,7 @@ test_that("bfh_export_png validates DPI", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "run")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "run")
 
   temp_file <- withr::local_tempfile(fileext = ".png")
 
@@ -248,9 +238,7 @@ test_that("bfh_export_png warns on unusual dimensions", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "run")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "run")
 
   temp_file <- withr::local_tempfile(fileext = ".png")
 
@@ -262,7 +250,9 @@ test_that("bfh_export_png warns on unusual dimensions", {
   # specific text. Both BFHcharts' "exceed 50 inches" guard AND ggplot2's
   # internal sizing-error trigger this.
   expect_error(
-    bfh_export_png(result, temp_file, width_mm = 3000, height_mm = 2500)
+    suppressWarnings(
+      bfh_export_png(result, temp_file, width_mm = 3000, height_mm = 2500)
+    )
   )
 })
 
@@ -272,9 +262,7 @@ test_that("bfh_export_png warns on unusual DPI", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "run")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "run")
 
   temp_file <- withr::local_tempfile(fileext = ".png")
 
@@ -299,9 +287,7 @@ test_that("bfh_export_png creates directory if needed", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "run")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "run")
 
   # Create path with non-existent directory
   temp_dir <- tempfile()
@@ -325,12 +311,10 @@ test_that("bfh_export_png preserves chart title in PNG", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data, month, infections,
-      chart_type = "i",
-      chart_title = "Test Title with Æ Ø Å"
-    )
+  result <- bfh_qic(
+    data, month, infections,
+    chart_type = "i",
+    chart_title = "Test Title with Æ Ø Å"
   )
 
   temp_file <- tempfile(fileext = ".png")

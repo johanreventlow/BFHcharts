@@ -32,9 +32,7 @@ test_that("run-længde-signal fires ved 10+ konsekutive punkter på én side (n=
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
 
@@ -58,9 +56,7 @@ test_that("run-længde-signal fires IKKE ved korte runs (n=24)", {
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
 
@@ -89,9 +85,7 @@ test_that("crossings-signal fires ved for få crossings (konstrueret for n=24)",
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
 
@@ -113,9 +107,7 @@ test_that("crossings-signal fires IKKE ved mange crossings", {
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
 
@@ -148,9 +140,7 @@ test_that("stabile data med blandede mønstre giver ingen Anhøj-signal", {
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
 
@@ -179,9 +169,7 @@ test_that("sigma.signal fires ved punkt uden for kontrolgrænse (i-chart)", {
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "i")
 
   expect_valid_bfh_qic_result(result)
 
@@ -200,9 +188,7 @@ test_that("sigma.signal fires IKKE for stabil data", {
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "i")
 
   expect_valid_bfh_qic_result(result)
 
@@ -279,9 +265,7 @@ test_that("summary indeholder Anhøj-kolonner for run-chart", {
     value = c(rep(60, 10), rep(40, 14))
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   # Anhøj-stat-kolonner
   required_cols <- c(
@@ -306,9 +290,7 @@ test_that("længste_løb_max = round(log2(n)) + 3 for run-chart", {
     value = c(rep(60, 10), rep(40, 14))
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expected_max <- round(log2(24)) + 3
   expect_equal(result$summary$længste_løb_max[1], expected_max,

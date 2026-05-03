@@ -6,9 +6,7 @@ test_that("bfh_qic validates part positions are within bounds", {
 
   # Valid part positions
   expect_no_error({
-    suppressWarnings(
-      bfh_qic(data, x = month, y = value, part = c(12), chart_type = "i")
-    )
+    bfh_qic(data, x = month, y = value, part = c(12), chart_type = "i")
   })
 
   # Out of bounds part position
@@ -38,9 +36,7 @@ test_that("bfh_qic validates freeze position is within bounds", {
 
   # Valid freeze position
   expect_no_error({
-    suppressWarnings(
-      bfh_qic(data, x = month, y = value, freeze = 12, chart_type = "i")
-    )
+    bfh_qic(data, x = month, y = value, freeze = 12, chart_type = "i")
   })
 
   # Out of bounds freeze position
@@ -61,9 +57,7 @@ test_that("bfh_qic validates base_size is reasonable", {
 
   # Valid base_size
   expect_no_error({
-    suppressWarnings(
-      bfh_qic(data, x = month, y = value, base_size = 14, chart_type = "run")
-    )
+    bfh_qic(data, x = month, y = value, base_size = 14, chart_type = "run")
   })
 
   # Excessive base_size (over max_size = 48, aligned with FONT_SCALING_CONFIG)
@@ -74,9 +68,7 @@ test_that("bfh_qic validates base_size is reasonable", {
 
   # base_size == max_size (48) er gyldig
   expect_no_error({
-    suppressWarnings(
-      bfh_qic(data, x = month, y = value, base_size = 48, chart_type = "run")
-    )
+    bfh_qic(data, x = month, y = value, base_size = 48, chart_type = "run")
   })
 
   # Zero base_size
@@ -97,9 +89,7 @@ test_that("bfh_qic validates width and height are reasonable", {
 
   # Valid dimensions
   expect_no_error({
-    suppressMessages(suppressWarnings(
-      bfh_qic(data, x = month, y = value, width = 10, height = 6, chart_type = "run")
-    ))
+    suppressMessages(bfh_qic(data, x = month, y = value, width = 10, height = 6, chart_type = "run"))
   })
 
   # Excessive width (potential memory exhaustion)

@@ -547,15 +547,13 @@ test_that("bfh_qic maps y_axis_unit='percent' to qicharts2's y.percent parameter
     procedures = rep(100, 12)
   )
 
-  plot <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      n = procedures,
-      chart_type = "p",
-      y_axis_unit = "percent"
-    )
+  plot <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    n = procedures,
+    chart_type = "p",
+    y_axis_unit = "percent"
   )
   expect_s3_class(plot, "bfh_qic_result")
   expect_s3_class(plot$plot, "ggplot")
@@ -585,14 +583,12 @@ test_that("bfh_qic with y_axis_unit='count' does NOT apply percentage formatting
   )
 
   # Font warnings from grid rendering are expected and acceptable
-  plot <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = value,
-      chart_type = "run",
-      y_axis_unit = "count"
-    )
+  plot <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count"
   )
 
   expect_s3_class(plot, "bfh_qic_result")
@@ -625,27 +621,23 @@ test_that("y.percent parameter is passed correctly to qicharts2::qic", {
 
   # Create P-chart with percent unit
   # Font warnings from grid rendering are expected and acceptable
-  plot_pct <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = x,
-      y = y,
-      n = n,
-      chart_type = "p",
-      y_axis_unit = "percent"
-    )
+  plot_pct <- bfh_qic(
+    data = data,
+    x = x,
+    y = y,
+    n = n,
+    chart_type = "p",
+    y_axis_unit = "percent"
   )
 
   # Create P-chart with count unit (should NOT format as percentage)
-  plot_count <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = x,
-      y = y,
-      n = n,
-      chart_type = "p",
-      y_axis_unit = "count"
-    )
+  plot_count <- bfh_qic(
+    data = data,
+    x = x,
+    y = y,
+    n = n,
+    chart_type = "p",
+    y_axis_unit = "count"
   )
 
   # Extract y-axis labels from both plots

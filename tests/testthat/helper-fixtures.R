@@ -70,13 +70,14 @@ fixture_deterministic_chart_data <- function(n = 12) {
 #' @return data.frame med minimum-kolonner til bfh_spc_plot()
 #' @keywords internal
 fixture_plot_qic_data <- function(
-    n = 12,
-    x_dates = TRUE,
-    has_cl_limits = TRUE,
-    sigma_signals = NULL,
-    anhoej_signals = NULL,
-    target_val = NA_real_,
-    parts = NULL) {
+  n = 12,
+  x_dates = TRUE,
+  has_cl_limits = TRUE,
+  sigma_signals = NULL,
+  anhoej_signals = NULL,
+  target_val = NA_real_,
+  parts = NULL
+) {
   if (x_dates) {
     x_vals <- as.Date("2024-01-01") + 0:(n - 1) * 30
   } else {
@@ -220,12 +221,11 @@ fixture_bfh_qic_result <- function(sigma_signal,
 #' @keywords internal
 fixture_test_chart <- function(title = "Test", n = 12, lambda = 15) {
   data <- fixture_minimal_chart_data(n = n, lambda = lambda)
-  suppressWarnings(
-    bfh_qic(data,
-            x = month,
-            y = infections,
-            chart_type = "i",
-            chart_title = title)
+  bfh_qic(data,
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = title
   )
 }
 

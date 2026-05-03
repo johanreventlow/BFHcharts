@@ -47,9 +47,7 @@ test_that("xbar-chart UCL/LCL matcher Montgomery formel (n=5, konstant subgroup)
     value = rep(c(9, 10, 11, 10, 10), 8)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = subgroup, y = value, chart_type = "xbar")
-  )
+  result <- bfh_qic(data, x = subgroup, y = value, chart_type = "xbar")
 
   qd <- result$qic_data
   grand_mean <- 10
@@ -77,9 +75,7 @@ test_that("xbar-chart LCL kan være negativ (ingen clipping)", {
     value = rep(c(-1, 0, 1, 0), 6)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = subgroup, y = value, chart_type = "xbar")
-  )
+  result <- bfh_qic(data, x = subgroup, y = value, chart_type = "xbar")
 
   qd <- result$qic_data
   expect_equal(qd$cl[1], 0, tolerance = 1e-6)
@@ -109,9 +105,7 @@ test_that("s-chart UCL matcher Montgomery formel (n=5, B4=2.089)", {
     value = rep(c(9, 10, 11, 10, 10), 8)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = subgroup, y = value, chart_type = "s")
-  )
+  result <- bfh_qic(data, x = subgroup, y = value, chart_type = "s")
 
   qd <- result$qic_data
   s_bar <- sd(c(9, 10, 11, 10, 10)) # 0.7071068
@@ -138,9 +132,7 @@ test_that("s-chart har konsistent centerlinje på tværs af subgroups", {
     value = rep(c(8, 10, 12, 10), 6)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = subgroup, y = value, chart_type = "s")
-  )
+  result <- bfh_qic(data, x = subgroup, y = value, chart_type = "s")
 
   expect_true(all(result$qic_data$cl == result$qic_data$cl[1]))
 })
@@ -163,9 +155,7 @@ test_that("mr-chart UCL matcher Montgomery formel (D4=3.267)", {
 
   data <- data.frame(period = seq_along(values), value = values)
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "mr")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "mr")
 
   qd <- result$qic_data
   D4_n2 <- 3.267
@@ -188,9 +178,7 @@ test_that("mr-chart UCL matcher Montgomery formel (D4=3.267)", {
 test_that("mr-chart første række har NA i y-værdi (ingen MR for første obs)", {
   data <- data.frame(period = 1:5, value = c(10, 11, 9, 12, 10))
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "mr")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "mr")
 
   expect_true(is.na(result$qic_data$y[1]))
   expect_false(any(is.na(result$qic_data$y[2:5])))
@@ -212,9 +200,7 @@ test_that("t-chart UCL/LCL matcher Nelson-transformation (y^(1/3.6))", {
   values <- c(5, 3, 7, 4, 6, 5, 8, 6)
   data <- data.frame(event = seq_along(values), days = values)
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = event, y = days, chart_type = "t")
-  )
+  result <- bfh_qic(data, x = event, y = days, chart_type = "t")
 
   qd <- result$qic_data
 
@@ -248,12 +234,8 @@ test_that("t-chart har bredere UCL end I-chart (Nelson-transformation udvider)",
   values <- c(5, 3, 7, 4, 6, 5, 8, 6)
   data <- data.frame(event = seq_along(values), days = values)
 
-  t_result <- suppressWarnings(
-    bfh_qic(data, x = event, y = days, chart_type = "t")
-  )
-  i_result <- suppressWarnings(
-    bfh_qic(data, x = event, y = days, chart_type = "i")
-  )
+  t_result <- bfh_qic(data, x = event, y = days, chart_type = "t")
+  i_result <- bfh_qic(data, x = event, y = days, chart_type = "i")
 
   # Nelson-transformation gør UCL mere konservativ for skæve fordelinger
   expect_gt(t_result$qic_data$ucl[1], i_result$qic_data$ucl[1])
@@ -277,9 +259,7 @@ test_that("g-chart UCL matcher geometric formel (c_bar + 3·sqrt(c_bar·(c_bar+1
   values <- c(5, 8, 6, 7, 4, 9, 5, 7)
   data <- data.frame(shift = seq_along(values), count = values)
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = shift, y = count, chart_type = "g")
-  )
+  result <- bfh_qic(data, x = shift, y = count, chart_type = "g")
 
   qd <- result$qic_data
   c_bar <- mean(values) # 6.375
@@ -305,9 +285,7 @@ test_that("g-chart LCL clippes til 0 når c_bar er lille", {
   values <- c(2, 3, 1, 4, 2, 3)
   data <- data.frame(shift = seq_along(values), count = values)
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = shift, y = count, chart_type = "g")
-  )
+  result <- bfh_qic(data, x = shift, y = count, chart_type = "g")
 
   expect_equal(result$qic_data$lcl[1], 0, tolerance = 1e-6)
 })
@@ -335,9 +313,7 @@ test_that("pp-chart wrapping matcher qicharts2::qic() direkte output", {
     total = rep(100L, 10)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = events, n = total, chart_type = "pp")
-  )
+  result <- bfh_qic(data, x = period, y = events, n = total, chart_type = "pp")
 
   expected <- qicharts2::qic(
     period, events,
@@ -358,9 +334,7 @@ test_that("pp-chart cl er pooled p_bar (sum(events) / sum(n))", {
     total = c(80, 100, 90, 120, 85, 95, 110, 75)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = events, n = total, chart_type = "pp")
-  )
+  result <- bfh_qic(data, x = period, y = events, n = total, chart_type = "pp")
 
   expected_p_bar <- sum(data$events) / sum(data$total)
 
@@ -375,9 +349,7 @@ test_that("pp-chart har ikke-trivielle kontrolgrænser (ikke konstant cl=ucl=lcl
     total = rep(100L, 10)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = events, n = total, chart_type = "pp")
-  )
+  result <- bfh_qic(data, x = period, y = events, n = total, chart_type = "pp")
 
   qd <- result$qic_data
   expect_gt(qd$ucl[1], qd$cl[1])
@@ -404,9 +376,7 @@ test_that("up-chart wrapping matcher qicharts2::qic() direkte output", {
     total = rep(100L, 10)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = events, n = total, chart_type = "up")
-  )
+  result <- bfh_qic(data, x = period, y = events, n = total, chart_type = "up")
 
   expected <- qicharts2::qic(
     period, events,
@@ -427,9 +397,7 @@ test_that("up-chart cl er pooled u_bar (sum(events) / sum(n))", {
     total = c(80, 100, 90, 120, 85, 95, 110, 75)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = events, n = total, chart_type = "up")
-  )
+  result <- bfh_qic(data, x = period, y = events, n = total, chart_type = "up")
 
   expected_u_bar <- sum(data$events) / sum(data$total)
   expect_equal(result$qic_data$cl[1], expected_u_bar, tolerance = 1e-6)
@@ -448,12 +416,8 @@ test_that("xbar og s charts på samme data har samme grand_mean baseline", {
     value = rep(c(8, 10, 12, 10), 6)
   )
 
-  xbar_result <- suppressWarnings(
-    bfh_qic(data, x = subgroup, y = value, chart_type = "xbar")
-  )
-  s_result <- suppressWarnings(
-    bfh_qic(data, x = subgroup, y = value, chart_type = "s")
-  )
+  xbar_result <- bfh_qic(data, x = subgroup, y = value, chart_type = "xbar")
+  s_result <- bfh_qic(data, x = subgroup, y = value, chart_type = "s")
 
   # xbar.cl = grand mean = 10
   # s.cl = sd of subgroup = 1.633 (sd of c(8,10,12,10))
@@ -465,12 +429,8 @@ test_that("mr og i charts på samme data har konsistente sigma-estimater", {
   values <- c(10, 11, 9, 12, 10, 11, 13, 10, 12, 11)
   data <- data.frame(period = seq_along(values), value = values)
 
-  i_result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "i")
-  )
-  mr_result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "mr")
-  )
+  i_result <- bfh_qic(data, x = period, y = value, chart_type = "i")
+  mr_result <- bfh_qic(data, x = period, y = value, chart_type = "mr")
 
   # I-chart UCL bruger sigma_hat = MR_bar / d2 (d2 = 1.128 for n=2)
   # mr-chart UCL = D4 · MR_bar
@@ -513,9 +473,7 @@ test_that("pp-chart UCL/LCL matcher Laney-formel (ens n, håndberegnet)", {
   y_vec <- c(3L, 5L, 4L, 6L, 2L, 7L, 4L, 5L)
   data <- data.frame(period = 1:8, y = y_vec, n = n_vec)
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = y, n = n, chart_type = "pp")
-  )
+  result <- bfh_qic(data, x = period, y = y, n = n, chart_type = "pp")
   qd <- result$qic_data
 
   # CL = p_bar
@@ -548,9 +506,7 @@ test_that("pp-chart UCL varierer med n (Laney p' er n-afhængig)", {
   y_vec <- c(3L, 6L, 4L, 8L, 2L, 7L, 5L, 4L)
   data <- data.frame(period = 1:8, y = y_vec, n = n_vec)
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = y, n = n, chart_type = "pp")
-  )
+  result <- bfh_qic(data, x = period, y = y, n = n, chart_type = "pp")
   qd <- result$qic_data
 
   # CL = p_bar ≈ 0.07091

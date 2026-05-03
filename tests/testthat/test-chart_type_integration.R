@@ -34,9 +34,10 @@ test_that("bfh_qic() genererer valid MR-chart", {
   # Centerlinje for MR-chart skal være mean af moving ranges
   expected_mr_mean <- mean(abs(diff(data$y)))
   expect_equal(result$summary$centerlinje[1],
-               expected_mr_mean,
-               tolerance = 0.01,
-               label = "MR centerlinje")
+    expected_mr_mean,
+    tolerance = 0.01,
+    label = "MR centerlinje"
+  )
 })
 
 test_that("MR-chart har ikke-negative UCL", {
@@ -64,9 +65,7 @@ test_that("bfh_qic() genererer valid P'-chart med denominator", {
     total = c(100, 120, 150, 110, 180, 130, 115, 160, 145, 170, 135, 125)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = events, n = total, chart_type = "pp")
-  )
+  result <- bfh_qic(data, x = x, y = events, n = total, chart_type = "pp")
 
   expect_valid_bfh_qic_result(result)
   expect_equal(nrow(result$qic_data), 12)
@@ -76,7 +75,8 @@ test_that("bfh_qic() genererer valid P'-chart med denominator", {
   cl <- result$summary$centerlinje[1]
   individual_props <- data$events / data$total
   expect_true(is.numeric(cl) && !is.na(cl),
-              info = "P'-chart centerlinje skal være numerisk")
+    info = "P'-chart centerlinje skal være numerisk"
+  )
   expect_gte(cl, min(individual_props) * 0.5)
   expect_lte(cl, max(individual_props) * 2)
 })
@@ -92,9 +92,7 @@ test_that("bfh_qic() genererer valid U'-chart med eksponering", {
     exposure = c(50, 60, 80, 55, 75, 65, 58, 90, 72, 85, 68, 62)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = events, n = exposure, chart_type = "up")
-  )
+  result <- bfh_qic(data, x = x, y = events, n = exposure, chart_type = "up")
 
   expect_valid_bfh_qic_result(result)
   expect_equal(nrow(result$qic_data), 12)
@@ -103,7 +101,8 @@ test_that("bfh_qic() genererer valid U'-chart med eksponering", {
   cl <- result$summary$centerlinje[1]
   individual_rates <- data$events / data$exposure
   expect_true(is.numeric(cl) && !is.na(cl),
-              info = "U'-chart centerlinje skal være numerisk")
+    info = "U'-chart centerlinje skal være numerisk"
+  )
   expect_gte(cl, min(individual_rates) * 0.5)
   expect_lte(cl, max(individual_rates) * 2)
 })
@@ -119,9 +118,7 @@ test_that("bfh_qic() genererer valid G-chart", {
     y = c(30, 45, 25, 60, 20, 40, 35, 55, 28, 42)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "g")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "g")
 
   expect_valid_bfh_qic_result(result)
   expect_equal(nrow(result$qic_data), 10)
@@ -137,15 +134,14 @@ test_that("G-chart har LCL clippet til 0", {
     y = c(30, 45, 25, 60, 20, 40, 35, 55, 28, 42)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "g")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "g")
 
   # LCL skal aldrig være < 0 for G-chart (tid mellem er positivt)
   lcl_values <- result$qic_data$lcl
   if (any(!is.na(lcl_values))) {
     expect_true(all(lcl_values >= 0 | is.na(lcl_values)),
-                info = "G-chart LCL må ikke være negativ")
+      info = "G-chart LCL må ikke være negativ"
+    )
   }
 })
 
@@ -162,9 +158,7 @@ test_that("bfh_qic() genererer valid Xbar-chart med subgrupper", {
     y = round(rnorm(50, mean = 100, sd = 5), 1)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "xbar")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "xbar")
 
   expect_valid_bfh_qic_result(result)
   # Xbar aggregerer til 1 punkt pr. unik x
@@ -172,9 +166,10 @@ test_that("bfh_qic() genererer valid Xbar-chart med subgrupper", {
 
   # Centerlinje er grand average ≈ 100
   expect_equal(result$summary$centerlinje[1],
-               mean(data$y),
-               tolerance = 0.5,
-               label = "Xbar grand average centerlinje")
+    mean(data$y),
+    tolerance = 0.5,
+    label = "Xbar grand average centerlinje"
+  )
 })
 
 # ============================================================================
@@ -188,9 +183,7 @@ test_that("bfh_qic() genererer valid S-chart med subgrupper", {
     y = round(rnorm(48, mean = 50, sd = 3), 1)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "s")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "s")
 
   expect_valid_bfh_qic_result(result)
   expect_equal(nrow(result$qic_data), 8)
@@ -209,15 +202,14 @@ test_that("S-chart har LCL clippet til ikke-negativ", {
     y = round(rnorm(40, mean = 50, sd = 3), 1)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "s")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "s")
 
   # Standard-afvigelser er pr. definition >= 0
   lcl_values <- result$qic_data$lcl
   if (any(!is.na(lcl_values))) {
     expect_true(all(lcl_values >= 0 | is.na(lcl_values)),
-                info = "S-chart LCL må ikke være negativ")
+      info = "S-chart LCL må ikke være negativ"
+    )
   }
 })
 
@@ -232,18 +224,17 @@ test_that("bfh_qic() genererer valid T-chart", {
     y = c(5, 8, 3, 12, 6, 9, 4, 15, 7, 10, 5, 11)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "t")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "t")
 
   expect_valid_bfh_qic_result(result)
   expect_equal(nrow(result$qic_data), 12)
 
   # T-chart centerlinje er mean af y (tider mellem hændelser)
   expect_equal(result$summary$centerlinje[1],
-               mean(data$y),
-               tolerance = 1.5,
-               label = "T-chart mean-based centerlinje")
+    mean(data$y),
+    tolerance = 1.5,
+    label = "T-chart mean-based centerlinje"
+  )
 })
 
 test_that("T-chart har LCL clippet til ikke-negativ", {
@@ -252,15 +243,14 @@ test_that("T-chart har LCL clippet til ikke-negativ", {
     y = c(5, 8, 3, 12, 6, 9, 4, 15, 7, 10)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "t")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "t")
 
   # Tid mellem hændelser er altid >= 0
   lcl_values <- result$qic_data$lcl
   if (any(!is.na(lcl_values))) {
     expect_true(all(lcl_values >= 0 | is.na(lcl_values)),
-                info = "T-chart LCL må ikke være negativ")
+      info = "T-chart LCL må ikke være negativ"
+    )
   }
 })
 
@@ -280,6 +270,9 @@ test_that("alle CHART_TYPES_EN har integration-test-coverage", {
   # Verificér at alle konstante chart-types er dækket
   untested <- setdiff(CHART_TYPES_EN, all_tested)
   expect_equal(length(untested), 0,
-               info = paste("Utestede chart-types:",
-                            paste(untested, collapse = ", ")))
+    info = paste(
+      "Utestede chart-types:",
+      paste(untested, collapse = ", ")
+    )
+  )
 })

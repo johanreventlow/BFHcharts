@@ -61,16 +61,14 @@ test_that("apply_spc_theme can be used in bfh_qic workflow", {
     value = rnorm(12, 15, 2)
   )
 
-  plot <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = value,
-      chart_type = "run",
-      y_axis_unit = "count",
-      chart_title = "Test Plot",
-      base_size = 16
-    )
+  plot <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count",
+    chart_title = "Test Plot",
+    base_size = 16
   )
 
   # Plot should have theme applied
