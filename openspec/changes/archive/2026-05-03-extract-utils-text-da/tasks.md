@@ -31,7 +31,7 @@
 
 ## 6. Verification + PR
 
-- [ ] 6.1 Run pre-push hook end-to-end: `git push -u origin refactor/extract-utils-text-da` (no `SKIP_PREPUSH` allowed)
-- [ ] 6.2 Open PR `refactor/extract-utils-text-da` → develop with link to OpenSpec change folder
-- [ ] 6.3 Verify CI green
-- [ ] 6.4 After merge, archive change: `/opsx:archive extract-utils-text-da`
+- [x] 6.1 Run pre-push hook end-to-end: `git push -u origin refactor/extract-utils-text-da` (no `SKIP_PREPUSH` allowed)
+- [x] 6.2 Open PR `refactor/extract-utils-text-da` → develop with link to OpenSpec change folder
+- [x] 6.3 Verify CI green
+- [x] 6.4 After merge, archive change: `/opsx:archive extract-utils-text-da`
