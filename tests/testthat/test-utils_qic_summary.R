@@ -19,7 +19,9 @@ test_that("format_qic_summary returnerer data frame med danske kolonnenavne", {
   expect_true("længste_løb_max" %in% names(result))
   expect_true("antal_kryds" %in% names(result))
   expect_true("antal_kryds_min" %in% names(result))
-  expect_true("løbelængde_signal" %in% names(result))
+  expect_true("anhoej_signal" %in% names(result))
+  expect_true("runs_signal" %in% names(result))
+  expect_true("crossings_signal" %in% names(result))
   expect_true("centerlinje" %in% names(result))
 })
 
@@ -30,7 +32,9 @@ test_that("format_qic_summary returnerer korrekte typer", {
   expect_type(result$fase, "integer")
   expect_type(result$antal_observationer, "integer")
   expect_type(result$længste_løb, "integer")
-  expect_type(result$løbelængde_signal, "logical")
+  expect_type(result$anhoej_signal, "logical")
+  expect_type(result$runs_signal, "logical")
+  expect_type(result$crossings_signal, "logical")
   expect_type(result$centerlinje, "double")
 })
 
@@ -77,9 +81,10 @@ test_that("format_qic_summary kombinerer signals korrekt med any()", {
 
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
-  # Fase 1 har signals, fase 2 har ikke
-  expect_true(result$løbelængde_signal[1])
-  expect_false(result$løbelængde_signal[2])
+  # Fase 1 har signals, fase 2 har ikke (anhoej_signal er qicharts2's
+  # kombinerede runs-OR-crossings flag, sourcet fra runs.signal)
+  expect_true(result$anhoej_signal[1])
+  expect_false(result$anhoej_signal[2])
 })
 
 test_that("format_qic_summary inkluderer aggregerede outlier-kolonner per fase", {
@@ -98,31 +103,29 @@ test_that("format_qic_summary inkluderer aggregerede outlier-kolonner per fase",
 # AFRUNDING OG UNIT-SPECIFIK FORMATERING
 # =============================================================================
 
-test_that("format_qic_summary runder korrekt for percent", {
+test_that("format_qic_summary returnerer raa precision for centerlinje (percent)", {
   qic_data <- fixture_qicharts_summary_data()
   qic_data$cl <- rep(0.6789, 24)
   result <- format_qic_summary(qic_data, y_axis_unit = "percent")
 
-  # percent = 2 decimaler
-  expect_equal(result$centerlinje, 0.68)
+  # Slice C: ingen afrunding i summary -- raa precision bevares
+  expect_equal(result$centerlinje, 0.6789)
 })
 
-test_that("format_qic_summary runder korrekt for count", {
+test_that("format_qic_summary returnerer raa precision for centerlinje (count)", {
   qic_data <- fixture_qicharts_summary_data()
   qic_data$cl <- rep(50.456, 24)
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
-  # count = 1 decimal
-  expect_equal(result$centerlinje, 50.5)
+  expect_equal(result$centerlinje, 50.456)
 })
 
-test_that("format_qic_summary runder korrekt for rate", {
+test_that("format_qic_summary returnerer raa precision for centerlinje (rate)", {
   qic_data <- fixture_qicharts_summary_data()
   qic_data$cl <- rep(12.345, 24)
   result <- format_qic_summary(qic_data, y_axis_unit = "rate")
 
-  # rate = 2 decimaler
-  expect_equal(result$centerlinje, 12.35)
+  expect_equal(result$centerlinje, 12.345)
 })
 
 # =============================================================================
@@ -179,11 +182,11 @@ test_that("format_qic_summary: variable grænser giver korrekte min/max-værdier
 
   result <- format_qic_summary(qic_data, y_axis_unit = "percent")
 
-  # Min og max skal svare til de faktiske min/max i data (2 decimaler for percent)
-  expect_equal(result$nedre_kontrolgrænse_min, round(30, 2))
-  expect_equal(result$nedre_kontrolgrænse_max, round(40, 2))
-  expect_equal(result$øvre_kontrolgrænse_min, round(60, 2))
-  expect_equal(result$øvre_kontrolgrænse_max, round(70, 2))
+  # Slice C: raa precision -- min/max matcher faktisk min/max uden afrunding
+  expect_equal(result$nedre_kontrolgrænse_min, 30)
+  expect_equal(result$nedre_kontrolgrænse_max, 40)
+  expect_equal(result$øvre_kontrolgrænse_min, 60)
+  expect_equal(result$øvre_kontrolgrænse_max, 70)
 })
 
 test_that("format_qic_summary: p-chart med konstant n → konstante grænser", {

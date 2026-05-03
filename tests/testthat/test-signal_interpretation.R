@@ -44,8 +44,10 @@ test_that("crossings signal beregnes per part", {
     value = rnorm(24, mean = 50, sd = 5)
   )
 
-  result <- bfh_qic(data, x = date, y = value, chart_type = "i",
-                     part = 12)
+  result <- bfh_qic(data,
+    x = date, y = value, chart_type = "i",
+    part = 12
+  )
 
   # Skal have part kolonne
   expect_true("part" %in% names(result$qic_data))
@@ -71,7 +73,9 @@ test_that("signal-kolonner er tilgængelige i summary", {
   expect_true("længste_løb_max" %in% names(result$summary))
   expect_true("antal_kryds" %in% names(result$summary))
   expect_true("antal_kryds_min" %in% names(result$summary))
-  expect_true("løbelængde_signal" %in% names(result$summary))
+  expect_true("anhoej_signal" %in% names(result$summary))
+  expect_true("runs_signal" %in% names(result$summary))
+  expect_true("crossings_signal" %in% names(result$summary))
 })
 
 test_that("run chart har anhoej.signal uden lcl/ucl", {
@@ -91,7 +95,6 @@ test_that("run chart har anhoej.signal uden lcl/ucl", {
 })
 
 test_that("data med konstrueret runs-signal detekteres", {
-
   # Konstruer data med lang run: 10 punkter over median efterfulgt af 14 under
   # Dette bør trigger runs.signal i qicharts2
   values <- c(rep(60, 10), rep(40, 14))
@@ -115,7 +118,7 @@ test_that("stabil data giver FALSE for alle signals", {
 
   # Uniformt fordelt rundt om medianen — bør give mange crossings og korte runs
   n <- 24
-  values <- 50 + (seq_len(n) %% 2) * 4 - 2  # alternerer: 48, 52, 48, 52, ...
+  values <- 50 + (seq_len(n) %% 2) * 4 - 2 # alternerer: 48, 52, 48, 52, ...
 
   data <- data.frame(
     date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = n),

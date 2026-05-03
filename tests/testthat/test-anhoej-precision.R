@@ -271,7 +271,7 @@ test_that("summary indeholder Anhøj-kolonner for run-chart", {
   required_cols <- c(
     "længste_løb", "længste_løb_max",
     "antal_kryds", "antal_kryds_min",
-    "løbelængde_signal"
+    "anhoej_signal", "runs_signal", "crossings_signal"
   )
 
   missing <- setdiff(required_cols, names(result$summary))

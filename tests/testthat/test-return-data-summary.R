@@ -116,7 +116,7 @@ test_that("summary has correct Danish column names", {
   expected_cols <- c(
     "fase", "antal_observationer", "anvendelige_observationer",
     "længste_løb", "længste_løb_max", "antal_kryds", "antal_kryds_min",
-    "løbelængde_signal", "sigma_signal", "centerlinje",
+    "anhoej_signal", "runs_signal", "crossings_signal", "sigma_signal", "centerlinje",
     "nedre_kontrolgrænse", "øvre_kontrolgrænse"
   )
 
@@ -235,7 +235,9 @@ test_that("summary handles multiple phases correctly", {
   expect_equal(result$summary$fase, c(1, 2))
 })
 
-test_that("summary decimal places are appropriate for y_axis_unit", {
+test_that("summary returnerer raa qicharts2-precision uafhaengigt af y_axis_unit", {
+  # Slice C kontrakt (v0.15.0): summary lagrer raa cl-vaerdi.
+  # Display-formattere afrunder selv ved string-emission.
   set.seed(42)
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -243,7 +245,6 @@ test_that("summary decimal places are appropriate for y_axis_unit", {
     surgeries = rpois(12, lambda = 100)
   )
 
-  # Test percent (should have 2 decimal places)
   result_percent <- bfh_qic(
     data = data,
     x = month,
@@ -253,11 +254,12 @@ test_that("summary decimal places are appropriate for y_axis_unit", {
     y_axis_unit = "percent"
   )
 
-  # Check that centerlinje is rounded to 2 decimals
-  cl_decimal_places <- nchar(sub(".*\\.", "", as.character(result_percent$summary$centerlinje[1])))
-  expect_lte(cl_decimal_places, 2)
+  # summary$centerlinje skal vaere identisk med qic_data$cl raat
+  expect_identical(
+    result_percent$summary$centerlinje[1],
+    result_percent$qic_data$cl[1]
+  )
 
-  # Test count (should have 1 decimal place)
   result_count <- bfh_qic(
     data = data,
     x = month,
@@ -266,8 +268,10 @@ test_that("summary decimal places are appropriate for y_axis_unit", {
     y_axis_unit = "count"
   )
 
-  cl_decimal_places <- nchar(sub(".*\\.", "", as.character(result_count$summary$centerlinje[1])))
-  expect_lte(cl_decimal_places, 1)
+  expect_identical(
+    result_count$summary$centerlinje[1],
+    result_count$qic_data$cl[1]
+  )
 })
 
 test_that("return.data parameter validation works", {
@@ -336,11 +340,15 @@ test_that("Anhøj statistics are included in summary", {
   expect_true("længste_løb_max" %in% names(result$summary))
   expect_true("antal_kryds" %in% names(result$summary))
   expect_true("antal_kryds_min" %in% names(result$summary))
-  expect_true("løbelængde_signal" %in% names(result$summary))
+  expect_true("anhoej_signal" %in% names(result$summary))
+  expect_true("runs_signal" %in% names(result$summary))
+  expect_true("crossings_signal" %in% names(result$summary))
   expect_true("sigma_signal" %in% names(result$summary))
 
   # Check that signals are logical
-  expect_type(result$summary$løbelængde_signal, "logical")
+  expect_type(result$summary$anhoej_signal, "logical")
+  expect_type(result$summary$runs_signal, "logical")
+  expect_type(result$summary$crossings_signal, "logical")
   expect_type(result$summary$sigma_signal, "logical")
 })
 
