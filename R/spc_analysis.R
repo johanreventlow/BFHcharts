@@ -712,6 +712,51 @@ bfh_generate_analysis <- function(x,
 }
 
 
+# Vælg i18n-nøgle til handlings-arm af fallback-analysen.
+#
+# Pure dispatch: tager flags + target-evaluation og returnerer character
+# scalar key til `texts$action[[key]]`. Tre dispatch-veje:
+#
+#   1. has_target + target_direction (fra fx "<= 2,5"): retningsbevidst
+#      cascade -> "stable_goal_met", "stable_goal_not_met",
+#      "unstable_goal_met", "unstable_goal_not_met"
+#   2. has_target uden target_direction: vaerdineutral cascade ->
+#      "stable_at_target", "stable_not_at_target", "unstable_at_target",
+#      "unstable_not_at_target"
+#   3. !has_target: simple cascade -> "stable_no_target",
+#      "unstable_no_target"
+#
+# goal_met og at_target er evalueret af caller; helper er pure dispatch.
+.select_action_key <- function(flags, target_direction, goal_met, at_target) {
+  is_stable <- flags$is_stable
+  has_target <- flags$has_target
+
+  if (has_target && !is.null(target_direction)) {
+    if (is_stable && goal_met) {
+      "stable_goal_met"
+    } else if (is_stable && !goal_met) {
+      "stable_goal_not_met"
+    } else if (!is_stable && goal_met) {
+      "unstable_goal_met"
+    } else {
+      "unstable_goal_not_met"
+    }
+  } else if (has_target) {
+    if (is_stable && at_target) {
+      "stable_at_target"
+    } else if (is_stable && !at_target) {
+      "stable_not_at_target"
+    } else if (!is_stable && at_target) {
+      "unstable_at_target"
+    } else {
+      "unstable_not_at_target"
+    }
+  } else {
+    if (is_stable) "stable_no_target" else "unstable_no_target"
+  }
+}
+
+
 # Intern funktion: Byg komplet fallback-analysetekst
 # Allokerer tegnbudget til stability/target/action dele
 # og vaelger passende variant for hver del. Naar context$target_direction
@@ -843,31 +888,7 @@ build_fallback_analysis <- function(context,
   }
 
   # --- 3. Handlingsforslag ---
-  if (has_target && !is.null(target_direction)) {
-    # Retningsbevidste action-keys
-    action_key <- if (is_stable && goal_met) {
-      "stable_goal_met"
-    } else if (is_stable && !goal_met) {
-      "stable_goal_not_met"
-    } else if (!is_stable && goal_met) {
-      "unstable_goal_met"
-    } else {
-      "unstable_goal_not_met"
-    }
-  } else if (has_target) {
-    # Vaerdineutrale action-keys (bagudkompatible)
-    action_key <- if (is_stable && at_target) {
-      "stable_at_target"
-    } else if (is_stable && !at_target) {
-      "stable_not_at_target"
-    } else if (!is_stable && at_target) {
-      "unstable_at_target"
-    } else {
-      "unstable_not_at_target"
-    }
-  } else {
-    action_key <- if (is_stable) "stable_no_target" else "unstable_no_target"
-  }
+  action_key <- .select_action_key(flags, target_direction, goal_met, at_target)
   action <- pick_text(texts$action[[action_key]], budget = action_budget)
 
   # --- Kombiner ---
