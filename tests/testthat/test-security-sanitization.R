@@ -67,7 +67,7 @@ test_that("sanitize_marquee_text truncates long input", {
   long_text <- paste(rep("A", 300), collapse = "")
   result <- sanitize_marquee_text(long_text)
   expect_lte(nchar(result), 200)
-  expect_warning(sanitize_marquee_text(long_text), "Text afkortet")
+  expect_warning(sanitize_marquee_text(long_text), "Text truncated")
 })
 
 test_that("sanitize_marquee_text removes control characters", {

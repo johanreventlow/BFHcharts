@@ -84,11 +84,11 @@
 clamp_to_bounds <- function(x, low_bound, high_bound) {
   # Input validation
   if (is.null(x) || length(x) == 0) {
-    stop("clamp_to_bounds: x m\u00e5 ikke v\u00e6re NULL eller tom")
+    stop("clamp_to_bounds: x must not be NULL or empty", call. = FALSE)
   }
 
   if (!is.numeric(x) || !is.numeric(low_bound) || !is.numeric(high_bound)) {
-    stop("clamp_to_bounds: Alle parametre skal v\u00e6re numeriske")
+    stop("clamp_to_bounds: all parameters must be numeric", call. = FALSE)
   }
 
   # Naar labels er stoerre end panelet kan bounds invertere - returner midtpunktet
@@ -135,24 +135,24 @@ clamp_to_bounds <- function(x, low_bound, high_bound) {
 npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
   # Validate built plot object
   if (is.null(built_plot) || !inherits(built_plot, "ggplot_built")) {
-    stop("npc_mapper_from_built: built_plot skal v\u00e6re et ggplot_built object")
+    stop("npc_mapper_from_built: built_plot must be a ggplot_built object", call. = FALSE)
   }
 
   # Validate panel parameter
   if (!is.numeric(panel) || length(panel) != 1 || panel < 1 || panel != floor(panel)) {
-    stop("npc_mapper_from_built: panel skal v\u00e6re et positivt heltal, modtog: ", panel)
+    stop("npc_mapper_from_built: panel must be a positive integer, got: ", panel, call. = FALSE)
   }
 
   if (is.null(built_plot$layout) || is.null(built_plot$layout$panel_params)) {
-    stop("npc_mapper_from_built: Plot mangler layout information")
+    stop("npc_mapper_from_built: plot is missing layout information", call. = FALSE)
   }
 
   # Validate panel exists
   if (panel > length(built_plot$layout$panel_params)) {
     stop(sprintf(
-      "npc_mapper_from_built: Panel %d eksisterer ikke (plot har kun %d panels)",
+      "npc_mapper_from_built: panel %d does not exist (plot has only %d panels)",
       panel, length(built_plot$layout$panel_params)
-    ))
+    ), call. = FALSE)
   }
 
   # Proev forskellige metoder til at faa panel params (robust paa tvaers af ggplot2 versioner)
@@ -171,7 +171,7 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
   )
 
   if (is.null(pp)) {
-    stop("Kunne ikke hente panel parameters fra built plot. Tjek ggplot2 version.")
+    stop("Could not retrieve panel parameters from built plot. Check ggplot2 version.", call. = FALSE)
   }
 
   # Udtraek limits og transformation
@@ -206,7 +206,7 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
     }
 
     if (is.null(lims) || length(lims) != 2) {
-      stop("Kunne ikke bestemme y-akse limits fra built plot.")
+      stop("Could not determine y-axis limits from built plot.", call. = FALSE)
     }
 
     # Trans function
@@ -231,7 +231,7 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
   ymax <- info$lims[2]
 
   if (!is.finite(ymin) || !is.finite(ymax) || ymax <= ymin) {
-    stop("Ugyldige y-akse limits: [", ymin, ", ", ymax, "]")
+    stop("Invalid y-axis limits: [", ymin, ", ", ymax, "]", call. = FALSE)
   }
 
   # Pre-compute transformerede limits (faste ved mapper-oprettelse)
@@ -241,9 +241,9 @@ npc_mapper_from_built <- function(built_plot, panel = 1, original_plot = NULL) {
 
   if (abs(y_range_trans) < .Machine$double.eps) {
     stop(sprintf(
-      "Y-akse range er praktisk talt nul efter transformation: y0=%.10f, y1=%.10f",
+      "Y-axis range is effectively zero after transformation: y0=%.10f, y1=%.10f",
       y0, y1
-    ))
+    ), call. = FALSE)
   }
 
   # Y-data -> NPC mapper

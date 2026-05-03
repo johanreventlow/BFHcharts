@@ -59,12 +59,12 @@ sanitize_marquee_text <- function(text) {
   }
 
   if (!is.character(text)) {
-    warning("sanitize_marquee_text: Konverterer ikke-character input til character")
+    warning("sanitize_marquee_text: converting non-character input to character")
     text <- as.character(text)
   }
 
   if (length(text) > 1) {
-    warning("sanitize_marquee_text: Flere v\u00e6rdier modtaget, bruger kun f\u00f8rste")
+    warning("sanitize_marquee_text: multiple values received, using only the first")
     text <- text[1]
   }
 
@@ -91,7 +91,7 @@ sanitize_marquee_text <- function(text) {
   # Begraens laengde for at forhindre memory exhaustion
   max_length <- 200
   if (nchar(text) > max_length) {
-    warning(sprintf("Text afkortet fra %d til %d tegn", nchar(text), max_length))
+    warning(sprintf("Text truncated from %d to %d characters", nchar(text), max_length))
     text <- substr(text, 1, max_length)
   }
 
@@ -224,19 +224,19 @@ create_responsive_label <- function(header, value, label_size = 6, header_pt = 1
                                     operator_prefix = "") {
   # Input validation
   if (!is.numeric(label_size) || length(label_size) != 1 || label_size <= 0) {
-    stop("label_size skal v\u00e6re et positivt tal, modtog: ", label_size)
+    stop("label_size must be a positive number, got: ", label_size, call. = FALSE)
   }
 
   if (label_size < 1 || label_size > 24) {
-    warning("label_size uden for normalt interval (1-24), modtog: ", label_size)
+    warning("label_size outside normal range (1-24), got: ", label_size)
   }
 
   if (!is.numeric(header_pt) || !is.numeric(value_pt)) {
-    stop("header_pt og value_pt skal v\u00e6re numeriske")
+    stop("header_pt and value_pt must be numeric", call. = FALSE)
   }
 
   if (header_pt <= 0 || value_pt <= 0) {
-    stop("header_pt og value_pt skal v\u00e6re positive")
+    stop("header_pt and value_pt must be positive", call. = FALSE)
   }
 
   # Sanitize inputs (operator_prefix er allerede whitelisted via parse_target_input)
@@ -257,10 +257,10 @@ create_responsive_label <- function(header, value, label_size = 6, header_pt = 1
 
   # Sanity check sizes
   if (header_size < 1 || header_size > 100) {
-    stop(sprintf("Beregnet header_size uden for gyldigt interval: %d", header_size))
+    stop(sprintf("Computed header_size out of valid range: %d", header_size), call. = FALSE)
   }
   if (value_size < 1 || value_size > 100) {
-    stop(sprintf("Beregnet value_size uden for gyldigt interval: %d", value_size))
+    stop(sprintf("Computed value_size out of valid range: %d", value_size), call. = FALSE)
   }
 
   sprintf(

@@ -1887,7 +1887,7 @@ test_that("bfh_qic interaktivt bevarer warning-only adfaerd (regression)", {
   # Direkte bfh_qic() med kort freeze: warning, ikke error
   expect_warning(
     bfh_qic(data, x = month, y = value, freeze = 5L, chart_type = "i"),
-    "baseline har f"
+    "baseline has fewer than"
   )
 })
 

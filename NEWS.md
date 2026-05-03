@@ -1,3 +1,14 @@
+# BFHcharts (development)
+
+## Internal changes
+
+* Translate Danish error/warning messages to English to match standard
+  R-package convention. Affected files: utils_bfh_qic_helpers.R,
+  spc_analysis.R, utils_npc_mapping.R, utils_label_helpers.R,
+  utils_label_formatting.R.
+* Add `call. = FALSE` to public-API-boundary `stop()` calls so internal
+  call stack is not leaked to the user.
+
 # BFHcharts 0.14.1
 
 ## Bug fixes

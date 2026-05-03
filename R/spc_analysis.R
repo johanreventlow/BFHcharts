@@ -247,7 +247,7 @@ ensure_within_max <- function(text, max_chars) {
 bfh_build_analysis_context <- function(x, metadata = list()) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
-    stop("x must be a bfh_qic_result object from bfh_qic()")
+    stop("x must be a bfh_qic_result object from bfh_qic()", call. = FALSE)
   }
   .validate_metadata_target(metadata$target)
 
@@ -463,7 +463,7 @@ bfh_generate_analysis <- function(x,
                                   texts_loader = NULL) {
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
-    stop("x must be a bfh_qic_result object from bfh_qic()")
+    stop("x must be a bfh_qic_result object from bfh_qic()", call. = FALSE)
   }
 
   validate_language(language)
@@ -476,7 +476,7 @@ bfh_generate_analysis <- function(x,
   # Validate min_chars < max_chars
 
   if (min_chars >= max_chars) {
-    stop("min_chars must be less than max_chars")
+    stop("min_chars must be less than max_chars", call. = FALSE)
   }
 
   # Byg kontekst
@@ -575,7 +575,7 @@ bfh_generate_analysis <- function(x,
       },
       error = function(e) {
         warning(
-          "AI analyse fejlede, bruger standardtekster: ",
+          "AI analysis failed; falling back to default text: ",
           conditionMessage(e)
         )
         NULL
