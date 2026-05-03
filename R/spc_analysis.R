@@ -599,6 +599,63 @@ bfh_generate_analysis <- function(x,
 }
 
 
+# Detect SPC signal flags from a context object.
+#
+# Returnerer named list med:
+#   has_runs, has_crossings, has_outliers (logical)
+#   is_stable                              (logical, derived: ingen signaler)
+#   no_variation                          (logical, derived: alle signal-stats NA)
+#   has_target                            (logical, derived: target_value + centerline gyldige)
+#   outliers_for_text                     (numeric, til pluralize_da + placeholder)
+#
+# Pure: samme input -> samme output. Bruges af build_fallback_analysis() til
+# at drive cascade-dispatch og budget-allokering uden at flade detection-
+# logikken sammen med i18n-opslag.
+.detect_signal_flags <- function(context) {
+  spc_stats <- context$spc_stats
+  target_value <- context$target_value
+  centerline <- context$centerline
+
+  has_runs <- is_valid_scalar(spc_stats$runs_actual) &&
+    is_valid_scalar(spc_stats$runs_expected) &&
+    spc_stats$runs_actual > spc_stats$runs_expected
+
+  has_crossings <- is_valid_scalar(spc_stats$crossings_actual) &&
+    is_valid_scalar(spc_stats$crossings_expected) &&
+    spc_stats$crossings_actual < spc_stats$crossings_expected
+
+  # Brug recent_count (seneste 6 obs) saa analyseteksten kun beskriver AKTUELLE
+  # outliers. Fald tilbage til outliers_actual naar kun summary-baserede stats
+  # er tilgaengelige.
+  outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
+  has_outliers <- is_valid_scalar(outliers_for_text) && outliers_for_text > 0
+
+  is_stable <- !has_runs && !has_crossings && !has_outliers
+
+  runs_missing <- is.null(spc_stats$runs_actual) ||
+    length(spc_stats$runs_actual) == 0 ||
+    is.na(spc_stats$runs_actual)
+  crossings_missing <- is.null(spc_stats$crossings_actual) ||
+    length(spc_stats$crossings_actual) == 0 ||
+    is.na(spc_stats$crossings_actual)
+  no_variation <- runs_missing && crossings_missing
+
+  has_target <- !is.null(target_value) && !is.na(target_value) &&
+    is.numeric(target_value) &&
+    !is.null(centerline) && !is.na(centerline)
+
+  list(
+    has_runs = has_runs,
+    has_crossings = has_crossings,
+    has_outliers = has_outliers,
+    is_stable = is_stable,
+    no_variation = no_variation,
+    has_target = has_target,
+    outliers_for_text = outliers_for_text
+  )
+}
+
+
 # Intern funktion: Byg komplet fallback-analysetekst
 # Allokerer tegnbudget til stability/target/action dele
 # og vaelger passende variant for hver del. Naar context$target_direction
@@ -620,37 +677,15 @@ build_fallback_analysis <- function(context,
   centerline <- context$centerline
   n_points <- context$n_points
 
-  # --- Detect signaler (sikker mod NULL og NA) ---
-  has_runs <- is_valid_scalar(spc_stats$runs_actual) &&
-    is_valid_scalar(spc_stats$runs_expected) &&
-    spc_stats$runs_actual > spc_stats$runs_expected
-
-  has_crossings <- is_valid_scalar(spc_stats$crossings_actual) &&
-    is_valid_scalar(spc_stats$crossings_expected) &&
-    spc_stats$crossings_actual < spc_stats$crossings_expected
-
-  # Brug recent_count (seneste 6 obs) saa analyseteksten kun beskriver AKTUELLE
-  # outliers. Fald tilbage til outliers_actual naar kun summary-baserede stats
-  # er tilgaengelige.
-  outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
-  has_outliers <- is_valid_scalar(outliers_for_text) &&
-    outliers_for_text > 0
-
-  is_stable <- !has_runs && !has_crossings && !has_outliers
-
-  # --- Detect ingen variation (alle SPC-stats er NA eller NULL) ---
-  runs_missing <- is.null(spc_stats$runs_actual) ||
-    length(spc_stats$runs_actual) == 0 ||
-    is.na(spc_stats$runs_actual)
-  crossings_missing <- is.null(spc_stats$crossings_actual) ||
-    length(spc_stats$crossings_actual) == 0 ||
-    is.na(spc_stats$crossings_actual)
-  no_variation <- runs_missing && crossings_missing
-
-  # --- Target-tilstand (afgoer budget-fordelingen) ---
-  has_target <- !is.null(target_value) && !is.na(target_value) &&
-    is.numeric(target_value) &&
-    !is.null(centerline) && !is.na(centerline)
+  # --- Detect signaler + target-tilstand ---
+  flags <- .detect_signal_flags(context)
+  has_runs <- flags$has_runs
+  has_crossings <- flags$has_crossings
+  has_outliers <- flags$has_outliers
+  is_stable <- flags$is_stable
+  no_variation <- flags$no_variation
+  has_target <- flags$has_target
+  outliers_for_text <- flags$outliers_for_text
 
   # --- Budget-allokering ---
   # Med target: stability ~50%, target ~25%, action ~25%.
