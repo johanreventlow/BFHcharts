@@ -8,7 +8,9 @@
 # Kerne-krav (spec.md):
 #   summary$laengste_loeb[i] == max(qic_data$longest.run[part == i], na.rm = TRUE)
 #   summary$antal_kryds[i]   == max(qic_data$n.crossings[part == i], na.rm = TRUE)
-#   summary$loebelaengde_signal[i] == any(qic_data$runs.signal[part == i])
+#   summary$anhoej_signal[i] == any(qic_data$runs.signal[part == i])
+#   summary$runs_signal[i] == (laengste_loeb[i] > laengste_loeb_max[i])
+#   summary$crossings_signal[i] == (antal_kryds[i] < antal_kryds_min[i])
 #   summary$sigma_signal[i]  == any(qic_data$sigma.signal[part == i])
 #
 # Observeret qicharts2-adfærd (verificeret 2026-05-01):
@@ -30,7 +32,7 @@ check_anhoej_consistency <- function(result) {
   qic_data <- result$qic_data
 
   loeb_col <- grep("ngste_løb$", names(summary), value = TRUE)[1]
-  sig_col <- grep("belængde_signal", names(summary), value = TRUE)[1]
+  sig_col <- if ("anhoej_signal" %in% names(summary)) "anhoej_signal" else NA_character_
 
   n_phases <- nrow(summary)
 
@@ -64,14 +66,39 @@ check_anhoej_consistency <- function(result) {
       }
     }
 
-    # --- loebelaengde_signal ---
-    if (!is.null(sig_col) && "runs.signal" %in% names(qic_data)) {
+    # --- anhoej_signal (kombineret runs-OR-crossings, fra qicharts2 runs.signal) ---
+    if (!is.na(sig_col) && "runs.signal" %in% names(qic_data)) {
       q_sig <- any(phase_rows$runs.signal, na.rm = TRUE)
       s_sig <- as.logical(summary[i, sig_col])
       if (!isTRUE(s_sig == q_sig)) {
         divergences[[length(divergences) + 1L]] <- sprintf(
-          "Phase %d loebelaengde_signal: summary=%s, qic_data any=%s",
+          "Phase %d anhoej_signal: summary=%s, qic_data any=%s",
           i, s_sig, q_sig
+        )
+      }
+    }
+
+    # --- runs_signal (decomposed: laengste_loeb > laengste_loeb_max) ---
+    if ("runs_signal" %in% names(summary)) {
+      loeb_max_col <- grep("ngste_løb_max$", names(summary), value = TRUE)[1]
+      s_run_sig <- as.logical(summary$runs_signal[i])
+      expected_run_sig <- isTRUE(summary[[loeb_col]][i] > summary[[loeb_max_col]][i])
+      if (!is.na(s_run_sig) && !isTRUE(s_run_sig == expected_run_sig)) {
+        divergences[[length(divergences) + 1L]] <- sprintf(
+          "Phase %d runs_signal: summary=%s, expected=%s",
+          i, s_run_sig, expected_run_sig
+        )
+      }
+    }
+
+    # --- crossings_signal (decomposed: antal_kryds < antal_kryds_min) ---
+    if ("crossings_signal" %in% names(summary)) {
+      s_cr_sig <- as.logical(summary$crossings_signal[i])
+      expected_cr_sig <- isTRUE(summary$antal_kryds[i] < summary$antal_kryds_min[i])
+      if (!is.na(s_cr_sig) && !isTRUE(s_cr_sig == expected_cr_sig)) {
+        divergences[[length(divergences) + 1L]] <- sprintf(
+          "Phase %d crossings_signal: summary=%s, expected=%s",
+          i, s_cr_sig, expected_cr_sig
         )
       }
     }
