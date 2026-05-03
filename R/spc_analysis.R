@@ -132,6 +132,7 @@ resolve_target <- function(target_input) {
 #' BFHcharts:::.normalize_percent_target(90, ">= 90", "count") # 90
 #'
 #' @keywords internal
+#' @noRd
 .normalize_percent_target <- function(value, display, y_axis_unit) {
   if (is.null(y_axis_unit) || !identical(y_axis_unit, "percent")) {
     return(value)
@@ -146,56 +147,7 @@ resolve_target <- function(target_input) {
 }
 
 
-# Vaelg ental eller flertal ud fra n. n == 1 -> singular, alt andet -> plural.
-# NA og NULL behandles som flertal (neutral default).
-pluralize_da <- function(n, singular, plural) {
-  if (is.null(n) || length(n) == 0 || is.na(n)) {
-    return(plural)
-  }
-  if (n == 1) singular else plural
-}
-
-
-# Garanter at tekst ikke overskrider max_chars. Trim ved sidste saetnings- eller
-# klausulgraense (punktum, komma) foer graensen. Undgaa at klippe midt i et ord.
-ensure_within_max <- function(text, max_chars) {
-  if (is.null(text) || is.na(text)) {
-    return("")
-  }
-  if (nchar(text) <= max_chars) {
-    return(text)
-  }
-
-  cut <- substr(text, 1, max_chars)
-
-  # Proev foerst at trimme ved sidste punktum-graense
-  last_period <- max(
-    gregexpr("\\.\\s", cut, perl = TRUE)[[1]],
-    gregexpr("\\.$", cut, perl = TRUE)[[1]]
-  )
-  if (is.finite(last_period) && last_period > 0) {
-    return(trimws(substr(text, 1, last_period)))
-  }
-
-  # Ellers trim ved sidste komma
-  last_comma <- max(gregexpr(",\\s", cut, perl = TRUE)[[1]])
-  if (is.finite(last_comma) && last_comma > 0) {
-    trimmed <- trimws(substr(text, 1, last_comma - 1))
-    if (!grepl("[.!?]$", trimmed)) trimmed <- paste0(trimmed, ".")
-    return(trimmed)
-  }
-
-  # Sidste udvej: trim ved sidste space
-  last_space <- max(gregexpr("\\s", cut, perl = TRUE)[[1]])
-  if (is.finite(last_space) && last_space > 0) {
-    trimmed <- trimws(substr(text, 1, last_space - 1))
-    if (!grepl("[.!?]$", trimmed)) trimmed <- paste0(trimmed, ".")
-    return(trimmed)
-  }
-
-  # Fallback (ord uden spaces): haard trim
-  substr(text, 1, max_chars)
-}
+# pluralize_da() and ensure_within_max() are now in R/utils_text_da.R
 
 
 #' Build Analysis Context from bfh_qic_result
@@ -960,88 +912,8 @@ format_target_value <- function(x, y_axis_unit = NULL) {
 }
 
 
-# Tilfoej padding-tekst hvis teksten er under minimumlaengde.
-# max_chars sikrer at padding ikke spraenger det absolutte loft.
-pad_to_minimum <- function(text, min_chars, n_points, texts, max_chars = Inf) {
-  if (nchar(text) >= min_chars) {
-    return(text)
-  }
-
-  # Plads til padding: respekter baade min og max
-  available <- max_chars - nchar(text) - 1L # -1 for space-separator
-
-  if (!is.null(n_points) && !is.na(n_points) && available > 0) {
-    padding <- pick_text(texts$padding$data_points,
-      data = list(n_points = n_points),
-      budget = min(min_chars - nchar(text), available)
-    )
-    if (nchar(padding) > 0 && nchar(text) + nchar(padding) + 1L <= max_chars) {
-      text <- paste(text, padding)
-    }
-  }
-
-  available <- max_chars - nchar(text) - 1L
-  if (nchar(text) < min_chars && available > 0) {
-    padding <- pick_text(texts$padding$generic,
-      budget = min(min_chars - nchar(text), available)
-    )
-    if (nchar(padding) > 0 && nchar(text) + nchar(padding) + 1L <= max_chars) {
-      text <- paste(text, padding)
-    }
-  }
-
-  text
-}
-
-
 # load_spc_texts() er nu defineret i R/utils_i18n.R og laeser fra
 # inst/i18n/{language}.yaml via load_translations()
-
-
-# Vaelg tekstvariant baseret paa pladsbudget og erstat {placeholders}.
-# Named variants (short/standard/detailed): vaelg laengste der passer.
-# Bagudkompatibel med gammelt format (liste af strenge).
-pick_text <- function(variants, data = list(), budget = Inf) {
-  if (length(variants) == 0) {
-    return("")
-  }
-
-  # Bagudkompatibilitet: gammelt format er en unamed liste af strenge
-  if (is.null(names(variants)) && is.character(variants[[1]])) {
-    text <- variants[[1]]
-    return(substitute_placeholders(text, data))
-  }
-
-  # Nyt format: named list (short, standard, detailed)
-  # Proev fra laengst til kortest, vaelg den laengste der passer i budgettet
-  candidates <- c("detailed", "standard", "short")
-  for (candidate in candidates) {
-    if (!is.null(variants[[candidate]])) {
-      text <- substitute_placeholders(variants[[candidate]], data)
-      if (nchar(text) <= budget) {
-        return(text)
-      }
-    }
-  }
-
-  # Fallback: korteste tilgaengelige variant (selv hvis den overstiger budget)
-  available <- intersect(rev(candidates), names(variants))
-  if (length(available) > 0) {
-    return(substitute_placeholders(variants[[available[1]]], data))
-  }
-
-  return("")
-}
-
-
-# Erstat {placeholders} med faktiske vaerdier i en tekststreng
-substitute_placeholders <- function(text, data = list()) {
-  for (key in names(data)) {
-    text <- gsub(
-      paste0("\\{", key, "\\}"),
-      as.character(data[[key]] %||% ""),
-      text
-    )
-  }
-  text
-}
+#
+# pad_to_minimum(), pick_text() og substitute_placeholders() er nu i
+# R/utils_text_da.R
