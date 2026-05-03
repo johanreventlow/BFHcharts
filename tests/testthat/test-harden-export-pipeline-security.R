@@ -446,6 +446,67 @@ test_that("bfh_export_pdf with restrict_template=TRUE rejects custom template_pa
   )
 })
 
+# ============================================================================
+# 8. M3: bad font_path warns then auto-detects packaged fonts
+# ============================================================================
+
+test_that("bad font_path warns then auto-detects packaged fonts in bfh-template/fonts", {
+  skip_on_cran()
+
+  # Set up a tempdir that mimics the staged workspace layout:
+  #   <tmp>/document.typ          <- typst source file
+  #   <tmp>/bfh-template/fonts/   <- directory .detect_packaged_fonts() scans
+  #   <tmp>/bfh-template/fonts/BFHFont.ttf  <- sentinel font file
+  tmp_dir <- withr::local_tempdir("m3_font_fallback")
+  typst_file <- file.path(tmp_dir, "document.typ")
+  writeLines("#text[m3 test]", typst_file)
+
+  fonts_dir <- file.path(tmp_dir, "bfh-template", "fonts")
+  dir.create(fonts_dir, recursive = TRUE)
+  file.create(file.path(fonts_dir, "BFHFont.ttf"))
+
+  output_pdf <- file.path(tmp_dir, "output.pdf")
+  captured_args <- NULL
+
+  mock_s2 <- function(command, args, ...) {
+    captured_args <<- args
+    # Simulate successful compile by creating the output file
+    file.create(output_pdf)
+    character(0)
+  }
+
+  # Call with a non-existent font_path; should warn AND fall back to packaged fonts
+  expect_warning(
+    BFHcharts:::bfh_compile_typst(
+      typst_file, output_pdf,
+      font_path = "/nonexistent/fonts/dir",
+      .system2 = mock_s2,
+      .quarto_path = "/fake/quarto"
+    ),
+    regexp = "font_path directory does not exist"
+  )
+
+  # --font-path should point to the staged packaged fonts dir, not the bad path
+  expect_true(!is.null(captured_args), info = "mock_s2 must have been called")
+  font_path_idx <- which(captured_args == "--font-path")
+  expect_true(
+    length(font_path_idx) > 0,
+    info = "Compiled args should include --font-path after auto-detect"
+  )
+  if (length(font_path_idx) > 0) {
+    raw_arg <- captured_args[font_path_idx + 1L]
+    # .safe_system2_capture wraps non-flag args with shQuote() on Unix.
+    # Strip outer single or double quotes before comparing paths.
+    actual_font_path <- gsub("^'(.*)'$", "\\1", raw_arg)
+    actual_font_path <- gsub('^"(.*)"$', "\\1", actual_font_path)
+    expect_equal(
+      normalizePath(actual_font_path, mustWork = FALSE),
+      normalizePath(fonts_dir, mustWork = FALSE),
+      info = paste("Expected packaged fonts dir, got:", raw_arg)
+    )
+  }
+})
+
 test_that("bfh_export_pdf with restrict_template=FALSE allows custom template_path (default behavior)", {
   # restrict_template=FALSE is the default; validation should not error on template_path
   # We test only that the restrict_template guard does NOT fire here.
