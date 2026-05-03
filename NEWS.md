@@ -1,3 +1,61 @@
+# BFHcharts 0.14.3
+
+## Breaking changes
+
+* **`print.summary` parameter fully removed from `bfh_qic()`.** The
+  parameter was deprecated in v0.11.0: calling with `print.summary = TRUE`
+  raised an error, while `print.summary = FALSE` was silently accepted.
+  Four versions later the deprecation cycle is complete: the parameter
+  is now removed from the function signature and from all internal
+  helpers (`validate_bfh_qic_inputs()`, `build_bfh_qic_return()`).
+
+  Migration: drop the `print.summary` argument from your call. The
+  default `bfh_qic_result` object exposes the SPC summary directly as
+  `result$summary`, and `return.data = TRUE` returns the raw qic data
+  with summary fields available on `result$qic_summary`.
+
+* **Option name `bfhcharts.quarto_path` renamed to
+  `BFHcharts.quarto_path`** (TitleCase namespace consistent with the rest
+  of the package). Option name `spc.debug.label_placement` similarly
+  renamed to `BFHcharts.debug.label_placement`. The old names are no
+  longer recognised. Migration: replace the legacy name in any
+  `options()` call. Both options were internal/dev-only with no
+  user-facing documentation.
+
+## Internal changes
+
+* Add named constants for all five package options in `R/globals.R`:
+  `BFHCHARTS_OPT_QUARTO_PATH`, `BFHCHARTS_OPT_SUPPRESS_UNIT_AUTO_DETECT`,
+  `BFHCHARTS_OPT_DEBUG_LABEL_PLACEMENT` (joining existing
+  `BFHCHARTS_OPT_AUDIT_LOG` and `BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT`).
+  All `getOption()` call sites updated to reference the constants for
+  grep-ability and single-source-of-truth.
+
+* Extract `resolve_label_size()` helper in `R/utils_label_helpers.R`.
+  Three sites (`apply_spc_labels_to_export()`,
+  `build_bfh_qic_config()`, `recalculate_labels_for_export()`) had
+  identical viewport-size fallback logic; now share the helper.
+
+* Remove unused `safe_min()` helper from `R/utils_helpers.R` (no callers).
+* Drop stale 33-line USAGE example comment block from
+  `R/utils_npc_mapping.R` (per-function roxygen documents the API).
+* Remove orphan `# message(sprintf(` line at `R/utils_panel_measurement.R:170`
+  (refactor leftover).
+* Replace magic literal `6` with `PDF_LABEL_SIZE` constant at
+  `R/utils_add_right_labels_marquee.R:149` and `R/utils_label_helpers.R:254`
+  (constant was already defined in `R/globals.R:83`).
+* Add `Y_AXIS_UNITS` constant in `R/chart_types.R`; replace 3 hardcoded
+  duplicates of `c("count", "percent", "rate", "time")` with the
+  constant. Adding a new unit now requires a single edit.
+* Drop stale TODO from `tests/testthat/test-bfh_qic_edge_cases.R:193`
+  (explicit empty-data check already lives at
+  `R/utils_bfh_qic_helpers.R:306`).
+* Update `CLAUDE.md` to drop `CHART_TYPES_DA` from the documented
+  internal API list (the constant does not exist in the codebase).
+* Strengthen `tests/testthat/test-public-api-contract.R` with a
+  regression test asserting `print.summary` does not appear in
+  `bfh_qic()` formals or in `man/bfh_qic.Rd`.
+
 # BFHcharts 0.14.2
 
 ## Breaking changes

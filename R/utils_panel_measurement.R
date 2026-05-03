@@ -167,7 +167,6 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
   } else {
     h_npc <- grid::convertHeight(h_native, "npc", valueOnly = TRUE)
     h_inches <- grid::convertHeight(h_native, "inches", valueOnly = TRUE)
-    # message(sprintf(
   }
 
   # Safety margin fra config (altid tilgaengelig i pakken).

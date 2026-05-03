@@ -170,32 +170,19 @@ add_anhoej_signal <- function(qic_data) {
 
 #' Byg bfh_qic() returvaerdi
 #'
-#' Haandterer alle fire returkombinationer af `return.data` og `print.summary`,
-#' inkl. deprecation-warnings for legacy paths.
+#' Returnerer enten `bfh_qic_result` S3-objekt (default) eller raa qic_data
+#' data.frame (legacy `return.data = TRUE`).
 #'
 #' @param qic_data data.frame med raa qic-beregninger
 #' @param plot ggplot2-objekt
 #' @param summary_result data.frame med SPC-summary
 #' @param config liste med konfigurationsparametre
 #' @param return.data logical
-#' @param print.summary logical
 #' @return En af: `bfh_qic_result` S3-objekt (default) eller `qic_data` data.frame
 #' @keywords internal
 #' @noRd
 build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
-                                 return.data, print.summary) {
-  # print.summary = TRUE er fjernet i v0.11.0. Brug return.data = TRUE og
-  # access result$summary directly.
-  if (isTRUE(print.summary)) {
-    stop(
-      "print.summary = TRUE has been removed in v0.11.0. ",
-      "Use return.data = TRUE and access result$qic_summary directly, ",
-      "or use the default bfh_qic_result object and access result$summary. ",
-      "See NEWS for migration guide.",
-      call. = FALSE
-    )
-  }
-
+                                 return.data) {
   if (return.data) {
     return(qic_data)
   } else {
@@ -272,7 +259,6 @@ validate_column_name_expr <- function(col_expr, param_name) {
 #' @param agg_fun_supplied Logical -- whether agg.fun is explicitly supplied by user
 #' @param agg.fun Aggregeringsfunktionsstreng
 #' @param return.data Logical
-#' @param print.summary Logical
 #' @param plot_margin Margin-objekt eller numerisk vektor
 #' @param target_value Numerisk maalvaerdi eller NULL
 #' @param y_expr_char Karakterstreng af y-kolonnenavnet (til denominator-validering)
@@ -294,7 +280,6 @@ validate_bfh_qic_inputs <- function(data,
                                     agg_fun_supplied,
                                     agg.fun,
                                     return.data,
-                                    print.summary,
                                     plot_margin,
                                     target_value,
                                     y_expr_char,
@@ -332,7 +317,7 @@ validate_bfh_qic_inputs <- function(data,
     ), call. = FALSE)
   }
 
-  valid_units <- c("count", "percent", "rate", "time")
+  valid_units <- Y_AXIS_UNITS
   if (!y_axis_unit %in% valid_units) {
     stop(sprintf(
       "y_axis_unit must be one of: %s",
@@ -406,9 +391,6 @@ validate_bfh_qic_inputs <- function(data,
 
   if (!is.logical(return.data) || length(return.data) != 1 || is.na(return.data)) {
     stop("return.data must be TRUE or FALSE", call. = FALSE)
-  }
-  if (!is.logical(print.summary) || length(print.summary) != 1 || is.na(print.summary)) {
-    stop("print.summary must be TRUE or FALSE", call. = FALSE)
   }
 
   if (!is.null(plot_margin)) {
@@ -686,13 +668,7 @@ apply_spc_labels_to_export <- function(plot,
                                        viewport_height_inches,
                                        target_text,
                                        language) {
-  if (!is.null(viewport_width_inches) && !is.null(viewport_height_inches)) {
-    label_size <- compute_label_size_for_viewport(
-      viewport_width_inches, viewport_height_inches
-    )
-  } else {
-    label_size <- PDF_LABEL_SIZE
-  }
+  label_size <- resolve_label_size(viewport_width_inches, viewport_height_inches)
 
   # Se .muffle_expected_warnings() helper for hvilke warnings der mufles.
   .muffle_expected_warnings(
@@ -750,11 +726,7 @@ build_bfh_qic_config <- function(chart_type,
                                  agg.fun,
                                  viewport_width_inches,
                                  viewport_height_inches) {
-  label_size <- if (!is.null(viewport_width_inches) && !is.null(viewport_height_inches)) {
-    compute_label_size_for_viewport(viewport_width_inches, viewport_height_inches)
-  } else {
-    PDF_LABEL_SIZE
-  }
+  label_size <- resolve_label_size(viewport_width_inches, viewport_height_inches)
 
   # label_config$centerline_value, $has_frys_column og $has_skift_column er
   # fjernet som statiske kopier for at undgaa desync ved mutation af

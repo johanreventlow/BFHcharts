@@ -5,6 +5,31 @@
 # Provides caching, sanitization, and responsive label formatting
 
 # ============================================================================
+# LABEL SIZE RESOLUTION
+# ============================================================================
+
+#' Resolve label_size for given viewport dimensions
+#'
+#' Returns viewport-scaled label_size when both width and height are
+#' provided, falling back to `PDF_LABEL_SIZE` otherwise. Encapsulates the
+#' fallback rule used at every site in the package that needs a label_size
+#' value (validate -> args -> config -> render -> export).
+#'
+#' @param viewport_width_inches Numeric viewport width in inches (NULL = unknown)
+#' @param viewport_height_inches Numeric viewport height in inches (NULL = unknown)
+#' @return Numeric label_size; either the viewport-scaled value or
+#'   `PDF_LABEL_SIZE` (the calibrated PDF baseline).
+#' @keywords internal
+#' @noRd
+resolve_label_size <- function(viewport_width_inches, viewport_height_inches) {
+  if (!is.null(viewport_width_inches) && !is.null(viewport_height_inches)) {
+    compute_label_size_for_viewport(viewport_width_inches, viewport_height_inches)
+  } else {
+    PDF_LABEL_SIZE
+  }
+}
+
+# ============================================================================
 # PERFORMANCE: Marquee style cache
 # ============================================================================
 # Cache for marquee style objects keyed by lineheight
@@ -250,8 +275,8 @@ create_responsive_label <- function(header, value, label_size = 6, header_pt = 1
     value
   }
 
-  # Compute scaled sizes (baseline: label_size = 6)
-  scale_factor <- label_size / 6
+  # Compute scaled sizes (baseline: PDF_LABEL_SIZE)
+  scale_factor <- label_size / PDF_LABEL_SIZE
   header_size <- round(header_pt * scale_factor)
   value_size <- round(value_pt * scale_factor)
 

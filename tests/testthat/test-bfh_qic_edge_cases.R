@@ -188,9 +188,9 @@ test_that("bfh_qic med part-vektor og freeze fungerer (regressiontest)", {
 })
 
 test_that("bfh_qic med tomt data.frame giver fejl", {
-  # Tomt data.frame (0 rækker) skal give en fejl — ikke en crash uden besked.
-  # Nuværende adfærd: R-intern fejl om argumentlænger.
-  # TODO: overvej at tilføje eksplicit "data must have at least 1 row" check i bfh_qic().
+  # Empty data.frame (0 rows) must produce an explicit error, not a crash.
+  # Validation: utils_bfh_qic_helpers.R:306 raises
+  # "'data' is empty; bfh_qic() requires at least one row".
   expect_error(
     bfh_qic(
       data.frame(date = as.Date(character(0)), value = numeric(0)),

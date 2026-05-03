@@ -98,7 +98,7 @@ add_spc_labels <- function(
   }
 
   # Validate y_axis_unit
-  valid_units <- c("count", "percent", "rate", "time")
+  valid_units <- Y_AXIS_UNITS
   if (!y_axis_unit %in% valid_units && verbose) {
     message(sprintf(
       "Non-standard y_axis_unit: %s (valid: %s)",

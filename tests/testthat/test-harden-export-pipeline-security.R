@@ -60,12 +60,12 @@ test_that(".validate_binary_path afviser ikke-eksisterende sti", {
   expect_true(warned)
 })
 
-test_that("find_quarto afviser forgiftet options(bfhcharts.quarto_path) og falder tilbage", {
+test_that("find_quarto afviser forgiftet options(BFHcharts.quarto_path) og falder tilbage", {
   skip_on_cran()
   reset_quarto_cache()
 
   withr::with_options(
-    list(bfhcharts.quarto_path = "/tmp/poisoned;rm -rf /"),
+    list(BFHcharts.quarto_path = "/tmp/poisoned;rm -rf /"),
     {
       # Skal udstede warning om disallowed chars og IKKE cache den ugyldige sti
       expect_warning(
@@ -87,7 +87,7 @@ test_that("find_quarto afviser ikke-eksisterende options-sti og falder tilbage",
   reset_quarto_cache()
 
   withr::with_options(
-    list(bfhcharts.quarto_path = "/this/path/definitely/does/not/exist/quarto"),
+    list(BFHcharts.quarto_path = "/this/path/definitely/does/not/exist/quarto"),
     {
       expect_warning(
         BFHcharts:::find_quarto(),

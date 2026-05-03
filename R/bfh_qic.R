@@ -50,7 +50,6 @@ NULL
 #' @param subtitle Plot subtitle text (default: NULL for no subtitle)
 #' @param caption Plot caption text (default: NULL for no caption)
 #' @param return.data Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result object. If FALSE (default), return bfh_qic_result S3 object. Legacy parameter maintained for backwards compatibility.
-#' @param print.summary \strong{REMOVED in v0.11.0.} Calling with \code{print.summary = TRUE} raises an error. Use \code{return.data = TRUE} and access \code{result$qic_summary}, or use the default \code{bfh_qic_result} object and access \code{result$summary} directly.
 #' @param language Character string specifying output language. One of
 #'   \code{"da"} (Danish, default) or \code{"en"} (English). Controls
 #'   three independent aspects of output (since v0.12.0):
@@ -611,7 +610,6 @@ bfh_qic <- function(data,
                     subtitle = NULL,
                     caption = NULL,
                     return.data = FALSE,
-                    print.summary = FALSE,
                     language = "da") {
   # ---- NSE + missing() flags kapteres FOERST i bfh_qic()-scopet ----
   # substitute(), missing() og parent.frame() er scope-sensitive:
@@ -645,7 +643,6 @@ bfh_qic <- function(data,
     agg_fun_supplied = agg_fun_supplied,
     agg.fun = agg.fun,
     return.data = return.data,
-    print.summary = print.summary,
     plot_margin = plot_margin,
     target_value = target_value,
     y_expr_char = as.character(y_expr),
@@ -746,7 +743,6 @@ bfh_qic <- function(data,
     plot = plot,
     summary_result = summary_result,
     config = config,
-    return.data = return.data,
-    print.summary = print.summary
+    return.data = return.data
   )
 }

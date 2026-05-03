@@ -118,8 +118,7 @@ test_that("build_bfh_qic_return returnerer bfh_qic_result ved default", {
     plot = make_mock_plot(),
     summary_result = make_mock_summary(),
     config = make_mock_config(),
-    return.data = FALSE,
-    print.summary = FALSE
+    return.data = FALSE
   )
   expect_s3_class(result, "bfh_qic_result")
 })
@@ -131,40 +130,11 @@ test_that("build_bfh_qic_return returnerer qic_data data.frame ved return.data =
       plot = make_mock_plot(),
       summary_result = make_mock_summary(),
       config = make_mock_config(),
-      return.data = TRUE,
-      print.summary = FALSE
+      return.data = TRUE
     )
   )
   expect_s3_class(result, "data.frame")
   expect_true("cl" %in% names(result))
-})
-
-test_that("build_bfh_qic_return fejler med stop() ved print.summary = TRUE (fjernet i v0.11.0)", {
-  expect_error(
-    build_bfh_qic_return(
-      qic_data = make_mock_qic_data(),
-      plot = make_mock_plot(),
-      summary_result = make_mock_summary(),
-      config = make_mock_config(),
-      return.data = FALSE,
-      print.summary = TRUE
-    ),
-    "print.summary = TRUE has been removed in v0.11.0"
-  )
-})
-
-test_that("build_bfh_qic_return fejler med stop() ved print.summary = TRUE selv med return.data = TRUE", {
-  expect_error(
-    build_bfh_qic_return(
-      qic_data = make_mock_qic_data(),
-      plot = make_mock_plot(),
-      summary_result = make_mock_summary(),
-      config = make_mock_config(),
-      return.data = TRUE,
-      print.summary = TRUE
-    ),
-    "print.summary = TRUE has been removed in v0.11.0"
-  )
 })
 
 test_that("build_bfh_qic_return udsender ingen warnings ved default", {
@@ -174,8 +144,7 @@ test_that("build_bfh_qic_return udsender ingen warnings ved default", {
       plot = make_mock_plot(),
       summary_result = make_mock_summary(),
       config = make_mock_config(),
-      return.data = FALSE,
-      print.summary = FALSE
+      return.data = FALSE
     )
   )
 })
@@ -200,7 +169,6 @@ call_validate <- function(data = data.frame(x = 1:10, y = 1:10),
                           agg_fun_supplied = FALSE,
                           agg.fun = "mean",
                           return.data = FALSE,
-                          print.summary = FALSE,
                           plot_margin = NULL,
                           target_value = NULL,
                           y_expr_char = "y",
@@ -220,7 +188,6 @@ call_validate <- function(data = data.frame(x = 1:10, y = 1:10),
     agg_fun_supplied = agg_fun_supplied,
     agg.fun = agg.fun,
     return.data = return.data,
-    print.summary = print.summary,
     plot_margin = plot_margin,
     target_value = target_value,
     y_expr_char = y_expr_char,
@@ -256,10 +223,6 @@ test_that("validate_bfh_qic_inputs returnerer normaliseret agg.fun naar angivet"
 
 test_that("validate_bfh_qic_inputs fejler ved ugyldig return.data", {
   expect_error(call_validate(return.data = "ja"), "return.data must be TRUE or FALSE")
-})
-
-test_that("validate_bfh_qic_inputs fejler ved ugyldig print.summary", {
-  expect_error(call_validate(print.summary = NA), "print.summary must be TRUE or FALSE")
 })
 
 test_that("validate_bfh_qic_inputs fejler ved plot_margin med forkert laengde", {
