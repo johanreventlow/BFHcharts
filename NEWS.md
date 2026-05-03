@@ -1,3 +1,14 @@
+# BFHcharts 0.14.4
+
+## Internal changes
+
+* Extract Danish text-formatting helpers (`pluralize_da()`,
+  `ensure_within_max()`, `substitute_placeholders()`, `pick_text()`,
+  `pad_to_minimum()`) from `R/spc_analysis.R` into a dedicated
+  `R/utils_text_da.R`. Pure relocation; no behavioral change.
+  `R/spc_analysis.R` shrinks by ~130 lines. Implements OpenSpec change
+  `extract-utils-text-da`.
+
 # BFHcharts 0.14.3
 
 ## Breaking changes
