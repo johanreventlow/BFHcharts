@@ -30,8 +30,8 @@ test_that("validate_export_path afviser path traversal med ..", {
 # Kontekst: Codex 2026-04-30 finding #10 / change relax-output-path-policy-parens
 
 test_that("validate_export_path afviser stadig shell-pipeline metacharacters + LF/CR", {
-  # R's system2(stdout=TRUE, stderr=TRUE) shell-mode — disse karakterer kan
-  # bryde shell-parsing eller udfoere kommando-substitution.
+  # R's system2(stdout=TRUE, stderr=TRUE) shell-mode -- these characters can
+  # break shell parsing or trigger command substitution.
   expect_error(validate_export_path("out; rm -rf /"), "disallowed")
   expect_error(validate_export_path("out | cat /etc/passwd"), "disallowed")
   expect_error(validate_export_path("out`cmd`"), "disallowed")
@@ -39,6 +39,13 @@ test_that("validate_export_path afviser stadig shell-pipeline metacharacters + L
   expect_error(validate_export_path("out>redirect"), "disallowed")
   expect_error(validate_export_path("out\nevil"), "disallowed")
   expect_error(validate_export_path("out\revil"), "disallowed")
+})
+
+test_that("validate_export_path afviser double-quote i output-sti (M2)", {
+  # Double-quote can break shell argument boundaries even inside shQuote'd strings
+  # in some edge cases. Rejected as a safety measure.
+  expect_error(validate_export_path('a".pdf'), "disallowed")
+  expect_error(validate_export_path('out"evil.pdf'), "disallowed")
 })
 
 test_that("validate_export_path tillader hospital-relevante karakterer i output-stier", {
@@ -295,5 +302,92 @@ test_that("$ in output path renders actual PDF with literal filename (live Quart
   expect_true(
     grepl("$HOME", basename(out_dollar), fixed = TRUE),
     info = "Filename must contain literal $HOME, not expanded home directory"
+  )
+})
+
+# ============================================================================
+# M18: Windows early-return path in .safe_system2_capture (mock-based)
+# ============================================================================
+#
+# .is_windows() is extracted as a helper specifically to allow mocking via
+# local_mocked_bindings(). These tests verify that the Windows branch (no
+# shQuote) is exercised without needing a real Windows OS.
+
+test_that(".safe_system2_capture skips shQuote on Windows (mocked)", {
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[win test]", typst_file)
+  withr::defer(unlink(typst_file))
+
+  out_pdf <- tempfile(fileext = ".pdf")
+  withr::defer(unlink(out_pdf))
+
+  captured_args <- NULL
+  win_mock_system2 <- function(command, args, ...) {
+    captured_args <<- args
+    file.create(out_pdf)
+    character(0)
+  }
+
+  # Mock .is_windows to return TRUE regardless of the host OS.
+  # with_mocked_bindings() modifies the binding in the loaded package namespace.
+  with_mocked_bindings(
+    .is_windows = function() TRUE,
+    code = {
+      BFHcharts:::bfh_compile_typst(
+        typst_file, out_pdf,
+        .system2 = win_mock_system2,
+        .quarto_path = "/fake/quarto"
+      )
+    }
+  )
+
+  # On Windows path, args must NOT be wrapped in single-quotes by shQuote
+  expect_false(
+    any(startsWith(captured_args, "'")),
+    info = "Windows branch must not apply shQuote -- args should be unquoted"
+  )
+  # The raw typst_file path should appear literally in the args
+  expect_true(
+    any(captured_args == typst_file),
+    info = "Windows branch must pass raw (unquoted) path to system2"
+  )
+})
+
+test_that(".safe_system2_capture applies shQuote on non-Windows (mocked)", {
+  skip_on_os("windows") # Only meaningful to test POSIX quoting on POSIX
+
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[posix test]", typst_file)
+  withr::defer(unlink(typst_file))
+
+  out_pdf <- tempfile(fileext = ".pdf")
+  withr::defer(unlink(out_pdf))
+
+  captured_args <- NULL
+  posix_mock <- function(command, args, ...) {
+    captured_args <<- args
+    file.create(out_pdf)
+    character(0)
+  }
+
+  with_mocked_bindings(
+    .is_windows = function() FALSE,
+    code = {
+      BFHcharts:::bfh_compile_typst(
+        typst_file, out_pdf,
+        .system2 = posix_mock,
+        .quarto_path = "/fake/quarto"
+      )
+    }
+  )
+
+  # On POSIX path, non-flag args must be shQuote'd (single-quote wrapping)
+  path_args <- captured_args[!captured_args %in% c(
+    "typst", "compile",
+    "--ignore-system-fonts", "--font-path"
+  )]
+  expect_true(
+    all(startsWith(path_args, "'")),
+    info = "POSIX branch must wrap path args in single-quotes via shQuote"
   )
 })
