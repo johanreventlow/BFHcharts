@@ -288,6 +288,131 @@
 }
 
 
+# Detekter x-aksens type (Date / POSIXct datetime / numeric) ud fra
+# built_plot. Returnerer named list (x_max, x_is_date, x_is_datetime).
+#
+# x_max er konverteret tilbage til source-typen (Date / POSIXct / numeric)
+# via scale's inverse-transformation, saa label_data tibble kan bruge
+# samme x-type som diagrammet.
+.detect_x_axis_type <- function(built_plot) {
+  x_range <- built_plot$layout$panel_params[[1]]$x.range
+  x_max_value <- x_range[2]
+
+  x_is_date <- FALSE
+  x_is_datetime <- FALSE
+  x_scale <- NULL
+
+  tryCatch(
+    {
+      x_scale <- built_plot$layout$panel_scales_x[[1]]
+
+      if (!is.null(x_scale)) {
+        scale_class <- class(x_scale)[1]
+        trans_name <- if (!is.null(x_scale$trans)) x_scale$trans$name else ""
+
+        if (grepl("^date$", tolower(trans_name)) ||
+          (grepl("Date", scale_class) && !grepl("Time|time", scale_class))) {
+          x_is_date <- TRUE
+        } else if (grepl("time|hms", tolower(trans_name)) ||
+          grepl("Time", scale_class)) {
+          x_is_datetime <- TRUE
+        }
+      }
+    },
+    error = function(e) {
+      # Fallback: hvis scale detection fejler, antag numerisk
+    }
+  )
+
+  x_max <- if (x_is_date && !is.null(x_scale)) {
+    if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
+      converted <- x_scale$trans$inverse(x_max_value)
+      if (!inherits(converted, "Date")) {
+        as.Date(converted, origin = "1970-01-01")
+      } else {
+        converted
+      }
+    } else {
+      as.Date(x_max_value, origin = "1970-01-01")
+    }
+  } else if (x_is_datetime && !is.null(x_scale)) {
+    tz <- if (!is.null(x_scale$timezone)) x_scale$timezone else "UTC"
+    if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
+      converted <- x_scale$trans$inverse(x_max_value)
+      converted <- as.POSIXct(converted, origin = "1970-01-01")
+      attr(converted, "tzone") <- tz
+      converted
+    } else {
+      as.POSIXct(x_max_value, origin = "1970-01-01", tz = tz)
+    }
+  } else {
+    x_max_value
+  }
+
+  list(
+    x_max = x_max,
+    x_is_date = x_is_date,
+    x_is_datetime = x_is_datetime
+  )
+}
+
+
+# Byg label_data tibble med korrekt x-type (Date / POSIXct / numeric).
+# Returnerer tom tibble hvis baade yA_data og yB_data er NA.
+.build_label_data <- function(textA, textB, yA_data, yB_data, x_max,
+                              x_is_date, x_is_datetime, gpA, gpB) {
+  label_data <- if (x_is_date) {
+    tibble::tibble(
+      x = as.Date(character()),
+      y = numeric(),
+      label = character(),
+      color = character()
+    )
+  } else if (x_is_datetime) {
+    tibble::tibble(
+      x = as.POSIXct(character()),
+      y = numeric(),
+      label = character(),
+      color = character()
+    )
+  } else {
+    tibble::tibble(
+      x = numeric(),
+      y = numeric(),
+      label = character(),
+      color = character()
+    )
+  }
+
+  color_A <- if (!is.null(gpA$col)) gpA$col else "#009CE8"
+  color_B <- if (!is.null(gpB$col)) gpB$col else "#565656"
+
+  if (!is.na(yA_data)) {
+    label_data <- label_data |>
+      dplyr::bind_rows(tibble::tibble(
+        x = x_max,
+        y = yA_data,
+        label = textA,
+        color = color_A,
+        vjust = 0.5
+      ))
+  }
+
+  if (!is.na(yB_data)) {
+    label_data <- label_data |>
+      dplyr::bind_rows(tibble::tibble(
+        x = x_max,
+        y = yB_data,
+        label = textB,
+        color = color_B,
+        vjust = 0.5
+      ))
+  }
+
+  label_data
+}
+
+
 .resolve_font_family <- function(family = NULL) {
   .ensure_bfhtheme()
   # Detekter device-type: "cairo", "postscript" eller "other"
@@ -552,116 +677,21 @@ add_right_labels_marquee <- function(
     yB_data <- NA_real_
   }
 
-  # Hent x-koordinater og detekter type
-  x_range <- built_plot$layout$panel_params[[1]]$x.range
-  x_max_value <- x_range[2]
+  # Detekter x-akse type + max-vaerdi i source-type
+  x_axis <- .detect_x_axis_type(built_plot)
 
-  # Detekter om x-aksen er Date, POSIXct/datetime, eller numerisk
-  # CRITICAL: Efter ggplot_build() er temporal vaerdier transformeret til plain numeric.
-  # Vi skelner Date fra POSIXct for at undgaa unoedvendig POSIXct-coercion paa Date-skalaer
-  # (som kan introducere timezone/DST-forskydninger).
-  x_is_date <- FALSE
-  x_is_datetime <- FALSE
-  x_scale <- NULL
-
-  tryCatch(
-    {
-      x_scale <- built_plot$layout$panel_scales_x[[1]]
-
-      if (!is.null(x_scale)) {
-        scale_class <- class(x_scale)[1]
-        trans_name <- if (!is.null(x_scale$trans)) x_scale$trans$name else ""
-
-        # Date-skalaer: trans name er typisk "date" (uden "time")
-        # Datetime-skalaer: trans name er typisk "time" eller "hms"
-        if (grepl("^date$", tolower(trans_name)) ||
-          (grepl("Date", scale_class) && !grepl("Time|time", scale_class))) {
-          x_is_date <- TRUE
-        } else if (grepl("time|hms", tolower(trans_name)) ||
-          grepl("Time", scale_class)) {
-          x_is_datetime <- TRUE
-        }
-      }
-    },
-    error = function(e) {
-      # Fallback: hvis scale detection fejler, antag numerisk
-    }
+  # Byg label_data tibble med korrekt x-type
+  label_data <- .build_label_data(
+    textA = textA,
+    textB = textB,
+    yA_data = yA_data,
+    yB_data = yB_data,
+    x_max = x_axis$x_max,
+    x_is_date = x_axis$x_is_date,
+    x_is_datetime = x_axis$x_is_datetime,
+    gpA = gpA,
+    gpB = gpB
   )
-
-  if (x_is_date && !is.null(x_scale)) {
-    # Date path: konverter direkte til Date (ingen timezone involveret)
-    if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
-      x_max <- x_scale$trans$inverse(x_max_value)
-      if (!inherits(x_max, "Date")) {
-        x_max <- as.Date(x_max, origin = "1970-01-01")
-      }
-    } else {
-      x_max <- as.Date(x_max_value, origin = "1970-01-01")
-    }
-  } else if (x_is_datetime && !is.null(x_scale)) {
-    # POSIXct path: brug scale's inverse transformation + timezone
-    tz <- if (!is.null(x_scale$timezone)) x_scale$timezone else "UTC"
-
-    if (!is.null(x_scale$trans) && !is.null(x_scale$trans$inverse)) {
-      x_max <- x_scale$trans$inverse(x_max_value)
-      x_max <- as.POSIXct(x_max, origin = "1970-01-01")
-      attr(x_max, "tzone") <- tz
-    } else {
-      x_max <- as.POSIXct(x_max_value, origin = "1970-01-01", tz = tz)
-    }
-  } else {
-    # Numerisk x-akse - brug vaerdi direkte
-    x_max <- x_max_value
-  }
-
-  # Opret label data med korrekt x-type (matcher den detekterede scale)
-  if (x_is_date) {
-    label_data <- tibble::tibble(
-      x = as.Date(character()),
-      y = numeric(),
-      label = character(),
-      color = character()
-    )
-  } else if (x_is_datetime) {
-    label_data <- tibble::tibble(
-      x = as.POSIXct(character()),
-      y = numeric(),
-      label = character(),
-      color = character()
-    )
-  } else {
-    label_data <- tibble::tibble(
-      x = numeric(),
-      y = numeric(),
-      label = character(),
-      color = character()
-    )
-  }
-
-  color_A <- if (!is.null(gpA$col)) gpA$col else "#009CE8"
-  color_B <- if (!is.null(gpB$col)) gpB$col else "#565656"
-
-  if (!is.na(yA_data)) {
-    label_data <- label_data |>
-      dplyr::bind_rows(tibble::tibble(
-        x = x_max,
-        y = yA_data,
-        label = textA,
-        color = color_A,
-        vjust = 0.5
-      ))
-  }
-
-  if (!is.na(yB_data)) {
-    label_data <- label_data |>
-      dplyr::bind_rows(tibble::tibble(
-        x = x_max,
-        y = yB_data,
-        label = textB,
-        color = color_B,
-        vjust = 0.5
-      ))
-  }
 
   # Tilfoej labels (marquee_size already calculated above)
   result <- p
