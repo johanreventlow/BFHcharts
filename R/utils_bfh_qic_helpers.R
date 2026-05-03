@@ -668,13 +668,7 @@ apply_spc_labels_to_export <- function(plot,
                                        viewport_height_inches,
                                        target_text,
                                        language) {
-  if (!is.null(viewport_width_inches) && !is.null(viewport_height_inches)) {
-    label_size <- compute_label_size_for_viewport(
-      viewport_width_inches, viewport_height_inches
-    )
-  } else {
-    label_size <- PDF_LABEL_SIZE
-  }
+  label_size <- resolve_label_size(viewport_width_inches, viewport_height_inches)
 
   # Se .muffle_expected_warnings() helper for hvilke warnings der mufles.
   .muffle_expected_warnings(
@@ -732,11 +726,7 @@ build_bfh_qic_config <- function(chart_type,
                                  agg.fun,
                                  viewport_width_inches,
                                  viewport_height_inches) {
-  label_size <- if (!is.null(viewport_width_inches) && !is.null(viewport_height_inches)) {
-    compute_label_size_for_viewport(viewport_width_inches, viewport_height_inches)
-  } else {
-    PDF_LABEL_SIZE
-  }
+  label_size <- resolve_label_size(viewport_width_inches, viewport_height_inches)
 
   # label_config$centerline_value, $has_frys_column og $has_skift_column er
   # fjernet som statiske kopier for at undgaa desync ved mutation af
