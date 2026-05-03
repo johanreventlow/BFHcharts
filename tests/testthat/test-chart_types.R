@@ -26,28 +26,24 @@ test_that("Chart type utilities work in bfh_qic", {
   )
 
   # Test with English code
-  plot1 <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = value,
-      chart_type = "run",
-      y_axis_unit = "count"
-    )
+  plot1 <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count"
   )
   expect_s3_class(plot1, "bfh_qic_result")
   expect_s3_class(plot1$plot, "ggplot")
 
   # Test with ratio chart requiring denominator
-  plot2 <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = value,
-      n = total,
-      chart_type = "p",
-      y_axis_unit = "percent"
-    )
+  plot2 <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    n = total,
+    chart_type = "p",
+    y_axis_unit = "percent"
   )
   expect_s3_class(plot2, "bfh_qic_result")
   expect_s3_class(plot2$plot, "ggplot")
@@ -69,11 +65,9 @@ test_that("bfh_qic accepts all CHART_TYPES_EN chart types", {
   # Typer der ikke kræver nævner
   simple_types <- c("run", "i", "mr", "c", "g", "t")
   for (ct in simple_types) {
-    result <- suppressWarnings(
-      bfh_qic(
-        data = base_data, x = month, y = value,
-        chart_type = ct, y_axis_unit = "count"
-      )
+    result <- bfh_qic(
+      data = base_data, x = month, y = value,
+      chart_type = ct, y_axis_unit = "count"
     )
     expect_s3_class(result, "bfh_qic_result")
   }
@@ -81,11 +75,9 @@ test_that("bfh_qic accepts all CHART_TYPES_EN chart types", {
   # Typer der kræver nævner
   denom_types <- c("p", "pp", "u", "up")
   for (ct in denom_types) {
-    result <- suppressWarnings(
-      bfh_qic(
-        data = base_data, x = month, y = count, n = total,
-        chart_type = ct, y_axis_unit = "percent"
-      )
+    result <- bfh_qic(
+      data = base_data, x = month, y = count, n = total,
+      chart_type = ct, y_axis_unit = "percent"
     )
     expect_s3_class(result, "bfh_qic_result")
   }
@@ -96,11 +88,9 @@ test_that("bfh_qic accepts all CHART_TYPES_EN chart types", {
     value = rnorm(60, 50, 10)
   )
   for (ct in c("xbar", "s")) {
-    result <- suppressWarnings(
-      bfh_qic(
-        data = subgroup_data, x = group, y = value,
-        chart_type = ct, y_axis_unit = "count"
-      )
+    result <- bfh_qic(
+      data = subgroup_data, x = group, y = value,
+      chart_type = ct, y_axis_unit = "count"
     )
     expect_s3_class(result, "bfh_qic_result")
   }

@@ -281,9 +281,7 @@ test_that("summary haandterer fase med 1 punkt korrekt", {
   # Forvent ingen fejl -- summary skal eksistere med 2 raekker.
   # Fase 2 kan have NA Anhoej-stats (for korte serier).
   # Brug suppressWarnings fordi qicharts2 advarer om for faa observationer.
-  result <- suppressWarnings(
-    bfh_qic(d, x = month, y = value, chart_type = "i", part = c(23))
-  )
+  result <- bfh_qic(d, x = month, y = value, chart_type = "i", part = c(23))
 
   expect_equal(nrow(result$summary), 2L)
   # Konsistens: NA-fasen haandteres korrekt (begge sider er NA)

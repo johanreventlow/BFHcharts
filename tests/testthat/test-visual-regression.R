@@ -68,16 +68,14 @@ test_that("vdiffr: p-chart med variabel denominator", {
     total = c(100, 120, 150, 110, 180, 130, 115, 160, 145, 170, 135, 125)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data,
-      x = month,
-      y = events,
-      n = total,
-      chart_type = "p",
-      y_axis_unit = "percent",
-      chart_title = "P-Chart Reference"
-    )
+  result <- bfh_qic(
+    data,
+    x = month,
+    y = events,
+    n = total,
+    chart_type = "p",
+    y_axis_unit = "percent",
+    chart_title = "P-Chart Reference"
   )
   vdiffr::expect_doppelganger("p-chart-variable-limits", result$plot)
 })
@@ -90,16 +88,14 @@ test_that("vdiffr: u-chart", {
     exposure = c(50, 60, 80, 55, 75, 65, 58, 90, 72, 85, 68, 62)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data,
-      x = month,
-      y = events,
-      n = exposure,
-      chart_type = "u",
-      y_axis_unit = "count",
-      chart_title = "U-Chart Reference"
-    )
+  result <- bfh_qic(
+    data,
+    x = month,
+    y = events,
+    n = exposure,
+    chart_type = "u",
+    y_axis_unit = "count",
+    chart_title = "U-Chart Reference"
   )
   vdiffr::expect_doppelganger("u-chart-basic", result$plot)
 })
@@ -111,15 +107,13 @@ test_that("vdiffr: c-chart", {
     count = c(3, 7, 5, 5, 5, 5, 6, 4, 5, 6, 4, 5)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data,
-      x = month,
-      y = count,
-      chart_type = "c",
-      y_axis_unit = "count",
-      chart_title = "C-Chart Reference"
-    )
+  result <- bfh_qic(
+    data,
+    x = month,
+    y = count,
+    chart_type = "c",
+    y_axis_unit = "count",
+    chart_title = "C-Chart Reference"
   )
   vdiffr::expect_doppelganger("c-chart-basic", result$plot)
 })
@@ -188,17 +182,15 @@ test_that("vdiffr: p-chart med notes-annotationer", {
     "Audit", NA, NA, NA, NA, "Follow-up"
   )
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data,
-      x = month,
-      y = events,
-      n = total,
-      notes = notes_vec,
-      chart_type = "p",
-      y_axis_unit = "percent",
-      chart_title = "P-Chart with Notes"
-    )
+  result <- bfh_qic(
+    data,
+    x = month,
+    y = events,
+    n = total,
+    notes = notes_vec,
+    chart_type = "p",
+    y_axis_unit = "percent",
+    chart_title = "P-Chart with Notes"
   )
   vdiffr::expect_doppelganger("p-chart-with-notes", result$plot)
 })

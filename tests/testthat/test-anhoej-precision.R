@@ -32,19 +32,19 @@ test_that("run-længde-signal fires ved 10+ konsekutive punkter på én side (n=
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
 
   # Anhøj-signal skal være TRUE (mindst ét punkt)
   expect_true(any(result$qic_data$anhoej.signal),
-              info = "10+14 run-længde for n=24 burde trigger signal")
+    info = "10+14 run-længde for n=24 burde trigger signal"
+  )
 
   # Summary skal indeholde længste_løb ≥ 10
   expect_gte(result$summary$længste_løb[1], 10,
-             label = "længste_løb i summary")
+    label = "længste_løb i summary"
+  )
 })
 
 test_that("run-længde-signal fires IKKE ved korte runs (n=24)", {
@@ -56,19 +56,19 @@ test_that("run-længde-signal fires IKKE ved korte runs (n=24)", {
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
 
   # Ingen Anhøj-signal
   expect_false(any(result$qic_data$anhoej.signal),
-               info = "Korte runs (alternerende) skal ikke trigger signal")
+    info = "Korte runs (alternerende) skal ikke trigger signal"
+  )
 
   # Summary skal have lille længste_løb
   expect_lte(result$summary$længste_løb[1], 5,
-             label = "længste_løb ≤ 5 for alternerende data")
+    label = "længste_løb ≤ 5 for alternerende data"
+  )
 })
 
 # ============================================================================
@@ -85,9 +85,7 @@ test_that("crossings-signal fires ved for få crossings (konstrueret for n=24)",
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
 
@@ -96,7 +94,8 @@ test_that("crossings-signal fires ved for få crossings (konstrueret for n=24)",
 
   # Antal kryds skal være meget lavt (1)
   expect_lte(result$summary$antal_kryds[1], 2,
-             label = "antal_kryds for 12+12 data")
+    label = "antal_kryds for 12+12 data"
+  )
 })
 
 test_that("crossings-signal fires IKKE ved mange crossings", {
@@ -108,15 +107,14 @@ test_that("crossings-signal fires IKKE ved mange crossings", {
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
 
   # Antal kryds skal være højt (≈ n-1 = 23)
   expect_gte(result$summary$antal_kryds[1], 20,
-             label = "antal_kryds for alternerende data")
+    label = "antal_kryds for alternerende data"
+  )
 
   # Ingen crossings-signal (højt antal)
   # Dog kan run-længde-signal stadig fires, så vi tjekker ikke anhoej.signal her
@@ -131,24 +129,25 @@ test_that("stabile data med blandede mønstre giver ingen Anhøj-signal", {
   # Data er konstrueret så:
   #   - Ingen lang run (max 3 på samme side)
   #   - Mange crossings
-  values <- c(48, 52, 49, 51, 48, 52, 50, 49, 51, 50,
-              52, 48, 50, 51, 49, 52, 48, 50, 51, 49,
-              50, 52, 48, 51)
+  values <- c(
+    48, 52, 49, 51, 48, 52, 50, 49, 51, 50,
+    52, 48, 50, 51, 49, 52, 48, 50, 51, 49,
+    50, 52, 48, 51
+  )
 
   data <- data.frame(
     period = 1:24,
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
 
   # Ingen signal skal fires
   expect_false(any(result$qic_data$anhoej.signal),
-               info = "Stabil data med korte runs og mange kryds skal ikke trigger")
+    info = "Stabil data med korte runs og mange kryds skal ikke trigger"
+  )
 
   # Sanity: max run < 5 og mange crossings
   expect_lte(result$summary$længste_løb[1], 4)
@@ -170,15 +169,14 @@ test_that("sigma.signal fires ved punkt uden for kontrolgrænse (i-chart)", {
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "i")
 
   expect_valid_bfh_qic_result(result)
 
   # Punkt 5 skal have sigma.signal = TRUE
   expect_true(result$qic_data$sigma.signal[5],
-              info = "Outlier-punkt (y=20 mod baseline 10) skal være flagged")
+    info = "Outlier-punkt (y=20 mod baseline 10) skal være flagged"
+  )
 })
 
 test_that("sigma.signal fires IKKE for stabil data", {
@@ -190,15 +188,14 @@ test_that("sigma.signal fires IKKE for stabil data", {
     value = values
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "i")
 
   expect_valid_bfh_qic_result(result)
 
   # Ingen outliers i stabil data
   expect_false(any(result$qic_data$sigma.signal),
-               info = "Stabil data skal ikke have sigma.signal triggers")
+    info = "Stabil data skal ikke have sigma.signal triggers"
+  )
 })
 
 # ============================================================================
@@ -210,9 +207,9 @@ test_that("bfh_extract_spc_stats skelner total outliers fra recent (last 6)", {
   # 2 i positioner 20-21 (inden for seneste 6 obs af 24 punkter)
   sigma_signal <- c(
     rep(FALSE, 5),
-    TRUE,            # position 6 — uden for seneste 6 obs
+    TRUE, # position 6 — uden for seneste 6 obs
     rep(FALSE, 13),
-    TRUE, TRUE,      # position 20-21 — inden for seneste 6
+    TRUE, TRUE, # position 20-21 — inden for seneste 6
     FALSE, FALSE, FALSE
   )
 
@@ -221,18 +218,20 @@ test_that("bfh_extract_spc_stats skelner total outliers fra recent (last 6)", {
 
   # Total outliers skal tælle alle 3
   expect_equal(stats$outliers_actual, 3,
-               label = "outliers_actual = total i seneste part")
+    label = "outliers_actual = total i seneste part"
+  )
 
   # Recent count skal kun tælle de 2 inden for seneste 6
   expect_equal(stats$outliers_recent_count, 2,
-               label = "outliers_recent_count = kun seneste 6 obs")
+    label = "outliers_recent_count = kun seneste 6 obs"
+  )
 })
 
 test_that("outliers_recent_count = outliers_actual når alle outliers er recent", {
   # Alle outliers i seneste 6 obs (af 20)
   sigma_signal <- c(
     rep(FALSE, 15),
-    TRUE, FALSE, TRUE, FALSE, FALSE  # 2 outliers i seneste 6
+    TRUE, FALSE, TRUE, FALSE, FALSE # 2 outliers i seneste 6
   )
 
   result <- fixture_bfh_qic_result(sigma_signal, chart_type = "i")
@@ -252,7 +251,8 @@ test_that("outliers-tælling respekterer part (seneste fase kun)", {
 
   # Kun seneste fase (part 2) tælles → 1 outlier
   expect_equal(stats$outliers_actual, 1,
-               label = "outliers_actual tæller kun seneste part")
+    label = "outliers_actual tæller kun seneste part"
+  )
 })
 
 # ============================================================================
@@ -265,19 +265,22 @@ test_that("summary indeholder Anhøj-kolonner for run-chart", {
     value = c(rep(60, 10), rep(40, 14))
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   # Anhøj-stat-kolonner
-  required_cols <- c("længste_løb", "længste_løb_max",
-                     "antal_kryds", "antal_kryds_min",
-                     "løbelængde_signal")
+  required_cols <- c(
+    "længste_løb", "længste_løb_max",
+    "antal_kryds", "antal_kryds_min",
+    "løbelængde_signal"
+  )
 
   missing <- setdiff(required_cols, names(result$summary))
   expect_equal(length(missing), 0,
-               info = paste("Manglende Anhøj-kolonner:",
-                            paste(missing, collapse = ", ")))
+    info = paste(
+      "Manglende Anhøj-kolonner:",
+      paste(missing, collapse = ", ")
+    )
+  )
 })
 
 test_that("længste_løb_max = round(log2(n)) + 3 for run-chart", {
@@ -287,13 +290,14 @@ test_that("længste_løb_max = round(log2(n)) + 3 for run-chart", {
     value = c(rep(60, 10), rep(40, 14))
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expected_max <- round(log2(24)) + 3
   expect_equal(result$summary$længste_løb_max[1], expected_max,
-               tolerance = 1,  # qicharts2 kan runde lidt anderledes
-               label = paste0("længste_løb_max for n=24 = round(log2(24))+3 = ",
-                              expected_max))
+    tolerance = 1, # qicharts2 kan runde lidt anderledes
+    label = paste0(
+      "længste_løb_max for n=24 = round(log2(24))+3 = ",
+      expected_max
+    )
+  )
 })

@@ -18,9 +18,7 @@ test_that("i-chart without n succeeds (n not required)", {
     period = 1:10,
     value = c(10, 12, 11, 13, 9, 11, 14, 12, 10, 11)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "i")
   expect_s3_class(result, "bfh_qic_result")
 })
 
@@ -94,9 +92,7 @@ test_that("p-chart with all rows y <= n succeeds", {
     events = c(5L, 6L, 4L, 8L, 7L),
     total  = rep(100L, 5)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = events, n = total, chart_type = "p")
-  )
+  result <- bfh_qic(data, x = period, y = events, n = total, chart_type = "p")
   expect_s3_class(result, "bfh_qic_result")
 })
 
@@ -118,9 +114,7 @@ test_that("u-chart allows y > n (rate, not proportion)", {
     events = c(50L, 60L, 200L),
     exposure = rep(100L, 3)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = events, n = exposure, chart_type = "u")
-  )
+  result <- bfh_qic(data, x = period, y = events, n = exposure, chart_type = "u")
   expect_s3_class(result, "bfh_qic_result")
 })
 
@@ -147,8 +141,6 @@ test_that("xbar-chart skips denominator validation (subgroup via duplicated x)",
     period = rep(1:5, each = 4),
     value  = rnorm(20, mean = 50, sd = 5)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, x = period, y = value, chart_type = "xbar")
-  )
+  result <- bfh_qic(data, x = period, y = value, chart_type = "xbar")
   expect_s3_class(result, "bfh_qic_result")
 })

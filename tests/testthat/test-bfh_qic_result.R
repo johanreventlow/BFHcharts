@@ -12,14 +12,12 @@ test_that("new_bfh_qic_result creates valid S3 object", {
   )
 
   # Get bfh_qic_result object, then extract the plot
-  result_obj <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "run",
-      y_axis_unit = "count"
-    )
+  result_obj <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "run",
+    y_axis_unit = "count"
   )
 
   plot <- result_obj$plot
@@ -79,14 +77,12 @@ test_that("new_bfh_qic_result validates inputs", {
     infections = rpois(12, lambda = 15)
   )
 
-  result_obj <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "run",
-      y_axis_unit = "count"
-    )
+  result_obj <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "run",
+    y_axis_unit = "count"
   )
 
   plot <- result_obj$plot
@@ -152,14 +148,12 @@ test_that("print.bfh_qic_result displays plot", {
       infections = rpois(12, lambda = 15)
     )
 
-    result_obj <- suppressWarnings(
-      bfh_qic(
-        data = data,
-        x = month,
-        y = infections,
-        chart_type = "run",
-        y_axis_unit = "count"
-      )
+    result_obj <- bfh_qic(
+      data = data,
+      x = month,
+      y = infections,
+      chart_type = "run",
+      y_axis_unit = "count"
     )
 
     plot <- result_obj$plot
@@ -189,14 +183,12 @@ test_that("plot.bfh_qic_result displays plot", {
       infections = rpois(12, lambda = 15)
     )
 
-    result_obj <- suppressWarnings(
-      bfh_qic(
-        data = data,
-        x = month,
-        y = infections,
-        chart_type = "run",
-        y_axis_unit = "count"
-      )
+    result_obj <- bfh_qic(
+      data = data,
+      x = month,
+      y = infections,
+      chart_type = "run",
+      y_axis_unit = "count"
     )
 
     plot <- result_obj$plot
@@ -222,14 +214,12 @@ test_that("accessor functions work", {
     infections = rpois(12, lambda = 15)
   )
 
-  result_obj <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "run",
-      y_axis_unit = "count"
-    )
+  result_obj <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "run",
+    y_axis_unit = "count"
   )
 
   plot <- result_obj$plot
@@ -261,14 +251,12 @@ test_that("is_bfh_qic_result identifies objects correctly", {
     infections = rpois(12, lambda = 15)
   )
 
-  result_obj <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "run",
-      y_axis_unit = "count"
-    )
+  result_obj <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "run",
+    y_axis_unit = "count"
   )
 
   plot <- result_obj$plot

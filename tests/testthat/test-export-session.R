@@ -170,9 +170,7 @@ test_that("bfh_export_pdf rejects non-session batch_session", {
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
   expect_error(
     bfh_export_pdf(result, tempfile(fileext = ".pdf"), batch_session = "not a session"),
     "bfh_export_session"
@@ -188,9 +186,7 @@ test_that("bfh_export_pdf rejects closed session", {
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
   session <- bfh_create_export_session()
   close(session)
 
@@ -209,9 +205,7 @@ test_that("bfh_export_pdf rejects batch_session + template_path", {
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
   session <- bfh_create_export_session()
   on.exit(close(session))
 
@@ -236,9 +230,7 @@ test_that("bfh_export_pdf rejects batch_session + inject_assets", {
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     infections = rpois(12, lambda = 15)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
   session <- bfh_create_export_session()
   on.exit(close(session))
 
@@ -263,9 +255,7 @@ test_that("bfh_export_pdf single-call works (backward compat)", {
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
     infections = rpois(24, lambda = 15)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
   out <- tempfile(fileext = ".pdf")
   on.exit(unlink(out))
 
@@ -293,9 +283,7 @@ test_that("batch session reuses tmpdir across multiple exports", {
   on.exit(close(session))
   session_tmpdir <- session$tmpdir
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
 
   out1 <- tempfile(fileext = ".pdf")
   out2 <- tempfile(fileext = ".pdf")
@@ -330,9 +318,7 @@ test_that("batch export produces same page count as single-call export", {
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
     infections = rpois(24, lambda = 15)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Page count test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Page count test")
 
   out_single <- tempfile(fileext = ".pdf")
   out_batch <- tempfile(fileext = ".pdf")

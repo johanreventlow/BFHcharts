@@ -89,15 +89,13 @@ test_that("Multiple exports from same result work", {
   )
 
   # Create chart once
-  result <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "i",
-      y_axis_unit = "count",
-      chart_title = "Test Export"
-    )
+  result <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "Test Export"
   )
 
   temp_png <- tempfile(fileext = ".png")
@@ -171,14 +169,12 @@ test_that("PDF export works with different chart types", {
     temp_file <- tempfile(fileext = ".pdf")
 
     # Create chart
-    result <- suppressWarnings(
-      bfh_qic(
-        data = data,
-        x = month,
-        y = infections,
-        chart_type = ct,
-        chart_title = paste(ct, "Chart")
-      )
+    result <- bfh_qic(
+      data = data,
+      x = month,
+      y = infections,
+      chart_type = ct,
+      chart_title = paste(ct, "Chart")
     )
 
     # Export
@@ -203,14 +199,12 @@ test_that("Title appears in PNG but not in PDF chart image", {
 
   title_text <- "Test Title Should Appear Correctly"
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "i",
-      chart_title = title_text
-    )
+  result <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = title_text
   )
 
   temp_png <- tempfile(fileext = ".png")
@@ -286,16 +280,14 @@ test_that("Export works with multi-phase charts", {
   temp_pdf <- tempfile(fileext = ".pdf")
 
   # Create multi-phase chart
-  result <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "i",
-      y_axis_unit = "count",
-      chart_title = "Multi-Phase Analysis",
-      part = c(12, 24) # 3 phases
-    )
+  result <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "Multi-Phase Analysis",
+    part = c(12, 24) # 3 phases
   )
 
   # Export both
