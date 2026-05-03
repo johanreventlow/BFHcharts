@@ -551,6 +551,235 @@ bfh_generate_analysis <- function(x,
 }
 
 
+# Detect SPC signal flags from a context object.
+#
+# Returnerer named list med:
+#   has_runs, has_crossings, has_outliers (logical)
+#   is_stable                              (logical, derived: ingen signaler)
+#   no_variation                          (logical, derived: alle signal-stats NA)
+#   has_target                            (logical, derived: target_value + centerline gyldige)
+#   outliers_for_text                     (numeric, til pluralize_da + placeholder)
+#
+# Pure: samme input -> samme output. Bruges af build_fallback_analysis() til
+# at drive cascade-dispatch og budget-allokering uden at flade detection-
+# logikken sammen med i18n-opslag.
+.detect_signal_flags <- function(context) {
+  spc_stats <- context$spc_stats
+  target_value <- context$target_value
+  centerline <- context$centerline
+
+  has_runs <- is_valid_scalar(spc_stats$runs_actual) &&
+    is_valid_scalar(spc_stats$runs_expected) &&
+    spc_stats$runs_actual > spc_stats$runs_expected
+
+  has_crossings <- is_valid_scalar(spc_stats$crossings_actual) &&
+    is_valid_scalar(spc_stats$crossings_expected) &&
+    spc_stats$crossings_actual < spc_stats$crossings_expected
+
+  # Brug recent_count (seneste 6 obs) saa analyseteksten kun beskriver AKTUELLE
+  # outliers. Fald tilbage til outliers_actual naar kun summary-baserede stats
+  # er tilgaengelige.
+  outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
+  has_outliers <- is_valid_scalar(outliers_for_text) && outliers_for_text > 0
+
+  is_stable <- !has_runs && !has_crossings && !has_outliers
+
+  runs_missing <- is.null(spc_stats$runs_actual) ||
+    length(spc_stats$runs_actual) == 0 ||
+    is.na(spc_stats$runs_actual)
+  crossings_missing <- is.null(spc_stats$crossings_actual) ||
+    length(spc_stats$crossings_actual) == 0 ||
+    is.na(spc_stats$crossings_actual)
+  no_variation <- runs_missing && crossings_missing
+
+  has_target <- !is.null(target_value) && !is.na(target_value) &&
+    is.numeric(target_value) &&
+    !is.null(centerline) && !is.na(centerline)
+
+  list(
+    has_runs = has_runs,
+    has_crossings = has_crossings,
+    has_outliers = has_outliers,
+    is_stable = is_stable,
+    no_variation = no_variation,
+    has_target = has_target,
+    outliers_for_text = outliers_for_text
+  )
+}
+
+
+# Allokerer tegnbudget til stability/target/action dele af fallback-analysen.
+#
+# Med target: stability ~50%, target ~25%, action ~25%.
+# Uden target: target-budgettet realloceres til stability (65%) + action (35%).
+#
+# Returnerer named integer list: stability_budget, target_budget, action_budget.
+.allocate_text_budget <- function(max_chars, has_target) {
+  if (has_target) {
+    stability_budget <- floor(max_chars * 0.50)
+    target_budget <- floor(max_chars * 0.25)
+    action_budget <- max_chars - stability_budget - target_budget
+  } else {
+    stability_budget <- floor(max_chars * 0.65)
+    target_budget <- 0L
+    action_budget <- max_chars - stability_budget
+  }
+  list(
+    stability_budget = stability_budget,
+    target_budget = target_budget,
+    action_budget = action_budget
+  )
+}
+
+
+# Vaelg i18n-noegle til stabilitets-arm af fallback-analysen.
+#
+# Pure dispatch: tager named-logical flags (has_runs, has_crossings,
+# has_outliers) og returnerer character scalar, der refererer til
+# `texts$stability[[key]]` i sprog-YAML'en. Caller haandterer
+# no_variation-grenen separat (den bruger sin egen no_variation key
+# med centerline-placeholder).
+#
+# Mulige returvaerdier: "no_signals", "runs_only", "crossings_only",
+# "outliers_only", "runs_crossings", "runs_outliers",
+# "crossings_outliers", "all_signals".
+.select_stability_key <- function(flags) {
+  if (!flags$has_runs && !flags$has_crossings && !flags$has_outliers) {
+    "no_signals"
+  } else if (flags$has_runs && !flags$has_crossings && !flags$has_outliers) {
+    "runs_only"
+  } else if (!flags$has_runs && flags$has_crossings && !flags$has_outliers) {
+    "crossings_only"
+  } else if (!flags$has_runs && !flags$has_crossings && flags$has_outliers) {
+    "outliers_only"
+  } else if (flags$has_runs && flags$has_crossings && !flags$has_outliers) {
+    "runs_crossings"
+  } else if (flags$has_runs && !flags$has_crossings && flags$has_outliers) {
+    "runs_outliers"
+  } else if (!flags$has_runs && flags$has_crossings && flags$has_outliers) {
+    "crossings_outliers"
+  } else {
+    "all_signals"
+  }
+}
+
+
+# Vaelg i18n-noegle til handlings-arm af fallback-analysen.
+#
+# Pure dispatch: tager flags + target-evaluation og returnerer character
+# scalar key til `texts$action[[key]]`. Tre dispatch-veje:
+#
+#   1. has_target + target_direction (fra fx "<= 2,5"): retningsbevidst
+#      cascade -> "stable_goal_met", "stable_goal_not_met",
+#      "unstable_goal_met", "unstable_goal_not_met"
+#   2. has_target uden target_direction: vaerdineutral cascade ->
+#      "stable_at_target", "stable_not_at_target", "unstable_at_target",
+#      "unstable_not_at_target"
+#   3. !has_target: simple cascade -> "stable_no_target",
+#      "unstable_no_target"
+#
+# goal_met og at_target er evalueret af caller; helper er pure dispatch.
+.select_action_key <- function(flags, target_direction, goal_met, at_target) {
+  is_stable <- flags$is_stable
+  has_target <- flags$has_target
+
+  if (has_target && !is.null(target_direction)) {
+    if (is_stable && goal_met) {
+      "stable_goal_met"
+    } else if (is_stable && !goal_met) {
+      "stable_goal_not_met"
+    } else if (!is_stable && goal_met) {
+      "unstable_goal_met"
+    } else {
+      "unstable_goal_not_met"
+    }
+  } else if (has_target) {
+    if (is_stable && at_target) {
+      "stable_at_target"
+    } else if (is_stable && !at_target) {
+      "stable_not_at_target"
+    } else if (!is_stable && at_target) {
+      "unstable_at_target"
+    } else {
+      "unstable_not_at_target"
+    }
+  } else {
+    if (is_stable) "stable_no_target" else "unstable_no_target"
+  }
+}
+
+
+# Evaluer maalvurderings-arm af fallback-analysen.
+#
+# Returnerer named list (target_text, goal_met, at_target). Bruges af
+# orchestrator + .select_action_key().
+#
+# Tre dispatch-veje (matcher .select_action_key()'s tre cascade-grene):
+#   1. has_target + target_direction: retningsbevidst goal_met-evaluering
+#      via centerline-vs-target sammenligning.
+#   2. has_target uden target_direction: vaerdineutral at_target/over/under
+#      med tolerance.
+#   3. !has_target: target_text = "".
+#
+# i18n-lookup foregaar her (ikke i orchestrator) for at holde
+# orchestrator fri af cascade-strukturer.
+.evaluate_target_arm <- function(context, flags, texts, target_budget,
+                                 target_tolerance) {
+  result <- list(target_text = "", goal_met = FALSE, at_target = FALSE)
+  if (!flags$has_target) {
+    return(result)
+  }
+
+  target_value <- context$target_value
+  target_direction <- context$target_direction
+  centerline <- context$centerline
+
+  # Foretraek display-streng fra input (fx "<= 2,5"), ellers format numerisk
+  display_target <- if (!is.null(context$target_display) &&
+    nzchar(context$target_display)) {
+    context$target_display
+  } else {
+    format_target_value(target_value, y_axis_unit = context$y_axis_unit)
+  }
+
+  if (!is.null(target_direction)) {
+    # Retningsbevidst: "higher" -> CL >= target, "lower" -> CL <= target
+    result$goal_met <- switch(target_direction,
+      "higher" = centerline >= target_value,
+      "lower"  = centerline <= target_value,
+      FALSE
+    )
+    key <- if (result$goal_met) "goal_met" else "goal_not_met"
+    result$target_text <- pick_text(texts$target[[key]],
+      data = list(target = display_target),
+      budget = target_budget
+    )
+  } else {
+    # Vaerdineutral (bagudkompatibel): at/over/under target
+    tolerance <- max(abs(target_value) * target_tolerance, 0.01)
+    if (abs(centerline - target_value) <= tolerance) {
+      result$target_text <- pick_text(texts$target$at_target,
+        data = list(target = display_target),
+        budget = target_budget
+      )
+      result$at_target <- TRUE
+    } else if (centerline > target_value) {
+      result$target_text <- pick_text(texts$target$over_target,
+        data = list(target = display_target),
+        budget = target_budget
+      )
+    } else {
+      result$target_text <- pick_text(texts$target$under_target,
+        data = list(target = display_target),
+        budget = target_budget
+      )
+    }
+  }
+
+  result
+}
+
+
 # Intern funktion: Byg komplet fallback-analysetekst
 # Allokerer tegnbudget til stability/target/action dele
 # og vaelger passende variant for hver del. Naar context$target_direction
@@ -572,50 +801,21 @@ build_fallback_analysis <- function(context,
   centerline <- context$centerline
   n_points <- context$n_points
 
-  # --- Detect signaler (sikker mod NULL og NA) ---
-  has_runs <- is_valid_scalar(spc_stats$runs_actual) &&
-    is_valid_scalar(spc_stats$runs_expected) &&
-    spc_stats$runs_actual > spc_stats$runs_expected
-
-  has_crossings <- is_valid_scalar(spc_stats$crossings_actual) &&
-    is_valid_scalar(spc_stats$crossings_expected) &&
-    spc_stats$crossings_actual < spc_stats$crossings_expected
-
-  # Brug recent_count (seneste 6 obs) saa analyseteksten kun beskriver AKTUELLE
-  # outliers. Fald tilbage til outliers_actual naar kun summary-baserede stats
-  # er tilgaengelige.
-  outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
-  has_outliers <- is_valid_scalar(outliers_for_text) &&
-    outliers_for_text > 0
-
-  is_stable <- !has_runs && !has_crossings && !has_outliers
-
-  # --- Detect ingen variation (alle SPC-stats er NA eller NULL) ---
-  runs_missing <- is.null(spc_stats$runs_actual) ||
-    length(spc_stats$runs_actual) == 0 ||
-    is.na(spc_stats$runs_actual)
-  crossings_missing <- is.null(spc_stats$crossings_actual) ||
-    length(spc_stats$crossings_actual) == 0 ||
-    is.na(spc_stats$crossings_actual)
-  no_variation <- runs_missing && crossings_missing
-
-  # --- Target-tilstand (afgoer budget-fordelingen) ---
-  has_target <- !is.null(target_value) && !is.na(target_value) &&
-    is.numeric(target_value) &&
-    !is.null(centerline) && !is.na(centerline)
+  # --- Detect signaler + target-tilstand ---
+  flags <- .detect_signal_flags(context)
+  has_runs <- flags$has_runs
+  has_crossings <- flags$has_crossings
+  has_outliers <- flags$has_outliers
+  is_stable <- flags$is_stable
+  no_variation <- flags$no_variation
+  has_target <- flags$has_target
+  outliers_for_text <- flags$outliers_for_text
 
   # --- Budget-allokering ---
-  # Med target: stability ~50%, target ~25%, action ~25%.
-  # Uden target: target-budget realloceres til stability (65%) + action (35%).
-  if (has_target) {
-    stability_budget <- floor(max_chars * 0.50)
-    target_budget <- floor(max_chars * 0.25)
-    action_budget <- max_chars - stability_budget - target_budget
-  } else {
-    stability_budget <- floor(max_chars * 0.65)
-    target_budget <- 0L
-    action_budget <- max_chars - stability_budget
-  }
+  budgets <- .allocate_text_budget(max_chars, has_target)
+  stability_budget <- budgets$stability_budget
+  target_budget <- budgets$target_budget
+  action_budget <- budgets$action_budget
 
   if (!is.function(texts_loader)) {
     stop("texts_loader must be a function", call. = FALSE)
@@ -652,23 +852,7 @@ build_fallback_analysis <- function(context,
       budget = stability_budget
     )
   } else {
-    key <- if (!has_runs && !has_crossings && !has_outliers) {
-      "no_signals"
-    } else if (has_runs && !has_crossings && !has_outliers) {
-      "runs_only"
-    } else if (!has_runs && has_crossings && !has_outliers) {
-      "crossings_only"
-    } else if (!has_runs && !has_crossings && has_outliers) {
-      "outliers_only"
-    } else if (has_runs && has_crossings && !has_outliers) {
-      "runs_crossings"
-    } else if (has_runs && !has_crossings && has_outliers) {
-      "runs_outliers"
-    } else if (!has_runs && has_crossings && has_outliers) {
-      "crossings_outliers"
-    } else {
-      "all_signals"
-    }
+    key <- .select_stability_key(flags)
     stability <- pick_text(texts$stability[[key]],
       data = placeholder_data,
       budget = stability_budget
@@ -676,82 +860,16 @@ build_fallback_analysis <- function(context,
   }
 
   # --- 2. Maalvurdering ---
-  target_text <- ""
-  at_target <- FALSE # bruges af v\u00e6rdineutral action-sti
-  goal_met <- FALSE # bruges af retningsbevidst action-sti
-
-  if (has_target) {
-    # Foretraek display-streng fra input (fx "<= 2,5"), ellers format numerisk
-    display_target <- if (!is.null(context$target_display) &&
-      nzchar(context$target_display)) {
-      context$target_display
-    } else {
-      format_target_value(target_value, y_axis_unit = context$y_axis_unit)
-    }
-
-    if (!is.null(target_direction)) {
-      # === RETNINGSBEVIDST LOGIK ===
-      # "higher" -> CL skal vaere >= target for at opfylde maalet.
-      # "lower"  -> CL skal vaere <= target.
-      goal_met <- switch(target_direction,
-        "higher" = centerline >= target_value,
-        "lower"  = centerline <= target_value,
-        FALSE
-      )
-      key <- if (goal_met) "goal_met" else "goal_not_met"
-      target_text <- pick_text(texts$target[[key]],
-        data = list(target = display_target),
-        budget = target_budget
-      )
-    } else {
-      # === VAERDINEUTRAL LOGIK (bagudkompatibel) ===
-      tolerance <- max(abs(target_value) * target_tolerance, 0.01)
-      if (abs(centerline - target_value) <= tolerance) {
-        target_text <- pick_text(texts$target$at_target,
-          data = list(target = display_target),
-          budget = target_budget
-        )
-        at_target <- TRUE
-      } else if (centerline > target_value) {
-        target_text <- pick_text(texts$target$over_target,
-          data = list(target = display_target),
-          budget = target_budget
-        )
-      } else {
-        target_text <- pick_text(texts$target$under_target,
-          data = list(target = display_target),
-          budget = target_budget
-        )
-      }
-    }
-  }
+  target_eval <- .evaluate_target_arm(
+    context, flags, texts,
+    target_budget, target_tolerance
+  )
+  target_text <- target_eval$target_text
+  goal_met <- target_eval$goal_met
+  at_target <- target_eval$at_target
 
   # --- 3. Handlingsforslag ---
-  if (has_target && !is.null(target_direction)) {
-    # Retningsbevidste action-keys
-    action_key <- if (is_stable && goal_met) {
-      "stable_goal_met"
-    } else if (is_stable && !goal_met) {
-      "stable_goal_not_met"
-    } else if (!is_stable && goal_met) {
-      "unstable_goal_met"
-    } else {
-      "unstable_goal_not_met"
-    }
-  } else if (has_target) {
-    # Vaerdineutrale action-keys (bagudkompatible)
-    action_key <- if (is_stable && at_target) {
-      "stable_at_target"
-    } else if (is_stable && !at_target) {
-      "stable_not_at_target"
-    } else if (!is_stable && at_target) {
-      "unstable_at_target"
-    } else {
-      "unstable_not_at_target"
-    }
-  } else {
-    action_key <- if (is_stable) "stable_no_target" else "unstable_no_target"
-  }
+  action_key <- .select_action_key(flags, target_direction, goal_met, at_target)
   action <- pick_text(texts$action[[action_key]], budget = action_budget)
 
   # --- Kombiner ---
