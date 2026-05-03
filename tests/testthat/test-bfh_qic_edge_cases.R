@@ -240,7 +240,7 @@ test_that("bfh_qic giver advarsel ved freeze = 7 (< 8)", {
 
   expect_warning(
     bfh_qic(data, x = date, y = value, chart_type = "i", freeze = 7),
-    regexp = "baseline har færre end 8"
+    regexp = "baseline has fewer than 8"
   )
 })
 
@@ -278,7 +278,7 @@ test_that("bfh_qic giver advarsel når en part-fase er for kort", {
 
   expect_warning(
     bfh_qic(data, x = date, y = value, chart_type = "i", part = 3),
-    regexp = "Fase\\(r\\) 1"
+    regexp = "Phase\\(s\\) 1"
   )
 })
 

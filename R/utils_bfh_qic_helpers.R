@@ -300,7 +300,7 @@ validate_bfh_qic_inputs <- function(data,
                                     y_expr_char,
                                     n_expr_char) {
   if (!is.data.frame(data)) {
-    stop("data must be a data frame")
+    stop("data must be a data frame", call. = FALSE)
   }
 
   if (nrow(data) == 0L) {
@@ -329,7 +329,7 @@ validate_bfh_qic_inputs <- function(data,
     stop(sprintf(
       "chart_type must be one of: %s",
       paste(CHART_TYPES_EN, collapse = ", ")
-    ))
+    ), call. = FALSE)
   }
 
   valid_units <- c("count", "percent", "rate", "time")
@@ -337,7 +337,7 @@ validate_bfh_qic_inputs <- function(data,
     stop(sprintf(
       "y_axis_unit must be one of: %s",
       paste(valid_units, collapse = ", ")
-    ))
+    ), call. = FALSE)
   }
 
   validate_position_indices(part, "part", nrow(data),
@@ -353,8 +353,8 @@ validate_bfh_qic_inputs <- function(data,
   # Warn if freeze baseline is too short for reliable signal detection
   if (!is.null(freeze) && freeze < MIN_BASELINE_N) {
     warning(
-      "freeze = ", freeze, ": baseline har f\u00e6rre end ", MIN_BASELINE_N,
-      " observationer. Kontrolgr\u00e6nser er statistisk usikre.",
+      "freeze = ", freeze, ": baseline has fewer than ", MIN_BASELINE_N,
+      " observations. Control limits are statistically unreliable.",
       call. = FALSE
     )
   }
@@ -369,9 +369,9 @@ validate_bfh_qic_inputs <- function(data,
     short_phases <- which(phase_sizes < MIN_BASELINE_N)
     if (length(short_phases) > 0) {
       warning(
-        "Fase(r) ", paste(short_phases, collapse = ", "),
-        " har f\u00e6rre end ", MIN_BASELINE_N,
-        " observationer. Kontrolgr\u00e6nser kan v\u00e6re statistisk usikre.",
+        "Phase(s) ", paste(short_phases, collapse = ", "),
+        " have fewer than ", MIN_BASELINE_N,
+        " observations. Control limits may be statistically unreliable.",
         call. = FALSE
       )
     }

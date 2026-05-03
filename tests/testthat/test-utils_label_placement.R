@@ -20,8 +20,8 @@ test_that("clamp_to_bounds håndterer flipped og lige bounds", {
 })
 
 test_that("clamp_to_bounds afviser ikke-numerisk", {
-  expect_error(clamp_to_bounds("a", 0, 1), "numeriske")
-  expect_error(clamp_to_bounds(0.5, "a", 1), "numeriske")
+  expect_error(clamp_to_bounds("a", 0, 1), "numeric")
+  expect_error(clamp_to_bounds(0.5, "a", 1), "numeric")
 })
 
 # ==============================================================================
