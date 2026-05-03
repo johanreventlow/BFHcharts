@@ -14,7 +14,27 @@
   `result$summary`, and `return.data = TRUE` returns the raw qic data
   with summary fields available on `result$qic_summary`.
 
+* **Option name `bfhcharts.quarto_path` renamed to
+  `BFHcharts.quarto_path`** (TitleCase namespace consistent with the rest
+  of the package). Option name `spc.debug.label_placement` similarly
+  renamed to `BFHcharts.debug.label_placement`. The old names are no
+  longer recognised. Migration: replace the legacy name in any
+  `options()` call. Both options were internal/dev-only with no
+  user-facing documentation.
+
 ## Internal changes
+
+* Add named constants for all five package options in `R/globals.R`:
+  `BFHCHARTS_OPT_QUARTO_PATH`, `BFHCHARTS_OPT_SUPPRESS_UNIT_AUTO_DETECT`,
+  `BFHCHARTS_OPT_DEBUG_LABEL_PLACEMENT` (joining existing
+  `BFHCHARTS_OPT_AUDIT_LOG` and `BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT`).
+  All `getOption()` call sites updated to reference the constants for
+  grep-ability and single-source-of-truth.
+
+* Extract `resolve_label_size()` helper in `R/utils_label_helpers.R`.
+  Three sites (`apply_spc_labels_to_export()`,
+  `build_bfh_qic_config()`, `recalculate_labels_for_export()`) had
+  identical viewport-size fallback logic; now share the helper.
 
 * Remove unused `safe_min()` helper from `R/utils_helpers.R` (no callers).
 * Drop stale 33-line USAGE example comment block from

@@ -73,7 +73,7 @@ estimate_label_heights_npc <- function(
   }
 
   using_fallback <- is.null(device_width) || is.null(device_height)
-  if (using_fallback && getOption("spc.debug.label_placement", FALSE)) {
+  if (using_fallback && getOption(BFHCHARTS_OPT_DEBUG_LABEL_PLACEMENT, FALSE)) {
     message(
       "[LABEL_HEIGHT_ESTIMATE] WARNING: No actual device dimensions provided - ",
       "using fallback 8x4.5\" (this should not happen in production with viewport guard)"
