@@ -81,5 +81,45 @@ test_that(".ensure_bfhtheme() honours custom min_version argument", {
   expect_match(conditionMessage(err), "0.7.0", fixed = TRUE)
 })
 
+# ============================================================================
+# Co-location regression: BFHtheme:: usage requires .ensure_bfhtheme() guard
+# ============================================================================
+# Asserts that every R/*.R file referencing BFHtheme:: also calls
+# .ensure_bfhtheme() in the same file. Catches drift where a new BFHtheme
+# call site is added without the corresponding guard.
+#
+# Excludes utils_dep_guards.R itself (defines the guard) and
+# BFHcharts-package.R (declarative namespace tag, not runtime usage).
+
+test_that("every R/*.R using BFHtheme:: also calls .ensure_bfhtheme()", {
+  pkg_root <- testthat::test_path("..", "..")
+  r_dir <- file.path(pkg_root, "R")
+  skip_if_not(dir.exists(r_dir))
+
+  excluded <- c("utils_dep_guards.R", "BFHcharts-package.R")
+  r_files <- setdiff(list.files(r_dir, pattern = "\\.R$"), excluded)
+
+  offenders <- character()
+  for (f in r_files) {
+    src <- readLines(file.path(r_dir, f), warn = FALSE)
+    # Strip comments to avoid false positives from doc strings/roxygen
+    code <- sub("#.*$", "", src)
+    uses_bfhtheme <- any(grepl("BFHtheme::", code, fixed = TRUE))
+    has_guard <- any(grepl(".ensure_bfhtheme(", code, fixed = TRUE))
+    if (uses_bfhtheme && !has_guard) {
+      offenders <- c(offenders, f)
+    }
+  }
+
+  expect_equal(
+    offenders,
+    character(),
+    info = paste(
+      "Files using BFHtheme:: without .ensure_bfhtheme() co-located:",
+      paste(offenders, collapse = ", ")
+    )
+  )
+})
+
 # Reset cache after this test file so subsequent test files start clean
 withr::defer(BFHcharts:::.reset_dep_guard_cache(), teardown_env())
