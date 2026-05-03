@@ -1,3 +1,15 @@
+# BFHcharts 0.14.1
+
+## Bug fixes
+
+* `escape_typst_string()` over-escapede `<` og `>` med backslash i Typst
+  string-literal-kontekst. Da `\<` og `\>` ikke er valide Typst-string-escapes,
+  bevarede Typst backslashen literalt i PDF-output (fx `p \< 0.05` i stedet
+  for `p < 0.05`). Paavirkede metadatafelter `hospital`, `department`,
+  `details`, `author` og `data_definition`. Fixet ved at lade `<` og `>`
+  passere uaendret - de er almindelige tegn i Typst string literals og kan
+  ikke terminere strengen.
+
 # BFHcharts 0.14.0
 
 ## Nye features
