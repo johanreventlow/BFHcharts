@@ -656,6 +656,30 @@ bfh_generate_analysis <- function(x,
 }
 
 
+# Allokér tegnbudget til stability/target/action dele af fallback-analysen.
+#
+# Med target: stability ~50%, target ~25%, action ~25%.
+# Uden target: target-budgettet realloceres til stability (65%) + action (35%).
+#
+# Returnerer named integer list: stability_budget, target_budget, action_budget.
+.allocate_text_budget <- function(max_chars, has_target) {
+  if (has_target) {
+    stability_budget <- floor(max_chars * 0.50)
+    target_budget <- floor(max_chars * 0.25)
+    action_budget <- max_chars - stability_budget - target_budget
+  } else {
+    stability_budget <- floor(max_chars * 0.65)
+    target_budget <- 0L
+    action_budget <- max_chars - stability_budget
+  }
+  list(
+    stability_budget = stability_budget,
+    target_budget = target_budget,
+    action_budget = action_budget
+  )
+}
+
+
 # Intern funktion: Byg komplet fallback-analysetekst
 # Allokerer tegnbudget til stability/target/action dele
 # og vaelger passende variant for hver del. Naar context$target_direction
@@ -688,17 +712,10 @@ build_fallback_analysis <- function(context,
   outliers_for_text <- flags$outliers_for_text
 
   # --- Budget-allokering ---
-  # Med target: stability ~50%, target ~25%, action ~25%.
-  # Uden target: target-budget realloceres til stability (65%) + action (35%).
-  if (has_target) {
-    stability_budget <- floor(max_chars * 0.50)
-    target_budget <- floor(max_chars * 0.25)
-    action_budget <- max_chars - stability_budget - target_budget
-  } else {
-    stability_budget <- floor(max_chars * 0.65)
-    target_budget <- 0L
-    action_budget <- max_chars - stability_budget
-  }
+  budgets <- .allocate_text_budget(max_chars, has_target)
+  stability_budget <- budgets$stability_budget
+  target_budget <- budgets$target_budget
+  action_budget <- budgets$action_budget
 
   if (!is.function(texts_loader)) {
     stop("texts_loader must be a function", call. = FALSE)
