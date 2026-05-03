@@ -1,37 +1,37 @@
 ## 1. Branch + baseline verification
 
-- [ ] 1.1 Create branch `refactor/decompose-fallback-analysis` from current develop
-- [ ] 1.2 Verify pre-push hook passes on baseline (`PREPUSH_MODE=full git push --dry-run`)
-- [ ] 1.3 Capture baseline narrative output: run all existing `test-spc_analysis.R` scenarios via `Rscript -e 'devtools::test(filter = "spc_analysis")'` and save the test-output snapshot for comparison
+- [x] 1.1 Create branch `refactor/decompose-fallback-analysis` from current develop
+- [x] 1.2 Verify pre-push hook passes on baseline (`PREPUSH_MODE=full git push --dry-run`)
+- [x] 1.3 Capture baseline narrative output: run all existing `test-spc_analysis.R` scenarios via `Rscript -e 'devtools::test(filter = "spc_analysis")'` and save the test-output snapshot for comparison
 
 ## 2. Extract `.detect_signal_flags()`
 
-- [ ] 2.1 Add private helper `.detect_signal_flags(spc_stats)` in `R/spc_analysis.R` returning the documented named-logical struct
-- [ ] 2.2 Replace inline flag-detection block in `build_fallback_analysis()` with call to helper; bind result to local `flags`
-- [ ] 2.3 Add table-driven unit tests in `tests/testthat/test-spc_analysis.R` (or new file `test-fallback-dispatch.R`) covering all 8 flag combinations currently produced by the cascade
-- [ ] 2.4 Run targeted tests: `Rscript -e 'devtools::test(filter = "spc_analysis")'`. Must pass.
+- [x] 2.1 Add private helper `.detect_signal_flags(spc_stats)` in `R/spc_analysis.R` returning the documented named-logical struct
+- [x] 2.2 Replace inline flag-detection block in `build_fallback_analysis()` with call to helper; bind result to local `flags`
+- [x] 2.3 Add table-driven unit tests in `tests/testthat/test-spc_analysis.R` (or new file `test-fallback-dispatch.R`) covering all 8 flag combinations currently produced by the cascade
+- [x] 2.4 Run targeted tests: `Rscript -e 'devtools::test(filter = "spc_analysis")'`. Must pass.
 
 ## 3. Extract `.allocate_text_budget()`
 
-- [ ] 3.1 Add private helper `.allocate_text_budget(max_chars, has_target)` returning named-integer struct
-- [ ] 3.2 Replace inline budget computation in orchestrator with call to helper
-- [ ] 3.3 Add unit tests covering: with-target budget split, without-target budget split, edge case max_chars=0
-- [ ] 3.4 Run targeted tests. Must pass.
+- [x] 3.1 Add private helper `.allocate_text_budget(max_chars, has_target)` returning named-integer struct
+- [x] 3.2 Replace inline budget computation in orchestrator with call to helper
+- [x] 3.3 Add unit tests covering: with-target budget split, without-target budget split, edge case max_chars=0
+- [x] 3.4 Run targeted tests. Must pass.
 
 ## 4. Extract `.select_stability_key()`
 
-- [ ] 4.1 Add private helper `.select_stability_key(flags)` returning character scalar
-- [ ] 4.2 Replace stability-cascade arm in orchestrator with call to helper
-- [ ] 4.3 Add table-driven unit tests with one row per existing stability key (every output the current cascade can produce). Use `tibble` + `purrr::pmap()` pattern.
-- [ ] 4.4 Run targeted tests. Must pass.
+- [x] 4.1 Add private helper `.select_stability_key(flags)` returning character scalar
+- [x] 4.2 Replace stability-cascade arm in orchestrator with call to helper
+- [x] 4.3 Add table-driven unit tests with one row per existing stability key (every output the current cascade can produce). Use `tibble` + `purrr::pmap()` pattern.
+- [x] 4.4 Run targeted tests. Must pass.
 
 ## 5. Extract `.select_action_key()`
 
-- [ ] 5.1 Add private helper `.select_action_key(flags)` returning character scalar
-- [ ] 5.2 Replace action-cascade arm in orchestrator with call to helper
-- [ ] 5.3 Add table-driven unit tests with one row per existing action key (largest of the four cascades; expect ~10-15 rows)
-- [ ] 5.4 Run targeted tests. Must pass.
-- [ ] 5.5 Run integration test: `Rscript -e 'devtools::test(filter = "bfh_generate_analysis")'` — fallback-mode narrative must be byte-identical to baseline
+- [x] 5.1 Add private helper `.select_action_key(flags)` returning character scalar
+- [x] 5.2 Replace action-cascade arm in orchestrator with call to helper
+- [x] 5.3 Add table-driven unit tests with one row per existing action key (largest of the four cascades; expect ~10-15 rows)
+- [x] 5.4 Run targeted tests. Must pass.
+- [x] 5.5 Run integration test: `Rscript -e 'devtools::test(filter = "bfh_generate_analysis")'` — fallback-mode narrative must be byte-identical to baseline
 
 ## 6. Final orchestrator simplification
 
