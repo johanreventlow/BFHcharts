@@ -48,6 +48,81 @@
 }
 
 
+# Maal label-hoejder for textA og textB med marquee + estimate_label_heights_npc.
+#
+# Returnerer named list (height_A, height_B, label_height_npc) hvor
+# label_height_npc er den udvalgte hoejde til gap-beregninger:
+#   - Hvis begge tekster er tomme: brug height_A som fallback.
+#   - Hvis kun A er tom: brug height_B.
+#   - Hvis kun B er tom: brug height_A.
+#   - Begge non-empty: max(height_A$npc, height_B$npc).
+#
+# Pure given inputs. Ingen device side effects (estimator skal vaere
+# device-aware, men det er callers ansvar at have device aabent foer kald).
+# marquee_height_estimator default = estimate_label_heights_npc; injectable
+# for tests.
+.measure_label_heights <- function(textA, textB, style, panel_height_inches,
+                                   device_size, marquee_size,
+                                   temp_device_opened,
+                                   marquee_height_estimator = estimate_label_heights_npc,
+                                   verbose = FALSE) {
+  # VIGTIGT: Hvis device ikke er klar (actual=FALSE), er estimater unoejagtige
+  if (!device_size$actual && verbose) {
+    warning(
+      "[LABEL_HEIGHT] Estimating label heights without actual device measurements - ",
+      "results may be inaccurate!"
+    )
+  }
+
+  # Konverter NA til NULL for estimate_label_heights_npc's fallback mechanism
+  device_width_for_estimate <- if (device_size$actual) device_size$width else NULL
+  device_height_for_estimate <- if (device_size$actual) device_size$height else NULL
+
+  heights <- marquee_height_estimator(
+    texts = c(textA, textB),
+    style = style,
+    panel_height_inches = panel_height_inches,
+    device_width = device_width_for_estimate,
+    device_height = device_height_for_estimate,
+    marquee_size = marquee_size,
+    return_details = TRUE,
+    device_ready = temp_device_opened
+  )
+  height_A <- heights[[1]]
+  height_B <- heights[[2]]
+
+  # Vaelg label_height_npc baseret paa empty-label fallback-regler
+  textA_is_empty <- is.null(textA) || nchar(trimws(textA)) == 0
+  textB_is_empty <- is.null(textB) || nchar(trimws(textB)) == 0
+
+  label_height_npc <- if (textA_is_empty && textB_is_empty) {
+    height_A # Ingen labels - fallback
+  } else if (textB_is_empty) {
+    height_A # Kun textA
+  } else if (textA_is_empty) {
+    height_B # Kun textB
+  } else {
+    if (height_A$npc > height_B$npc) height_A else height_B
+  }
+
+  if (verbose) {
+    message(
+      "Auto-beregnet label_height_npc: ", round(label_height_npc$npc, 4),
+      " (A: ", round(height_A$npc, 4), ", B: ", round(height_B$npc, 4), ")",
+      " [", round(label_height_npc$inches, 4), " inches]",
+      if (textA_is_empty) " [A tom]" else "",
+      if (textB_is_empty) " [B tom]" else ""
+    )
+  }
+
+  list(
+    height_A = height_A,
+    height_B = height_B,
+    label_height_npc = label_height_npc
+  )
+}
+
+
 .resolve_font_family <- function(family = NULL) {
   .ensure_bfhtheme()
   # Detekter device-type: "cairo", "postscript" eller "other"
@@ -376,65 +451,17 @@ add_right_labels_marquee <- function(
 
   # Auto-beregn label_height
   if (is.null(params$label_height_npc)) {
-    # VIGTIGT: Hvis device ikke er klar (actual=FALSE), er estimater unoejagtige
-    if (!device_size$actual && verbose) {
-      warning(
-        "[LABEL_HEIGHT] Estimating label heights without actual device measurements - ",
-        "results may be inaccurate!"
-      )
-    }
-
-    # Konverter NA til NULL for estimate_label_heights_npc's fallback mechanism
-    # (fallbacks aktiveres kun ved NULL, ikke NA)
-    device_width_for_estimate <- if (device_size$actual) device_size$width else NULL
-    device_height_for_estimate <- if (device_size$actual) device_size$height else NULL
-
-    heights <- estimate_label_heights_npc(
-      texts = c(textA, textB),
+    height_result <- .measure_label_heights(
+      textA = textA,
+      textB = textB,
       style = right_aligned_style,
       panel_height_inches = panel_height_inches,
-      device_width = device_width_for_estimate,
-      device_height = device_height_for_estimate,
+      device_size = device_size,
       marquee_size = marquee_size,
-      return_details = TRUE,
-      device_ready = temp_device_opened
+      temp_device_opened = temp_device_opened,
+      verbose = verbose
     )
-    height_A <- heights[[1]]
-    height_B <- heights[[2]]
-
-    # FIX: Ignorer empty labels ved valg af hoejde til gap calculation
-    # Hvis textB er tom (kun CL label), brug kun height_A
-    # Dette sikrer at gap er baseret paa faktisk synlig label hoejde
-    textA_is_empty <- is.null(textA) || nchar(trimws(textA)) == 0
-    textB_is_empty <- is.null(textB) || nchar(trimws(textB)) == 0
-
-    if (textA_is_empty && textB_is_empty) {
-      # Ingen labels - brug fallback
-      params$label_height_npc <- height_A
-    } else if (textB_is_empty) {
-      # Kun textA - brug height_A uanset stoerrelse
-      params$label_height_npc <- height_A
-    } else if (textA_is_empty) {
-      # Kun textB - brug height_B uanset stoerrelse
-      params$label_height_npc <- height_B
-    } else {
-      # Begge labels - brug max
-      if (height_A$npc > height_B$npc) {
-        params$label_height_npc <- height_A
-      } else {
-        params$label_height_npc <- height_B
-      }
-    }
-
-    if (verbose) {
-      message(
-        "Auto-beregnet label_height_npc: ", round(params$label_height_npc$npc, 4),
-        " (A: ", round(height_A$npc, 4), ", B: ", round(height_B$npc, 4), ")",
-        " [", round(params$label_height_npc$inches, 4), " inches]",
-        if (textA_is_empty) " [A tom]" else "",
-        if (textB_is_empty) " [B tom]" else ""
-      )
-    }
+    params$label_height_npc <- height_result$label_height_npc
   }
 
   # Default parameters
