@@ -1,4 +1,4 @@
-# BFHcharts (development)
+# BFHcharts 0.14.5
 
 ## Internal changes
 
