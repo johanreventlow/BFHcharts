@@ -32,7 +32,6 @@ bfh_qic(
   subtitle = NULL,
   caption = NULL,
   return.data = FALSE,
-  print.summary = FALSE,
   language = "da"
 )
 }
@@ -97,8 +96,6 @@ calculations (optional). Must be positive integers, unique, and within
 \item{caption}{Plot caption text (default: NULL for no caption)}
 
 \item{return.data}{Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result object. If FALSE (default), return bfh_qic_result S3 object. Legacy parameter maintained for backwards compatibility.}
-
-\item{print.summary}{\strong{REMOVED in v0.11.0.} Calling with \code{print.summary = TRUE} raises an error. Use \code{return.data = TRUE} and access \code{result$qic_summary}, or use the default \code{bfh_qic_result} object and access \code{result$summary} directly.}
 
 \item{language}{Character string specifying output language. One of
 \code{"da"} (Danish, default) or \code{"en"} (English). Controls

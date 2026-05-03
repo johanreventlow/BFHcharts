@@ -131,9 +131,11 @@ test_that("bfh_qic() result$qic_data anhoej.signal is never NA", {
 })
 
 # ----------------------------------------------------------------------------
-# Regression: print.summary removal documentation (update-print-summary-removal-docs)
-# Verificerer at man/bfh_qic.Rd ikke beskriver print.summary som
-# deprecated-med-advarsel og at @examples ikke demonstrerer det fjernede argument.
+# Regression: print.summary fully removed (deprecation cycle complete)
+# print.summary was removed from public API in v0.11.0 (signature accepted
+# print.summary = FALSE silently, errored on TRUE). In v0.14.3 the parameter
+# was removed entirely. These tests verify that no trace of the parameter
+# remains in the public Rd.
 # Bruger in-tree man/ saa testen koerer under baade devtools::test() og R CMD check.
 # ----------------------------------------------------------------------------
 
@@ -158,38 +160,22 @@ test_that("bfh_qic() result$qic_data anhoej.signal is never NA", {
   NULL
 }
 
-test_that("bfh_qic Rd does not describe print.summary as 'deprecated, will warn'", {
+test_that("bfh_qic signature does not include print.summary (removed)", {
+  fmls <- formals(bfh_qic)
+  expect_false(
+    "print.summary" %in% names(fmls),
+    info = "bfh_qic() formals still contain print.summary parameter"
+  )
+})
+
+test_that("bfh_qic Rd does not mention print.summary at all", {
   rd_path <- .rd_path_bfh_qic()
   skip_if(is.null(rd_path), "Cannot locate man/bfh_qic.Rd")
 
   rd_content <- readLines(rd_path, warn = FALSE)
   expect_false(
-    any(grepl("deprecated, will warn", rd_content, fixed = TRUE)),
-    info = paste0(
-      "Rd still contains legacy 'deprecated, will warn' ",
-      "phrasing for print.summary"
-    )
-  )
-  expect_false(
-    any(grepl("triggers deprecation warning", rd_content, fixed = TRUE)),
-    info = "Rd still describes print.summary as triggering deprecation warning"
-  )
-})
-
-test_that("bfh_qic Rd examples do not demonstrate print.summary = TRUE", {
-  rd_path <- .rd_path_bfh_qic()
-  skip_if(is.null(rd_path), "Cannot locate man/bfh_qic.Rd")
-
-  rd_lines <- readLines(rd_path, warn = FALSE)
-
-  # Find the \\examples{} block
-  examples_start <- which(grepl("^\\\\examples\\{", rd_lines))
-  if (length(examples_start) == 0) skip("No \\examples{} block found in Rd")
-
-  examples_section <- rd_lines[examples_start:length(rd_lines)]
-  expect_false(
-    any(grepl("print.summary\\s*=\\s*TRUE", examples_section, perl = TRUE)),
-    info = "Rd examples demonstrate print.summary = TRUE (removed in v0.11.0)"
+    any(grepl("print.summary", rd_content, fixed = TRUE)),
+    info = "Rd still references print.summary (parameter was removed entirely)"
   )
 })
 

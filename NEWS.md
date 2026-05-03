@@ -1,3 +1,41 @@
+# BFHcharts 0.14.3
+
+## Breaking changes
+
+* **`print.summary` parameter fully removed from `bfh_qic()`.** The
+  parameter was deprecated in v0.11.0: calling with `print.summary = TRUE`
+  raised an error, while `print.summary = FALSE` was silently accepted.
+  Four versions later the deprecation cycle is complete: the parameter
+  is now removed from the function signature and from all internal
+  helpers (`validate_bfh_qic_inputs()`, `build_bfh_qic_return()`).
+
+  Migration: drop the `print.summary` argument from your call. The
+  default `bfh_qic_result` object exposes the SPC summary directly as
+  `result$summary`, and `return.data = TRUE` returns the raw qic data
+  with summary fields available on `result$qic_summary`.
+
+## Internal changes
+
+* Remove unused `safe_min()` helper from `R/utils_helpers.R` (no callers).
+* Drop stale 33-line USAGE example comment block from
+  `R/utils_npc_mapping.R` (per-function roxygen documents the API).
+* Remove orphan `# message(sprintf(` line at `R/utils_panel_measurement.R:170`
+  (refactor leftover).
+* Replace magic literal `6` with `PDF_LABEL_SIZE` constant at
+  `R/utils_add_right_labels_marquee.R:149` and `R/utils_label_helpers.R:254`
+  (constant was already defined in `R/globals.R:83`).
+* Add `Y_AXIS_UNITS` constant in `R/chart_types.R`; replace 3 hardcoded
+  duplicates of `c("count", "percent", "rate", "time")` with the
+  constant. Adding a new unit now requires a single edit.
+* Drop stale TODO from `tests/testthat/test-bfh_qic_edge_cases.R:193`
+  (explicit empty-data check already lives at
+  `R/utils_bfh_qic_helpers.R:306`).
+* Update `CLAUDE.md` to drop `CHART_TYPES_DA` from the documented
+  internal API list (the constant does not exist in the codebase).
+* Strengthen `tests/testthat/test-public-api-contract.R` with a
+  regression test asserting `print.summary` does not appear in
+  `bfh_qic()` formals or in `man/bfh_qic.Rd`.
+
 # BFHcharts 0.14.2
 
 ## Breaking changes
