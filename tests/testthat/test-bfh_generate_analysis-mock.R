@@ -16,13 +16,11 @@
 
 make_test_result_for_analysis <- function() {
   data <- fixture_deterministic_chart_data()
-  suppressWarnings(
-    bfh_qic(data,
-      x = month,
-      y = infections,
-      chart_type = "i",
-      chart_title = "Test Analysis"
-    )
+  bfh_qic(data,
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = "Test Analysis"
   )
 }
 

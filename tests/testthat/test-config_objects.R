@@ -304,16 +304,14 @@ test_that("Configuration objects work in bfh_qic", {
   )
 
   # Create plot with configured objects
-  plot <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = value,
-      n = total,
-      chart_type = "p",
-      y_axis_unit = "percent",
-      base_size = 16
-    )
+  plot <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    n = total,
+    chart_type = "p",
+    y_axis_unit = "percent",
+    base_size = 16
   )
 
   # Plot should be created successfully

@@ -152,7 +152,9 @@ Every field in \code{result$summary} is derived from \code{result$qic_data} via
    \code{laengste_loeb_max} \tab \code{longest.run.max} \tab \code{max()} global \tab global \tab all \cr
    \code{antal_kryds} \tab \code{n.crossings} \tab \code{max()} per phase \tab per-phase \tab all \cr
    \code{antal_kryds_min} \tab \code{n.crossings.min} \tab \code{max()} global \tab global \tab all \cr
-   \code{loebelaengde_signal} \tab \code{runs.signal} \tab \code{any()} per phase \tab per-phase \tab all \cr
+   \code{anhoej_signal} \tab \code{runs.signal} \tab \code{any()} per phase \tab per-phase \tab all \cr
+   \code{runs_signal} \tab (derived) \tab \code{laengste_loeb > laengste_loeb_max} per phase \tab per-phase \tab all \cr
+   \code{crossings_signal} \tab (derived) \tab \code{antal_kryds < antal_kryds_min} per phase \tab per-phase \tab all \cr
    \code{sigma_signal} \tab \code{sigma.signal} \tab \code{any()} per phase \tab per-phase \tab non-run charts \cr
    \code{centerlinje} \tab \code{cl} \tab first row per phase \tab per-phase \tab all \cr
    \code{nedre_kontrolgraense} \tab \code{lcl} \tab first row per phase \tab per-phase \tab non-run (constant limits) \cr
@@ -583,7 +585,8 @@ result$plot
 print(result$summary)
 # Columns: fase, antal_observationer, anvendelige_observationer,
 #          centerlinje, nedre_kontrolgraense, oevre_kontrolgraense,
-#          laengste_loeb, antal_kryds, loebelaengde_signal, sigma_signal
+#          laengste_loeb, antal_kryds, anhoej_signal,
+#          runs_signal, crossings_signal, sigma_signal
 
 # Example 21: Get both raw qic data and summary via S3 object
 result <- bfh_qic(

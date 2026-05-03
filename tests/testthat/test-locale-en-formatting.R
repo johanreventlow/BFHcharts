@@ -85,9 +85,7 @@ test_that("bfh_qic(language='en') producerer engelsk y-akse-format på count-dat
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = c(1000, 1100, 1200, 1500, 2000, 2300, 2500, 2700, 3000, 3200, 3500, 3800)
   )
-  result <- suppressWarnings(
-    bfh_qic(data, x = month, y = value, chart_type = "i", language = "en")
-  )
+  result <- bfh_qic(data, x = month, y = value, chart_type = "i", language = "en")
   expect_s3_class(result, "bfh_qic_result")
   expect_equal(result$config$language, "en")
 })

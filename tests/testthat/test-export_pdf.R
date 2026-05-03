@@ -17,9 +17,7 @@ test_that("bfh_export_pdf requires Quarto", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
 
@@ -51,9 +49,7 @@ test_that("bfh_export_pdf validates output path", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i")
 
   # Empty string
   expect_error(
@@ -80,9 +76,7 @@ test_that("bfh_export_pdf validates metadata", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i")
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
 
@@ -103,15 +97,13 @@ test_that("bfh_export_pdf creates PDF file", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "i",
-      y_axis_unit = "count",
-      chart_title = "Monthly Infections"
-    )
+  result <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "Monthly Infections"
   )
 
   temp_file <- tempfile(fileext = ".pdf")
@@ -190,15 +182,13 @@ test_that("bfh_export_pdf extracts SPC statistics", {
     infections = rpois(24, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "i",
-      y_axis_unit = "count",
-      chart_title = "Infections with Statistics"
-    )
+  result <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "Infections with Statistics"
   )
 
   temp_file <- tempfile(fileext = ".pdf")
@@ -222,9 +212,7 @@ test_that("bfh_export_pdf handles metadata correctly", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test Chart")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test Chart")
 
   temp_file <- tempfile(fileext = ".pdf")
 
@@ -257,14 +245,12 @@ test_that("bfh_export_pdf strips title from chart image", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = infections,
-      chart_type = "i",
-      chart_title = "Title Should Be In Template Not Image"
-    )
+  result <- bfh_qic(
+    data = data,
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = "Title Should Be In Template Not Image"
   )
 
   temp_file <- tempfile(fileext = ".pdf")
@@ -291,9 +277,7 @@ test_that("bfh_export_pdf creates directory if needed", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
 
   # Create path with non-existent directory
   temp_dir <- tempfile()
@@ -721,9 +705,7 @@ test_that("bfh_export_pdf validates custom template_path", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
 
@@ -750,9 +732,7 @@ test_that("bfh_export_pdf passes date metadata to template", {
     infections = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
 
   temp_file <- tempfile(fileext = ".pdf")
 
@@ -831,9 +811,7 @@ test_that("bfh_export_pdf rejects directory as template_path", {
     value = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
 
   temp_file <- tempfile(fileext = ".pdf")
 
@@ -850,9 +828,7 @@ test_that("bfh_export_pdf rejects non-.typ template file", {
     value = rpois(12, lambda = 15)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
 
   # Create a non-.typ file
   txt_file <- tempfile(fileext = ".txt")
@@ -933,9 +909,7 @@ test_that("bfh_export_pdf handles ggsave failure gracefully", {
     infections = rpois(12, lambda = 15)
   )
 
-  chart <- suppressWarnings(
-    bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
-  )
+  chart <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
 
   # Try to save to invalid path (directory doesn't exist and can't be created)
   # On Unix: /dev/null/file.pdf will fail
@@ -948,8 +922,11 @@ test_that("bfh_export_pdf handles ggsave failure gracefully", {
 })
 
 test_that("quarto_available handles unparseable version correctly", {
-  # Mock function to test version parsing with invalid input
-  check_result <- BFHcharts:::check_quarto_version("invalid-version-string", "1.4.0")
+  # Mock function to test version parsing with invalid input.
+  # numeric_version() warns about unparseable strings -- intentional input here.
+  check_result <- suppressWarnings(
+    BFHcharts:::check_quarto_version("invalid-version-string", "1.4.0")
+  )
 
   # Should return FALSE (fail-safe) for unparseable version
   expect_false(check_result)
@@ -1272,9 +1249,7 @@ test_that("bfh_generate_details generates correct format for p-chart", {
     denominator = c(100, 110, 95, 105, 120, 115, 90, 130, 110, 100, 105, 115)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, numerator, n = denominator, chart_type = "p", y_axis_unit = "percent")
-  )
+  result <- bfh_qic(data, month, numerator, n = denominator, chart_type = "p", y_axis_unit = "percent")
 
   details <- BFHcharts:::bfh_generate_details(result)
 
@@ -1299,9 +1274,7 @@ test_that("bfh_generate_details generates correct format for i-chart", {
     value = c(120, 125, 118, 130, 122, 128, 115, 135, 126, 120, 127, 132)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, week, value, chart_type = "i")
-  )
+  result <- bfh_qic(data, week, value, chart_type = "i")
 
   details <- BFHcharts:::bfh_generate_details(result)
 
@@ -1324,9 +1297,7 @@ test_that("bfh_generate_details handles different intervals", {
     date = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
     value = rpois(12, lambda = 50)
   )
-  monthly_result <- suppressWarnings(
-    bfh_qic(monthly_data, date, value, chart_type = "i")
-  )
+  monthly_result <- bfh_qic(monthly_data, date, value, chart_type = "i")
   monthly_details <- BFHcharts:::bfh_generate_details(monthly_result)
   expect_match(monthly_details, "måned")
 
@@ -1335,9 +1306,7 @@ test_that("bfh_generate_details handles different intervals", {
     date = seq(as.Date("2024-01-01"), by = "day", length.out = 30),
     value = rpois(30, lambda = 50)
   )
-  daily_result <- suppressWarnings(
-    bfh_qic(daily_data, date, value, chart_type = "i")
-  )
+  daily_result <- bfh_qic(daily_data, date, value, chart_type = "i")
   daily_details <- BFHcharts:::bfh_generate_details(daily_result)
   expect_match(daily_details, "dag")
 })
@@ -1406,9 +1375,7 @@ test_that("bfh_export_pdf auto-generates details when not provided", {
     value = rpois(12, lambda = 50)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
 
   temp_file <- tempfile(fileext = ".pdf")
 
@@ -1432,9 +1399,7 @@ test_that("bfh_export_pdf preserves user-provided details", {
     value = rpois(12, lambda = 50)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
 
   temp_file <- tempfile(fileext = ".pdf")
 
@@ -1467,9 +1432,7 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) calculates outliers for i-chart
     )
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i")
 
   stats <- bfh_extract_spc_stats(result)
 
@@ -1488,9 +1451,7 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) handles run chart correctly", {
     value = rpois(12, lambda = 50)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "run")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "run")
 
   stats <- bfh_extract_spc_stats(result)
 
@@ -1513,9 +1474,7 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) includes runs and crossings", {
     value = rpois(12, lambda = 50)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i")
 
   stats <- bfh_extract_spc_stats(result)
 
@@ -1619,9 +1578,7 @@ test_that("strip_label_layers removes GeomMarquee layers", {
     value = rpois(12, lambda = 50)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i")
 
   # Count layers before stripping
   layers_before <- length(result$plot$layers)
@@ -1646,9 +1603,7 @@ test_that("strip_label_layers preserves non-label layers", {
     value = rpois(12, lambda = 50)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i")
 
   # Strip label layers
   plot_stripped <- BFHcharts:::strip_label_layers(result$plot)
@@ -1690,9 +1645,7 @@ test_that("recalculate_labels_for_export produces valid ggplot", {
     value = rpois(12, lambda = 50)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i")
 
   # Recalculate labels for PDF dimensions
   plot_recalc <- BFHcharts:::recalculate_labels_for_export(
@@ -1800,9 +1753,7 @@ test_that("bfh_export_pdf validates dpi parameter", {
     value = rnorm(12, mean = 50, sd = 5)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
 
   expect_error(
     bfh_export_pdf(result, tempfile(fileext = ".pdf"), dpi = "300"),
@@ -1914,9 +1865,7 @@ test_that("bfh_export_pdf accepts custom analysis length parameters", {
     value = rnorm(12, mean = 50, sd = 5)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
-  )
+  result <- bfh_qic(data, month, value, chart_type = "i", chart_title = "Test")
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
 

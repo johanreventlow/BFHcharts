@@ -132,7 +132,7 @@ test_that("plot_margin fungerer med alle chart-typer (deterministisk data)", {
 
   for (chart_type in chart_types) {
     if (chart_type %in% c("p", "u")) {
-      plot <- suppressWarnings(bfh_qic(
+      plot <- bfh_qic(
         data = df,
         x = x,
         y = y,
@@ -140,16 +140,16 @@ test_that("plot_margin fungerer med alle chart-typer (deterministisk data)", {
         chart_type = chart_type,
         y_axis_unit = "count",
         plot_margin = c(5, 5, 5, 5)
-      ))
+      )
     } else {
-      plot <- suppressWarnings(bfh_qic(
+      plot <- bfh_qic(
         data = df,
         x = x,
         y = y,
         chart_type = chart_type,
         y_axis_unit = "count",
         plot_margin = c(5, 5, 5, 5)
-      ))
+      )
     }
 
     expect_valid_bfh_qic_result(plot)

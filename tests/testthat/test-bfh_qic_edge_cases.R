@@ -7,9 +7,7 @@ test_that("bfh_qic håndterer minimum data (3 punkter)", {
     value = c(10, 15, 12)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = date, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = date, y = value, chart_type = "run")
 
   expect_s3_class(result, "bfh_qic_result")
   expect_equal(nrow(result$qic_data), 3)
@@ -22,9 +20,7 @@ test_that("bfh_qic håndterer alle identiske værdier (zero variance)", {
   )
 
   # Skal ikke crashe — qicharts2 håndterer zero variance
-  result <- suppressWarnings(
-    bfh_qic(data, x = date, y = value, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 
   expect_s3_class(result, "bfh_qic_result")
   # Centerlinje skal være 50
@@ -37,9 +33,7 @@ test_that("bfh_qic håndterer data med alle nul-værdier", {
     value = rep(0, 12)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = date, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = date, y = value, chart_type = "run")
 
   expect_s3_class(result, "bfh_qic_result")
 })
@@ -52,9 +46,7 @@ test_that("bfh_qic håndterer negative værdier", {
     value = rnorm(12, mean = -10, sd = 5)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = date, y = value, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 
   expect_s3_class(result, "bfh_qic_result")
   # Y-værdier skal afspejle de negative inputdata
@@ -69,9 +61,7 @@ test_that("bfh_qic håndterer stor dataset (200 punkter)", {
     value = rpois(200, lambda = 50)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = date, y = value, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 
   expect_s3_class(result, "bfh_qic_result")
   expect_equal(nrow(result$qic_data), 200)
@@ -151,11 +141,9 @@ test_that("bfh_qic med freeze parameter fryser baseline", {
     value = rpois(24, lambda = 50)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data,
-      x = date, y = value, chart_type = "i",
-      freeze = 12
-    )
+  result <- bfh_qic(data,
+    x = date, y = value, chart_type = "i",
+    freeze = 12
   )
 
   expect_s3_class(result, "bfh_qic_result")
@@ -206,9 +194,7 @@ test_that("bfh_qic med enkelt-række data returnerer objekt (ingen crash)", {
     value = 42
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = date, y = value, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = date, y = value, chart_type = "run")
 
   expect_s3_class(result, "bfh_qic_result")
   expect_equal(nrow(result$qic_data), 1)
@@ -373,9 +359,7 @@ test_that("bfh_qic afviser unsorted part med 'increasing'-besked", {
 test_that("bfh_qic afviser non-integer freeze med 'integer'-besked", {
   data <- data.frame(month = 1:24, value = rnorm(24))
   expect_error(
-    suppressWarnings(
-      bfh_qic(data, x = month, y = value, freeze = 5.5, chart_type = "i")
-    ),
+    bfh_qic(data, x = month, y = value, freeze = 5.5, chart_type = "i"),
     "integer"
   )
 })
@@ -421,9 +405,7 @@ test_that("anhoej.signal kan være NA for en kort serie (n=6)", {
     value = c(10, 15, 12, 14, 11, 13)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = date, y = value, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 
   expect_s3_class(result, "bfh_qic_result")
   # Kort serie → qicharts2 returnerer NA for Anhøj-signaler

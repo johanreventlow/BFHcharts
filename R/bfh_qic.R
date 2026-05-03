@@ -95,7 +95,9 @@ NULL
 #' | `laengste_loeb_max` | `longest.run.max` | `max()` global | global | all |
 #' | `antal_kryds` | `n.crossings` | `max()` per phase | per-phase | all |
 #' | `antal_kryds_min` | `n.crossings.min` | `max()` global | global | all |
-#' | `loebelaengde_signal` | `runs.signal` | `any()` per phase | per-phase | all |
+#' | `anhoej_signal` | `runs.signal` | `any()` per phase | per-phase | all |
+#' | `runs_signal` | (derived) | `laengste_loeb > laengste_loeb_max` per phase | per-phase | all |
+#' | `crossings_signal` | (derived) | `antal_kryds < antal_kryds_min` per phase | per-phase | all |
 #' | `sigma_signal` | `sigma.signal` | `any()` per phase | per-phase | non-run charts |
 #' | `centerlinje` | `cl` | first row per phase | per-phase | all |
 #' | `nedre_kontrolgraense` | `lcl` | first row per phase | per-phase | non-run (constant limits) |
@@ -506,7 +508,8 @@ NULL
 #' print(result$summary)
 #' # Columns: fase, antal_observationer, anvendelige_observationer,
 #' #          centerlinje, nedre_kontrolgraense, oevre_kontrolgraense,
-#' #          laengste_loeb, antal_kryds, loebelaengde_signal, sigma_signal
+#' #          laengste_loeb, antal_kryds, anhoej_signal,
+#' #          runs_signal, crossings_signal, sigma_signal
 #'
 #' # Example 21: Get both raw qic data and summary via S3 object
 #' result <- bfh_qic(

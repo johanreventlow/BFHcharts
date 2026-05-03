@@ -1,7 +1,7 @@
 test_that("has_arrow_symbol detects Unicode arrow symbols", {
   # Unicode arrows should be detected (up and down)
-  expect_true(has_arrow_symbol("\u2191"))  # ↑
-  expect_true(has_arrow_symbol("\u2193"))  # ↓
+  expect_true(has_arrow_symbol("\u2191")) # ↑
+  expect_true(has_arrow_symbol("\u2193")) # ↓
 
   # Arrows with surrounding text
   expect_true(has_arrow_symbol("Mål: \u2193"))
@@ -51,42 +51,36 @@ test_that("Arrow symbol detection suppresses target line in plots", {
 
   # Test with bare < symbol (should suppress target line)
   # Must provide target_value for qicharts2 to create target column
-  plot_less <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = value,
-      chart_type = "run",
-      y_axis_unit = "count",
-      target_text = "<",
-      target_value = 15  # Provide target value
-    )
+  plot_less <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count",
+    target_text = "<",
+    target_value = 15 # Provide target value
   )
 
   # Test with bare > symbol (should suppress target line)
-  plot_greater <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = value,
-      chart_type = "run",
-      y_axis_unit = "count",
-      target_text = ">",
-      target_value = 15  # Provide target value
-    )
+  plot_greater <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count",
+    target_text = ">",
+    target_value = 15 # Provide target value
   )
 
   # Test with Unicode arrow (should suppress target line)
-  plot_arrow <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = value,
-      chart_type = "run",
-      y_axis_unit = "count",
-      target_text = "\u2193",
-      target_value = 15  # Provide target value
-    )
+  plot_arrow <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count",
+    target_text = "\u2193",
+    target_value = 15 # Provide target value
   )
 
   # All should be valid bfh_qic_result objects
@@ -133,16 +127,14 @@ test_that("Comparison operators with numbers do NOT suppress target line", {
   )
 
   # Test with <18 (should NOT suppress target line)
-  plot_with_number <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = value,
-      chart_type = "run",
-      y_axis_unit = "count",
-      target_text = "<18",
-      target_value = 18
-    )
+  plot_with_number <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count",
+    target_text = "<18",
+    target_value = 18
   )
 
   expect_s3_class(plot_with_number, "bfh_qic_result")

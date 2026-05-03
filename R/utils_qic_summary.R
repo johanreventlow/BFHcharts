@@ -28,7 +28,13 @@ NULL
 #'   - `anvendelige_observationer` -- usable observations per phase
 #'   - `laengste_loeb`, `laengste_loeb_max` -- run-length statistics
 #'   - `antal_kryds`, `antal_kryds_min` -- crossing-count statistics
-#'   - `loebelaengde_signal`, `sigma_signal` -- Anhoej + sigma signals (logical)
+#'   - `anhoej_signal` -- combined Anhoej signal (runs OR crossings violation),
+#'     sourced directly from `qicharts2::runs.signal` (logical)
+#'   - `runs_signal` -- runs-rule outcome alone, derived per phase as
+#'     `laengste_loeb > laengste_loeb_max` (logical, NA when inputs are NA)
+#'   - `crossings_signal` -- crossings-rule outcome alone, derived per phase as
+#'     `antal_kryds < antal_kryds_min` (logical, NA when inputs are NA)
+#'   - `sigma_signal` -- sigma-rule signal aggregated per phase (logical)
 #'   - `centerlinje` -- center line value
 #'
 #'   **Control limit columns (if lcl/ucl present in qic_data):**
@@ -56,13 +62,19 @@ NULL
 #' - n.useful -> anvendelige_observationer
 #' - cl -> centerlinje
 #' - lcl / ucl -> se @return for kontrolgraense-kolonner
-#' - runs.signal -> loebelaengde_signal
+#' - runs.signal -> anhoej_signal (combined runs-or-crossings)
+#'   - runs_signal (derived: laengste_loeb > laengste_loeb_max)
+#'   - crossings_signal (derived: antal_kryds < antal_kryds_min)
 #' - sigma.signal -> sigma_signal
 #'
-#' **Rounding Rules:**
-#' - Control limits: 2 decimals for percent/rate, 1 decimal for count/time
-#' - Counts: integers
-#' - Signals: converted to logical (TRUE/FALSE)
+#' **Numeric precision:**
+#' - Control limits and centerline are returned at raw `qicharts2::qic()`
+#'   precision (no rounding). Display-layer consumers SHALL apply rounding when
+#'   formatting strings (e.g. `format_target_value()`,
+#'   `format_centerline_for_details()`); logic-layer consumers benefit from raw
+#'   values for target-comparison precision (cf. issue #290).
+#' - Counts: integers.
+#' - Signals: converted to logical (TRUE/FALSE).
 #'
 #' **Control limits constancy:**
 #' Constancy is checked per phase using `round(x, decimal_places + 2)` to
@@ -149,8 +161,16 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   formatted$antal_kryds <- as.integer(raw_summary$n.crossings)
   formatted$antal_kryds_min <- as.integer(raw_summary$n.crossings.min)
 
-  # Add signals as logical values
-  formatted[["l\u00f8bel\u00e6ngde_signal"]] <- as.logical(raw_summary$runs.signal)
+  # Add signals as logical values.
+  # anhoej_signal is qicharts2's combined signal (runs OR crossings violation):
+  # see qicharts2:::runs.analysis() where runs.signal = crsignal(...).
+  # runs_signal and crossings_signal decompose the combined flag for diagnostic
+  # clarity; both are pure derivations from already-formatted columns and inherit
+  # NA from their inputs (degenerate phases where qicharts2 cannot compute).
+  formatted$anhoej_signal <- as.logical(raw_summary$runs.signal)
+  formatted$runs_signal <- formatted[["l\u00e6ngste_l\u00f8b"]] >
+    formatted[["l\u00e6ngste_l\u00f8b_max"]]
+  formatted$crossings_signal <- formatted$antal_kryds < formatted$antal_kryds_min
   formatted$sigma_signal <- as.logical(raw_summary$sigma.signal)
 
   # Add aggregated outlier counts per part when sigma.signal is available.
@@ -174,19 +194,26 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     }
   }
 
-  # Add control limits with appropriate rounding (if they exist)
+  # Add control limits at raw qicharts2 precision (no rounding).
+  # Display-layer consumers (format_target_value, format_centerline_for_details)
+  # apply their own rounding when emitting strings. Logic-layer consumers
+  # (e.g. spc_analysis::.evaluate_target_arm) need raw values to avoid
+  # round-off bugs near target-comparison boundaries (cf. issue #290).
   if ("cl" %in% names(raw_summary)) {
-    formatted$centerlinje <- round(raw_summary$cl, decimal_places)
+    formatted$centerlinje <- raw_summary$cl
   }
 
   if ("lcl" %in% names(raw_summary) && "ucl" %in% names(raw_summary)) {
-    # +2 afrundingspr\u00e6cision matcher eksisterende kode \u2014 d\u00e6mper float-drift fra qicharts2
+    # decimal_places + 2 afrundingsprecision: tolerance ved konstans-detektion
+    # for at absorbere floating-point drift fra qicharts2 (per-row "konstante"
+    # graenser kan afvige i 4. decimal). Detektion ROUNDS, men den lagrede
+    # vaerdi forbliver raa.
     round_prec <- decimal_places + 2
 
     lcl_split <- split(qic_data$lcl, qic_data$part)
     ucl_split <- split(qic_data$ucl, qic_data$part)
 
-    # Er gr\u00e6nser konstante inden for den p\u00e5g\u00e6ldende fase?
+    # Er graenser konstante inden for den paagaeldende fase?
     lcl_const_per_part <- vapply(part_key, function(p) {
       length(unique(round(lcl_split[[p]], round_prec))) <= 1
     }, logical(1))
@@ -200,34 +227,34 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     # Global beslutning: er ALLE faser konstante?
     alle_konstante <- all(part_konstant)
 
-    # Tilf\u00f8j per-row flag
+    # Tilfoej per-row flag
     formatted[["kontrolgr\u00e6nser_konstante"]] <- part_konstant
 
     if (alle_konstante) {
-      # Backward-compat: bevar skalare kolonner (\u00e9n v\u00e6rdi per fase)
-      formatted[["nedre_kontrolgr\u00e6nse"]] <- round(raw_summary$lcl, decimal_places)
-      formatted[["\u00f8vre_kontrolgr\u00e6nse"]] <- round(raw_summary$ucl, decimal_places)
+      # Backward-compat: bevar skalare kolonner (\u00e9n vaerdi per fase) i raa precision
+      formatted[["nedre_kontrolgr\u00e6nse"]] <- raw_summary$lcl
+      formatted[["\u00f8vre_kontrolgr\u00e6nse"]] <- raw_summary$ucl
     } else {
-      # Variable gr\u00e6nser: ekspon\u00e9r min/max per fase
+      # Variable graenser: eksponer min/max per fase i raa precision
       formatted[["nedre_kontrolgr\u00e6nse_min"]] <- vapply(part_key, function(p) {
-        round(min(lcl_split[[p]], na.rm = TRUE), decimal_places)
+        min(lcl_split[[p]], na.rm = TRUE)
       }, numeric(1))
       formatted[["nedre_kontrolgr\u00e6nse_max"]] <- vapply(part_key, function(p) {
-        round(max(lcl_split[[p]], na.rm = TRUE), decimal_places)
+        max(lcl_split[[p]], na.rm = TRUE)
       }, numeric(1))
       formatted[["\u00f8vre_kontrolgr\u00e6nse_min"]] <- vapply(part_key, function(p) {
-        round(min(ucl_split[[p]], na.rm = TRUE), decimal_places)
+        min(ucl_split[[p]], na.rm = TRUE)
       }, numeric(1))
       formatted[["\u00f8vre_kontrolgr\u00e6nse_max"]] <- vapply(part_key, function(p) {
-        round(max(ucl_split[[p]], na.rm = TRUE), decimal_places)
+        max(ucl_split[[p]], na.rm = TRUE)
       }, numeric(1))
     }
   }
 
-  # Optionally add 95% limits if present
+  # Optionally add 95% limits if present (raa precision)
   if ("lcl.95" %in% names(raw_summary) && "ucl.95" %in% names(raw_summary)) {
-    formatted[["nedre_kontrolgr\u00e6nse_95"]] <- round(raw_summary$lcl.95, decimal_places)
-    formatted[["\u00f8vre_kontrolgr\u00e6nse_95"]] <- round(raw_summary$ucl.95, decimal_places)
+    formatted[["nedre_kontrolgr\u00e6nse_95"]] <- raw_summary$lcl.95
+    formatted[["\u00f8vre_kontrolgr\u00e6nse_95"]] <- raw_summary$ucl.95
   }
 
   # Add facet columns if present

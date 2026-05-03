@@ -27,15 +27,14 @@ test_that("bfh_qic() håndterer NA i y (drop-rows, proceed med warning)", {
   )
 
   # qicharts2 dropper typisk NA-rækker og warner
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "i")
 
   expect_valid_bfh_qic_result(result)
   # qic_data indeholder alle x-værdier (NA bliver til NA i y)
   # eller dropper NA — afhængigt af qicharts2-version
   expect_true(nrow(result$qic_data) >= 10,
-              info = "qic_data bør beholde mindst de 10 ikke-NA værdier")
+    info = "qic_data bør beholde mindst de 10 ikke-NA værdier"
+  )
 })
 
 test_that("bfh_qic() fejler gracefully ved all-NA y", {
@@ -44,7 +43,8 @@ test_that("bfh_qic() fejler gracefully ved all-NA y", {
     y = rep(NA_real_, 10)
   )
 
-  # Forventes at fejle eller returnere tomt resultat — ikke crashe ukontrolleret
+  # Forventes at fejle eller returnere tomt resultat — ikke crashe ukontrolleret.
+  # all-NA y udloeser ggplot2 missing-value warnings undervejs; ikke testens fokus.
   result <- tryCatch(
     suppressWarnings(bfh_qic(data, x = x, y = y, chart_type = "i")),
     error = function(e) e
@@ -54,12 +54,14 @@ test_that("bfh_qic() fejler gracefully ved all-NA y", {
   if (inherits(result, "error")) {
     # Fejlbesked skal være informativ
     expect_true(nchar(conditionMessage(result)) > 0,
-                info = "Fejlbesked ved all-NA skal ikke være tom")
+      info = "Fejlbesked ved all-NA skal ikke være tom"
+    )
   } else {
     # Hvis det lykkes, må centerlinje være NA (ikke korrupt 0)
     cl <- result$qic_data$cl[1]
     expect_true(is.na(cl) || !is.finite(cl),
-                info = "All-NA input bør give NA centerlinje")
+      info = "All-NA input bør give NA centerlinje"
+    )
   }
 })
 
@@ -75,9 +77,7 @@ test_that("bfh_qic() håndterer NA i n-kolonne (p-chart)", {
   )
 
   result <- tryCatch(
-    suppressWarnings(
-      bfh_qic(data, x = x, y = events, n = total, chart_type = "p")
-    ),
+    bfh_qic(data, x = x, y = events, n = total, chart_type = "p"),
     error = function(e) e
   )
 
@@ -96,12 +96,13 @@ test_that("bfh_qic() fejler ved tom data.frame", {
   empty <- data.frame(x = integer(0), y = numeric(0))
 
   result <- tryCatch(
-    suppressWarnings(bfh_qic(empty, x = x, y = y, chart_type = "i")),
+    bfh_qic(empty, x = x, y = y, chart_type = "i"),
     error = function(e) e
   )
 
   expect_true(inherits(result, "error"),
-              info = "Tom data.frame skal give fejl — ikke tavst tomt plot")
+    info = "Tom data.frame skal give fejl — ikke tavst tomt plot"
+  )
 })
 
 # ============================================================================
@@ -112,7 +113,7 @@ test_that("bfh_qic() håndterer 1-række data (grænsetilfælde)", {
   data <- data.frame(x = 1L, y = 42)
 
   result <- tryCatch(
-    suppressWarnings(bfh_qic(data, x = x, y = y, chart_type = "i")),
+    bfh_qic(data, x = x, y = y, chart_type = "i"),
     error = function(e) e
   )
 
@@ -123,7 +124,8 @@ test_that("bfh_qic() håndterer 1-række data (grænsetilfælde)", {
     # Hvis det lykkes: centerlinje skal være = y (eller NA)
     cl <- result$qic_data$cl[1]
     expect_true(is.na(cl) || cl == 42,
-                info = "1-række CL skal være 42 eller NA")
+      info = "1-række CL skal være 42 eller NA"
+    )
   }
 })
 
@@ -133,15 +135,15 @@ test_that("bfh_qic() håndterer 3-rækker data (absolut minimum for run-chart)",
     y = c(10, 15, 12)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "run")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "run")
 
   expect_valid_bfh_qic_result(result)
   expect_equal(nrow(result$qic_data), 3)
   # Run-chart CL = median = 12
-  expect_equal(result$qic_data$cl[1], 12, tolerance = 1e-6,
-               label = "run-chart CL = median af 3 punkter")
+  expect_equal(result$qic_data$cl[1], 12,
+    tolerance = 1e-6,
+    label = "run-chart CL = median af 3 punkter"
+  )
 })
 
 # ============================================================================
@@ -152,21 +154,22 @@ test_that("bfh_qic() med xbar-chart accepterer duplikerede x (subgrupper)", {
   # For xbar er duplikerede x FORVENTET (flere målinger pr. tidspunkt)
   data <- data.frame(
     x = rep(1:5, each = 4),
-    y = c(10, 11, 9, 10,    # subgruppe 1 — mean = 10
-          12, 13, 11, 12,   # subgruppe 2 — mean = 12
-          10, 9, 11, 10,    # subgruppe 3 — mean = 10
-          13, 14, 12, 13,   # subgruppe 4 — mean = 13
-          11, 10, 12, 11)   # subgruppe 5 — mean = 11
+    y = c(
+      10, 11, 9, 10, # subgruppe 1 — mean = 10
+      12, 13, 11, 12, # subgruppe 2 — mean = 12
+      10, 9, 11, 10, # subgruppe 3 — mean = 10
+      13, 14, 12, 13, # subgruppe 4 — mean = 13
+      11, 10, 12, 11
+    ) # subgruppe 5 — mean = 11
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "xbar")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "xbar")
 
   expect_valid_bfh_qic_result(result)
   # Xbar aggregerer: 5 subgrupper → 5 punkter i qic_data
   expect_equal(nrow(result$qic_data), 5,
-               label = "Xbar aggregerer duplikerede x til ét punkt pr. subgruppe")
+    label = "Xbar aggregerer duplikerede x til ét punkt pr. subgruppe"
+  )
 })
 
 # ============================================================================
@@ -180,12 +183,13 @@ test_that("bfh_qic() fejler på character y-kolonne", {
   )
 
   result <- tryCatch(
-    suppressWarnings(bfh_qic(data, x = x, y = y, chart_type = "i")),
+    bfh_qic(data, x = x, y = y, chart_type = "i"),
     error = function(e) e
   )
 
   expect_true(inherits(result, "error"),
-              info = "Character y skal give fejl — ikke tavst korrupt output")
+    info = "Character y skal give fejl — ikke tavst korrupt output"
+  )
 })
 
 # ============================================================================
@@ -197,14 +201,12 @@ test_that("bfh_qic() håndterer kolonne-navnekollision med qic-output", {
   data <- data.frame(
     date = 1:10,
     count = c(5, 6, 4, 7, 5, 6, 4, 7, 5, 6),
-    cl = c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)  # Bruger-kolonne
+    cl = c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA) # Bruger-kolonne
   )
 
   # Forventer at bfh_qic enten håndterer graciously eller fejler tydeligt
   result <- tryCatch(
-    suppressWarnings(
-      bfh_qic(data, x = date, y = count, chart_type = "i")
-    ),
+    bfh_qic(data, x = date, y = count, chart_type = "i"),
     error = function(e) e
   )
 
@@ -212,7 +214,8 @@ test_that("bfh_qic() håndterer kolonne-navnekollision med qic-output", {
     expect_valid_bfh_qic_result(result)
     # qic_data$cl skal være bfh_qic's beregnede CL, ikke brugerens NA-kolonne
     expect_false(all(is.na(result$qic_data$cl)),
-                 info = "qic_data$cl skal være beregnet CL, ikke brugerens NA-kolonne")
+      info = "qic_data$cl skal være beregnet CL, ikke brugerens NA-kolonne"
+    )
   }
   # Hvis error: stadig acceptabelt hvis fejlbesked er informativ
 })
@@ -228,7 +231,7 @@ test_that("bfh_qic() håndterer NA i x-kolonne", {
   )
 
   result <- tryCatch(
-    suppressWarnings(bfh_qic(data, x = x, y = y, chart_type = "i")),
+    bfh_qic(data, x = x, y = y, chart_type = "i"),
     error = function(e) e
   )
 
@@ -236,7 +239,8 @@ test_that("bfh_qic() håndterer NA i x-kolonne", {
   if (!inherits(result, "error")) {
     # Hvis det virker: må ikke have NA i x-kolonnen i output
     expect_true(all(!is.na(result$qic_data$x)) || nrow(result$qic_data) < 10,
-                info = "NA i x bør enten droppes eller give fejl")
+      info = "NA i x bør enten droppes eller give fejl"
+    )
   }
 })
 
@@ -251,7 +255,7 @@ test_that("bfh_qic() med 5 punkter hvoraf 2 er NA giver meningsfuldt output", {
   )
 
   result <- tryCatch(
-    suppressWarnings(bfh_qic(data, x = x, y = y, chart_type = "run")),
+    bfh_qic(data, x = x, y = y, chart_type = "run"),
     error = function(e) e
   )
 
@@ -261,7 +265,8 @@ test_that("bfh_qic() med 5 punkter hvoraf 2 er NA giver meningsfuldt output", {
     # Median af {10, 12, 14} = 12 (eller NA hvis qicharts2 dropper)
     cl <- result$qic_data$cl[1]
     expect_true(is.na(cl) || cl == 12 || cl == 10 || cl == 14,
-                info = "CL skal være median af gyldige værdier eller NA")
+      info = "CL skal være median af gyldige værdier eller NA"
+    )
   }
 })
 
@@ -275,14 +280,14 @@ test_that("bfh_qic() håndterer zero-variance data (alle ens y)", {
     y = rep(50, 10)
   )
 
-  result <- suppressWarnings(
-    bfh_qic(data, x = x, y = y, chart_type = "i")
-  )
+  result <- bfh_qic(data, x = x, y = y, chart_type = "i")
 
   expect_valid_bfh_qic_result(result)
   # CL skal være 50 (den konstante værdi)
-  expect_equal(result$qic_data$cl[1], 50, tolerance = 1e-6,
-               label = "Zero-variance CL = konstante værdi")
+  expect_equal(result$qic_data$cl[1], 50,
+    tolerance = 1e-6,
+    label = "Zero-variance CL = konstante værdi"
+  )
 
   # UCL og LCL skal være 50 (MR = 0, så 2.66*0 = 0)
   # Eller muligvis NA hvis qicharts2 undgår zero-MR tilfældet

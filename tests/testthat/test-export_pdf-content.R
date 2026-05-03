@@ -27,15 +27,13 @@ test_that("PDF indeholder chart_title fra bfh_qic config", {
 
   title <- "Månedlige Hospital-Erhvervede Infektioner"
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = fixture_deterministic_chart_data(),
-      x = month,
-      y = infections,
-      chart_type = "i",
-      y_axis_unit = "count",
-      chart_title = title
-    )
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = title
   )
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
@@ -56,14 +54,12 @@ test_that("PDF indeholder hospital-metadata fra bruger", {
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = fixture_deterministic_chart_data(),
-      x = month,
-      y = infections,
-      chart_type = "i",
-      chart_title = "Test"
-    )
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = "Test"
   )
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
@@ -82,14 +78,12 @@ test_that("PDF indeholder department-metadata", {
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = fixture_deterministic_chart_data(),
-      x = month,
-      y = infections,
-      chart_type = "i",
-      chart_title = "Test"
-    )
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = "Test"
   )
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
@@ -110,14 +104,12 @@ test_that("PDF indeholder author-metadata", {
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = fixture_deterministic_chart_data(),
-      x = month,
-      y = infections,
-      chart_type = "i",
-      chart_title = "Test"
-    )
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = "Test"
   )
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
@@ -136,14 +128,12 @@ test_that("PDF indeholder data_definition-metadata", {
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = fixture_deterministic_chart_data(),
-      x = month,
-      y = infections,
-      chart_type = "i",
-      chart_title = "Test"
-    )
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = "Test"
   )
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
@@ -169,15 +159,13 @@ test_that("PDF indeholder SPC centerlinje-værdi fra summary", {
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = fixture_deterministic_chart_data(),
-      x = month,
-      y = infections,
-      chart_type = "i",
-      y_axis_unit = "count",
-      chart_title = "Test Centerlinje"
-    )
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "Test Centerlinje"
   )
 
   # Verificér at summary har en centerlinje (sanity check)
@@ -209,15 +197,13 @@ test_that("PDF indeholder Anhoej-statistik (runs og kryds)", {
     )
   )
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = data,
-      x = month,
-      y = value,
-      chart_type = "i",
-      y_axis_unit = "count",
-      chart_title = "Anhoej Test"
-    )
+  result <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "i",
+    y_axis_unit = "count",
+    chart_title = "Anhoej Test"
   )
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
@@ -251,14 +237,12 @@ test_that("PDF bevarer danske tegn (æ, ø, å) i titel", {
 
   title <- "Tælling af hændelser pr. måned — æøå"
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = fixture_deterministic_chart_data(),
-      x = month,
-      y = infections,
-      chart_type = "i",
-      chart_title = title
-    )
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = title
   )
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
@@ -277,14 +261,12 @@ test_that("PDF bevarer danske tegn i metadata-strings", {
   skip_if_not_installed("pdftools")
   skip_on_cran()
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = fixture_deterministic_chart_data(),
-      x = month,
-      y = infections,
-      chart_type = "i",
-      chart_title = "Test"
-    )
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = "Test"
   )
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
@@ -322,14 +304,12 @@ test_that("PDF viser IKKE metadata-felter der ikke er angivet", {
 
   unique_marker <- "ZzUniqueMarker9876XyZ"
 
-  result <- suppressWarnings(
-    bfh_qic(
-      data = fixture_deterministic_chart_data(),
-      x = month,
-      y = infections,
-      chart_type = "i",
-      chart_title = "Test Negative"
-    )
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = "Test Negative"
   )
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")

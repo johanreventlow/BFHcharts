@@ -1,3 +1,54 @@
+# BFHcharts 0.15.0
+
+## Breaking changes
+
+* **`summary$loebelaengde_signal` erstattet af tre nye signal-kolonner.**
+  qicharts2's `runs.signal` er det KOMBINEREDE Anhøj-signal (runs ELLER
+  crossings violation, beregnet i `crsignal()`). Det legacy navn
+  `loebelaengde_signal` blev læst som "kun runs", hvilket fik klinikere til
+  at fejlattribuere crossings-only-mønstre som niveauskift. Migration:
+
+  ```r
+  # FOR (BFHcharts <= 0.14.x)
+  if (result$summary$loebelaengde_signal[phase]) { ... }
+
+  # EFTER (BFHcharts >= 0.15.0)
+  if (isTRUE(result$summary$anhoej_signal[phase])) { ... }     # samme kombinerede flag
+  if (isTRUE(result$summary$runs_signal[phase])) { ... }       # kun runs-violation
+  if (isTRUE(result$summary$crossings_signal[phase])) { ... }  # kun crossings-violation
+  ```
+
+  De nye `runs_signal` og `crossings_signal` er pure derivationer fra
+  eksisterende `længste_løb`/`længste_løb_max` og `antal_kryds`/`antal_kryds_min`
+  per fase. NA inheriterer fra inputs (degenererede faser hvor qicharts2
+  returnerer NA). biSPCharts #468 sporer downstream-migration.
+
+* **`summary` numeriske kolonner returnerer raw qicharts2-precision** (ej
+  længere afrundet til 1-2 decimaler). Påvirker `centerlinje`,
+  `nedre_kontrolgrænse`, `øvre_kontrolgrænse`, `nedre_kontrolgrænse_min/max`,
+  `øvre_kontrolgrænse_min/max`, `nedre_kontrolgrænse_95`,
+  `øvre_kontrolgrænse_95`. Display-formattere (`format_target_value()`,
+  `format_centerline_for_details()`) afrunder selv ved string-emission, så
+  PDF-output forbliver byte-identisk. Logic-konsumere (target-sammenligning,
+  statistisk videreanalyse) får nu korrekte resultater nær afrundings-
+  grænser. Migration: konsumenter der bruger `summary$centerlinje` direkte
+  i UI-visning skal anvende egen `round()` ved display. biSPCharts #470 har
+  allerede migreret væk fra `summary$centerlinje` til `qic_data$cl` for
+  logisk vurdering.
+
+## Bug fixes
+
+* Crossings-only data trigger nu `summary$crossings_signal = TRUE` eksplicit
+  (ej længere skjult under det misvisende `loebelaengde_signal`-navn).
+  Regression-test tilføjet for 4 alternerende fase-blokke a 5 punkter.
+
+## Internal changes
+
+* ADR-002 addendum dokumenterer signal-rename + raw-precision-skift.
+* Konstans-detektion (`kontrolgrænser_konstante`) bevarer `decimal_places + 2`-
+  tolerance for at absorbere floating-point drift fra qicharts2 -- detektions-
+  logikken roundes, men de lagrede værdier forbliver raw.
+
 # BFHcharts 0.14.5
 
 ## Internal changes

@@ -35,16 +35,16 @@
 
 ## 6. Final orchestrator simplification
 
-- [ ] 6.1 Verify `build_fallback_analysis()` is ≤60 lines (count via `awk` over the function body)
-- [ ] 6.2 Remove dead inline comments referring to extracted blocks
-- [ ] 6.3 Run `lintr::lint("R/spc_analysis.R")`. Zero new lint issues vs baseline.
-- [ ] 6.4 Run `styler::style_file("R/spc_analysis.R")` and inspect diff
-- [ ] 6.5 Update NEWS.md under next version's `## Internal changes`: "Decompose `build_fallback_analysis()` into orchestrator + 4 named pure helpers (`.detect_signal_flags()`, `.allocate_text_budget()`, `.select_stability_key()`, `.select_action_key()`). Adds table-driven dispatch tests. Pure refactor: fallback narrative output unchanged."
+- [x] 6.1 Verify `build_fallback_analysis()` is ≤60 lines (count via `awk` over the function body)
+- [x] 6.2 Remove dead inline comments referring to extracted blocks
+- [x] 6.3 Run `lintr::lint("R/spc_analysis.R")`. Zero new lint issues vs baseline.
+- [x] 6.4 Run `styler::style_file("R/spc_analysis.R")` and inspect diff
+- [x] 6.5 Update NEWS.md under next version's `## Internal changes`: "Decompose `build_fallback_analysis()` into orchestrator + 4 named pure helpers (`.detect_signal_flags()`, `.allocate_text_budget()`, `.select_stability_key()`, `.select_action_key()`). Adds table-driven dispatch tests. Pure refactor: fallback narrative output unchanged."
 
 ## 7. Verification + PR
 
-- [ ] 7.1 Run full test suite with all gating env vars: `Rscript -e 'Sys.setenv(NOT_CRAN="true", BFHCHARTS_TEST_FULL="true"); devtools::test()'`. Zero failures.
-- [ ] 7.2 Run pre-push hook end-to-end via `git push -u origin refactor/decompose-fallback-analysis` (no `SKIP_PREPUSH` allowed)
-- [ ] 7.3 Open PR `refactor/decompose-fallback-analysis` → develop with link to OpenSpec change folder
-- [ ] 7.4 Verify CI green
-- [ ] 7.5 After merge, archive change: `/opsx:archive decompose-fallback-analysis`
+- [x] 7.1 Run full test suite with all gating env vars: `Rscript -e 'Sys.setenv(NOT_CRAN="true", BFHCHARTS_TEST_FULL="true"); devtools::test()'`. Zero failures.
+- [x] 7.2 Run pre-push hook end-to-end via `git push -u origin refactor/decompose-fallback-analysis` (no `SKIP_PREPUSH` allowed)
+- [x] 7.3 Open PR `refactor/decompose-fallback-analysis` → develop with link to OpenSpec change folder
+- [x] 7.4 Verify CI green
+- [x] 7.5 After merge, archive change: `/opsx:archive decompose-fallback-analysis`

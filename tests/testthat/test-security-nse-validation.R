@@ -7,9 +7,7 @@ test_that("bfh_qic accepts valid column names", {
 
   # Valid simple names should work (no error)
   expect_no_error({
-    suppressWarnings(
-      bfh_qic(data, x = month, y = infections, chart_type = "run")
-    )
+    bfh_qic(data, x = month, y = infections, chart_type = "run")
   })
 
   # Names with underscores and dots should work
@@ -17,15 +15,11 @@ test_that("bfh_qic accepts valid column names", {
   data$rate.value <- rnorm(12, 5, 1)
 
   expect_no_error({
-    suppressWarnings(
-      bfh_qic(data, x = month, y = patient_count, chart_type = "run")
-    )
+    bfh_qic(data, x = month, y = patient_count, chart_type = "run")
   })
 
   expect_no_error({
-    suppressWarnings(
-      bfh_qic(data, x = month, y = rate.value, chart_type = "run")
-    )
+    bfh_qic(data, x = month, y = rate.value, chart_type = "run")
   })
 })
 
@@ -92,9 +86,7 @@ test_that("bfh_qic validates n parameter for ratio charts", {
 
   # Valid n parameter (no error)
   expect_no_error({
-    suppressWarnings(
-      bfh_qic(data, x = month, y = events, n = total, chart_type = "p")
-    )
+    bfh_qic(data, x = month, y = events, n = total, chart_type = "p")
   })
 
   # Invalid n parameter with expression
@@ -112,14 +104,12 @@ test_that("bfh_qic accepts quoted symbols for programmatic NSE calls", {
   )
 
   expect_no_error({
-    suppressWarnings(
-      bfh_qic(
-        data = data,
-        x = quote(month),
-        y = quote(events),
-        n = quote(total),
-        chart_type = "p"
-      )
+    bfh_qic(
+      data = data,
+      x = quote(month),
+      y = quote(events),
+      n = quote(total),
+      chart_type = "p"
     )
   })
 
