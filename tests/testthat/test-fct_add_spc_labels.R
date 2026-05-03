@@ -13,7 +13,8 @@ make_test_data <- function() {
 }
 
 make_test_plot <- function(qic_data = make_test_data()) {
-  ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_line()
+  ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_line()
 }
 
 
@@ -182,7 +183,7 @@ test_that("returns plot unchanged when both CL and target are NA", {
 
   expect_warning(
     result <- add_spc_labels(p, qic_data, y_axis_unit = "count"),
-    "Ingen CL eller Target"
+    "No CL or Target"
   )
   # Returnerer original plot uaendret
   expect_identical(result, p)
@@ -299,7 +300,8 @@ test_that("CL and target labels do not overlap in NPC space", {
     cl = rep(50.5, 12),
     target = rep(48, 12)
   )
-  p <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) + ggplot2::geom_line()
+  p <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_line()
 
   result <- add_spc_labels(p, qic_data, y_axis_unit = "count")
   info <- attr(result, "placement_info")
@@ -319,14 +321,16 @@ test_that("placement is stable across different viewport dimensions", {
 
   # Smal viewport
   result_narrow <- add_spc_labels(
-    p, qic_data, y_axis_unit = "count",
+    p, qic_data,
+    y_axis_unit = "count",
     viewport_width = 4, viewport_height = 3
   )
   info_narrow <- attr(result_narrow, "placement_info")
 
   # Bred viewport
   result_wide <- add_spc_labels(
-    p, qic_data, y_axis_unit = "count",
+    p, qic_data,
+    y_axis_unit = "count",
     viewport_width = 10, viewport_height = 5
   )
   info_wide <- attr(result_wide, "placement_info")

@@ -205,6 +205,36 @@ bfh_create_typst_document <- function(chart_image,
   substr(paste(output, collapse = "\n"), 1L, max)
 }
 
+# Auto-detect packaged fonts in the staged template directory.
+# Looks for a fonts/ subdirectory co-located with the .typ file (the
+# bfh-template directory). Companion packages (e.g. BFHchartsAssets) inject
+# fonts into that directory; without auto-detect they are silently ignored and
+# the compile falls back to system fonts even when --ignore-system-fonts is set.
+# Returns the fonts directory path if fonts are found, NULL otherwise.
+.detect_packaged_fonts <- function(typst_file) {
+  staged_fonts_dir <- file.path(dirname(typst_file), "bfh-template", "fonts")
+  if (!dir.exists(staged_fonts_dir)) {
+    return(NULL)
+  }
+  font_extensions <- c("\\.ttf$", "\\.otf$", "\\.woff$", "\\.woff2$")
+  font_pattern <- paste(font_extensions, collapse = "|")
+  font_files <- list.files(staged_fonts_dir,
+    pattern = font_pattern,
+    ignore.case = TRUE, full.names = FALSE
+  )
+  if (length(font_files) > 0) staged_fonts_dir else NULL
+}
+
+# Explicit allowlist of Typst/Quarto flag arguments that must NOT be shell-quoted.
+# These are the only double-dash flags this package passes to the Typst compiler.
+# Any arg starting with "--" that is NOT in this list is treated as a path/value
+# and will be quoted, preventing RCE via crafted flag-like strings (e.g. --rce).
+KNOWN_TYPST_FLAGS <- c("--ignore-system-fonts", "--font-path")
+
+# Helper: returns TRUE on Windows. Extracted for testability via
+# local_mocked_bindings() -- callers mock .is_windows, not .Platform directly.
+.is_windows <- function() .Platform$OS.type == "windows"
+
 # Wrapper around system2() that ensures path-like arguments are properly
 # shell-quoted when stdout/stderr capture is requested on POSIX systems.
 #
@@ -219,18 +249,20 @@ bfh_create_typst_document <- function(chart_image,
 # literal quotes via shQuote() would corrupt the argument values (Quarto sees
 # the quotes as part of the path). Therefore quoting is POSIX-only.
 #
-# Strategy: On POSIX, apply shQuote() to any arg that does NOT begin with "--"
-# (i.e. path-like positional args). Flag args ("--ignore-system-fonts") are
-# safe as-is; quoting them could break Quarto's flag parser.
+# Strategy: On POSIX, apply shQuote() to any arg that is NOT in the
+# KNOWN_TYPST_FLAGS allowlist. This is stricter than the previous
+# startsWith("--") heuristic: only explicitly approved flags bypass quoting.
+# Flag values following "--font-path" (i.e. the directory path) are NOT flags
+# and will be quoted as expected.
 #
 # The .system2 parameter is the dependency-injection hook inherited from
 # bfh_compile_typst() so mock injection works end-to-end.
 .safe_system2_capture <- function(cmd, args, ..., .system2 = system2) {
-  if (.Platform$OS.type == "windows") {
+  if (.is_windows()) {
     return(.system2(cmd, args = args, ...))
   }
   quoted_args <- vapply(args, function(arg) {
-    if (startsWith(arg, "--")) {
+    if (arg %in% KNOWN_TYPST_FLAGS) {
       arg
     } else {
       shQuote(arg)
@@ -278,7 +310,8 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   validate_export_path(typst_file)
   validate_export_path(output)
 
-  # Valider font_path hvis angivet
+  # Validate font_path if supplied; reset to NULL on validation failure so that
+  # the auto-detect block below can recover packaged fonts in both branches.
   if (!is.null(font_path)) {
     if (!is.character(font_path) || length(font_path) != 1) {
       stop("font_path must be a single character string", call. = FALSE)
@@ -287,25 +320,17 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
     .check_metachars(font_path)
     if (!dir.exists(font_path)) {
       warning("font_path directory does not exist: ", font_path, call. = FALSE)
-      font_path <- NULL
+      font_path <- NULL # falls through to auto-detect below
     }
-  } else {
-    # Auto-detect fonts/ subdirectory in the staged template tempdir.
-    # Companion packages (e.g. BFHchartsAssets) inject fonts into a fonts/
-    # subdirectory alongside the .typ file. Without auto-detect, these are
-    # silently ignored and the compile falls back to system fonts only.
-    staged_fonts_dir <- file.path(dirname(typst_file), "bfh-template", "fonts")
-    if (dir.exists(staged_fonts_dir)) {
-      font_extensions <- c("\\.ttf$", "\\.otf$", "\\.woff$", "\\.woff2$")
-      font_pattern <- paste(font_extensions, collapse = "|")
-      font_files <- list.files(staged_fonts_dir,
-        pattern = font_pattern,
-        ignore.case = TRUE, full.names = FALSE
-      )
-      if (length(font_files) > 0) {
-        font_path <- staged_fonts_dir
-      }
-    }
+  }
+  # Auto-detect packaged fonts when no (valid) user font_path was supplied.
+  # Covers two cases:
+  #   1. Caller passed font_path = NULL (original behaviour).
+  #   2. Caller passed an invalid font_path that was reset to NULL above.
+  # Without this, a bad user font_path would silently fall back to system fonts
+  # even though --ignore-system-fonts blocks them.
+  if (is.null(font_path)) {
+    font_path <- .detect_packaged_fonts(typst_file)
   }
 
   # Create output directory if needed

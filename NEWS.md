@@ -1,3 +1,69 @@
+# BFHcharts 0.14.2
+
+## Breaking changes
+
+* **`inject_assets` from `.GlobalEnv` now errors instead of warning (H1).**
+  `.validate_inject_assets()` previously warned when the supplied function
+  originated from `.GlobalEnv` or a direct child environment. It now
+  hard-errors unless `options(BFHcharts.allow_globalenv_inject = TRUE)` is set.
+  Accepted namespaces are `BFHcharts` and `biSPCharts` by default; companion
+  packages can pass a custom `allowed_namespaces` vector to the internal helper.
+  This prevents privilege-escalation in Shiny deployments where a reactive
+  closure can silently bind a `.GlobalEnv` function to `inject_assets`.
+
+  Migration: move your `inject_assets` callback into a version-controlled
+  package namespace (e.g. `MyOrgAssets::inject_bfh_assets`), or set
+  `options(BFHcharts.allow_globalenv_inject = TRUE)` in development sessions
+  where interactive closures are intentional.
+
+## Nye features
+
+* **`bfh_export_pdf()` gains `restrict_template = FALSE` parameter (H2).**
+  When set to `TRUE`, any non-`NULL` `template_path` is rejected with an
+  error before compilation. Use in deployment contexts where only the packaged
+  BFHcharts template should be compiled, preventing custom-template injection
+  from misconfigured pipelines. Default `FALSE` preserves backward compatibility.
+
+## Bug fixes
+
+* **M1: Flag-allowlist in `.safe_system2_capture()`.** Replaced the
+  `startsWith(arg, "--")` heuristic with an explicit `KNOWN_TYPST_FLAGS`
+  allowlist (`c("--ignore-system-fonts", "--font-path")`). Any double-dash
+  argument not in the allowlist (e.g. a crafted `--rce` value) is now
+  `shQuote()`-d on POSIX systems, preventing command injection via
+  flag-shaped strings.
+
+* **M2: Double-quote rejected in output paths.** `"` was missing from
+  `SHELL_METACHARS_OUTPUT_PATH`. It is now blocked by `validate_export_path()`.
+  Test: `output = 'a".pdf'` is rejected with "disallowed".
+
+* **M3: Packaged-font fallback after invalid `font_path` (silent fallback fixed).**
+  When a user-supplied `font_path` fails directory validation, the compiler
+  previously fell through to system fonts even with `--ignore-system-fonts` set.
+  A new `.detect_packaged_fonts()` helper is now called in both the NULL-input
+  branch and the validation-fail-reset branch, ensuring packaged fonts are
+  always detected when available.
+
+* **M18: `.is_windows()` helper extracted for cross-platform test coverage.**
+  `.Platform$OS.type == "windows"` check moved into a testable `.is_windows()`
+  helper. Tests now use `local_mocked_bindings(.is_windows = ...)` to verify
+  both the Windows early-return path (no `shQuote`) and the POSIX quoting path
+  without requiring a real Windows OS.
+
+## Internal changes
+
+* Translate Danish error/warning messages to English across the package
+  to match standard R-package convention. Affected files:
+  `fct_add_spc_labels.R`, `utils_bfh_qic_helpers.R`, `spc_analysis.R`,
+  `utils_npc_mapping.R`, `utils_label_helpers.R`,
+  `utils_label_formatting.R`.
+* Add `call. = FALSE` to public-API-boundary `stop()` calls so the
+  internal call stack is not leaked to the user.
+* Add co-location regression test in `tests/testthat/test-dep-guards.R`
+  asserting every `R/*.R` file referencing `BFHtheme::` also calls
+  `.ensure_bfhtheme()`. Catches future drift where new BFHtheme call
+  sites are added without the corresponding guard.
+
 # BFHcharts 0.14.1
 
 ## Bug fixes

@@ -117,7 +117,7 @@ format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
   }
 
   if (!is.numeric(val)) {
-    warning("format_y_value: val skal v\u00e6re numerisk, modtog: ", class(val))
+    warning("format_y_value: val must be numeric, got: ", class(val))
     return(as.character(val))
   }
 
