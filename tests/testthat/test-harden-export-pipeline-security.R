@@ -368,3 +368,175 @@ test_that("prepare_temp_workspace bruger ikke Sys.getenv UID-check", {
   src <- readLines(src_path)
   expect_false(any(grepl('Sys\\.getenv\\("UID"\\)', src)))
 })
+
+# ============================================================================
+# 6. M1: KNOWN_TYPST_FLAGS allowlist in .safe_system2_capture
+# ============================================================================
+
+test_that(".safe_system2_capture quotes --rce flag (not in allowlist)", {
+  skip_on_os("windows")
+
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[rce test]", typst_file)
+  withr::defer(unlink(typst_file))
+  out_pdf <- tempfile(fileext = ".pdf")
+  withr::defer(unlink(out_pdf))
+
+  captured_args <- NULL
+  mock_s2 <- function(command, args, ...) {
+    captured_args <<- args
+    file.create(out_pdf)
+    character(0)
+  }
+
+  # Inject a rogue flag-like arg by temporarily appending to compile_args via
+  # a custom .system2 that intercepts before quoting.
+  # Verify via the KNOWN_TYPST_FLAGS constant: --rce is not in it.
+  expect_false("--rce" %in% BFHcharts:::KNOWN_TYPST_FLAGS)
+
+  # Direct unit test of .safe_system2_capture: --rce must be quoted.
+  BFHcharts:::.safe_system2_capture(
+    "/fake/cmd", c("--rce", typst_file),
+    stdout = FALSE, stderr = FALSE,
+    .system2 = function(command, args, ...) {
+      captured_args <<- args
+      character(0)
+    }
+  )
+
+  # --rce should be wrapped in single quotes (shQuote) since it is not allowlisted
+  rce_arg <- captured_args[1]
+  expect_true(
+    startsWith(rce_arg, "'"),
+    info = paste("--rce must be shell-quoted, got:", rce_arg)
+  )
+})
+
+test_that("KNOWN_TYPST_FLAGS contains exactly the expected flags", {
+  flags <- BFHcharts:::KNOWN_TYPST_FLAGS
+  expect_setequal(flags, c("--ignore-system-fonts", "--font-path"))
+})
+
+# ============================================================================
+# 7. H2: restrict_template parameter on bfh_export_pdf()
+# ============================================================================
+
+test_that("bfh_export_pdf with restrict_template=TRUE rejects custom template_path", {
+  # We need a valid bfh_qic_result to get past the first input validation.
+  # Create a minimal one using the public API.
+  skip_on_cran()
+
+  data <- data.frame(
+    x = seq.Date(as.Date("2022-01-01"), by = "month", length.out = 20),
+    y = rpois(20, 10)
+  )
+  result <- bfh_qic(data,
+    x = x, y = y, chart_type = "i",
+    chart_title = "Test"
+  )
+
+  expect_error(
+    bfh_export_pdf(
+      result,
+      output = tempfile(fileext = ".pdf"),
+      template_path = "/some/custom/template.typ",
+      restrict_template = TRUE
+    ),
+    regexp = "restrict_template"
+  )
+})
+
+# ============================================================================
+# 8. M3: bad font_path warns then auto-detects packaged fonts
+# ============================================================================
+
+test_that("bad font_path warns then auto-detects packaged fonts in bfh-template/fonts", {
+  skip_on_cran()
+
+  # Set up a tempdir that mimics the staged workspace layout:
+  #   <tmp>/document.typ          <- typst source file
+  #   <tmp>/bfh-template/fonts/   <- directory .detect_packaged_fonts() scans
+  #   <tmp>/bfh-template/fonts/BFHFont.ttf  <- sentinel font file
+  tmp_dir <- withr::local_tempdir("m3_font_fallback")
+  typst_file <- file.path(tmp_dir, "document.typ")
+  writeLines("#text[m3 test]", typst_file)
+
+  fonts_dir <- file.path(tmp_dir, "bfh-template", "fonts")
+  dir.create(fonts_dir, recursive = TRUE)
+  file.create(file.path(fonts_dir, "BFHFont.ttf"))
+
+  output_pdf <- file.path(tmp_dir, "output.pdf")
+  captured_args <- NULL
+
+  mock_s2 <- function(command, args, ...) {
+    captured_args <<- args
+    # Simulate successful compile by creating the output file
+    file.create(output_pdf)
+    character(0)
+  }
+
+  # Call with a non-existent font_path; should warn AND fall back to packaged fonts
+  expect_warning(
+    BFHcharts:::bfh_compile_typst(
+      typst_file, output_pdf,
+      font_path = "/nonexistent/fonts/dir",
+      .system2 = mock_s2,
+      .quarto_path = "/fake/quarto"
+    ),
+    regexp = "font_path directory does not exist"
+  )
+
+  # --font-path should point to the staged packaged fonts dir, not the bad path
+  expect_true(!is.null(captured_args), info = "mock_s2 must have been called")
+  font_path_idx <- which(captured_args == "--font-path")
+  expect_true(
+    length(font_path_idx) > 0,
+    info = "Compiled args should include --font-path after auto-detect"
+  )
+  if (length(font_path_idx) > 0) {
+    raw_arg <- captured_args[font_path_idx + 1L]
+    # .safe_system2_capture wraps non-flag args with shQuote() on Unix.
+    # Strip outer single or double quotes before comparing paths.
+    actual_font_path <- gsub("^'(.*)'$", "\\1", raw_arg)
+    actual_font_path <- gsub('^"(.*)"$', "\\1", actual_font_path)
+    expect_equal(
+      normalizePath(actual_font_path, mustWork = FALSE),
+      normalizePath(fonts_dir, mustWork = FALSE),
+      info = paste("Expected packaged fonts dir, got:", raw_arg)
+    )
+  }
+})
+
+test_that("bfh_export_pdf with restrict_template=FALSE allows custom template_path (default behavior)", {
+  # restrict_template=FALSE is the default; validation should not error on template_path
+  # We test only that the restrict_template guard does NOT fire here.
+  # (The actual export may fail due to missing template file -- that is unrelated.)
+  skip_on_cran()
+
+  data <- data.frame(
+    x = seq.Date(as.Date("2022-01-01"), by = "month", length.out = 20),
+    y = rpois(20, 10)
+  )
+  result <- bfh_qic(data,
+    x = x, y = y, chart_type = "i",
+    chart_title = "Test"
+  )
+
+  err <- tryCatch(
+    bfh_export_pdf(
+      result,
+      output = tempfile(fileext = ".pdf"),
+      template_path = "/nonexistent/custom.typ",
+      restrict_template = FALSE
+    ),
+    error = function(e) e
+  )
+
+  # Error should NOT mention restrict_template -- it should be about the missing file
+  if (inherits(err, "error")) {
+    expect_false(
+      grepl("restrict_template", conditionMessage(err)),
+      info = "Error should be about missing template, not restrict_template guard"
+    )
+  }
+})

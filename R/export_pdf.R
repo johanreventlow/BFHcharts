@@ -29,6 +29,18 @@
 #' @param template_path Optional path to a custom Typst template file. When provided,
 #'   this overrides the packaged template. The template must exist and be a valid
 #'   Typst file (.typ). Default is NULL (uses packaged BFH template).
+#' @param restrict_template Logical. When \code{TRUE}, any non-NULL
+#'   \code{template_path} is rejected with an error. Use in deployment contexts
+#'   where the Typst compiler must only process the packaged template.
+#'
+#'   \strong{Threat model:} A custom Typst template is compiled by the Typst
+#'   binary and can read or write arbitrary paths during compilation. This is
+#'   equivalent to \code{source()} in trust requirements. Setting
+#'   \code{restrict_template = TRUE} prevents a compromised configuration
+#'   pipeline from injecting a malicious template via \code{template_path}.
+#'
+#'   Default: \code{FALSE} (backward-compatible -- custom templates are allowed
+#'   unless explicitly restricted).
 #' @param auto_analysis Logical. If TRUE and \code{metadata$analysis} is not provided,
 #'   automatically generates analysis text using \code{bfh_generate_analysis()}.
 #'   Default is FALSE for backward compatibility.
@@ -256,6 +268,7 @@ bfh_export_pdf <- function(x,
                            metadata = list(),
                            template = "bfh-diagram",
                            template_path = NULL,
+                           restrict_template = FALSE,
                            auto_analysis = FALSE,
                            use_ai = FALSE,
                            data_consent = NULL,
@@ -271,6 +284,19 @@ bfh_export_pdf <- function(x,
   # strict_baseline: per-call > session > default(TRUE).
   # missing()-flag fanges FOERST i orchestrator-scopet (NSE-sensitive).
   strict_baseline_supplied <- !missing(strict_baseline)
+
+  # ---- 0. restrict_template guard --------------------------------------------
+  # Threat model: template_path compiles arbitrary Typst code with the privileges
+  # of the calling R session (equivalent to source()). When restrict_template=TRUE,
+  # only the packaged template is allowed, preventing custom-template injection
+  # from untrusted Shiny inputs or API parameters.
+  if (isTRUE(restrict_template) && !is.null(template_path)) {
+    stop(
+      "template_path is not allowed when restrict_template = TRUE. ",
+      "Only the packaged BFHcharts template may be used in this configuration.",
+      call. = FALSE
+    )
+  }
 
   # ---- 1. Input-validering (class, metadata, dpi, font_path, session) --------
   validate_bfh_export_pdf_inputs(
@@ -476,16 +502,30 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
 # INJECT_ASSETS RUNTIME GUARD
 # ============================================================================
 
-# Validate inject_assets argument: must be NULL or a function.
-# Warns (does not error) when the function environment indicates it originates
-# from .GlobalEnv or a direct child, which signals likely accidental exposure
-# (e.g., a Shiny reactive binding a top-level helper to inject_assets).
-# Suppress with options(BFHcharts.allow_globalenv_inject = TRUE) in dev flows.
+# Validate inject_assets argument: must be NULL or a function from a trusted
+# namespace. Errors (does not warn) when the function environment indicates it
+# originates from .GlobalEnv or a direct child, which prevents accidental
+# privilege-escalation vectors in Shiny apps (e.g. a reactive binding a
+# top-level helper to inject_assets).
+#
+# Threat model: inject_assets executes arbitrary code with the privileges of the
+# calling R session. Accepting functions from .GlobalEnv creates an
+# easy-to-trigger RCE vector when the Shiny input pipeline is compromised.
+# Requiring a package namespace enforces that the function is version-controlled
+# and reviewed code, not an ad-hoc closure assembled at runtime.
+#
+# Suppress with options(BFHcharts.allow_globalenv_inject = TRUE) in dev flows
+# where functions are defined interactively.
 #
 # @param fn The inject_assets argument (NULL or function).
+# @param allowed_namespaces Character vector of package namespaces allowed as
+#   the top-level environment. Defaults to BFHcharts and biSPCharts.
 # @return fn invisibly.
 # @noRd
-.validate_inject_assets <- function(fn) {
+.validate_inject_assets <- function(
+  fn,
+  allowed_namespaces = c("BFHcharts", "biSPCharts")
+) {
   if (is.null(fn)) {
     return(invisible(NULL))
   }
@@ -495,19 +535,19 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
 
   if (!isTRUE(getOption(BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT, default = FALSE))) {
     fn_env <- environment(fn)
-    # Heuristic: warn if function's top-level enclosure is .GlobalEnv.
-    # Functions from a package namespace have topenv() == that namespace.
-    if (!is.null(fn_env) &&
-      (identical(fn_env, globalenv()) ||
-        identical(topenv(fn_env), globalenv()))) {
-      warning(
-        "inject_assets supplied from global environment. ",
-        "Production usage should pass functions from a controlled namespace ",
-        "(e.g., MyOrgAssets::inject_my_assets). ",
-        "If this is intentional in development, suppress with ",
-        "options(BFHcharts.allow_globalenv_inject = TRUE).",
-        call. = FALSE
-      )
+    # Primitives have NULL environment; treat as trusted (they are base R builtins).
+    if (!is.null(fn_env)) {
+      top_name <- environmentName(topenv(fn_env))
+      if (!top_name %in% allowed_namespaces) {
+        stop(
+          "inject_assets must come from a trusted package namespace ",
+          "(e.g., MyOrgAssets::inject_my_assets), not from '", top_name, "'. ",
+          "Accepting functions from arbitrary environments is a privilege-escalation ",
+          "risk in production. If this is intentional in development, suppress with ",
+          "options(BFHcharts.allow_globalenv_inject = TRUE).",
+          call. = FALSE
+        )
+      }
     }
   }
 

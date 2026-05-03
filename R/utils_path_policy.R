@@ -26,7 +26,7 @@ ALLOWED_EXPORT_EXTENSIONS <- c("png", "pdf", "svg", "typ")
 #
 # Kontekst: Codex code review 2026-04-30 finding #10 + advisor-justering
 # efter empirisk verifikation 2026-04-30.
-SHELL_METACHARS_OUTPUT_PATH <- c(";", "|", "<", ">", "`", "\n", "\r")
+SHELL_METACHARS_OUTPUT_PATH <- c(";", "|", "<", ">", "`", "\"", "\n", "\r")
 
 # Metachars der er farlige i shell-kontekst -- bruges KUN til binary-stier
 # (argv[0] til system2()) hvor R's interne wrappers kan re-quote i edge cases.

@@ -10,6 +10,7 @@ bfh_export_pdf(
   metadata = list(),
   template = "bfh-diagram",
   template_path = NULL,
+  restrict_template = FALSE,
   auto_analysis = FALSE,
   use_ai = FALSE,
   data_consent = NULL,
@@ -55,6 +56,19 @@ Supports markdown formatting (bold, italic, line breaks).
 \item{template_path}{Optional path to a custom Typst template file. When provided,
 this overrides the packaged template. The template must exist and be a valid
 Typst file (.typ). Default is NULL (uses packaged BFH template).}
+
+\item{restrict_template}{Logical. When \code{TRUE}, any non-NULL
+\code{template_path} is rejected with an error. Use in deployment contexts
+where the Typst compiler must only process the packaged template.
+
+\strong{Threat model:} A custom Typst template is compiled by the Typst
+binary and can read or write arbitrary paths during compilation. This is
+equivalent to \code{source()} in trust requirements. Setting
+\code{restrict_template = TRUE} prevents a compromised configuration
+pipeline from injecting a malicious template via \code{template_path}.
+
+Default: \code{FALSE} (backward-compatible -- custom templates are allowed
+unless explicitly restricted).}
 
 \item{auto_analysis}{Logical. If TRUE and \code{metadata$analysis} is not provided,
 automatically generates analysis text using \code{bfh_generate_analysis()}.
