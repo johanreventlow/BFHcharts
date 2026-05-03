@@ -211,7 +211,7 @@ test_that("bfh_generate_analysis(use_ai=TRUE) warns on BFHllm error", {
     suppressMessages(
       bfh_generate_analysis(result, use_ai = TRUE, data_consent = "explicit")
     ),
-    "AI analyse fejlede"
+    "AI analysis failed"
   )
 })
 

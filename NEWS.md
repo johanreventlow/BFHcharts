@@ -2,11 +2,13 @@
 
 ## Internal changes
 
-* Translate Danish error/warning messages in `R/fct_add_spc_labels.R` to
-  English to match standard R-package convention. Affected: input
-  validation errors and CL/target fallback warning.
-* Add `call. = FALSE` to public-API-boundary `stop()` calls in
-  `add_spc_labels()` so internal call stack is not leaked to user.
+* Translate Danish error/warning messages to English across the package
+  to match standard R-package convention. Affected files:
+  `fct_add_spc_labels.R`, `utils_bfh_qic_helpers.R`, `spc_analysis.R`,
+  `utils_npc_mapping.R`, `utils_label_helpers.R`,
+  `utils_label_formatting.R`.
+* Add `call. = FALSE` to public-API-boundary `stop()` calls so the
+  internal call stack is not leaked to the user.
 * Add co-location regression test in `tests/testthat/test-dep-guards.R`
   asserting every `R/*.R` file referencing `BFHtheme::` also calls
   `.ensure_bfhtheme()`. Catches future drift where new BFHtheme call

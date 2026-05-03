@@ -13,7 +13,7 @@ test_that("format_y_value validates input types", {
   # Non-numeric input should warn
   expect_warning(
     result <- format_y_value("text", "count"),
-    "val skal være numerisk"
+    "val must be numeric"
   )
   expect_equal(result, "text")
 })
