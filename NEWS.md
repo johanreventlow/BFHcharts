@@ -1,3 +1,17 @@
+# BFHcharts (development)
+
+## Internal changes
+
+* Translate Danish error/warning messages in `R/fct_add_spc_labels.R` to
+  English to match standard R-package convention. Affected: input
+  validation errors and CL/target fallback warning.
+* Add `call. = FALSE` to public-API-boundary `stop()` calls in
+  `add_spc_labels()` so internal call stack is not leaked to user.
+* Add co-location regression test in `tests/testthat/test-dep-guards.R`
+  asserting every `R/*.R` file referencing `BFHtheme::` also calls
+  `.ensure_bfhtheme()`. Catches future drift where new BFHtheme call
+  sites are added without the corresponding guard.
+
 # BFHcharts 0.14.1
 
 ## Bug fixes
