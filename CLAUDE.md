@@ -66,7 +66,7 @@ Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `
 - Kun brugt internt af `bfh_qic()`
 
 *Constants:*
-- `CHART_TYPES_DA`, `CHART_TYPES_EN` - Chart type mappings
+- `CHART_TYPES_EN` - Chart type identifiers
 - Brugere passer strings direkte: `chart_type = "p"`, ikke konstant-opslag
 
 **Rationale:** **Ultra-simpelt API** - brugere lærer kun 1 funktion. Alt kompleksitet er skjult under motorhjelmen. Advanced users kan tilgå internals med `BFHcharts:::function_name()`.
