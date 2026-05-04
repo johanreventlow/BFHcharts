@@ -40,7 +40,12 @@ jobs:
       - name: Check develop ahead of main
         id: ahead-check
         run: |
-          git fetch origin main --depth=1 || git fetch origin main
+          # Full history needed: --depth=1 gave shallow main, which made
+          # rev-list --count count develop's full history as phantom-ahead
+          # (646 vs real 0). actions/checkout uses fetch-depth: 0 (full),
+          # but origin/main may not be fetched -- fetch it explicitly without
+          # depth limit.
+          git fetch origin main
           AHEAD=$(git rev-list --count origin/main..HEAD)
           echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
           echo "develop is $AHEAD commits ahead of main"
@@ -94,7 +99,9 @@ jobs:
           # written to a temp file via git-log, then included via cat -- no
           # shell expansion of commit content.
           COMMITS_FILE=$(mktemp)
-          git log --oneline origin/main..HEAD | head -20 > "$COMMITS_FILE"
+          # Use -n 20 instead of piping to head: pipefail + SIGPIPE from
+          # head closing the pipe early made `git log | head` exit 141.
+          git log -n 20 --oneline origin/main..HEAD > "$COMMITS_FILE"
 
           BODY_FILE=$(mktemp)
           cat > "$BODY_FILE" <<EOF
