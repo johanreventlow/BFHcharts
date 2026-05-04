@@ -565,8 +565,6 @@ expect_match(text, "seneste 3 observationer", ignore.case = TRUE)
 expect_false(grepl("seneste 6 observationer", text))
 ```
 
-## ADDED Requirements
-
 ### Requirement: Fallback-narrative dispatch SHALL use named pure helpers
 
 The dispatch logic that maps detected SPC signals to fallback-narrative i18n keys SHALL be expressed as named pure helpers, not as nested boolean cascades. The orchestrator `build_fallback_analysis()` SHALL be ≤100 lines and SHALL contain no nested `if/else if` chains for cascade dispatch — only top-level orchestration calls (detect flags → allocate budget → evaluate target arm → select keys → look up i18n strings → assemble markdown → pad).

@@ -371,7 +371,6 @@ Helpers SHALL retain `@keywords internal @noRd` annotations and SHALL NOT be exp
 
 - **WHEN** new language-specific text-formatting helpers are introduced for English (e.g. `pluralize_en()`)
 - **THEN** they SHALL be placed in `R/utils_text_en.R`, not embedded in pipeline files
-## ADDED Requirements
 
 ### Requirement: Label-pipeline orchestrators SHALL follow 3-layer decomposition
 
