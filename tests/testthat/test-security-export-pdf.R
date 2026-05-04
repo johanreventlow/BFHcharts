@@ -33,14 +33,22 @@ test_that("bfh_export_pdf rejects path traversal in template_path", {
   chart <- fixture_test_chart()
   temp_file <- withr::local_tempfile(fileext = ".pdf")
 
-  # Path traversal in template_path
+  # Path traversal in template_path. Use restrict_template = FALSE to bypass the
+  # default-safe guard added in 0.16.0 -- this test exercises the path-traversal
+  # validator specifically, not the restrict_template guard.
   expect_error(
-    bfh_export_pdf(chart, temp_file, template_path = "../../etc/passwd"),
+    bfh_export_pdf(chart, temp_file,
+      template_path = "../../etc/passwd",
+      restrict_template = FALSE
+    ),
     "path traversal"
   )
 
   expect_error(
-    bfh_export_pdf(chart, temp_file, template_path = "../../../sensitive/template.typ"),
+    bfh_export_pdf(chart, temp_file,
+      template_path = "../../../sensitive/template.typ",
+      restrict_template = FALSE
+    ),
     "path traversal"
   )
 })

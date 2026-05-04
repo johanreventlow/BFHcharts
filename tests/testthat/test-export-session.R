@@ -215,7 +215,8 @@ test_that("bfh_export_pdf rejects batch_session + template_path", {
 
   expect_error(
     bfh_export_pdf(result, tempfile(fileext = ".pdf"),
-      batch_session = session, template_path = fake_template
+      batch_session = session, template_path = fake_template,
+      restrict_template = FALSE
     ),
     "template_path"
   )

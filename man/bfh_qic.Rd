@@ -69,7 +69,16 @@ raise an error.}
 calculations (optional). Must be positive integers, unique, and within
 \verb{[1, nrow(data)]}. Sort order is not required.}
 
-\item{cl}{Numeric value to set a custom centerline instead of calculating from data (optional)}
+\item{cl}{Numeric value to set a custom centerline instead of calculating
+from data (optional). When non-NULL, Anhoej run/crossing signals are
+computed against the user-supplied centerline rather than the
+data-estimated process mean -- an R warning is emitted, and the returned
+\code{bfh_qic_result$summary} carries \code{attr(summary, "cl_user_supplied") = TRUE}.
+Downstream consumers (e.g. PDF rendering, biSPCharts UI) can read the
+attribute via \code{isTRUE(attr(result$summary, "cl_user_supplied"))}. The
+\code{bfh_export_pdf()} PDF surfaces a caveat note below the SPC table when
+this flag is set. See \code{bfh_extract_spc_stats()} for the discoverable
+surface.}
 
 \item{multiply}{Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)}
 

@@ -39,18 +39,31 @@
 #' @param template_path Optional path to a custom Typst template file. When provided,
 #'   this overrides the packaged template. The template must exist and be a valid
 #'   Typst file (.typ). Default is NULL (uses packaged BFH template).
-#' @param restrict_template Logical. When \code{TRUE}, any non-NULL
-#'   \code{template_path} is rejected with an error. Use in deployment contexts
-#'   where the Typst compiler must only process the packaged template.
+#' @param restrict_template Logical. When \code{TRUE} (default), any non-NULL
+#'   \code{template_path} is rejected with an error. Use \code{FALSE} only in
+#'   trusted contexts where a custom Typst template is intentionally supplied.
 #'
 #'   \strong{Threat model:} A custom Typst template is compiled by the Typst
 #'   binary and can read or write arbitrary paths during compilation. This is
-#'   equivalent to \code{source()} in trust requirements. Setting
-#'   \code{restrict_template = TRUE} prevents a compromised configuration
-#'   pipeline from injecting a malicious template via \code{template_path}.
+#'   equivalent to \code{source()} in trust requirements. \code{restrict_template
+#'   = TRUE} prevents a compromised configuration pipeline from injecting a
+#'   malicious template via \code{template_path}.
 #'
-#'   Default: \code{FALSE} (backward-compatible -- custom templates are allowed
-#'   unless explicitly restricted).
+#'   Default: \code{TRUE} (production-safe -- custom templates require explicit
+#'   opt-in).
+#'
+#'   \strong{Migration from BFHcharts <= 0.15.x:} Callers passing
+#'   \code{template_path} without \code{restrict_template} now receive a clear
+#'   validation error. Migration is mechanical:
+#'   \preformatted{
+#'   # Before (BFHcharts <= 0.15.x): custom template silently allowed
+#'   bfh_export_pdf(result, "out.pdf", template_path = "/my/template.typ")
+#'
+#'   # After (BFHcharts >= 0.16.0): explicit opt-out required
+#'   bfh_export_pdf(result, "out.pdf",
+#'                  template_path = "/my/template.typ",
+#'                  restrict_template = FALSE)
+#'   }
 #' @param auto_analysis Logical. If TRUE and \code{metadata$analysis} is not provided,
 #'   automatically generates analysis text using \code{bfh_generate_analysis()}.
 #'   Default is FALSE for backward compatibility.
@@ -183,6 +196,15 @@
 #' template can read and write arbitrary paths during compilation -- treat
 #' it with the same trust contract as \code{source()}.
 #'
+#' \strong{Default since 0.16.0:} \code{restrict_template = TRUE} -- any
+#' non-NULL \code{template_path} is rejected at validation time. Power users
+#' supplying a trusted in-process template MUST opt-in with
+#' \code{restrict_template = FALSE}. The default-safe posture eliminates the
+#' silent privilege-escalation vector that would otherwise exist if a
+#' configuration pipeline forwarded user-controlled input to
+#' \code{template_path}. See ADR-003 for the warning-blind-clinical-reader
+#' risk model that drove this default.
+#'
 #' \strong{Never} forward user-supplied input (Shiny inputs,
 #' query parameters, untrusted uploads) to either parameter -- doing so
 #' creates a privilege-escalation vector. If your application surface
@@ -278,7 +300,7 @@ bfh_export_pdf <- function(x,
                            metadata = list(),
                            template = "bfh-diagram",
                            template_path = NULL,
-                           restrict_template = FALSE,
+                           restrict_template = TRUE,
                            auto_analysis = FALSE,
                            use_ai = FALSE,
                            data_consent = NULL,

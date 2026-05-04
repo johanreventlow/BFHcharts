@@ -160,3 +160,7 @@ labels:
 
   misc:
     ukendt: "unknown"
+
+  caveats:
+    cl_user_supplied: >-
+      Centerline manually specified — Anhøj signal computed against the user-supplied centerline, not the data-estimated process mean.

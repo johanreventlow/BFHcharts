@@ -37,6 +37,12 @@ outliers are not discussed as if they were current). Present only for
 \code{bfh_qic_result} input on non-run charts.}
 \item{is_run_chart}{Logical indicating run chart. Present only for
 \code{bfh_qic_result} input.}
+\item{cl_user_supplied}{Logical. \code{TRUE} when the caller passed a
+non-NULL \code{cl} argument to \code{bfh_qic()}; Anhoej run/crossing signals
+in this case were computed against the user-supplied centerline,
+not the data-estimated process mean. Mirrors
+\code{attr(result$summary, "cl_user_supplied")}. Present only for
+\code{bfh_qic_result} input.}
 }
 }
 \description{

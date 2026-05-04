@@ -460,6 +460,18 @@ compose_typst_document <- function(x, chart_svg, typst_file,
     }
   }
 
+  # Resolve cl_user_supplied caveat text server-side. The Typst template
+  # receives a pre-translated string rather than embedding i18n logic.
+  # See ADR-003: PDF caveat is the second surface for warning-blind clinical
+  # readers when the caller supplies a custom centerline to bfh_qic().
+  if (isTRUE(spc_stats$cl_user_supplied)) {
+    caveat_lang <- x$config$language %||% "da"
+    metadata_full$cl_caveat_text <- i18n_lookup(
+      "labels.caveats.cl_user_supplied",
+      caveat_lang
+    )
+  }
+
   # Write .typ with finalized metadata. skip_template_copy=TRUE for packaged
   # template (we staged it above). Custom template_path always falls through
   # to bfh_create_typst_document's single-file copy branch.
