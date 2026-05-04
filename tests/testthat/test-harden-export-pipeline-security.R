@@ -164,6 +164,40 @@ test_that(".truncate_compile_output sammenhaenger vector med newline foer afkort
   expect_true(grepl("\n", result, fixed = TRUE))
 })
 
+test_that(".truncate_compile_output redacter tempdir-stier", {
+  td <- normalizePath(tempdir(), winslash = "/", mustWork = FALSE)
+  output_with_path <- paste0("error at: ", td, "/bfh_pdf_abc/document.typ")
+  result <- BFHcharts:::.truncate_compile_output(output_with_path)
+  expect_false(grepl(td, result, fixed = TRUE))
+  expect_true(grepl("<tmpdir>", result, fixed = TRUE))
+})
+
+test_that("bfh_create_typst_document afviser output med path-traversal", {
+  tmp <- withr::local_tempfile(fileext = ".png")
+  writeLines("", tmp)
+  expect_error(
+    BFHcharts:::bfh_create_typst_document(
+      chart_image = tmp,
+      output = "../../../etc/evil.typ",
+      metadata = list(),
+      spc_stats = list()
+    ),
+    "path traversal"
+  )
+})
+
+test_that("bfh_create_typst_document afviser chart_image med path-traversal", {
+  expect_error(
+    BFHcharts:::bfh_create_typst_document(
+      chart_image = "../../../etc/passwd",
+      output = withr::local_tempfile(fileext = ".typ"),
+      metadata = list(),
+      spc_stats = list()
+    ),
+    "path traversal"
+  )
+})
+
 test_that("bfh_compile_typst truncerer output i PDF-not-created-branch til <= 500 tegn", {
   # Mock system2 der returnerer exit 0 men en lang output-streng
   long_output_vec <- rep(paste(rep("z", 100), collapse = ""), 20)
