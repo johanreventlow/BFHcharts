@@ -1,3 +1,40 @@
+# BFHcharts 0.15.1 (development)
+
+## Bug fixes
+
+* **PDF-eksport rendrer succesfuldt uden hospitals-logo, når companion-pakker
+  ikke har injiceret assets.** Tidligere fejlede `bfh_export_pdf()` hårdt på et
+  rent install fordi Typst-templaten hard-refererede til
+  `images/Hospital_Maerke_RGB_A1_str.png` (proprietary BFH-asset, ikke bundlet
+  i public package). Templaten har nu en `logo_path: none`-parameter; den
+  forreste logo-slot rendres kun når `logo_path` er sat. R-siden auto-detekterer
+  staged logos via `.detect_packaged_logo()` parallelt med eksisterende
+  `.detect_packaged_fonts()`-mønster, så companion-pakker (BFHchartsAssets)
+  fortsat får hospital-branding uden caller-side ændringer. Lukker det sidste
+  åbne FIX NOW-blocker fra production-readiness review (item 1.2) og task 2.5
+  i `openspec/changes/2026-05-01-fix-pdf-template-asset-contract`. Implementerer
+  OpenSpec change `add-conditional-template-image`.
+
+  Migration:
+  - **Eksisterende callers uden inject_assets:** ingen ændring nødvendig --
+    PDF rendrer nu uden fejl (uden logo). Tidligere fejlede compile.
+  - **Eksisterende callers med inject_assets:** ingen ændring nødvendig --
+    auto-detect henter staged logo. Layout uændret.
+  - **Avancerede callers** kan supply `metadata$logo_path = "/path/to/custom.png"`
+    for at overstyre auto-detect.
+
+## Internal changes
+
+* `bfh-template.typ` template-signature gains optional `logo_path: none`
+  parameter. Foreground `place(image(...))` block er nu konditional.
+* `R/utils_typst.R`: ny helper `.detect_packaged_logo()` + `.stage_packaged_template_dir()`.
+  `build_typst_content()` emit `logo_path` i Typst-params-blokken når sat.
+* `R/utils_export_helpers.R::compose_typst_document()` re-ordret: stager template
+  + kører inject_assets FØR `bfh_create_typst_document()` skrives, så logo
+  auto-detect kan se injicerede filer.
+* `R/utils_metadata.R::bfh_merge_metadata()` accepterer + viderefører `logo_path`.
+* `validate_bfh_export_pdf_inputs()`: `logo_path` whitelist + scalar character-validering.
+
 # BFHcharts 0.15.0
 
 ## Breaking changes

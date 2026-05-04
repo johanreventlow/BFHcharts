@@ -18,6 +18,10 @@
 //   outliers_actual: Actual obs. uden for kontrolgrænse value (optional)
 //   is_run_chart: Boolean indicating if this is a run chart (hides outlier row)
 //   footer_content: Additional content to display below the chart (optional)
+//   logo_path: Path to hospital logo image (optional). When none (default), no
+//              foreground logo is rendered -- PDF compiles successfully without
+//              proprietary branding assets. Companion packages (BFHchartsAssets)
+//              populate this via inject_assets callback or auto-detection.
 //   chart: Chart content (image or other content) (required via content parameter)
 //
 #let bfh-diagram(
@@ -37,6 +41,7 @@
   outliers_actual: none,
   is_run_chart: false,
   footer_content: none,
+  logo_path: none,
   chart
 ) = {
   set text(font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
@@ -62,20 +67,20 @@ show table.cell: it => {
     flipped: true,
     margin: (bottom: 6.6mm, rest: 0mm),
     //fill: rgb("ffff00"),  // Gul baggrundsfarve for at visualisere margins
-    foreground: (
+    // Foreground logo: rendered only when logo_path is supplied. When none
+    // (the default for installs without companion-injected assets), the
+    // foreground slot stays empty and the PDF compiles without errors.
+    // Header bar + title block use fixed offsets independent of this slot,
+    // so layout is preserved either way (see ADR-001 + change
+    // openspec/changes/add-conditional-template-image/design.md D3).
+    foreground: if logo_path != none {
        place(
-         image("images/Hospital_Maerke_RGB_A1_str.png",
+         image(logo_path,
          height: 19.8mm
        ),
-       //dy: 46.2mm,
        dy: 39.6mm,
-       //dy: 59.43mm, 
-       //dy: 66mm,
-       //dy: 170.4mm,
-       //dy: 177mm,
        dx: 0mm)
-       //dx: 4.67mm)
-     )
+     } else { none }
   )
 
     grid(
