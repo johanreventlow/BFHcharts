@@ -15,12 +15,13 @@
 #' @param val numeric vaerdi (0-1 skala, f.eks. 0.887 for 88.7%)
 #' @param target numeric target vaerdi (0-1 skala), eller NULL
 #' @param threshold numeric afstand i procentpoint hvor decimaler vises (default 0.02 = 2%)
-#' @return character formateret string med dansk notation
+#' @param language Locale code: "da" (default, Danish) or "en" (English)
+#' @return character formateret string
 #'
 #' @details
 #' Logik:
 #' - Hvis target er NULL eller val er > threshold fra target: hele procent ("89%")
-#' - Hvis val er <= threshold fra target: en decimal med dansk komma ("88,7%")
+#' - Hvis val er <= threshold fra target: en decimal ("88,7%" da / "88.7%" en)
 #'
 #' @examples
 #' \dontrun{
@@ -36,7 +37,7 @@
 #'
 #' @keywords internal
 #' @noRd
-format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
+format_percent_contextual <- function(val, target = NULL, threshold = 0.02, language = "da") {
   if (length(val) != 1 || !(is.numeric(val) || is.na(val))) {
     stop("val must be a single numeric value", call. = FALSE)
   }
@@ -62,8 +63,9 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
     return(paste0(round(pct), "%"))
   }
 
-  # Taet paa target: vis en decimal med dansk komma (altid nsmall=1 for konsistens)
-  formatted <- format(round(pct, 1), decimal.mark = ",", nsmall = 1)
+  # Near target: show one decimal with locale-appropriate separator
+  dm <- if (language == "en") "." else ","
+  formatted <- format(round(pct, 1), decimal.mark = dm, nsmall = 1)
   return(paste0(formatted, "%"))
 }
 
@@ -79,6 +81,7 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
 #'   auto-detekterer minutter/timer/dage) og bruges kun som signatur-
 #'   placeholder for andre enheder.
 #' @param target numeric target vaerdi for kontekstuel praecision (kun for "percent")
+#' @param language Locale code: "da" (default, Danish) or "en" (English)
 #' @return character formateret string
 #'
 #' @details
@@ -110,7 +113,7 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02) {
 #'
 #' @keywords internal
 #' @noRd
-format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
+format_y_value <- function(val, y_unit, y_range = NULL, target = NULL, language = "da") {
   # Input validation
   if (is.na(val)) {
     return(NA_character_)
@@ -123,17 +126,17 @@ format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
 
   # Percent formatting - kontekstuel praecision naar target er sat
   if (y_unit == "percent") {
-    return(format_percent_contextual(val, target = target))
+    return(format_percent_contextual(val, target = target, language = language))
   }
 
-  # Count formatting - delegates to canonical format_count_danish()
+  # Count formatting - locale-aware dispatcher
   if (y_unit == "count") {
-    return(format_count_danish(val))
+    return(format_count(val, language))
   }
 
-  # Rate formatting - delegates to canonical format_rate_danish()
+  # Rate formatting - locale-aware dispatcher
   if (y_unit == "rate") {
-    return(format_rate_danish(val))
+    return(format_rate(val, language))
   }
 
   # Time formatting - komposit-format ("30m", "1t 30m", "2d 13t")
@@ -143,12 +146,13 @@ format_y_value <- function(val, y_unit, y_range = NULL, target = NULL) {
     return(format_time_composite(val))
   }
 
-  # Default formatting - kontekstuel dansk notation
+  # Default formatting - locale-aware notation
+  dm <- if (language == "en") "." else ","
   if (is_effective_integer(val)) {
-    return(format(round(val), decimal.mark = ","))
+    return(format(round(val), decimal.mark = dm))
   } else if (abs(val) < 1) {
-    return(format(round(val, 2), decimal.mark = ",", nsmall = 2))
+    return(format(round(val, 2), decimal.mark = dm, nsmall = 2))
   } else {
-    return(format(round(val, 1), decimal.mark = ",", nsmall = 1))
+    return(format(round(val, 1), decimal.mark = dm, nsmall = 1))
   }
 }
