@@ -96,29 +96,31 @@ bfh_create_typst_document <- function(chart_image,
       )
     }
   } else {
-    # Packaged template: copy entire template directory (includes fonts, images)
-    template_dir <- system.file("templates/typst/bfh-template", package = "BFHcharts")
-
-    if (!dir.exists(template_dir)) {
-      stop(
-        "Typst template not found at: ", template_dir, "\n",
-        "  This should not happen. Please reinstall BFHcharts.",
-        call. = FALSE
-      )
-    }
-
+    # Packaged template: copy entire template directory (includes fonts, images).
+    # Uses session-level cache for same-filesystem copy speed when available.
     local_template_dir <- file.path(output_dir, "bfh-template")
     if (!skip_template_copy) {
       if (dir.exists(local_template_dir)) {
         unlink(local_template_dir, recursive = TRUE)
       }
-
-      # Use recursive copy for 5-10x performance improvement
-      success <- file.copy(template_dir, output_dir, recursive = TRUE, overwrite = TRUE)
+      src <- tryCatch(
+        .get_or_stage_template_cache(),
+        error = function(e) {
+          system.file("templates/typst/bfh-template", package = "BFHcharts")
+        }
+      )
+      if (!dir.exists(src)) {
+        stop(
+          "Typst template not found at: ", src, "\n",
+          "  This should not happen. Please reinstall BFHcharts.",
+          call. = FALSE
+        )
+      }
+      success <- file.copy(src, output_dir, recursive = TRUE, overwrite = TRUE)
       if (!success) {
         stop(
           "Failed to copy template directory\n",
-          "  Source: ", basename(template_dir), "\n",
+          "  Source: ", basename(src), "\n",
           "  Destination: ", basename(output_dir),
           call. = FALSE
         )
@@ -261,15 +263,13 @@ bfh_create_typst_document <- function(chart_image,
 # When skip_copy = TRUE, asserts the staged directory exists and returns
 # silently (used by batch_session callers where the directory was staged
 # once at session creation).
+#
+# For single-call mode (skip_copy = FALSE): prefers copying from the
+# session-level template cache (.bfh_template_cache) rather than the R
+# library installation path. Both dirs reside in tempdir() so the copy
+# operates within the same filesystem (~10-50ms vs 80-300ms cross-fs).
+# Falls back to the library path on cache errors.
 .stage_packaged_template_dir <- function(output_dir, skip_copy = FALSE) {
-  template_dir <- system.file("templates/typst/bfh-template", package = "BFHcharts")
-  if (!dir.exists(template_dir)) {
-    stop(
-      "Typst template not found at: ", template_dir, "\n",
-      "  This should not happen. Please reinstall BFHcharts.",
-      call. = FALSE
-    )
-  }
   local_template_dir <- file.path(output_dir, "bfh-template")
   if (skip_copy) {
     if (!dir.exists(local_template_dir)) {
@@ -283,16 +283,62 @@ bfh_create_typst_document <- function(chart_image,
   if (dir.exists(local_template_dir)) {
     unlink(local_template_dir, recursive = TRUE)
   }
-  success <- file.copy(template_dir, output_dir, recursive = TRUE, overwrite = TRUE)
+  # Prefer same-filesystem copy from session cache.
+  src <- tryCatch(
+    .get_or_stage_template_cache(),
+    error = function(e) {
+      system.file("templates/typst/bfh-template", package = "BFHcharts")
+    }
+  )
+  if (!dir.exists(src)) {
+    stop(
+      "Typst template not found at: ", src, "\n",
+      "  This should not happen. Please reinstall BFHcharts.",
+      call. = FALSE
+    )
+  }
+  success <- file.copy(src, output_dir, recursive = TRUE, overwrite = TRUE)
   if (!success) {
     stop(
       "Failed to copy template directory\n",
-      "  Source: ", basename(template_dir), "\n",
+      "  Source: ", basename(src), "\n",
       "  Destination: ", basename(output_dir),
       call. = FALSE
     )
   }
   invisible(local_template_dir)
+}
+
+# Lazily stages the packaged template into a persistent per-session tempdir
+# and returns the path to the staged bfh-template/ directory.
+# Subsequent calls return the cached path without re-copying (O(1)).
+# Cache is keyed on dir.exists() so a manually deleted tmpdir re-stages
+# automatically.
+.get_or_stage_template_cache <- function() {
+  cache <- .bfh_template_cache
+  cached_path <- if (!is.null(cache$dir)) file.path(cache$dir, "bfh-template") else ""
+  if (isTRUE(cache$ready) && dir.exists(cached_path)) {
+    return(cached_path)
+  }
+  dir <- tempfile("bfh_tpl_")
+  dir.create(dir, recursive = TRUE)
+  Sys.chmod(dir, mode = "0700", use_umask = FALSE)
+  src <- system.file("templates/typst/bfh-template", package = "BFHcharts")
+  if (!dir.exists(src)) {
+    unlink(dir, recursive = TRUE)
+    stop(
+      "Typst template not found at: ", src, "\n",
+      "  This should not happen. Please reinstall BFHcharts.",
+      call. = FALSE
+    )
+  }
+  if (!file.copy(src, dir, recursive = TRUE, overwrite = TRUE)) {
+    unlink(dir, recursive = TRUE)
+    stop("Failed to stage Typst template cache.", call. = FALSE)
+  }
+  cache$dir <- dir
+  cache$ready <- TRUE
+  file.path(dir, "bfh-template")
 }
 
 # Explicit allowlist of Typst/Quarto flag arguments that must NOT be shell-quoted.
