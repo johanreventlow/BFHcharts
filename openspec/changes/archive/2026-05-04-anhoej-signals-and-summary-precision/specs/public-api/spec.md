@@ -155,24 +155,10 @@ expect_identical(result$summary$centerlinje[1], result$qic_data$cl[1])
 - **THEN** `summary$kontrolgrænser_konstante[p]` SHALL be `TRUE`
 - **AND** scalar columns `nedre_kontrolgrænse` / `øvre_kontrolgrænse` SHALL be populated with raw (unrounded) values
 
-## REMOVED Requirements
+<!--
+REMOVED block dropped: legacy `loebelaengde_signal` requirement was never
+formally captured in `openspec/specs/public-api/spec.md`, so a REMOVED
+delta cannot match a target. The migration narrative is preserved in
+NEWS.md (0.15.0) and ADR-002 addendum.
+-->
 
-### Requirement: Summary column `loebelaengde_signal`
-
-**Reason:** The column name implied "runs-only signal", but its source `qicharts2::runs.signal` is the combined Anhoej signal (runs OR crossings). Clinicians mis-attributed crossings-only violations as level-shifts. Replaced by `anhoej_signal` (combined, same semantics) plus `runs_signal` and `crossings_signal` (decomposed).
-
-**Migration:**
-- Read `summary$anhoej_signal` for the same logical value previously read from `summary$loebelaengde_signal` (or `summary$løbelængde_signal` in pre-ASCII-migration code).
-- Where the consumer specifically wants to detect a runs-rule violation, read `summary$runs_signal`.
-- Where the consumer specifically wants to detect a crossings-rule violation, read `summary$crossings_signal`.
-- biSPCharts: tracked in johanreventlow/biSPCharts#468.
-
-```r
-# BEFORE (BFHcharts ≤ 0.14.x)
-if (result$summary$loebelaengde_signal[phase]) { ... }
-
-# AFTER (BFHcharts ≥ 0.15.0)
-if (isTRUE(result$summary$anhoej_signal[phase])) { ... }              # same combined semantics
-if (isTRUE(result$summary$runs_signal[phase])) { ... }                # runs-rule only
-if (isTRUE(result$summary$crossings_signal[phase])) { ... }           # crossings-rule only
-```
