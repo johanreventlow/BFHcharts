@@ -43,6 +43,138 @@ bfh_export_pdf(result, "test.pdf")
 
 ---
 
+### Requirement: Typst template SHALL render conditionally on logo presence
+
+The `bfh-diagram` Typst template SHALL accept a `logo_path` parameter
+(default `none`) and SHALL render the foreground hospital logo only
+when `logo_path` is supplied with a non-`none` value.
+
+**Rationale:**
+- Mirrors the font-fallback graceful-degradation contract: branding
+  assets injected by companion packages take precedence; absence of
+  assets does not block PDF rendering.
+- `bfh_export_pdf()` succeeds out-of-the-box on a clean install
+  without requiring `inject_assets` callback or
+  `BFHchartsAssets` companion package.
+- Layout calibration of header bar + title block is unchanged
+  (foreground `place()` slot uses fixed offsets, not relative-to-image
+  positioning).
+
+#### Scenario: PDF compiles without logo when no companion assets present
+
+- **GIVEN** a clean BFHcharts install without `BFHchartsAssets`
+  companion package
+- **AND** no `metadata$logo_path` is supplied
+- **AND** no `inject_assets` callback creates `images/` subdirectory
+- **WHEN** `bfh_export_pdf(result, "out.pdf")` is called
+- **THEN** the Typst compile SHALL succeed (no file-not-found error)
+- **AND** the PDF SHALL render with the calibrated header bar + title
+- **AND** the foreground logo slot SHALL be empty (no broken-image
+  marker)
+
+```r
+result <- bfh_qic(test_data, x = month, y = value, chart_type = "i")
+bfh_export_pdf(result, "out.pdf")
+# PDF compiles successfully; no logo visible
+```
+
+#### Scenario: PDF renders with logo when companion injects asset
+
+- **GIVEN** an `inject_assets` callback that writes
+  `<staged-template>/images/Hospital_Maerke_RGB_A1_str.png`
+- **AND** no explicit `metadata$logo_path` is supplied
+- **WHEN** `bfh_export_pdf(result, "out.pdf", inject_assets = MyAssets::inject_logo)`
+  is called
+- **THEN** R-side auto-detect SHALL discover the staged logo file
+- **AND** R-side SHALL populate `metadata$logo_path` automatically
+- **AND** the PDF SHALL render with the hospital logo at the
+  calibrated foreground position
+
+```r
+result <- bfh_qic(test_data, x = month, y = value, chart_type = "i")
+bfh_export_pdf(result, "out.pdf",
+               inject_assets = BFHchartsAssets::inject_bfh_assets)
+# PDF compiles with hospital logo embedded
+```
+
+#### Scenario: PDF renders with explicit logo_path
+
+- **GIVEN** a caller-supplied logo path via metadata
+- **WHEN** `bfh_export_pdf(result, "out.pdf", metadata = list(logo_path = "/abs/path/logo.png"))`
+  is called
+- **THEN** the PDF SHALL render with the supplied image
+- **AND** the explicit `logo_path` SHALL override any auto-detected
+  staged logo
+
+#### Scenario: Invalid logo_path surfaces clear error
+
+- **GIVEN** a `metadata$logo_path` pointing to a non-existent file
+- **WHEN** `bfh_export_pdf(result, "out.pdf", metadata = list(logo_path = "/no/such/file.png"))`
+  is called
+- **THEN** the Typst compile SHALL fail with the underlying
+  file-not-found error surfaced to the caller via the existing
+  `bfh_compile_typst()` error reporting
+- **AND** the error message SHALL contain enough information to
+  identify the missing path
+
+### Requirement: R wrapper SHALL auto-detect packaged logo
+
+`bfh_compile_typst()` and `compose_typst_document()` SHALL include a helper
+`.detect_packaged_logo()` that mirrors the existing `.detect_packaged_fonts()`
+semantics.
+
+When `metadata$logo_path` is not supplied AND
+`<staged-template>/images/Hospital_Maerke_RGB_A1_str.png` exists, the
+wrapper SHALL populate `metadata$logo_path` automatically before
+emitting the Typst document.
+
+When `metadata$logo_path` IS supplied (non-NULL), the wrapper SHALL
+NOT override it (explicit takes precedence over auto-detect).
+
+**Rationale:** Symmetric with `--font-path` auto-detect for fonts.
+Companion-package callbacks that write the image file at the standard
+staged path get logo rendering "for free" without requiring callers to
+thread `logo_path` through their code.
+
+The detected path SHALL be returned RELATIVE TO THE TEMPLATE FILE
+(`images/Hospital_Maerke_RGB_A1_str.png`), not relative to the calling
+document, because Typst resolves `#image()` calls relative to the .typ
+file that contains the call -- the template file, not the calling
+document. A path relative to the calling document would double-prefix
+at compile time and produce a file-not-found error.
+
+#### Scenario: Auto-detect populates logo_path when staged image exists
+
+- **GIVEN** a staged template directory containing
+  `images/Hospital_Maerke_RGB_A1_str.png`
+- **AND** `metadata$logo_path` is not supplied (NULL)
+- **WHEN** `compose_typst_document()` is invoked for the packaged template
+- **THEN** `metadata$logo_path` SHALL be populated with
+  `"images/Hospital_Maerke_RGB_A1_str.png"` (relative to the template file)
+- **AND** the rendered PDF SHALL include the hospital logo
+
+#### Scenario: Explicit logo_path takes precedence over auto-detect
+
+- **GIVEN** a staged template directory containing
+  `images/Hospital_Maerke_RGB_A1_str.png`
+- **AND** the caller supplies `metadata$logo_path = "/custom/path/logo.png"`
+- **WHEN** `compose_typst_document()` is invoked
+- **THEN** `metadata$logo_path` SHALL remain `"/custom/path/logo.png"`
+- **AND** auto-detect SHALL NOT override the caller-supplied value
+
+#### Scenario: Auto-detect skips when staged image is absent
+
+- **GIVEN** a staged template directory WITHOUT
+  `images/Hospital_Maerke_RGB_A1_str.png`
+- **AND** `metadata$logo_path` is not supplied (NULL)
+- **WHEN** `compose_typst_document()` is invoked
+- **THEN** `metadata$logo_path` SHALL remain NULL
+- **AND** the Typst template SHALL render the conditional foreground
+  block as no-logo (template default `logo_path: none`)
+- **AND** the PDF SHALL compile successfully without a hospital-logo asset
+
+---
+
 ### Requirement: Package SHALL NOT bundle copyrighted Mari fonts
 
 The package SHALL NOT include Mari font files in the distribution.
@@ -688,3 +820,141 @@ local({
 })
 ```
 
+
+### Requirement: `restrict_template` SHALL default to TRUE
+
+`bfh_export_pdf(restrict_template)` SHALL default to `TRUE`. Callers
+needing custom Typst templates via `template_path` SHALL explicitly
+opt-in by passing `restrict_template = FALSE`.
+
+**Rationale:**
+- Custom Typst templates are compiled by the Typst binary with full
+  filesystem and network access (equivalent to `source()`).
+- A configuration pipeline forwarding user-controlled input to
+  `template_path` (e.g. Shiny `input$template`, REST API parameter)
+  produces a silent privilege-escalation vector.
+- Default-safe matches the established pattern for `inject_assets`
+  (which already requires explicit namespace-trusted callbacks).
+- Pre-1.0 (0.15.x -> 0.16.0) breaking change is permitted per
+  `VERSIONING_POLICY.md` §A; migration is mechanical (one parameter
+  add).
+
+#### Scenario: Default rejects template_path without explicit opt-out
+
+- **GIVEN** a `bfh_qic_result` and a custom Typst template path
+- **WHEN** `bfh_export_pdf(result, "out.pdf", template_path = "/my/template.typ")`
+  is called WITHOUT `restrict_template`
+- **THEN** the function SHALL raise an informative error mentioning
+  `restrict_template = FALSE` as the explicit opt-out
+- **AND** no PDF SHALL be created
+- **AND** no Typst compile process SHALL be spawned
+
+```r
+expect_error(
+  bfh_export_pdf(result, "out.pdf", template_path = "/my/template.typ"),
+  "restrict_template"
+)
+```
+
+#### Scenario: Explicit opt-out allows custom template
+
+- **GIVEN** a `bfh_qic_result` and a custom Typst template path
+- **WHEN** `bfh_export_pdf(result, "out.pdf",
+  template_path = "/my/template.typ", restrict_template = FALSE)` is called
+- **THEN** the function SHALL accept the custom template
+- **AND** the PDF SHALL render using the supplied template
+
+```r
+expect_no_error(
+  bfh_export_pdf(result, "out.pdf",
+                 template_path = "/path/to/valid/template.typ",
+                 restrict_template = FALSE)
+)
+```
+
+#### Scenario: Default packaged template unaffected
+
+- **GIVEN** a `bfh_qic_result` and no `template_path`
+- **WHEN** `bfh_export_pdf(result, "out.pdf")` is called (default)
+- **THEN** the packaged BFH template SHALL render normally
+- **AND** the new `restrict_template = TRUE` default SHALL have no
+  effect (no `template_path` to restrict)
+
+```r
+expect_no_error(
+  bfh_export_pdf(result, "out.pdf")
+)
+```
+
+### Requirement: PDF SHALL render caveat when centerline is user-supplied
+
+The rendered PDF SHALL display a caveat block below the SPC table when `attr(bfh_qic_result$summary, "cl_user_supplied") == TRUE`, indicating that the centerline was manually specified and Anhoej signals were computed against the user-supplied centerline rather than the data-estimated process mean.
+
+**Rationale:**
+- The R-side warning (at `R/bfh_qic.R:674-682`) surfaces to interactive
+  users only; clinical PDF readers never see R warnings.
+- Clinicians correctly assume the SPC table reflects data-driven
+  analysis. Without the caveat, they may misattribute Anhoej signals
+  as clinically meaningful when they are artifacts of an arbitrary
+  user-set centerline.
+- Caveat-text is i18n-able via `inst/i18n/*.yaml`. Default Danish:
+  `"Centerlinje fastsat manuelt -- Anhoej-signal beregnet mod denne,
+  ikke data-estimeret middelvaerdi"`. English when `language = "en"`:
+  `"Centerline manually specified -- Anhoej signal computed against
+  user-supplied centerline, not data-estimated process mean"`.
+- The R-side warning is RETAINED -- the PDF caveat is the SECOND
+  surface, not a replacement.
+
+The caveat block SHALL be visually distinguished (italic, smaller font,
+grey colour) to match existing data-definition styling and SHALL be
+positioned directly below the SPC statistics table.
+
+#### Scenario: PDF with user-supplied cl renders caveat
+
+- **GIVEN** `result <- bfh_qic(data, x, y, chart_type = "i", cl = 50)`
+- **WHEN** `bfh_export_pdf(result, "out.pdf")` is called
+- **THEN** the rendered PDF SHALL contain caveat text matching the
+  i18n key `cl_user_supplied_caveat`
+- **AND** the caveat SHALL appear below the SPC statistics table
+- **AND** in Danish when `language = "da"` (default)
+
+```r
+result <- bfh_qic(data, x, y, chart_type = "i", cl = 50)
+out <- tempfile(fileext = ".pdf")
+bfh_export_pdf(result, out)
+text <- pdftools::pdf_text(out)
+expect_match(paste(text, collapse = "\n"), "fastsat manuelt")
+```
+
+#### Scenario: PDF without user-supplied cl does NOT render caveat
+
+- **GIVEN** `result <- bfh_qic(data, x, y, chart_type = "i")` (no `cl`)
+- **WHEN** `bfh_export_pdf(result, "out.pdf")` is called
+- **THEN** the rendered PDF SHALL NOT contain caveat text
+- **AND** the SPC table footer SHALL render unchanged from prior
+  versions
+
+```r
+result <- bfh_qic(data, x, y, chart_type = "i")
+out <- tempfile(fileext = ".pdf")
+bfh_export_pdf(result, out)
+text <- pdftools::pdf_text(out)
+expect_no_match(paste(text, collapse = "\n"), "fastsat manuelt")
+```
+
+#### Scenario: PDF caveat renders in English when language = "en"
+
+- **GIVEN** `result <- bfh_qic(data, x, y, chart_type = "i", cl = 50, language = "en")`
+- **WHEN** `bfh_export_pdf(result, "out.pdf")` is called
+- **THEN** the rendered PDF SHALL contain English caveat text
+  ("Centerline manually specified ...")
+- **AND** SHALL NOT contain Danish caveat text
+
+```r
+result <- bfh_qic(data, x, y, chart_type = "i", cl = 50, language = "en")
+out <- tempfile(fileext = ".pdf")
+bfh_export_pdf(result, out)
+text <- pdftools::pdf_text(out)
+expect_match(paste(text, collapse = "\n"), "manually specified")
+expect_no_match(paste(text, collapse = "\n"), "fastsat manuelt")
+```

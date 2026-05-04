@@ -1,7 +1,11 @@
 # public-api Specification
 
 ## Purpose
-TBD - created by archiving change export-spc-utility-functions. Update Purpose after archive.
+
+This capability owns user-facing API contracts for the BFHcharts package: exported function signatures, parameter types, return types, attribute existence on returned objects, and API stability guarantees. The package's public surface is intentionally minimal — `bfh_qic()`, `bfh_export_pdf()`, `bfh_extract_spc_stats()`, `bfh_create_export_session()`, `bfh_generate_analysis()`, `bfh_merge_metadata()` — and this spec governs what callers can rely on across versions.
+
+Internal signal-detection logic, Anhøj rule interpretation, fallback-narrative dispatch, and threshold/target semantics are governed by the `spc-analysis-api` capability. When a contract spans both (e.g. the `cl_user_supplied` attribute), this spec documents the API surface (presence, type, stable name); `spc-analysis-api` documents the underlying semantic meaning.
+
 ## Requirements
 ### Requirement: Package SHALL export SPC statistics extraction function
 
@@ -694,3 +698,114 @@ expect_s3_class(result, "bfh_qic_result")
 - **THEN** the function SHALL NOT validate denominator content
 - **AND** the function SHALL succeed
 
+
+### Requirement: Summary SHALL carry `cl_user_supplied` attribute
+
+The summary returned by `bfh_qic()$summary` SHALL carry an attribute
+`cl_user_supplied` (logical scalar) reflecting whether the caller
+supplied a non-NULL `cl` argument to `bfh_qic()`.
+
+**Rationale:**
+- Downstream consumers (PDF rendering, biSPCharts UI, analysis text)
+  need to know whether the centerline is data-derived or user-supplied
+  WITHOUT introspecting the entire `config` slot.
+- An attribute (rather than a column) preserves backward compatibility
+  for column-iteration patterns (e.g. `lapply(summary, ...)`,
+  `dplyr::summarise(across(...))`).
+- Scalar (rather than per-phase vector) matches the API: `cl` is a
+  single global value supplied via one parameter; per-phase encoding
+  would suggest distinct per-phase user-cl values that the API does not
+  support.
+
+**Encoding:**
+- `attr(summary, "cl_user_supplied") = TRUE` when user passed
+  `bfh_qic(..., cl = <non-NULL>)`.
+- `attr(summary, "cl_user_supplied") = FALSE` when user did not pass
+  `cl` (default; centerline is data-estimated).
+
+**Consumer pattern:**
+- Safe check: `isTRUE(attr(result$summary, "cl_user_supplied"))`.
+- The attribute SHALL also be exposed via
+  `bfh_extract_spc_stats(result)$cl_user_supplied` for discovery
+  parity with `is_run_chart` and other surfaced flags.
+
+#### Scenario: Attribute set to TRUE when cl supplied
+
+- **GIVEN** `bfh_qic(data, x, y, chart_type = "i", cl = 50)` is called
+- **WHEN** the result is returned
+- **THEN** `attr(result$summary, "cl_user_supplied")` SHALL be `TRUE`
+- **AND** `isTRUE(attr(result$summary, "cl_user_supplied"))` SHALL
+  evaluate to `TRUE`
+
+```r
+result <- bfh_qic(data, x = month, y = value, chart_type = "i", cl = 50)
+expect_true(isTRUE(attr(result$summary, "cl_user_supplied")))
+```
+
+#### Scenario: Attribute set to FALSE when cl absent
+
+- **GIVEN** `bfh_qic(data, x, y, chart_type = "i")` is called (no `cl`)
+- **WHEN** the result is returned
+- **THEN** `attr(result$summary, "cl_user_supplied")` SHALL be `FALSE`
+
+```r
+result <- bfh_qic(data, x = month, y = value, chart_type = "i")
+expect_identical(attr(result$summary, "cl_user_supplied"), FALSE)
+```
+
+#### Scenario: bfh_extract_spc_stats surfaces the attribute
+
+- **GIVEN** a `bfh_qic_result` with `cl` supplied
+- **WHEN** `bfh_extract_spc_stats(result)` is called
+- **THEN** the returned list SHALL include
+  `cl_user_supplied = TRUE`
+
+```r
+result <- bfh_qic(data, x = month, y = value, chart_type = "i", cl = 50)
+stats <- bfh_extract_spc_stats(result)
+expect_true(stats$cl_user_supplied)
+
+result_no_cl <- bfh_qic(data, x = month, y = value, chart_type = "i")
+stats_no_cl <- bfh_extract_spc_stats(result_no_cl)
+expect_identical(stats_no_cl$cl_user_supplied, FALSE)
+```
+
+#### Scenario: Attribute survives return.data = TRUE path
+
+- **GIVEN** `bfh_qic(..., cl = 50, return.data = TRUE)` is called
+- **WHEN** the raw qic_data data.frame is returned
+- **THEN** `attr(result, "cl_user_supplied")` SHALL also be `TRUE`
+  (attribute attaches to the returned data.frame for discovery
+  parity with the S3 path)
+
+```r
+qic <- bfh_qic(data, x = month, y = value, chart_type = "i",
+               cl = 50, return.data = TRUE)
+expect_true(isTRUE(attr(qic, "cl_user_supplied")))
+```
+
+### Requirement: Public API specification ownership
+
+The `public-api` capability SHALL govern user-facing API contracts: exported function signatures, parameter types, return types, attribute existence, and stability guarantees. It SHALL NOT govern internal signal-detection logic, fallback-narrative dispatch, or threshold semantics — those concerns are owned by `spc-analysis-api`.
+
+When a contract spans both capabilities (e.g. `bfh_extract_spc_stats(result)$cl_user_supplied`), the `public-api` spec SHALL document the API surface (presence, type, stable name) and the `spc-analysis-api` spec SHALL document the underlying meaning (when the flag is set, what it implies for Anhøj-signal interpretation).
+
+Cross-references SHALL be expressed as prose ("See spc-analysis-api Requirement: X for Y") rather than formal links, since OpenSpec does not support cross-spec linking and prose remains valid across spec versions.
+
+**Rationale:**
+- Stable surface (signatures, return types) and semantic meaning (what signals imply) evolve at different rates — `public-api` changes require MAJOR/MINOR bumps, while `spc-analysis-api` refinements may be subtler.
+- Without explicit ownership boundaries, future changes risk updating one spec and forgetting the other, producing inconsistencies.
+- Prose cross-references survive renaming and don't fail validation.
+
+#### Scenario: Purpose section identifies ownership
+
+- **WHEN** a contributor reads `openspec/specs/public-api/spec.md`
+- **THEN** the `## Purpose` section SHALL state that this capability owns user-facing API contracts (signatures, eksport status, return types, attribute existence, stability guarantees)
+- **AND** the Purpose SHALL explicitly delegate signal-detection semantics to `spc-analysis-api`
+
+#### Scenario: Cross-reference rather than duplication
+
+- **WHEN** a `public-api` requirement describes a contract that has semantic meaning owned by `spc-analysis-api` (e.g. `cl_user_supplied` attribute, target-direction operator parsing)
+- **THEN** the `public-api` requirement SHALL state the API surface (attribute name, type, when present)
+- **AND** SHALL include a prose cross-reference like "See spc-analysis-api Requirement: <name> for the underlying signal interpretation"
+- **AND** SHALL NOT duplicate the semantic interpretation rules

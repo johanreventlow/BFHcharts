@@ -23,9 +23,12 @@
       Note: Ikke nødvendigt -- Typst font-fallback håndterer dette automatisk via font-chain.
 - [x] 2.4 Verificér at Mari stadig opdages og bruges når companion-pakken har injected assets
       Note: Dækket af test-production-template-renders.R test 2 (inject_assets med Mari-check).
-- [-] 2.5 Tilføj placeholder-logo eller fjern hard-coded `images/Hospital_Maerke_RGB_A1_str.png`-reference
-      Note: Dokumenteret som known gap i ADR-001. Kræver separat follow-up. Smoke-tests skipper
-      automatisk når images/ mangler.
+- [x] 2.5 Tilføj placeholder-logo eller fjern hard-coded `images/Hospital_Maerke_RGB_A1_str.png`-reference
+      Note: Lukket via change `add-conditional-template-image` (BFHcharts 0.15.1).
+      Template har nu `logo_path: none`-parameter; foreground logo-slot rendres kun
+      når path er sat. R-side auto-detect via `.detect_packaged_logo()` mirroring
+      `.detect_packaged_fonts()`-mønster. ADR-001 "Negative / Remaining gaps"-sektion
+      opdateret med strikethrough + cross-link.
 
 ## 3. Auto-detect staged fonts
 

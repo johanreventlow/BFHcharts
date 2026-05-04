@@ -1,0 +1,145 @@
+# Auto-open release PR (develop -> main) when develop is ahead of main.
+#
+# Idempotent: creates a PR only if none already exists. Existing release-PR
+# stays open through multiple develop pushes -- new commits just update the
+# diff, no PR-spam. Workflow exits early when:
+#   1. develop is not ahead of main (nothing to release), OR
+#   2. an open PR develop -> main already exists.
+#
+# Triggers:
+#   - push to develop          : checks state on every merge to develop
+#   - workflow_dispatch        : ad-hoc manual run from Actions UI
+#
+# Does NOT auto-merge. The PR is opened in OPEN state for manual review +
+# explicit merge by the maintainer.
+#
+# Required token: default GITHUB_TOKEN works for opening PRs in same repo;
+# write-permission on pull-requests is required (granted via permissions
+# block below).
+
+name: Auto release PR
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check develop ahead of main
+        id: ahead-check
+        run: |
+          git fetch origin main --depth=1 || git fetch origin main
+          AHEAD=$(git rev-list --count origin/main..HEAD)
+          echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
+          echo "develop is $AHEAD commits ahead of main"
+        shell: bash
+
+      - name: Skip if not ahead
+        if: steps.ahead-check.outputs.ahead == '0'
+        run: |
+          echo "develop is not ahead of main; nothing to release."
+          exit 0
+        shell: bash
+
+      - name: Check for existing release PR
+        id: pr-check
+        if: steps.ahead-check.outputs.ahead != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Repo identifier from runner-supplied GITHUB_REPOSITORY env, not
+          # template interpolation in run: commands (defense in depth against
+          # workflow-injection vectors).
+          REPO="$GITHUB_REPOSITORY"
+          EXISTING=$(gh pr list \
+            --repo "$REPO" \
+            --base main \
+            --head develop \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [ -n "$EXISTING" ]; then
+            echo "Open release PR already exists: #$EXISTING"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No open release PR; will create."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        shell: bash
+
+      - name: Open release PR
+        if: |
+          steps.ahead-check.outputs.ahead != '0' &&
+          steps.pr-check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AHEAD_COUNT: ${{ steps.ahead-check.outputs.ahead }}
+        run: |
+          REPO="$GITHUB_REPOSITORY"
+          # Body content built via heredoc with explicit variable substitution
+          # only for AHEAD_COUNT (a rev-list integer). Commit messages are
+          # written to a temp file via git-log, then included via cat -- no
+          # shell expansion of commit content.
+          COMMITS_FILE=$(mktemp)
+          git log --oneline origin/main..HEAD | head -20 > "$COMMITS_FILE"
+
+          BODY_FILE=$(mktemp)
+          cat > "$BODY_FILE" <<EOF
+          ## Auto-opened release PR
+
+          \`develop\` is **$AHEAD_COUNT commits** ahead of \`main\`. This PR
+          consolidates pending changes for review + manual merge.
+
+          **Auto-merge:** disabled. Maintainer reviews and merges manually.
+
+          **Workflow:** \`.github/workflows/auto-release-pr.yaml\` -- triggered
+          on push to \`develop\` and workflow_dispatch. Idempotent: skips if
+          an open release PR already exists.
+
+          ### Recent commits (top 20)
+
+          \`\`\`
+          $(cat "$COMMITS_FILE")
+          \`\`\`
+
+          ### Validering
+
+          Verify before merge:
+          - [ ] CI green on develop tip
+          - [ ] \`devtools::check()\` clean
+          - [ ] DESCRIPTION Version: bumped per VERSIONING_POLICY
+          - [ ] NEWS.md entry for new version
+          - [ ] OpenSpec changes archived as appropriate
+
+          ### Cross-repo coordination
+
+          - [ ] biSPCharts \`Imports: BFHcharts (>= X.Y.Z)\` bump (separate PR per VERSIONING_POLICY)
+
+          ### Tag
+
+          - [ ] \`git tag -a vX.Y.Z -m "Release vX.Y.Z"\` after merge to main
+          - [ ] \`git push origin vX.Y.Z\`
+          EOF
+
+          gh pr create \
+            --repo "$REPO" \
+            --base main \
+            --head develop \
+            --title "Release: develop -> main ($AHEAD_COUNT commits)" \
+            --body-file "$BODY_FILE"
+
+          rm -f "$COMMITS_FILE" "$BODY_FILE"
+        shell: bash

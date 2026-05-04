@@ -1,3 +1,120 @@
+# BFHcharts 0.16.0 (development)
+
+## Breaking changes
+
+* **`bfh_export_pdf(restrict_template = TRUE)` er nu default.** Tidligere
+  default `FALSE` tillod stiltigende custom Typst-templates via `template_path`
+  -- en silent privilege-escalation-vector hvis en konfigurations-pipeline
+  forwarder user-controlled input. Custom Typst-templates kompileres med
+  trust-niveau svarende til `source()` (læser/skriver vilkårlige paths under
+  compilation). Default-safe posture eliminerer denne vector.
+
+  **Migration:** Callers der eksplicit ønsker custom-template skal nu opt-in:
+  ```r
+  # Foer (BFHcharts <= 0.15.x): custom template tilladt by default
+  bfh_export_pdf(result, "out.pdf", template_path = "/my/template.typ")
+
+  # Efter (BFHcharts >= 0.16.0): eksplicit opt-out paakraevet
+  bfh_export_pdf(result, "out.pdf",
+                 template_path = "/my/template.typ",
+                 restrict_template = FALSE)
+  ```
+  Migration er mekanisk: tilfoej `restrict_template = FALSE` til eksisterende
+  kald. Validation-error-besked nævner eksplicit opt-out parameteren.
+
+  Lukker production-readiness review item 2.1. Se ADR-003 for risk-modellen
+  (warning-blind clinical readers).
+
+## Nye features
+
+* **PDF-eksport rendrer nu en caveat-note under SPC-tabellen, naar
+  bruger-defineret centerlinje (`cl`) er sat i `bfh_qic()`.** Naar caller
+  passerer en non-NULL `cl`, bliver Anhøj run/crossing-signaler beregnet mod
+  den brugersatte centerlinje, ikke den data-estimerede process-mean.
+  Eksisterende R-side warning (`R/bfh_qic.R:674-682`) er bevaret -- PDF-caveat
+  er den ANDEN surface for warning-blind kliniske læsere.
+
+  Caveat-tekst (dansk default): *"Centerlinje fastsat manuelt -- Anhøj-signal
+  beregnet mod denne, ikke data-estimeret middelværdi."* Engelsk fallback
+  ("Centerline manually specified ...") når `language = "en"`.
+
+  Default-PDFs uden custom `cl` rendres uændret -- caveat-blokken er
+  betinget renderet. Lukker production-readiness review item 3.3.
+
+* **`attr(bfh_qic_result$summary, "cl_user_supplied")` er ny stable
+  attribute** (logical scalar) som downstream-konsumenter (PDF-template,
+  biSPCharts UI, analyse-tekst) kan læse uden at introspektere `config`-slotten.
+  Brug `isTRUE(attr(result$summary, "cl_user_supplied"))` for safe-check.
+  Attributtens placering bevarer column-iteration patterns (`lapply(summary, ...)`,
+  `dplyr::summarise(across(...))`) -- ingen ny kolonne tilføjes.
+
+* **`bfh_extract_spc_stats(result)$cl_user_supplied`** eksponerer flaget for
+  power-users der querier SPC-stats via public API, parallelt med
+  eksisterende `is_run_chart`-felt.
+
+## Interne ændringer
+
+* `inst/i18n/{da,en}.yaml`: ny noegle `labels.caveats.cl_user_supplied`.
+* `inst/templates/typst/bfh-template/bfh-template.typ`: nye parametre
+  `cl_user_supplied: false` + `cl_caveat_text: none` med betinget caveat-blok
+  under SPC-tabellen.
+* `R/utils_typst.R::build_typst_content()`: emitter de nye Typst-parametre
+  naar spc_stats indikerer brugersat centerlinje.
+* `R/utils_export_helpers.R::compose_typst_document()`: resolver caveat-tekst
+  server-side via i18n baseret paa `language`-config.
+* **OpenSpec spec-cleanup** (uden API-impact):
+  - `caching-system`: refit til at dokumentere de fire active package-private
+    caches (`font`, `marquee_style`, `quarto`, `i18n`) og `bfh_reset_caches()`-
+    helperen. Fjernet stale references til `configure_grob_cache()` /
+    `clear_grob_cache()` (begge fjernet i v0.5.0).
+  - `code-organization` requirement #7 (3-layer decomposition): fjernet
+    arbitraer 220-line cap. Strukturelle krav (named helpers,
+    isolation-testbarhed, cleanup-closures) bevaret. Fil-stoerrelse er ej
+    laengere et review-kriterium.
+  - `public-api` ↔ `spc-analysis-api`: praeciseret ejerskab. `public-api`
+    ejer API-kontrakter (signaturer, return-types, attribute-existence);
+    `spc-analysis-api` ejer signal-detection-semantik (Anhoej rules,
+    fallback-narrative dispatch, threshold semantics). Cross-references via
+    prose -- ingen indholds-duplication.
+  - Implementerer OpenSpec change `cleanup-stale-spec-issues`.
+
+# BFHcharts 0.15.1 (development)
+
+## Bug fixes
+
+* **PDF-eksport rendrer succesfuldt uden hospitals-logo, når companion-pakker
+  ikke har injiceret assets.** Tidligere fejlede `bfh_export_pdf()` hårdt på et
+  rent install fordi Typst-templaten hard-refererede til
+  `images/Hospital_Maerke_RGB_A1_str.png` (proprietary BFH-asset, ikke bundlet
+  i public package). Templaten har nu en `logo_path: none`-parameter; den
+  forreste logo-slot rendres kun når `logo_path` er sat. R-siden auto-detekterer
+  staged logos via `.detect_packaged_logo()` parallelt med eksisterende
+  `.detect_packaged_fonts()`-mønster, så companion-pakker (BFHchartsAssets)
+  fortsat får hospital-branding uden caller-side ændringer. Lukker det sidste
+  åbne FIX NOW-blocker fra production-readiness review (item 1.2) og task 2.5
+  i `openspec/changes/2026-05-01-fix-pdf-template-asset-contract`. Implementerer
+  OpenSpec change `add-conditional-template-image`.
+
+  Migration:
+  - **Eksisterende callers uden inject_assets:** ingen ændring nødvendig --
+    PDF rendrer nu uden fejl (uden logo). Tidligere fejlede compile.
+  - **Eksisterende callers med inject_assets:** ingen ændring nødvendig --
+    auto-detect henter staged logo. Layout uændret.
+  - **Avancerede callers** kan supply `metadata$logo_path = "/path/to/custom.png"`
+    for at overstyre auto-detect.
+
+## Internal changes
+
+* `bfh-template.typ` template-signature gains optional `logo_path: none`
+  parameter. Foreground `place(image(...))` block er nu konditional.
+* `R/utils_typst.R`: ny helper `.detect_packaged_logo()` + `.stage_packaged_template_dir()`.
+  `build_typst_content()` emit `logo_path` i Typst-params-blokken når sat.
+* `R/utils_export_helpers.R::compose_typst_document()` re-ordret: stager template
+  + kører inject_assets FØR `bfh_create_typst_document()` skrives, så logo
+  auto-detect kan se injicerede filer.
+* `R/utils_metadata.R::bfh_merge_metadata()` accepterer + viderefører `logo_path`.
+* `validate_bfh_export_pdf_inputs()`: `logo_path` whitelist + scalar character-validering.
+
 # BFHcharts 0.15.0
 
 ## Breaking changes

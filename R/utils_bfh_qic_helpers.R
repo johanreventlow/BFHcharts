@@ -183,7 +183,15 @@ add_anhoej_signal <- function(qic_data) {
 #' @noRd
 build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
                                  return.data) {
+  # Mark whether the centerline was user-supplied (vs data-estimated).
+  # Surfaces in PDF caveat + downstream consumers without polluting the
+  # column-iteration surface (lapply(summary, ...) patterns unaffected).
+  cl_user_supplied <- !is.null(config$cl)
+  attr(summary_result, "cl_user_supplied") <- cl_user_supplied
+
   if (return.data) {
+    # Attach to raw data.frame too for parity with the S3 path.
+    attr(qic_data, "cl_user_supplied") <- cl_user_supplied
     return(qic_data)
   } else {
     return(

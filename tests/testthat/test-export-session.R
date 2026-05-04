@@ -215,7 +215,8 @@ test_that("bfh_export_pdf rejects batch_session + template_path", {
 
   expect_error(
     bfh_export_pdf(result, tempfile(fileext = ".pdf"),
-      batch_session = session, template_path = fake_template
+      batch_session = session, template_path = fake_template,
+      restrict_template = FALSE
     ),
     "template_path"
   )
@@ -439,6 +440,28 @@ test_that("on.exit cleanup rydder per-eksport filer op ved fejl (crash recovery)
 
   # Template-mappen skal stadig eksistere (ikke slettet som per-eksport fil)
   expect_true(dir.exists(file.path(session$tmpdir, "bfh-template")))
+})
+
+test_that("session finalizer cleans up tmpdir on garbage collection", {
+  # Verificer at reg.finalizer() i export_session.R:137 faktisk fyrer
+  # naar session-objektet bliver garbage-collected uden eksplicit close().
+  # Sikrer at orphan-tmpdir ikke ophobes hvis caller glemmer close().
+  skip_if(!dir.exists(
+    system.file("templates/typst/bfh-template", package = "BFHcharts")
+  ), "template not installed")
+
+  # Capture tmpdir-stien INDEN session lukkes/dropper scope
+  tmpdir_path <- local({
+    session <- bfh_create_export_session()
+    expect_true(dir.exists(session$tmpdir))
+    session$tmpdir
+  })
+
+  # Session-objektet er ude af scope. Tving GC -> finalizer skal fyre.
+  gc()
+  gc() # Kald to gange for at vaere sikker paa onexit-finalizer kerer
+
+  expect_false(dir.exists(tmpdir_path))
 })
 
 

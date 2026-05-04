@@ -293,6 +293,59 @@ test_that("PDF bevarer danske tegn i metadata-strings", {
 })
 
 # ============================================================================
+# TESTS — cl_user_supplied caveat (Slice B af harden-pdf-export-for-production)
+# ============================================================================
+
+test_that("PDF rendrer caveat-tekst når cl er brugersat (dansk default)", {
+  skip_if_not_render_test()
+  skip_if_no_quarto()
+  skip_if_not_installed("pdftools")
+  skip_on_cran()
+
+  result <- suppressWarnings(
+    bfh_qic(
+      data = fixture_deterministic_chart_data(),
+      x = month,
+      y = infections,
+      chart_type = "i",
+      chart_title = "Caveat-test (cl brugersat)",
+      cl = 15
+    )
+  )
+
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+  bfh_export_pdf(result, temp_file)
+
+  # Caveat-tekst kommer fra inst/i18n/da.yaml -> labels.caveats.cl_user_supplied
+  expect_pdf_contains(temp_file, "fastsat manuelt")
+})
+
+test_that("PDF rendrer IKKE caveat-tekst når cl er fraværende", {
+  skip_if_not_render_test()
+  skip_if_no_quarto()
+  skip_if_not_installed("pdftools")
+  skip_on_cran()
+
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = "Caveat-test (data-estimeret cl)"
+  )
+
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+  bfh_export_pdf(result, temp_file)
+
+  text <- pdftools::pdf_text(temp_file)
+  combined <- paste(text, collapse = " ")
+  expect_false(
+    grepl("fastsat manuelt", combined),
+    info = "Caveat-tekst maa ikke optraede naar cl ikke er sat eksplicit"
+  )
+})
+
+# ============================================================================
 # TESTS — Negative cases (fraværende metadata skal ikke vises)
 # ============================================================================
 

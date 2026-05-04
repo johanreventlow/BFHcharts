@@ -34,6 +34,12 @@
 #'     `bfh_qic_result` input on non-run charts.}
 #'   \item{is_run_chart}{Logical indicating run chart. Present only for
 #'     `bfh_qic_result` input.}
+#'   \item{cl_user_supplied}{Logical. `TRUE` when the caller passed a
+#'     non-NULL `cl` argument to `bfh_qic()`; Anhoej run/crossing signals
+#'     in this case were computed against the user-supplied centerline,
+#'     not the data-estimated process mean. Mirrors
+#'     `attr(result$summary, "cl_user_supplied")`. Present only for
+#'     `bfh_qic_result` input.}
 #' }
 #'
 #' @details
@@ -122,6 +128,11 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
   is_run_chart <- identical(x$config$chart_type, "run")
   stats$is_run_chart <- is_run_chart
 
+  # Surface user-supplied centerline flag so PDF/UI consumers can render
+  # the warning-blind-clinical-reader caveat. Mirrors the attribute set
+  # in build_bfh_qic_return().
+  stats$cl_user_supplied <- isTRUE(attr(x$summary, "cl_user_supplied"))
+
   # Run charts har ingen kontrolgraenser -> outlier-felter skal vaere NULL,
   # selvom format_qic_summary() har tilfoejet aggregerede outlier-kolonner.
   if (is_run_chart) {
@@ -183,7 +194,8 @@ empty_spc_stats <- function() {
     crossings_expected = NULL,
     crossings_actual = NULL,
     outliers_expected = NULL,
-    outliers_actual = NULL
+    outliers_actual = NULL,
+    cl_user_supplied = NULL
   )
 }
 
