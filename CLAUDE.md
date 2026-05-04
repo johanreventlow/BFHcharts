@@ -13,7 +13,21 @@
 3. Tilføj Claude attribution footers:
    - ❌ "🤖 Generated with [Claude Code]"
    - ❌ "Co-Authored-By: Claude <noreply@anthropic.com>"
-   
+
+✅ **BRANCHING + PR-MODEL:**
+
+```
+feature/fix/chore branch  ──PR──▶  develop  ──PR──▶  main  ──tag──▶  release
+```
+
+- **Default PR-base = `develop`** (integration-branch). Feature/fix/chore/docs branches PR'es ALTID til `develop` medmindre brugeren eksplicit beder om andet.
+- **`develop` → `main`** kun via release-PR (typisk efter version bump + NEWS-entry). Eksempel: PR #295.
+- **Direkte PR mod `main`** undtagelsesvis tilladt for:
+  - Hotfixes der skal i produktion straks
+  - Ren-build-hygiejne PRs der ikke er feature-arbejde (ofte forhandles med bruger først)
+- **Branch-fork:** feature-branches forkes fra `develop` (sikrer ren PR-diff). Hvis branch fork'ed fra `main` mens `develop` er bagefter, vil PR mod `develop` vise extra commits — flag det og tilbyd at sync `develop ← main` først.
+- **Pre-commit hook** blokerer direkte commit på `main` (`.git/hooks/pre-commit` step 0).
+
 ---
 
 ## 1) Project Overview
