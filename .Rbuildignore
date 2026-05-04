@@ -23,9 +23,10 @@
 ^\.\.Rcheck$
 ^BISPCHARTS\.png$
 ^Rplots\.pdf$
-^tests/testthat/Rplots\.pdf$
+^tests/testthat/.*\.pdf$
 ^tests/testthat/_problems$
-^tests/testthat/output; rm -rf
+^inst/templates/typst/bfh-template/fonts$
+^inst/templates/typst/bfh-template/fonts/.*$
 ^\.claude$
 ^\.claude/
 ^\.worktrees$

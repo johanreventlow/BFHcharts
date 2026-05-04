@@ -56,6 +56,59 @@ form. If you see a startup message
 remotes::install_github("johanreventlow/BFHtheme@v0.5.0")
 ```
 
+### Locked-down / offline environments
+
+Some hospital networks (Posit Connect / RStudio Workbench behind a
+corporate firewall, air-gapped clinical infrastructure) block public
+GitHub access and cannot reach `r-universe.dev` or `github.com`
+directly. BFHcharts can still be deployed in these environments via
+one of three patterns:
+
+**1. Internal Posit Package Manager (recommended)**
+
+If your organisation hosts a Posit Package Manager instance, mirror
+the `johanreventlow.r-universe.dev` repository or publish BFHcharts +
+BFHtheme + BFHllm as internal source packages. Configure
+`options(repos = ...)` to point at the internal endpoint, then:
+
+```r
+install.packages("BFHcharts")
+```
+
+**2. Local tarball install**
+
+For one-off deployments or restricted-network environments without an
+internal mirror, download release tarballs from the GitHub Releases
+page on a connected workstation and transfer them:
+
+```r
+# On a connected machine: download release assets
+# https://github.com/johanreventlow/BFHcharts/releases
+# https://github.com/johanreventlow/BFHtheme/releases
+
+# On the deployment target: install in dependency order
+install.packages("BFHtheme_0.5.0.tar.gz",  repos = NULL, type = "source")
+install.packages("BFHcharts_0.15.0.tar.gz", repos = NULL, type = "source")
+```
+
+CRAN-mirrored runtime dependencies (`ggplot2`, `qicharts2`, `dplyr`,
+`scales`, `lubridate`, `purrr`, `stringr`, `tibble`, `yaml`,
+`commonmark`, `xml2`, `systemfonts`, `rlang`, `svglite`, `marquee`,
+`grid`, `lemon`) must be available from a CRAN mirror reachable by
+the target environment.
+
+**3. Posit Connect manifest deployment**
+
+For Shiny apps deploying via `rsconnect::writeManifest()` to Posit
+Connect (Cloud or self-hosted), the manifest pinpoints package
+versions including `Remotes:` references. Connect resolves these via
+its configured upstream repositories. If Connect cannot resolve
+`johanreventlow/BFHtheme` directly, configure an internal Package
+Manager and pin the manifest's `Remotes:` field to the internal URL.
+
+See [#270 in biSPCharts](https://github.com/johanreventlow/biSPCharts)
+for an example Posit Connect Cloud deployment configuration.
+
 ## Font Requirements
 
 BFHcharts PDF export uses the **Mari font** for hospital branding when available.

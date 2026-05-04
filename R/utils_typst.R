@@ -225,6 +225,76 @@ bfh_create_typst_document <- function(chart_image,
   if (length(font_files) > 0) staged_fonts_dir else NULL
 }
 
+# Auto-detect packaged hospital logo in the staged template directory.
+# Mirrors .detect_packaged_fonts() semantics. Companion packages
+# (e.g. BFHchartsAssets) inject the logo into bfh-template/images/ via the
+# inject_assets callback; this helper makes the file available to the Typst
+# template's logo_path parameter without requiring callers to thread the
+# path explicitly through their code.
+#
+# Filename is deterministic (Hospital_Maerke_RGB_A1_str.png) per ADR-001
+# + change add-conditional-template-image (D2). Glob-based detection would
+# tempt callers to drop arbitrary images expecting them to render -- the
+# explicit name avoids that.
+#
+# Returns the path "images/Hospital_Maerke_RGB_A1_str.png" (relative to the
+# template file `bfh-template/bfh-template.typ`) when the file exists, NULL
+# otherwise. Typst resolves #image() paths relative to the .typ file that
+# CONTAINS the call -- which is the template file, not the calling document.
+# Therefore the path must be expressed as `images/...`, not as
+# `bfh-template/images/...` (the latter would double-prefix at compile time).
+.detect_packaged_logo <- function(typst_file) {
+  template_logo_subpath <- file.path("images", "Hospital_Maerke_RGB_A1_str.png")
+  abs_path <- file.path(
+    dirname(typst_file), "bfh-template", template_logo_subpath
+  )
+  if (file.exists(abs_path)) template_logo_subpath else NULL
+}
+
+# Stage the packaged template directory (bfh-template/) into the given
+# output_dir. Extracted from bfh_create_typst_document() so that
+# compose_typst_document() can stage the template BEFORE running
+# inject_assets and BEFORE writing the .typ file -- enabling logo
+# auto-detection from injected assets to flow into the template's
+# logo_path parameter.
+#
+# When skip_copy = TRUE, asserts the staged directory exists and returns
+# silently (used by batch_session callers where the directory was staged
+# once at session creation).
+.stage_packaged_template_dir <- function(output_dir, skip_copy = FALSE) {
+  template_dir <- system.file("templates/typst/bfh-template", package = "BFHcharts")
+  if (!dir.exists(template_dir)) {
+    stop(
+      "Typst template not found at: ", template_dir, "\n",
+      "  This should not happen. Please reinstall BFHcharts.",
+      call. = FALSE
+    )
+  }
+  local_template_dir <- file.path(output_dir, "bfh-template")
+  if (skip_copy) {
+    if (!dir.exists(local_template_dir)) {
+      stop(
+        "Template directory not found in session tmpdir: ", local_template_dir,
+        call. = FALSE
+      )
+    }
+    return(invisible(local_template_dir))
+  }
+  if (dir.exists(local_template_dir)) {
+    unlink(local_template_dir, recursive = TRUE)
+  }
+  success <- file.copy(template_dir, output_dir, recursive = TRUE, overwrite = TRUE)
+  if (!success) {
+    stop(
+      "Failed to copy template directory\n",
+      "  Source: ", basename(template_dir), "\n",
+      "  Destination: ", basename(output_dir),
+      call. = FALSE
+    )
+  }
+  invisible(local_template_dir)
+}
+
 # Explicit allowlist of Typst/Quarto flag arguments that must NOT be shell-quoted.
 # These are the only double-dash flags this package passes to the Typst compiler.
 # Any arg starting with "--" that is NOT in this list is treated as a path/value
@@ -458,6 +528,16 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   if (!is.null(metadata$footer_content)) {
     # Footer content supports rich text - use content block [...]
     params$footer_content <- sprintf("[%s]", markdown_to_typst(metadata$footer_content))
+  }
+
+  # Hospital logo: rendered conditionally by the template. NULL/NA -> omit
+  # parameter (template default `none` -> no logo, PDF compiles without
+  # branding asset). Non-empty string -> emitted as Typst string literal.
+  # See change add-conditional-template-image for the contract.
+  if (!is.null(metadata$logo_path) &&
+    is.character(metadata$logo_path) && length(metadata$logo_path) == 1L &&
+    !is.na(metadata$logo_path) && nzchar(metadata$logo_path)) {
+    params$logo_path <- sprintf('"%s"', escape_typst_string(metadata$logo_path))
   }
 
   # Date parameter - format for Typst template

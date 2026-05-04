@@ -1,12 +1,14 @@
-# Production template smoke tests (ADR-001, Option A).
+# Production template smoke tests (ADR-001 Option A + change
+# add-conditional-template-image).
 #
 # Validates that the packaged production template renders a valid PDF using
 # only bundled/system assets. Tests are gated behind render-test env var
 # and Quarto availability to keep default test runs fast.
 #
-# Known gap: inst/templates/typst/bfh-template/images/ is untracked (proprietary
-# hospital logo). Tests that render without inject_assets skip when images/ is
-# absent from the installed package. See ADR-001 for the documented follow-up.
+# Previously these tests skipped when images/ was absent; now the template
+# renders successfully without a logo (graceful degradation -- foreground
+# logo slot stays empty when logo_path is NULL). See ADR-001 + change
+# add-conditional-template-image for the closed gap.
 
 # Helper: build a minimal bfh_qic result for smoke rendering
 .make_smoke_result <- function() {
@@ -15,12 +17,13 @@
     y = c(5, 6, 4, 7, 5, 6, 5, 8, 4, 6, 5, 7, 6, 5, 4, 6, 5, 7, 6, 5),
     n = rep(100L, 20)
   )
+  # bfh_qic() uses NSE for x/y/n (unquoted column names) and does not accept
+  # `metadata` as a parameter -- chart title flows through `chart_title`,
+  # PDF metadata is supplied to bfh_export_pdf() in the calling test.
   bfh_qic(data,
-    x = "x", y = "y", n = "n", chart_type = "p",
-    metadata = list(
-      title = "Smoke test",
-      department = "Test ward"
-    )
+    x = x, y = y, n = n,
+    chart_type = "p",
+    chart_title = "Smoke test"
   )
 }
 
@@ -28,22 +31,10 @@ test_that("production template renders valid PDF with bundled assets only", {
   skip_if_not_render_test()
   skip_if_no_pdf_render_deps()
 
-  # Skip if images/ directory is absent from the installed package
-  # (ADR-001: known gap -- images not tracked in public repo)
-  template_dir <- system.file(
-    "templates/typst/bfh-template",
-    package = "BFHcharts"
-  )
-  images_dir <- file.path(template_dir, "images")
-  if (!dir.exists(images_dir) ||
-    length(list.files(images_dir)) == 0) {
-    skip(paste(
-      "Skipping: images/ directory absent from installed package.",
-      "Known gap per ADR-001 -- hospital logo not tracked in public repo.",
-      "Render fails without image assets. See inst/adr/ADR-001-pdf-asset-policy.md"
-    ))
-  }
-
+  # Per change add-conditional-template-image: the template now renders
+  # successfully without a hospital logo. The foreground logo slot remains
+  # empty when logo_path is NULL/none. PDF still has calibrated header,
+  # title, SPC table, etc.
   result <- .make_smoke_result()
 
   output_pdf <- withr::local_tempfile(fileext = ".pdf")
@@ -64,18 +55,11 @@ test_that("production template renders with simulated inject_assets (Mari skippe
   skip_if_not_render_test()
   skip_if_no_pdf_render_deps()
 
-  # Skip if images/ absent -- same constraint as above
-  template_dir <- system.file(
-    "templates/typst/bfh-template",
-    package = "BFHcharts"
-  )
-  images_dir <- file.path(template_dir, "images")
-  if (!dir.exists(images_dir) || length(list.files(images_dir)) == 0) {
-    skip(paste(
-      "Skipping: images/ directory absent from installed package.",
-      "Known gap per ADR-001."
-    ))
-  }
+  # No images/-skip needed: per change add-conditional-template-image the
+  # template renders without a logo. inject_assets here exercises the
+  # font-injection path; logo auto-detect would also fire if the callback
+  # added an images/ directory (covered separately in
+  # test-template-image-conditional.R).
 
   # Check whether Mari fonts exist (companion-supplied fonts)
   mari_present <- tryCatch(

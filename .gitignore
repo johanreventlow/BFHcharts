@@ -43,10 +43,10 @@ inst/templates/typst/bfh-template/fonts/Mari*.woff2
 # Claude local settings
 .claude/settings.local.json
 # Test artifacts
-tests/testthat/Rplots.pdf
+tests/testthat/*.pdf
 tests/testthat/_problems/
-# Shell-injection test directory (deliberate malformed name from security tests)
-tests/testthat/output; rm -rf
+# Shell-injection test directory artifacts (any output*-prefixed dir/file from security tests)
+tests/testthat/output*
 # Log files
 *.log
 # Demo output

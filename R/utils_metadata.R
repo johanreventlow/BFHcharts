@@ -6,7 +6,7 @@
 #'
 #' @param metadata Named list with user-provided metadata fields.
 #'   Valid fields: hospital, department, title, analysis, details, author,
-#'   date, data_definition. Other fields are ignored.
+#'   date, data_definition, footer_content, logo_path. Other fields are ignored.
 #' @param chart_title Character string with chart title. Used as default
 #'   for metadata$title if not provided by user.
 #'
@@ -20,6 +20,11 @@
 #'   \item{author}{Author name (default: NULL)}
 #'   \item{date}{Report date (default: Sys.Date())}
 #'   \item{data_definition}{Data definition (default: NULL)}
+#'   \item{footer_content}{Footer content below chart (default: NULL)}
+#'   \item{logo_path}{Path to hospital logo image (default: NULL).
+#'     When NULL, the Typst template renders without a foreground logo.
+#'     Companion packages (BFHchartsAssets) populate this via inject_assets
+#'     callback or auto-detection in `compose_typst_document()`.}
 #' }
 #'
 #' User-provided values override defaults. Fields not in the default list
@@ -56,7 +61,8 @@ bfh_merge_metadata <- function(metadata, chart_title) {
     author = NULL,
     date = Sys.Date(),
     data_definition = NULL,
-    footer_content = NULL
+    footer_content = NULL,
+    logo_path = NULL
   )
 
   if (is.null(metadata)) {
