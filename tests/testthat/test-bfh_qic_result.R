@@ -4,6 +4,7 @@
 
 test_that("new_bfh_qic_result creates valid S3 object", {
   skip_if_fonts_unavailable()
+  set.seed(42)
 
   # Create mock components
   data <- data.frame(
@@ -70,6 +71,7 @@ test_that("new_bfh_qic_result creates valid S3 object", {
 
 test_that("new_bfh_qic_result validates inputs", {
   skip_if_fonts_unavailable()
+  set.seed(42)
 
   # Create valid components
   data <- data.frame(
@@ -138,6 +140,7 @@ test_that("new_bfh_qic_result validates inputs", {
 
 test_that("print.bfh_qic_result displays plot", {
   skip_if_fonts_unavailable()
+  set.seed(42)
 
   # bfh_qic() triggers ggplot_gtable internally (for label placement),
   # which can open a default device (Rplots.pdf) if none is open.
@@ -173,6 +176,7 @@ test_that("print.bfh_qic_result displays plot", {
 
 test_that("plot.bfh_qic_result displays plot", {
   skip_if_fonts_unavailable()
+  set.seed(42)
 
   # bfh_qic() triggers ggplot_gtable internally (for label placement),
   # which can open a default device (Rplots.pdf) if none is open.
@@ -208,6 +212,7 @@ test_that("plot.bfh_qic_result displays plot", {
 
 test_that("accessor functions work", {
   skip_if_fonts_unavailable()
+  set.seed(42)
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -245,6 +250,7 @@ test_that("accessor functions work", {
 
 test_that("is_bfh_qic_result identifies objects correctly", {
   skip_if_fonts_unavailable()
+  set.seed(42)
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),

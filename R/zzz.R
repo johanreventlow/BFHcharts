@@ -2,6 +2,13 @@
 # Package load hooks
 # nocov end
 
+# Session-level cache for the staged Typst template directory.
+# Populated lazily by .get_or_stage_template_cache(); persists for the
+# lifetime of the R session so single-call bfh_export_pdf() can copy from
+# the same filesystem (tempdir -> tempdir, ~10-50ms) rather than from the
+# R library installation path (cross-fs, 80-300ms per call).
+.bfh_template_cache <- new.env(parent = emptyenv())
+
 #' Register Proprietary Font Aliases in PostScript/PDF Font Databases
 #'
 #' BFHtheme bruger Mari-fonts (proprietaere) der eksisterer som screen-fonts
