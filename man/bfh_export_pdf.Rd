@@ -10,7 +10,7 @@ bfh_export_pdf(
   metadata = list(),
   template = "bfh-diagram",
   template_path = NULL,
-  restrict_template = FALSE,
+  restrict_template = TRUE,
   auto_analysis = FALSE,
   use_ai = FALSE,
   data_consent = NULL,
@@ -49,6 +49,16 @@ target also auto-flows from \code{bfh_qic(target_text=, target_value=)}
 via the analysis-context fallback chain (since v0.12.0).
 \item \code{footer_content}: Additional content to display below the chart (optional).
 Supports markdown formatting (bold, italic, line breaks).
+\item \code{logo_path}: Path to hospital logo image rendered in the
+template's foreground slot (optional). When NULL (default), no logo
+is rendered -- the PDF compiles successfully without proprietary
+branding assets. Companion packages (e.g. \code{BFHchartsAssets})
+inject the logo via \code{inject_assets} callback, and
+\code{compose_typst_document()} auto-detects a staged logo at
+\code{<staged-template>/images/Hospital_Maerke_RGB_A1_str.png} --
+no caller intervention required. Explicit \code{logo_path} overrides
+auto-detect. Path must be a non-empty character string; existence is
+not pre-validated (Typst surfaces the file-not-found error at compile).
 }}
 
 \item{template}{Character string specifying template name (default: "bfh-diagram")}
@@ -57,18 +67,31 @@ Supports markdown formatting (bold, italic, line breaks).
 this overrides the packaged template. The template must exist and be a valid
 Typst file (.typ). Default is NULL (uses packaged BFH template).}
 
-\item{restrict_template}{Logical. When \code{TRUE}, any non-NULL
-\code{template_path} is rejected with an error. Use in deployment contexts
-where the Typst compiler must only process the packaged template.
+\item{restrict_template}{Logical. When \code{TRUE} (default), any non-NULL
+\code{template_path} is rejected with an error. Use \code{FALSE} only in
+trusted contexts where a custom Typst template is intentionally supplied.
 
 \strong{Threat model:} A custom Typst template is compiled by the Typst
 binary and can read or write arbitrary paths during compilation. This is
-equivalent to \code{source()} in trust requirements. Setting
-\code{restrict_template = TRUE} prevents a compromised configuration
-pipeline from injecting a malicious template via \code{template_path}.
+equivalent to \code{source()} in trust requirements. \code{restrict_template
+  = TRUE} prevents a compromised configuration pipeline from injecting a
+malicious template via \code{template_path}.
 
-Default: \code{FALSE} (backward-compatible -- custom templates are allowed
-unless explicitly restricted).}
+Default: \code{TRUE} (production-safe -- custom templates require explicit
+opt-in).
+
+\strong{Migration from BFHcharts <= 0.15.x:} Callers passing
+\code{template_path} without \code{restrict_template} now receive a clear
+validation error. Migration is mechanical:
+\preformatted{
+  # Before (BFHcharts <= 0.15.x): custom template silently allowed
+  bfh_export_pdf(result, "out.pdf", template_path = "/my/template.typ")
+
+  # After (BFHcharts >= 0.16.0): explicit opt-out required
+  bfh_export_pdf(result, "out.pdf",
+                 template_path = "/my/template.typ",
+                 restrict_template = FALSE)
+  }}
 
 \item{auto_analysis}{Logical. If TRUE and \code{metadata$analysis} is not provided,
 automatically generates analysis text using \code{bfh_generate_analysis()}.
@@ -230,6 +253,15 @@ When in doubt, do not pass \code{inject_assets}.
 \code{template_path} is compiled by the Typst binary. A custom
 template can read and write arbitrary paths during compilation -- treat
 it with the same trust contract as \code{source()}.
+
+\strong{Default since 0.16.0:} \code{restrict_template = TRUE} -- any
+non-NULL \code{template_path} is rejected at validation time. Power users
+supplying a trusted in-process template MUST opt-in with
+\code{restrict_template = FALSE}. The default-safe posture eliminates the
+silent privilege-escalation vector that would otherwise exist if a
+configuration pipeline forwarded user-controlled input to
+\code{template_path}. See ADR-003 for the warning-blind-clinical-reader
+risk model that drove this default.
 
 \strong{Never} forward user-supplied input (Shiny inputs,
 query parameters, untrusted uploads) to either parameter -- doing so

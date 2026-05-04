@@ -507,9 +507,10 @@ test_that("bad font_path warns then auto-detects packaged fonts in bfh-template/
   }
 })
 
-test_that("bfh_export_pdf with restrict_template=FALSE allows custom template_path (default behavior)", {
-  # restrict_template=FALSE is the default; validation should not error on template_path
-  # We test only that the restrict_template guard does NOT fire here.
+test_that("bfh_export_pdf with restrict_template=FALSE allows custom template_path (explicit opt-out)", {
+  # restrict_template=TRUE is the default since 0.16.0; restrict_template=FALSE
+  # is the power-user opt-out. We test that the restrict_template guard does NOT
+  # fire when explicit FALSE is passed.
   # (The actual export may fail due to missing template file -- that is unrelated.)
   skip_on_cran()
 

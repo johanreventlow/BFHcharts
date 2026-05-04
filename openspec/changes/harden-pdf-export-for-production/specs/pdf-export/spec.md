@@ -67,12 +67,7 @@ expect_no_error(
 
 ### Requirement: PDF SHALL render caveat when centerline is user-supplied
 
-When `bfh_qic_result$summary` carries
-`attr(summary, "cl_user_supplied") == TRUE`, the rendered PDF SHALL
-display a caveat block below the SPC table indicating that the
-centerline was manually specified and Anhoej signals were computed
-against the user-supplied centerline rather than the data-estimated
-process mean.
+The rendered PDF SHALL display a caveat block below the SPC table when `attr(bfh_qic_result$summary, "cl_user_supplied") == TRUE`, indicating that the centerline was manually specified and Anhoej signals were computed against the user-supplied centerline rather than the data-estimated process mean.
 
 **Rationale:**
 - The R-side warning (at `R/bfh_qic.R:674-682`) surfaces to interactive

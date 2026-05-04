@@ -363,7 +363,8 @@ test_that("bfh_extract_spc_stats extracts statistics from valid summary", {
   expect_type(stats, "list")
   expect_named(stats, c(
     "runs_expected", "runs_actual", "crossings_expected",
-    "crossings_actual", "outliers_expected", "outliers_actual"
+    "crossings_actual", "outliers_expected", "outliers_actual",
+    "cl_user_supplied"
   ))
 
   # Verify values
@@ -699,6 +700,25 @@ test_that("bfh template uses fixed 26.4mm height for analysis row", {
   expect_no_match(template, "rows: (52.8mm, auto, 1fr)", fixed = TRUE)
 })
 
+test_that("bfh_export_pdf rejects template_path by default (restrict_template = TRUE)", {
+  # Slice A regression: 0.16.0 flips restrict_template default to TRUE.
+  # Callers passing template_path WITHOUT explicit restrict_template = FALSE
+  # MUST receive a clear validation error mentioning the opt-out.
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    infections = rpois(12, lambda = 15)
+  )
+  result <- bfh_qic(data, month, infections, chart_type = "i", chart_title = "Test")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+
+  expect_error(
+    bfh_export_pdf(result, temp_file,
+      template_path = "/some/path/template.typ"
+    ),
+    regexp = "restrict_template"
+  )
+})
+
 test_that("bfh_export_pdf validates custom template_path", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -709,15 +729,22 @@ test_that("bfh_export_pdf validates custom template_path", {
 
   temp_file <- withr::local_tempfile(fileext = ".pdf")
 
-  # Non-existent custom template should error
+  # Non-existent custom template should error. restrict_template = FALSE so
+  # we exercise the file-not-found path, not the default-safe guard (0.16.0+).
   expect_error(
-    bfh_export_pdf(result, temp_file, template_path = "/nonexistent/template.typ"),
+    bfh_export_pdf(result, temp_file,
+      template_path = "/nonexistent/template.typ",
+      restrict_template = FALSE
+    ),
     "Custom template file not found"
   )
 
   # Invalid template_path type should error
   expect_error(
-    bfh_export_pdf(result, temp_file, template_path = 123),
+    bfh_export_pdf(result, temp_file,
+      template_path = 123,
+      restrict_template = FALSE
+    ),
     "template_path must be a single character string"
   )
 })
@@ -817,7 +844,10 @@ test_that("bfh_export_pdf rejects directory as template_path", {
 
   # Directory should be rejected
   expect_error(
-    bfh_export_pdf(result, temp_file, template_path = tempdir()),
+    bfh_export_pdf(result, temp_file,
+      template_path = tempdir(),
+      restrict_template = FALSE
+    ),
     regexp = "template_path must be a file, not a directory"
   )
 })
@@ -838,7 +868,10 @@ test_that("bfh_export_pdf rejects non-.typ template file", {
 
   # Should be rejected
   expect_error(
-    bfh_export_pdf(result, temp_file, template_path = txt_file),
+    bfh_export_pdf(result, temp_file,
+      template_path = txt_file,
+      restrict_template = FALSE
+    ),
     "\\.typ"
   )
 

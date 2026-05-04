@@ -165,3 +165,7 @@ labels:
 
   misc:
     ukendt: "ukendt"
+
+  caveats:
+    cl_user_supplied: >-
+      Centerlinje fastsat manuelt — Anhøj-signal beregnet mod denne, ikke data-estimeret middelværdi.

@@ -1,3 +1,68 @@
+# BFHcharts 0.16.0 (development)
+
+## Breaking changes
+
+* **`bfh_export_pdf(restrict_template = TRUE)` er nu default.** Tidligere
+  default `FALSE` tillod stiltigende custom Typst-templates via `template_path`
+  -- en silent privilege-escalation-vector hvis en konfigurations-pipeline
+  forwarder user-controlled input. Custom Typst-templates kompileres med
+  trust-niveau svarende til `source()` (læser/skriver vilkårlige paths under
+  compilation). Default-safe posture eliminerer denne vector.
+
+  **Migration:** Callers der eksplicit ønsker custom-template skal nu opt-in:
+  ```r
+  # Foer (BFHcharts <= 0.15.x): custom template tilladt by default
+  bfh_export_pdf(result, "out.pdf", template_path = "/my/template.typ")
+
+  # Efter (BFHcharts >= 0.16.0): eksplicit opt-out paakraevet
+  bfh_export_pdf(result, "out.pdf",
+                 template_path = "/my/template.typ",
+                 restrict_template = FALSE)
+  ```
+  Migration er mekanisk: tilfoej `restrict_template = FALSE` til eksisterende
+  kald. Validation-error-besked nævner eksplicit opt-out parameteren.
+
+  Lukker production-readiness review item 2.1. Se ADR-003 for risk-modellen
+  (warning-blind clinical readers).
+
+## Nye features
+
+* **PDF-eksport rendrer nu en caveat-note under SPC-tabellen, naar
+  bruger-defineret centerlinje (`cl`) er sat i `bfh_qic()`.** Naar caller
+  passerer en non-NULL `cl`, bliver Anhøj run/crossing-signaler beregnet mod
+  den brugersatte centerlinje, ikke den data-estimerede process-mean.
+  Eksisterende R-side warning (`R/bfh_qic.R:674-682`) er bevaret -- PDF-caveat
+  er den ANDEN surface for warning-blind kliniske læsere.
+
+  Caveat-tekst (dansk default): *"Centerlinje fastsat manuelt -- Anhøj-signal
+  beregnet mod denne, ikke data-estimeret middelværdi."* Engelsk fallback
+  ("Centerline manually specified ...") når `language = "en"`.
+
+  Default-PDFs uden custom `cl` rendres uændret -- caveat-blokken er
+  betinget renderet. Lukker production-readiness review item 3.3.
+
+* **`attr(bfh_qic_result$summary, "cl_user_supplied")` er ny stable
+  attribute** (logical scalar) som downstream-konsumenter (PDF-template,
+  biSPCharts UI, analyse-tekst) kan læse uden at introspektere `config`-slotten.
+  Brug `isTRUE(attr(result$summary, "cl_user_supplied"))` for safe-check.
+  Attributtens placering bevarer column-iteration patterns (`lapply(summary, ...)`,
+  `dplyr::summarise(across(...))`) -- ingen ny kolonne tilføjes.
+
+* **`bfh_extract_spc_stats(result)$cl_user_supplied`** eksponerer flaget for
+  power-users der querier SPC-stats via public API, parallelt med
+  eksisterende `is_run_chart`-felt.
+
+## Interne ændringer
+
+* `inst/i18n/{da,en}.yaml`: ny noegle `labels.caveats.cl_user_supplied`.
+* `inst/templates/typst/bfh-template/bfh-template.typ`: nye parametre
+  `cl_user_supplied: false` + `cl_caveat_text: none` med betinget caveat-blok
+  under SPC-tabellen.
+* `R/utils_typst.R::build_typst_content()`: emitter de nye Typst-parametre
+  naar spc_stats indikerer brugersat centerlinje.
+* `R/utils_export_helpers.R::compose_typst_document()`: resolver caveat-tekst
+  server-side via i18n baseret paa `language`-config.
+
 # BFHcharts 0.15.1 (development)
 
 ## Bug fixes

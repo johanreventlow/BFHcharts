@@ -149,6 +149,11 @@ if (use_production_template) {
   cat("[SMOKE] CI=FALSE: using production bfh-template\n")
 }
 
+# restrict_template: BFHcharts >= 0.16.0 defaults to TRUE. Smoke tests may
+# pass a custom template_path (production-template-mode or CI test-template)
+# and must explicitly opt out to exercise the custom-template branch.
+smoke_restrict_template <- is.null(template_path_arg)
+
 # ---- Eksempeldata -----------------------------------------------------------
 example_csv <- system.file("extdata", "spc_exampledata_utf8.csv", package = "BFHcharts")
 if (!nzchar(example_csv) || !file.exists(example_csv)) {
@@ -188,6 +193,7 @@ bfh_export_pdf(
     department = "Smoke Afdeling"
   ),
   template_path = template_path_arg,
+  restrict_template = smoke_restrict_template,
   font_path = font_path_override,
   ignore_system_fonts = ignore_system_fonts_arg
 )
@@ -225,6 +231,7 @@ bfh_export_pdf(
     analysis = "Signifikant fald efter intervention i mdr 13"
   ),
   template_path = template_path_arg,
+  restrict_template = smoke_restrict_template,
   font_path = font_path_override,
   ignore_system_fonts = ignore_system_fonts_arg
 )
@@ -253,6 +260,7 @@ bfh_export_pdf(
     department = "Kirurgi"
   ),
   template_path = template_path_arg,
+  restrict_template = smoke_restrict_template,
   font_path = font_path_override,
   ignore_system_fonts = ignore_system_fonts_arg
 )

@@ -36,7 +36,16 @@ NULL
 #' @param exclude Integer vector of data point positions to exclude from
 #'   calculations (optional). Must be positive integers, unique, and within
 #'   `[1, nrow(data)]`. Sort order is not required.
-#' @param cl Numeric value to set a custom centerline instead of calculating from data (optional)
+#' @param cl Numeric value to set a custom centerline instead of calculating
+#'   from data (optional). When non-NULL, Anhoej run/crossing signals are
+#'   computed against the user-supplied centerline rather than the
+#'   data-estimated process mean -- an R warning is emitted, and the returned
+#'   `bfh_qic_result$summary` carries `attr(summary, "cl_user_supplied") = TRUE`.
+#'   Downstream consumers (e.g. PDF rendering, biSPCharts UI) can read the
+#'   attribute via `isTRUE(attr(result$summary, "cl_user_supplied"))`. The
+#'   `bfh_export_pdf()` PDF surfaces a caveat note below the SPC table when
+#'   this flag is set. See `bfh_extract_spc_stats()` for the discoverable
+#'   surface.
 #' @param multiply Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)
 #' @param agg.fun Aggregation function for run/I charts with multiple observations per subgroup: "mean" (default), "median", "sum", "sd"
 #' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)

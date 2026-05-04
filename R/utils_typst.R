@@ -585,6 +585,22 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
     params$is_run_chart <- if (spc_stats$is_run_chart) "true" else "false"
   }
 
+  # User-supplied centerline caveat: emit boolean + pre-translated text
+  # so the template can render the caveat without embedding i18n logic.
+  # Default false: existing renders are untouched (no visual clutter).
+  if (isTRUE(spc_stats$cl_user_supplied)) {
+    params$cl_user_supplied <- "true"
+    caveat_text <- metadata$cl_caveat_text
+    if (is.null(caveat_text) || !nzchar(caveat_text)) {
+      # Defensive fallback: compose_typst_document() resolves the text via
+      # i18n; if a caller invokes build_typst_content() directly without
+      # populating metadata$cl_caveat_text, emit a neutral marker so the
+      # template's caveat block still renders.
+      caveat_text <- "Centerlinje fastsat manuelt"
+    }
+    params$cl_caveat_text <- sprintf('"%s"', escape_typst_string(caveat_text))
+  }
+
   # Build parameter string
   param_strings <- c()
   for (name in names(params)) {

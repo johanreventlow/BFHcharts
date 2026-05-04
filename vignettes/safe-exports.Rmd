@@ -93,13 +93,18 @@ Tilsvarende: `template_path` peger på en `.typ`-fil som Typst-compileren kører
 En custom template kan udføre filsystem-operationer under compilation — så
 **aldrig** modtag template-stien fra user-input.
 
+**Siden BFHcharts 0.16.0** kræver custom-template eksplicit opt-out via
+`restrict_template = FALSE`. Default er `TRUE` (production-safe). Callers
+der ikke eksplicit opt-outer modtager en valideringsfejl ved kald-tid.
+
 ```{r template-path-good, eval = FALSE}
 # Sikkert: template fra organisations-repo, code-reviewed
 bfh_export_pdf(result, "rapport.pdf",
   template_path = system.file(
     "templates", "afdelings-template.typ",
     package = "MyOrgTemplates"
-  )
+  ),
+  restrict_template = FALSE  # eksplicit opt-out paakraevet siden 0.16.0
 )
 ```
 
@@ -134,7 +139,9 @@ server <- function(input, output, session) {
       if (is.null(template) || !file.exists(template)) {
         stop("Ugyldig template valgt")
       }
-      bfh_export_pdf(result, file, template_path = template)
+      bfh_export_pdf(result, file,
+                     template_path = template,
+                     restrict_template = FALSE)
     }
   )
 }
