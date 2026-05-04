@@ -30,6 +30,8 @@ Rplots.pdf
 demo_test.R
 # Generated PDF analysis files
 *.pdf
+# Assets provided by BFHchartsAssets package — must not be committed
+inst/templates/typst/bfh-template/images/
 # Copyright-protected fonts (must not be bundled)
 # Hel fonts-mappe er ekskluderet — ingen proprietaere fonts (Mari, Arial) maa commits
 inst/templates/typst/*/fonts/
