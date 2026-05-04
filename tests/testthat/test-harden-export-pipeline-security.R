@@ -414,7 +414,9 @@ test_that(".safe_system2_capture quotes --rce flag (not in allowlist)", {
 
 test_that("KNOWN_TYPST_FLAGS contains exactly the expected flags", {
   flags <- BFHcharts:::KNOWN_TYPST_FLAGS
-  expect_setequal(flags, c("--ignore-system-fonts", "--font-path"))
+  # `--root` added in 0.16.1 as defense-in-depth: confines Typst's
+  # image()/read()/include access to the staged template tempdir.
+  expect_setequal(flags, c("--ignore-system-fonts", "--font-path", "--root"))
 })
 
 # ============================================================================

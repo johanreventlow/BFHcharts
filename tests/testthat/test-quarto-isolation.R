@@ -496,7 +496,8 @@ test_that(".system2 mock: success path verifies arg construction og returnerer o
   # .safe_system2_capture() applies shQuote() to non-flag args so that
   # system2(stdout=TRUE, stderr=TRUE) shell-mode handles paths with special
   # characters safely. Verify structure and that output path is recoverable.
-  expect_equal(length(captured_args), 5L) # typst compile <input> <output> --ignore-system-fonts
+  # 0.16.1: added "--root <typst_dir>" defense-in-depth flag (2 extra args).
+  expect_equal(length(captured_args), 7L) # typst compile <in> <out> --root <dir> --ignore-system-fonts
   # Positional args are quoted; flags are not
   expect_true(all(startsWith(captured_args[startsWith(captured_args, "--")], "--")))
   # The quoted output path must contain the original output filename

@@ -206,3 +206,140 @@ test_that("bfh_export_pdf warns about unknown metadata fields", {
     "Unknown metadata fields will be ignored: unknown_field"
   )
 })
+
+# ============================================================================
+# logo_path VALIDATION (added v0.16.1)
+# ============================================================================
+
+test_that("bfh_export_pdf rejects path traversal in metadata$logo_path", {
+  chart <- fixture_test_chart()
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+
+  # Without --root sandbox + without per-field traversal validation, a path
+  # like "../../etc/secret.png" could resolve outside the staged template
+  # directory and embed arbitrary host filesystem content into the PDF.
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      metadata = list(logo_path = "../../etc/secret.png")
+    ),
+    "path traversal"
+  )
+
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      metadata = list(logo_path = "subdir/../../sensitive/logo.png")
+    ),
+    "path traversal"
+  )
+})
+
+test_that("bfh_export_pdf rejects shell metachars in metadata$logo_path", {
+  chart <- fixture_test_chart()
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      metadata = list(logo_path = "logo.png; rm -rf /")
+    ),
+    "disallowed"
+  )
+
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      metadata = list(logo_path = "logo\nfile.png")
+    ),
+    "disallowed"
+  )
+})
+
+test_that("bfh_export_pdf rejects non-scalar logo_path", {
+  chart <- fixture_test_chart()
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      metadata = list(logo_path = c("a.png", "b.png"))
+    ),
+    "logo_path must be a single non-empty character string"
+  )
+
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      metadata = list(logo_path = NA_character_)
+    ),
+    "logo_path must be a single non-empty character string"
+  )
+
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      metadata = list(logo_path = "")
+    ),
+    "logo_path must be a single non-empty character string"
+  )
+
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      metadata = list(logo_path = 42)
+    ),
+    "logo_path must be a single non-empty character string"
+  )
+})
+
+# ============================================================================
+# restrict_template TYPE GUARD (added v0.16.1)
+# ============================================================================
+
+test_that("bfh_export_pdf rejects non-logical restrict_template", {
+  chart <- fixture_test_chart()
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+
+  # NA bypassed isTRUE() prior to v0.16.1 -- guard now validates type FIRST.
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      template_path = "/tmp/whatever.typ",
+      restrict_template = NA
+    ),
+    "restrict_template must be TRUE or FALSE"
+  )
+
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      template_path = "/tmp/whatever.typ",
+      restrict_template = "TRUE"
+    ),
+    "restrict_template must be TRUE or FALSE"
+  )
+
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      template_path = "/tmp/whatever.typ",
+      restrict_template = 1L
+    ),
+    "restrict_template must be TRUE or FALSE"
+  )
+
+  expect_error(
+    bfh_export_pdf(chart, temp_file,
+      template_path = "/tmp/whatever.typ",
+      restrict_template = c(TRUE, TRUE)
+    ),
+    "restrict_template must be TRUE or FALSE"
+  )
+})
+
+test_that("bfh_export_pdf restrict_template error message guides migration", {
+  chart <- fixture_test_chart()
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+
+  # Default (TRUE) + non-NULL template_path should error AND mention the
+  # opt-out path so callers don't have to grep NEWS to recover.
+  err <- tryCatch(
+    bfh_export_pdf(chart, temp_file,
+      template_path = "/some/path/template.typ"
+    ),
+    error = function(e) e
+  )
+  expect_s3_class(err, "error")
+  expect_match(conditionMessage(err), "restrict_template = TRUE")
+  expect_match(conditionMessage(err), "restrict_template = FALSE")
+})
