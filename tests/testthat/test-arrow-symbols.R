@@ -43,6 +43,7 @@ test_that("has_arrow_symbol handles edge cases", {
 
 test_that("Arrow symbol detection suppresses target line in plots", {
   skip_if_fonts_unavailable()
+  set.seed(42)
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
@@ -120,6 +121,7 @@ test_that("Arrow symbol detection suppresses target line in plots", {
 
 test_that("Comparison operators with numbers do NOT suppress target line", {
   skip_if_fonts_unavailable()
+  set.seed(42)
 
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),

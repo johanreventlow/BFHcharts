@@ -211,7 +211,7 @@ add_spc_labels <- function(
     } else {
       NULL
     }
-    formatted_cl <- format_y_value(cl_value, y_axis_unit, y_range, target = target_for_precision)
+    formatted_cl <- format_y_value(cl_value, y_axis_unit, y_range, target = target_for_precision, language = language)
     label_cl <- create_responsive_label(
       header = cl_header,
       value = formatted_cl,
@@ -245,7 +245,7 @@ add_spc_labels <- function(
         }
       }
     } else {
-      formatted_target <- format_y_value(target_value, y_axis_unit, y_range)
+      formatted_target <- format_y_value(target_value, y_axis_unit, y_range, language = language)
       target_operator <- ""
       target_value_text <- formatted_target
     }
