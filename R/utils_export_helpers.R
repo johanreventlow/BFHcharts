@@ -156,6 +156,14 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
         # path kan vaere relativ til staged template-dir paa compile-tid,
         # ikke validation-tid; companion-pakker kan skrive filen i
         # inject_assets callback efter validering.
+        #
+        # Path-traversal + shell-metachars valideres dog ALTID. Typst's
+        # image() resolver paths relativt til den .typ-fil der indeholder
+        # kaldet (staged template-dir), men uden --root-flag i
+        # bfh_compile_typst() kan en path som "../../etc/secret.png"
+        # eskapere staging-dir og laese vilkaarlige filer paa hosten.
+        # Mirror den validering der allerede findes paa font_path
+        # (R/utils_typst.R:389-390).
         if (is.null(value)) next
         if (!is.character(value) || length(value) != 1L || is.na(value) ||
           !nzchar(value)) {
@@ -166,6 +174,8 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
             call. = FALSE
           )
         }
+        .check_traversal(value)
+        .check_metachars(value)
         next
       }
 

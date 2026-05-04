@@ -1,4 +1,57 @@
-# BFHcharts 0.16.0 (development)
+# BFHcharts 0.16.1
+
+## Security
+
+* **`restrict_template` argument-validering haerdet mod non-logical input.**
+  Tidligere `if (isTRUE(restrict_template) && !is.null(template_path))` lod
+  `restrict_template = NA`, `1L`, `"TRUE"`, eller en logical-vektor passere
+  guarden lydloest (`isTRUE()` returnerer `FALSE` for alt andet end et enkelt
+  `TRUE`). Type-validering tilfoejet FOER `isTRUE()`-checket -- ikke-logical
+  scalar fejler nu med klar fejl-besked. Vector for Shiny-/API-kontekster hvor
+  `restrict_template` kunne flyde fra deserialized JSON eller `as.logical()`-
+  coercion. Lukker production-readiness review item 1.1.
+
+* **`metadata$logo_path` faar nu path-traversal + shell-metachar validering**
+  (`R/utils_export_helpers.R:153-181`). Tidligere accepterede valideringen
+  enhver scalar non-empty character string -- "../../etc/secret.png" eller
+  "/home/x/private.png" passerede gennem `escape_typst_string()` direkte til
+  Typst's `image()`. Uden `--root`-sandbox (se naeste punkt) kunne dette
+  laese vilkaarlige filer paa hosten ind i PDF-output (PHI-eksfiltration i
+  multi-tenant deploys) eller fungere som file-existence oracle. Mirror den
+  validering som allerede findes paa `font_path` (`utils_typst.R:389-390`).
+  Lukker production-readiness review item 1.2.
+
+* **Typst-compileren koerer nu med `--root <staged-tempdir>`** (defense in
+  depth, `R/utils_typst.R:418-435`). Confiner alle `image()`/`read()`/
+  `include` access til den staged template-directory, saa selv hvis en
+  fremtidig metadata-felt-validering bliver glemt, kan compileren ikke
+  laese udenfor tempdir-traeet. Mitigerer hele klassen af path-traversal-
+  vektorer paa compiler-niveau. `--root` tilfoejet til
+  `KNOWN_TYPST_FLAGS`-allowlist saa flag-vaerdien shell-quoteres korrekt.
+
+## Bug fixes
+
+* **`bfh_extract_spc_stats.data.frame()` overfoerer nu
+  `cl_user_supplied`-attributtet.** Tidligere returnerede data.frame-
+  dispatch-pathen altid `NULL` for flaget, selv naar `attr(x,
+  "cl_user_supplied")` var sat paa input -- saa downstream-konsumenter der
+  kaldte `bfh_extract_spc_stats(result$summary)` direkte (i stedet for at
+  passere hele `bfh_qic_result`-objektet) tabte caveat-rendering i PDF
+  lydloest. Nu lazet via `isTRUE(attr(x, "cl_user_supplied"))` paralleelt
+  med `bfh_qic_result`-method'en. Lukker production-readiness review item 2.7.
+
+* **`restrict_template`-error-besked vejleder nu om opt-out-pathen.**
+  Tidligere besked: "template_path is not allowed when restrict_template =
+  TRUE." -- ingen migration-hint. Ny besked tilfoejer eksplicit guidance
+  om `restrict_template = FALSE` + warning om compile-niveau trust-model.
+  Lukker production-readiness review item 1.4.
+
+## Internal changes
+
+* CI: `auto-release-pr.yaml`-workflow repareret -- shallow-fetch og
+  pipefail/SIGPIPE-bug der gav exit 141 ved post-merge runs paa develop.
+
+# BFHcharts 0.16.0
 
 ## Breaking changes
 
@@ -78,8 +131,6 @@
     prose -- ingen indholds-duplication.
   - Implementerer OpenSpec change `cleanup-stale-spec-issues`.
 
-# BFHcharts 0.15.1 (development)
-
 ## Bug fixes
 
 * **PDF-eksport rendrer succesfuldt uden hospitals-logo, når companion-pakker
@@ -90,9 +141,7 @@
   forreste logo-slot rendres kun når `logo_path` er sat. R-siden auto-detekterer
   staged logos via `.detect_packaged_logo()` parallelt med eksisterende
   `.detect_packaged_fonts()`-mønster, så companion-pakker (BFHchartsAssets)
-  fortsat får hospital-branding uden caller-side ændringer. Lukker det sidste
-  åbne FIX NOW-blocker fra production-readiness review (item 1.2) og task 2.5
-  i `openspec/changes/2026-05-01-fix-pdf-template-asset-contract`. Implementerer
+  fortsat får hospital-branding uden caller-side ændringer. Implementerer
   OpenSpec change `add-conditional-template-image`.
 
   Migration:
@@ -103,7 +152,7 @@
   - **Avancerede callers** kan supply `metadata$logo_path = "/path/to/custom.png"`
     for at overstyre auto-detect.
 
-## Internal changes
+## Yderligere interne aendringer (logo-conditional)
 
 * `bfh-template.typ` template-signature gains optional `logo_path: none`
   parameter. Foreground `place(image(...))` block er nu konditional.
