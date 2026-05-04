@@ -556,35 +556,22 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   # Escape filename in case it has special characters
   escaped_chart <- escape_typst_string(chart_image)
 
-  # Optional metadata parameters
-  # Note: title and analysis support rich text formatting via markdown_to_typst()
-  # and use Typst content blocks [...] instead of strings "..."
-  if (!is.null(metadata$hospital)) {
-    params$hospital <- sprintf('"%s"', escape_typst_string(metadata$hospital))
+  # Standard escaped string fields: presence check only, no extra guards.
+  for (f in c("hospital", "department", "details", "author", "data_definition")) {
+    if (!is.null(metadata[[f]])) {
+      params[[f]] <- sprintf('"%s"', escape_typst_string(metadata[[f]]))
+    }
   }
-  if (!is.null(metadata$department)) {
-    params$department <- sprintf('"%s"', escape_typst_string(metadata$department))
-  }
+
+  # Rich text fields: Typst content blocks [...] via markdown_to_typst().
+  # title gets an extra non-empty guard (empty string -> omit parameter).
   if (!is.null(metadata$title) && nchar(metadata$title) > 0) {
-    # Title supports rich text - use content block [...]
     params$title <- sprintf("[%s]", markdown_to_typst(metadata$title))
   }
-  if (!is.null(metadata$analysis)) {
-    # Analysis supports rich text - use content block [...]
-    params$analysis <- sprintf("[%s]", markdown_to_typst(metadata$analysis))
-  }
-  if (!is.null(metadata$details)) {
-    params$details <- sprintf('"%s"', escape_typst_string(metadata$details))
-  }
-  if (!is.null(metadata$author)) {
-    params$author <- sprintf('"%s"', escape_typst_string(metadata$author))
-  }
-  if (!is.null(metadata$data_definition)) {
-    params$data_definition <- sprintf('"%s"', escape_typst_string(metadata$data_definition))
-  }
-  if (!is.null(metadata$footer_content)) {
-    # Footer content supports rich text - use content block [...]
-    params$footer_content <- sprintf("[%s]", markdown_to_typst(metadata$footer_content))
+  for (f in c("analysis", "footer_content")) {
+    if (!is.null(metadata[[f]])) {
+      params[[f]] <- sprintf("[%s]", markdown_to_typst(metadata[[f]]))
+    }
   }
 
   # Hospital logo: rendered conditionally by the template. NULL/NA -> omit
@@ -618,23 +605,13 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
     }
     as.character(x)
   }
-  if (!is.null(spc_stats$runs_expected)) {
-    params$runs_expected <- spc_val(spc_stats$runs_expected)
-  }
-  if (!is.null(spc_stats$runs_actual)) {
-    params$runs_actual <- spc_val(spc_stats$runs_actual)
-  }
-  if (!is.null(spc_stats$crossings_expected)) {
-    params$crossings_expected <- spc_val(spc_stats$crossings_expected)
-  }
-  if (!is.null(spc_stats$crossings_actual)) {
-    params$crossings_actual <- spc_val(spc_stats$crossings_actual)
-  }
-  if (!is.null(spc_stats$outliers_expected)) {
-    params$outliers_expected <- spc_val(spc_stats$outliers_expected)
-  }
-  if (!is.null(spc_stats$outliers_actual)) {
-    params$outliers_actual <- spc_val(spc_stats$outliers_actual)
+  for (f in c(
+    "runs_expected", "runs_actual", "crossings_expected",
+    "crossings_actual", "outliers_expected", "outliers_actual"
+  )) {
+    if (!is.null(spc_stats[[f]])) {
+      params[[f]] <- spc_val(spc_stats[[f]])
+    }
   }
 
   # Run chart flag (for hiding outlier row in Typst)
