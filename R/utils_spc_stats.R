@@ -38,8 +38,10 @@
 #'     non-NULL `cl` argument to `bfh_qic()`; Anhoej run/crossing signals
 #'     in this case were computed against the user-supplied centerline,
 #'     not the data-estimated process mean. Mirrors
-#'     `attr(result$summary, "cl_user_supplied")`. Present only for
-#'     `bfh_qic_result` input.}
+#'     `attr(result$summary, "cl_user_supplied")` and is present in both
+#'     the `bfh_qic_result` and `data.frame` (summary) dispatch paths.
+#'     Always `FALSE` for `NULL` input or summaries without the
+#'     attribute.}
 #' }
 #'
 #' @details
@@ -84,6 +86,13 @@ bfh_extract_spc_stats.default <- function(x) {
 #' @rdname bfh_extract_spc_stats
 bfh_extract_spc_stats.data.frame <- function(x) {
   stats <- empty_spc_stats()
+
+  # Surface the user-supplied centerline flag if the caller passed
+  # `result$summary` directly (the data.frame is the canonical carrier
+  # for this attribute -- set in build_bfh_qic_return()). Mirrors the
+  # bfh_qic_result method so downstream consumers (PDF caveat, biSPCharts
+  # UI) get the same flag regardless of which dispatch path they hit.
+  stats$cl_user_supplied <- isTRUE(attr(x, "cl_user_supplied"))
 
   if (nrow(x) == 0) {
     return(stats)
