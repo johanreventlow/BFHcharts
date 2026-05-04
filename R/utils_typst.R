@@ -62,6 +62,10 @@ bfh_create_typst_document <- function(chart_image,
                                       template = "bfh-diagram",
                                       template_path = NULL,
                                       skip_template_copy = FALSE) {
+  # Validate output and chart_image paths to prevent traversal/injection
+  validate_export_path(output)
+  validate_export_path(chart_image)
+
   # Get output directory (where document.typ will be created)
   output_dir <- dirname(output)
 
@@ -199,10 +203,13 @@ bfh_create_typst_document <- function(chart_image,
 }
 
 # Afkorter compile-output til max `max` tegn for at undgaa laekage af
-# filsystem-stier i fejlbeskeder. Bruges i begge fejl-branches i
-# bfh_compile_typst() saa truncation er konsistent.
+# filsystem-stier i fejlbeskeder. Redacter tempdir-stier foerst, derefter
+# truncation. Bruges i begge fejl-branches i bfh_compile_typst().
 .truncate_compile_output <- function(output, max = 500L) {
-  substr(paste(output, collapse = "\n"), 1L, max)
+  text <- paste(output, collapse = "\n")
+  td <- normalizePath(tempdir(), winslash = "/", mustWork = FALSE)
+  text <- gsub(td, "<tmpdir>", text, fixed = TRUE)
+  substr(text, 1L, max)
 }
 
 # Auto-detect packaged fonts in the staged template directory.
