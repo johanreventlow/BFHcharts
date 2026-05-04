@@ -62,6 +62,21 @@
   naar spc_stats indikerer brugersat centerlinje.
 * `R/utils_export_helpers.R::compose_typst_document()`: resolver caveat-tekst
   server-side via i18n baseret paa `language`-config.
+* **OpenSpec spec-cleanup** (uden API-impact):
+  - `caching-system`: refit til at dokumentere de fire active package-private
+    caches (`font`, `marquee_style`, `quarto`, `i18n`) og `bfh_reset_caches()`-
+    helperen. Fjernet stale references til `configure_grob_cache()` /
+    `clear_grob_cache()` (begge fjernet i v0.5.0).
+  - `code-organization` requirement #7 (3-layer decomposition): fjernet
+    arbitraer 220-line cap. Strukturelle krav (named helpers,
+    isolation-testbarhed, cleanup-closures) bevaret. Fil-stoerrelse er ej
+    laengere et review-kriterium.
+  - `public-api` ↔ `spc-analysis-api`: praeciseret ejerskab. `public-api`
+    ejer API-kontrakter (signaturer, return-types, attribute-existence);
+    `spc-analysis-api` ejer signal-detection-semantik (Anhoej rules,
+    fallback-narrative dispatch, threshold semantics). Cross-references via
+    prose -- ingen indholds-duplication.
+  - Implementerer OpenSpec change `cleanup-stale-spec-issues`.
 
 # BFHcharts 0.15.1 (development)
 

@@ -1,62 +1,49 @@
 # caching-system Specification
 
 ## Purpose
-TBD - created by archiving change document-caching-system. Update Purpose after archive.
+
+BFHcharts maintains four package-private cache environments to avoid
+recomputing expensive operations across plotting calls within a single
+R session: font lookups, marquee styles, Quarto-CLI detection, and
+i18n translation tables. This capability governs the cache-key contract
+(keys MUST include every input that affects the cached value) and the
+canonical reset helper (`bfh_reset_caches()`) used by the test
+infrastructure for deterministic state.
+
+The legacy public `configure_grob_cache()` / `clear_grob_cache()`
+helpers were removed in v0.5.0; no exported cache-configuration API
+exists today. Cache state is internal-only and not configurable via
+the public surface.
+
 ## Requirements
-### Requirement: Cache configuration functions SHALL include global state warnings
 
-All cache configuration functions SHALL include Roxygen `@details` sections warning about global state mutations and thread safety.
+### Requirement: Caching documentation SHALL describe current cache topology
 
-**Rationale:**
-- Users must understand side effects before enabling caching
-- Prevents unexpected behavior in concurrent environments
-- Follows R package best practices for documenting global state
-
-#### Scenario: User views help for configure_grob_cache
-
-**Given** a user wants to enable grob caching
-**When** they view `?configure_grob_cache`
-**Then** the help page SHALL display warnings about:
-  - Global state mutation
-  - Session-level persistence
-  - Thread safety limitations
-  - Manual cleanup responsibility
-
-**Implementation:**
-```r
-#' @details
-#' **Global State Warning:** This function mutates package-level global state.
-#' Cache configuration persists for the entire R session across all BFHcharts
-#' plotting operations.
-#'
-#' **Thread Safety:** The cache is NOT thread-safe. Avoid enabling caching in
-#' concurrent environments (e.g., parallel processing, some Shiny configurations).
-#'
-#' **Cleanup:** Cache is not automatically cleared between plots. Call
-#' `clear_grob_cache()` to manually purge cached entries.
-```
-
-**Validation:**
-- `?configure_grob_cache` displays all warnings
-- Warnings are prominently visible in documentation
-
-### Requirement: Caching documentation SHALL include troubleshooting guide
-
-The `docs/CACHING_SYSTEM.MD` file SHALL include a troubleshooting section with common issues and solutions.
+The package SHALL document the four active package-private caches
+(`font`, `marquee_style`, `quarto`, `i18n`) and the canonical reset
+helper in a single discoverable file (`docs/CACHING_SYSTEM.md` or
+equivalent reference).
 
 **Rationale:**
-- Users need guidance when caching causes unexpected behavior
-- Reduces support burden
-- Enables self-service problem resolution
+- New contributors need a one-page overview of caching strategy without
+  reading every `R/cache_*.R` file.
+- Current implementation: `.font_cache`, `.marquee_style_cache`,
+  `.quarto_cache`, `.i18n_cache` (per `R/cache_reset.R::bfh_reset_caches()`).
+- The legacy grob-cache was removed in v0.5.0; documentation SHALL
+  reflect the simplified topology rather than retaining stale
+  configuration references.
 
-#### Scenario: User experiences stale cache issue
+#### Scenario: Documentation lists active caches
 
-**Given** documentation about caching troubleshooting
-**When** a user experiences stale cache data
-**Then** the documentation SHALL provide:
-  - Problem description
-  - Root cause explanation
-  - Solution with code example
+- **GIVEN** the caching documentation file (currently
+  `docs/CACHING_SYSTEM.md`)
+- **WHEN** a contributor reads it
+- **THEN** the file SHALL list all four package-private caches by name
+  and purpose (`font`, `marquee_style`, `quarto`, `i18n`)
+- **AND** the file SHALL NOT reference removed helpers
+  (`configure_grob_cache()`, `clear_grob_cache()`)
+- **AND** the file SHALL document `bfh_reset_caches()` as the canonical
+  reset helper (internal API only)
 
 ### Requirement: Cache keys SHALL incorporate all inputs affecting cached value
 
@@ -113,4 +100,3 @@ BFHcharts:::bfh_reset_caches()
 **When** `test_that()` blocks run
 **Then** each block SHALL start with clean caches
 **And** cache state from prior tests SHALL NOT leak
-
