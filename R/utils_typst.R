@@ -299,7 +299,7 @@ bfh_create_typst_document <- function(chart_image,
 # These are the only double-dash flags this package passes to the Typst compiler.
 # Any arg starting with "--" that is NOT in this list is treated as a path/value
 # and will be quoted, preventing RCE via crafted flag-like strings (e.g. --rce).
-KNOWN_TYPST_FLAGS <- c("--ignore-system-fonts", "--font-path")
+KNOWN_TYPST_FLAGS <- c("--ignore-system-fonts", "--font-path", "--root")
 
 # Helper: returns TRUE on Windows. Extracted for testability via
 # local_mocked_bindings() -- callers mock .is_windows, not .Platform directly.
@@ -413,9 +413,20 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   # Note: shQuote() is applied inside .safe_system2_capture() for path-like
   # args. system2(stdout=TRUE, stderr=TRUE) routes through /bin/sh on
   # macOS/Linux for stream capture, so paths with spaces/parens/brackets/$
-  # must be quoted. Flag args (--ignore-system-fonts, --font-path) are
-  # passed through without quoting so Quarto's flag parser sees them intact.
-  compile_args <- c("typst", "compile", typst_file, output)
+  # must be quoted. Flag args (--ignore-system-fonts, --font-path, --root)
+  # are passed through without quoting so Quarto's flag parser sees them
+  # intact.
+  #
+  # --root <typst_dir> confines all template file accesses (image(),
+  # read(), include) to the staged template directory tree. Defense in
+  # depth: even if a caller-supplied logo_path or future metadata field
+  # bypasses the per-field traversal validation, Typst's compiler-level
+  # sandbox prevents reads outside the staged tempdir.
+  typst_dir <- dirname(typst_file)
+  compile_args <- c(
+    "typst", "compile", typst_file, output,
+    "--root", typst_dir
+  )
   if (!is.null(font_path)) {
     compile_args <- c(compile_args, "--font-path", font_path)
   }

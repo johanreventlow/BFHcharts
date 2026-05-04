@@ -41,8 +41,10 @@ outliers are not discussed as if they were current). Present only for
 non-NULL \code{cl} argument to \code{bfh_qic()}; Anhoej run/crossing signals
 in this case were computed against the user-supplied centerline,
 not the data-estimated process mean. Mirrors
-\code{attr(result$summary, "cl_user_supplied")}. Present only for
-\code{bfh_qic_result} input.}
+\code{attr(result$summary, "cl_user_supplied")} and is present in both
+the \code{bfh_qic_result} and \code{data.frame} (summary) dispatch paths.
+Always \code{FALSE} for \code{NULL} input or summaries without the
+attribute.}
 }
 }
 \description{

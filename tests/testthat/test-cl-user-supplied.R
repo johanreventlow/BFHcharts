@@ -102,3 +102,58 @@ test_that("i18n caveat key resolves in da and en", {
   expect_match(da, "fastsat manuelt")
   expect_match(en, "manually specified")
 })
+
+# Run charts hide outlier rows in PDF; the early-return in
+# bfh_extract_spc_stats.bfh_qic_result() must NOT drop cl_user_supplied
+# (set BEFORE the early-return). A future refactor that swaps the
+# ordering would silently omit the clinical caveat for run charts.
+test_that("cl_user_supplied survives the run-chart early-return path", {
+  set.seed(42)
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 18),
+    value = rnorm(18, mean = 50, sd = 5)
+  )
+
+  result <- suppressWarnings(
+    bfh_qic(data, x = month, y = value, chart_type = "run", cl = 50)
+  )
+  stats <- bfh_extract_spc_stats(result)
+  expect_true(stats$cl_user_supplied)
+  expect_true(stats$is_run_chart)
+  # Run charts have no control limits -> outlier fields must remain NULL.
+  expect_null(stats$outliers_actual)
+  expect_null(stats$outliers_expected)
+})
+
+# v0.16.1: data.frame dispatch must surface cl_user_supplied via attr,
+# parallel with the bfh_qic_result method. Prior to v0.16.1, calling
+# bfh_extract_spc_stats(result$summary) directly returned NULL for the
+# flag, silently omitting the PDF caveat for any consumer that routed
+# through the data.frame method (e.g. partial-stats users).
+test_that("bfh_extract_spc_stats.data.frame surfaces cl_user_supplied", {
+  set.seed(42)
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 18),
+    value = rnorm(18, mean = 50, sd = 5)
+  )
+
+  result_with <- suppressWarnings(
+    bfh_qic(data, x = month, y = value, chart_type = "i", cl = 50)
+  )
+  stats_summary_with <- bfh_extract_spc_stats(result_with$summary)
+  expect_true(stats_summary_with$cl_user_supplied)
+
+  result_without <- bfh_qic(data, x = month, y = value, chart_type = "i")
+  stats_summary_without <- bfh_extract_spc_stats(result_without$summary)
+  expect_identical(stats_summary_without$cl_user_supplied, FALSE)
+})
+
+test_that("bfh_extract_spc_stats.data.frame returns FALSE for plain data.frame", {
+  # No attr set -> NULL attr -> isTRUE(NULL) = FALSE. Defensive sanity check.
+  df <- data.frame(
+    "længste_løb_max" = 5L,
+    antal_kryds = 3L, check.names = FALSE
+  )
+  stats <- BFHcharts::bfh_extract_spc_stats(df)
+  expect_identical(stats$cl_user_supplied, FALSE)
+})

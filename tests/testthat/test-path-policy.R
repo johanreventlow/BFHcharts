@@ -381,10 +381,13 @@ test_that(".safe_system2_capture applies shQuote on non-Windows (mocked)", {
     }
   )
 
-  # On POSIX path, non-flag args must be shQuote'd (single-quote wrapping)
+  # On POSIX path, non-flag args must be shQuote'd (single-quote wrapping).
+  # `--root` was added to KNOWN_TYPST_FLAGS in 0.16.1; the flag itself is not
+  # quoted, but its value (the staged tempdir) IS a path arg that must be
+  # quoted -- so it falls through to the path_args bucket below.
   path_args <- captured_args[!captured_args %in% c(
     "typst", "compile",
-    "--ignore-system-fonts", "--font-path"
+    "--ignore-system-fonts", "--font-path", "--root"
   )]
   expect_true(
     all(startsWith(path_args, "'")),
