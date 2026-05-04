@@ -73,9 +73,15 @@ without requiring callers to thread `font_path` through their code.
 - No proprietary fonts committed to the public repository.
 
 ### Negative / Remaining gaps
-- The `images/` directory is still untracked. Render without companion assets on a
-  clean install will fail if the images/ dir is absent. A future PR should add a
-  conditional image reference or a placeholder asset.
+- ~~The `images/` directory is still untracked. Render without companion assets on a
+  clean install will fail if the images/ dir is absent.~~ **Closed by change
+  `add-conditional-template-image` (BFHcharts 0.15.1):** the Typst template now
+  exposes a `logo_path: none` parameter and the foreground logo is rendered only
+  when `logo_path` is supplied. R-side `compose_typst_document()` auto-detects a
+  staged logo at `bfh-template/images/Hospital_Maerke_RGB_A1_str.png` mirroring
+  the `--font-path` auto-detect pattern. PDFs now render successfully without
+  companion-injected assets (logo slot stays empty); companion-injected logos
+  are picked up automatically without caller intervention.
 - No open fonts bundled (Roboto not bundled). Systems with neither Roboto nor
   Helvetica/Arial will fall through to a generic sans-serif; this is cosmetically
   acceptable but not identical to the branding spec.

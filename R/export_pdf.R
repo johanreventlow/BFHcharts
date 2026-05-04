@@ -24,6 +24,16 @@
 #'       via the analysis-context fallback chain (since v0.12.0).
 #'     \item \code{footer_content}: Additional content to display below the chart (optional).
 #'       Supports markdown formatting (bold, italic, line breaks).
+#'     \item \code{logo_path}: Path to hospital logo image rendered in the
+#'       template's foreground slot (optional). When NULL (default), no logo
+#'       is rendered -- the PDF compiles successfully without proprietary
+#'       branding assets. Companion packages (e.g. \code{BFHchartsAssets})
+#'       inject the logo via \code{inject_assets} callback, and
+#'       \code{compose_typst_document()} auto-detects a staged logo at
+#'       \code{<staged-template>/images/Hospital_Maerke_RGB_A1_str.png} --
+#'       no caller intervention required. Explicit \code{logo_path} overrides
+#'       auto-detect. Path must be a non-empty character string; existence is
+#'       not pre-validated (Typst surfaces the file-not-found error at compile).
 #'   }
 #' @param template Character string specifying template name (default: "bfh-diagram")
 #' @param template_path Optional path to a custom Typst template file. When provided,

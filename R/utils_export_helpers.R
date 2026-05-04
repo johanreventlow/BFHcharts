@@ -128,7 +128,7 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
   # Metadata felt-validering
   known_fields <- c(
     "hospital", "department", "analysis", "details", "author",
-    "date", "data_definition", "target", "footer_content"
+    "date", "data_definition", "target", "footer_content", "logo_path"
   )
 
   unknown_fields <- setdiff(names(metadata), known_fields)
@@ -147,6 +147,25 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
       if (field == "target") {
         # target har sin egen scalar/finit-validering
         .validate_metadata_target(value)
+        next
+      }
+
+      if (field == "logo_path") {
+        # logo_path validering: NULL eller scalar non-empty character.
+        # Path-existens-check udelades bevidst (jf. design.md D4):
+        # path kan vaere relativ til staged template-dir paa compile-tid,
+        # ikke validation-tid; companion-pakker kan skrive filen i
+        # inject_assets callback efter validering.
+        if (is.null(value)) next
+        if (!is.character(value) || length(value) != 1L || is.na(value) ||
+          !nzchar(value)) {
+          stop(
+            "metadata$logo_path must be a single non-empty character string or NULL",
+            "\n  Got: ", paste(class(value), collapse = "/"),
+            " (length ", length(value), ")",
+            call. = FALSE
+          )
+        }
         next
       }
 
@@ -375,8 +394,19 @@ export_chart_svg <- function(plot_for_export, chart_svg, dpi) {
 
 #' Sammensaet Typst-dokument og loes font_path op
 #'
-#' Kalder bfh_create_typst_document(), koerer inject_assets callback
-#' (single-call mode), og auto-detekterer font_path fra injicerede assets.
+#' Stager template, koerer inject_assets, auto-detekterer logo + font_path
+#' fra injicerede assets, og skriver derefter .typ-filen via
+#' bfh_create_typst_document() med finaliseret metadata.
+#'
+#' Order matters: template-staging og inject_assets SKAL koere FOER
+#' bfh_create_typst_document(), saa logo_path-auto-detect kan se de injicerede
+#' filer og populere metadata$logo_path inden Typst-content genereres. Hvis
+#' .typ skrives foer inject, ser den hard-coded `logo_path: none` selv naar
+#' companion-pakker har droppet et logo (regression mod design-malet).
+#'
+#' For custom template_path (single .typ-fil, ikke directory): bfh_create_typst_document
+#' haandterer copy selv, og logo-auto-detect skipper (custom templates har ikke
+#' bfh-template/images/-konvention).
 #'
 #' Returnerer den effektive font_path (kan vaere NULL).
 #'
@@ -393,23 +423,25 @@ compose_typst_document <- function(x, chart_svg, typst_file,
   # Effektiv font_path: per-eksport arg > session default > NULL
   effective_font_path <- font_path %||% batch_session$font_path
 
-  # Opret Typst-dokument
-  bfh_create_typst_document(
-    chart_image        = chart_svg,
-    output             = typst_file,
-    metadata           = metadata_full,
-    spc_stats          = spc_stats,
-    template           = template,
-    template_path      = template_path,
-    skip_template_copy = !is.null(batch_session)
-  )
+  # Stage packaged template directory upfront for the packaged-template path.
+  # batch_session: directory was staged at session creation; skip re-staging.
+  # Custom template_path: bfh_create_typst_document copies the single .typ file
+  # below; no directory to pre-stage here.
+  is_packaged_template <- is.null(template_path)
+  if (is_packaged_template) {
+    .stage_packaged_template_dir(
+      output_dir = dirname(typst_file),
+      skip_copy  = !is.null(batch_session)
+    )
+  }
 
-  # Injicer eksterne assets (single-call mode kun)
+  # Run inject_assets BEFORE writing .typ so logo + font auto-detect see
+  # injected files. Single-call mode only -- batch_session injects once at
+  # session creation (handled in bfh_create_export_session()).
   if (is.function(inject_assets)) {
     temp_dir <- dirname(typst_file)
     inject_assets(file.path(temp_dir, "bfh-template"))
 
-    # Auto-detekter font_path fra injicerede fonts/ hvis ikke eksplicit angivet
     if (is.null(effective_font_path)) {
       injected_fonts <- file.path(temp_dir, "bfh-template", "fonts")
       if (dir.exists(injected_fonts)) {
@@ -417,6 +449,29 @@ compose_typst_document <- function(x, chart_svg, typst_file,
       }
     }
   }
+
+  # Auto-detect hospital logo unless caller supplied one explicitly.
+  # Only applies to packaged template (custom templates do not follow the
+  # bfh-template/images/ convention).
+  if (is_packaged_template && is.null(metadata_full$logo_path)) {
+    detected_logo <- .detect_packaged_logo(typst_file)
+    if (!is.null(detected_logo)) {
+      metadata_full$logo_path <- detected_logo
+    }
+  }
+
+  # Write .typ with finalized metadata. skip_template_copy=TRUE for packaged
+  # template (we staged it above). Custom template_path always falls through
+  # to bfh_create_typst_document's single-file copy branch.
+  bfh_create_typst_document(
+    chart_image        = chart_svg,
+    output             = typst_file,
+    metadata           = metadata_full,
+    spc_stats          = spc_stats,
+    template           = template,
+    template_path      = template_path,
+    skip_template_copy = is_packaged_template
+  )
 
   effective_font_path
 }
