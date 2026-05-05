@@ -62,6 +62,10 @@ bfh_create_typst_document <- function(chart_image,
                                       template = "bfh-diagram",
                                       template_path = NULL,
                                       skip_template_copy = FALSE) {
+  # Validate output and chart_image paths to prevent traversal/injection
+  validate_export_path(output)
+  validate_export_path(chart_image)
+
   # Get output directory (where document.typ will be created)
   output_dir <- dirname(output)
 
@@ -96,29 +100,31 @@ bfh_create_typst_document <- function(chart_image,
       )
     }
   } else {
-    # Packaged template: copy entire template directory (includes fonts, images)
-    template_dir <- system.file("templates/typst/bfh-template", package = "BFHcharts")
-
-    if (!dir.exists(template_dir)) {
-      stop(
-        "Typst template not found at: ", template_dir, "\n",
-        "  This should not happen. Please reinstall BFHcharts.",
-        call. = FALSE
-      )
-    }
-
+    # Packaged template: copy entire template directory (includes fonts, images).
+    # Uses session-level cache for same-filesystem copy speed when available.
     local_template_dir <- file.path(output_dir, "bfh-template")
     if (!skip_template_copy) {
       if (dir.exists(local_template_dir)) {
         unlink(local_template_dir, recursive = TRUE)
       }
-
-      # Use recursive copy for 5-10x performance improvement
-      success <- file.copy(template_dir, output_dir, recursive = TRUE, overwrite = TRUE)
+      src <- tryCatch(
+        .get_or_stage_template_cache(),
+        error = function(e) {
+          system.file("templates/typst/bfh-template", package = "BFHcharts")
+        }
+      )
+      if (!dir.exists(src)) {
+        stop(
+          "Typst template not found at: ", src, "\n",
+          "  This should not happen. Please reinstall BFHcharts.",
+          call. = FALSE
+        )
+      }
+      success <- file.copy(src, output_dir, recursive = TRUE, overwrite = TRUE)
       if (!success) {
         stop(
           "Failed to copy template directory\n",
-          "  Source: ", basename(template_dir), "\n",
+          "  Source: ", basename(src), "\n",
           "  Destination: ", basename(output_dir),
           call. = FALSE
         )
@@ -199,10 +205,13 @@ bfh_create_typst_document <- function(chart_image,
 }
 
 # Afkorter compile-output til max `max` tegn for at undgaa laekage af
-# filsystem-stier i fejlbeskeder. Bruges i begge fejl-branches i
-# bfh_compile_typst() saa truncation er konsistent.
+# filsystem-stier i fejlbeskeder. Redacter tempdir-stier foerst, derefter
+# truncation. Bruges i begge fejl-branches i bfh_compile_typst().
 .truncate_compile_output <- function(output, max = 500L) {
-  substr(paste(output, collapse = "\n"), 1L, max)
+  text <- paste(output, collapse = "\n")
+  td <- normalizePath(tempdir(), winslash = "/", mustWork = FALSE)
+  text <- gsub(td, "<tmpdir>", text, fixed = TRUE)
+  substr(text, 1L, max)
 }
 
 # Auto-detect packaged fonts in the staged template directory.
@@ -261,15 +270,13 @@ bfh_create_typst_document <- function(chart_image,
 # When skip_copy = TRUE, asserts the staged directory exists and returns
 # silently (used by batch_session callers where the directory was staged
 # once at session creation).
+#
+# For single-call mode (skip_copy = FALSE): prefers copying from the
+# session-level template cache (.bfh_template_cache) rather than the R
+# library installation path. Both dirs reside in tempdir() so the copy
+# operates within the same filesystem (~10-50ms vs 80-300ms cross-fs).
+# Falls back to the library path on cache errors.
 .stage_packaged_template_dir <- function(output_dir, skip_copy = FALSE) {
-  template_dir <- system.file("templates/typst/bfh-template", package = "BFHcharts")
-  if (!dir.exists(template_dir)) {
-    stop(
-      "Typst template not found at: ", template_dir, "\n",
-      "  This should not happen. Please reinstall BFHcharts.",
-      call. = FALSE
-    )
-  }
   local_template_dir <- file.path(output_dir, "bfh-template")
   if (skip_copy) {
     if (!dir.exists(local_template_dir)) {
@@ -283,16 +290,62 @@ bfh_create_typst_document <- function(chart_image,
   if (dir.exists(local_template_dir)) {
     unlink(local_template_dir, recursive = TRUE)
   }
-  success <- file.copy(template_dir, output_dir, recursive = TRUE, overwrite = TRUE)
+  # Prefer same-filesystem copy from session cache.
+  src <- tryCatch(
+    .get_or_stage_template_cache(),
+    error = function(e) {
+      system.file("templates/typst/bfh-template", package = "BFHcharts")
+    }
+  )
+  if (!dir.exists(src)) {
+    stop(
+      "Typst template not found at: ", src, "\n",
+      "  This should not happen. Please reinstall BFHcharts.",
+      call. = FALSE
+    )
+  }
+  success <- file.copy(src, output_dir, recursive = TRUE, overwrite = TRUE)
   if (!success) {
     stop(
       "Failed to copy template directory\n",
-      "  Source: ", basename(template_dir), "\n",
+      "  Source: ", basename(src), "\n",
       "  Destination: ", basename(output_dir),
       call. = FALSE
     )
   }
   invisible(local_template_dir)
+}
+
+# Lazily stages the packaged template into a persistent per-session tempdir
+# and returns the path to the staged bfh-template/ directory.
+# Subsequent calls return the cached path without re-copying (O(1)).
+# Cache is keyed on dir.exists() so a manually deleted tmpdir re-stages
+# automatically.
+.get_or_stage_template_cache <- function() {
+  cache <- .bfh_template_cache
+  cached_path <- if (!is.null(cache$dir)) file.path(cache$dir, "bfh-template") else ""
+  if (isTRUE(cache$ready) && dir.exists(cached_path)) {
+    return(cached_path)
+  }
+  dir <- tempfile("bfh_tpl_")
+  dir.create(dir, recursive = TRUE)
+  Sys.chmod(dir, mode = "0700", use_umask = FALSE)
+  src <- system.file("templates/typst/bfh-template", package = "BFHcharts")
+  if (!dir.exists(src)) {
+    unlink(dir, recursive = TRUE)
+    stop(
+      "Typst template not found at: ", src, "\n",
+      "  This should not happen. Please reinstall BFHcharts.",
+      call. = FALSE
+    )
+  }
+  if (!file.copy(src, dir, recursive = TRUE, overwrite = TRUE)) {
+    unlink(dir, recursive = TRUE)
+    stop("Failed to stage Typst template cache.", call. = FALSE)
+  }
+  cache$dir <- dir
+  cache$ready <- TRUE
+  file.path(dir, "bfh-template")
 }
 
 # Explicit allowlist of Typst/Quarto flag arguments that must NOT be shell-quoted.
@@ -510,35 +563,22 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   # Escape filename in case it has special characters
   escaped_chart <- escape_typst_string(chart_image)
 
-  # Optional metadata parameters
-  # Note: title and analysis support rich text formatting via markdown_to_typst()
-  # and use Typst content blocks [...] instead of strings "..."
-  if (!is.null(metadata$hospital)) {
-    params$hospital <- sprintf('"%s"', escape_typst_string(metadata$hospital))
+  # Standard escaped string fields: presence check only, no extra guards.
+  for (f in c("hospital", "department", "details", "author", "data_definition")) {
+    if (!is.null(metadata[[f]])) {
+      params[[f]] <- sprintf('"%s"', escape_typst_string(metadata[[f]]))
+    }
   }
-  if (!is.null(metadata$department)) {
-    params$department <- sprintf('"%s"', escape_typst_string(metadata$department))
-  }
+
+  # Rich text fields: Typst content blocks [...] via markdown_to_typst().
+  # title gets an extra non-empty guard (empty string -> omit parameter).
   if (!is.null(metadata$title) && nchar(metadata$title) > 0) {
-    # Title supports rich text - use content block [...]
     params$title <- sprintf("[%s]", markdown_to_typst(metadata$title))
   }
-  if (!is.null(metadata$analysis)) {
-    # Analysis supports rich text - use content block [...]
-    params$analysis <- sprintf("[%s]", markdown_to_typst(metadata$analysis))
-  }
-  if (!is.null(metadata$details)) {
-    params$details <- sprintf('"%s"', escape_typst_string(metadata$details))
-  }
-  if (!is.null(metadata$author)) {
-    params$author <- sprintf('"%s"', escape_typst_string(metadata$author))
-  }
-  if (!is.null(metadata$data_definition)) {
-    params$data_definition <- sprintf('"%s"', escape_typst_string(metadata$data_definition))
-  }
-  if (!is.null(metadata$footer_content)) {
-    # Footer content supports rich text - use content block [...]
-    params$footer_content <- sprintf("[%s]", markdown_to_typst(metadata$footer_content))
+  for (f in c("analysis", "footer_content")) {
+    if (!is.null(metadata[[f]])) {
+      params[[f]] <- sprintf("[%s]", markdown_to_typst(metadata[[f]]))
+    }
   }
 
   # Hospital logo: rendered conditionally by the template. NULL/NA -> omit
@@ -572,23 +612,13 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
     }
     as.character(x)
   }
-  if (!is.null(spc_stats$runs_expected)) {
-    params$runs_expected <- spc_val(spc_stats$runs_expected)
-  }
-  if (!is.null(spc_stats$runs_actual)) {
-    params$runs_actual <- spc_val(spc_stats$runs_actual)
-  }
-  if (!is.null(spc_stats$crossings_expected)) {
-    params$crossings_expected <- spc_val(spc_stats$crossings_expected)
-  }
-  if (!is.null(spc_stats$crossings_actual)) {
-    params$crossings_actual <- spc_val(spc_stats$crossings_actual)
-  }
-  if (!is.null(spc_stats$outliers_expected)) {
-    params$outliers_expected <- spc_val(spc_stats$outliers_expected)
-  }
-  if (!is.null(spc_stats$outliers_actual)) {
-    params$outliers_actual <- spc_val(spc_stats$outliers_actual)
+  for (f in c(
+    "runs_expected", "runs_actual", "crossings_expected",
+    "crossings_actual", "outliers_expected", "outliers_actual"
+  )) {
+    if (!is.null(spc_stats[[f]])) {
+      params[[f]] <- spc_val(spc_stats[[f]])
+    }
   }
 
   # Run chart flag (for hiding outlier row in Typst)

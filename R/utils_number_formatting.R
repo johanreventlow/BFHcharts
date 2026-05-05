@@ -45,18 +45,32 @@ determine_magnitude <- function(val) {
   }
 }
 
+# Shared locale-aware formatting kernel used by format_unscaled_number(),
+# format_rate_danish(), and format_rate_english(). Callers supply decimal
+# mark (dm) and optional big mark (bm); branching logic lives here once.
+.format_locale <- function(val, dm, bm = "") {
+  if (is_effective_integer(val)) {
+    format(round(val), decimal.mark = dm, big.mark = bm)
+  } else if (abs(val) < 1) {
+    format(round(val, 2), decimal.mark = dm, big.mark = bm, nsmall = 2)
+  } else {
+    format(round(val, 1), decimal.mark = dm, big.mark = bm, nsmall = 1)
+  }
+}
+
 #' Format Number with Scaled Suffix (Canonical)
 #'
-#' Formats a number with K/M/mia suffix and Danish decimal notation.
+#' Formats a number with K/M/mia suffix and locale-aware decimal notation.
 #'
 #' @param val Numeric value
 #' @param scale Scale factor (1e3, 1e6, 1e9)
 #' @param suffix Suffix string ("K", "M", " mia.")
+#' @param dm Decimal mark character (default ","; use "." for English)
 #'
 #' @return Formatted string (e.g., "1,5K", "2M", "1,2 mia.")
 #' @keywords internal
 #' @noRd
-format_scaled_number <- function(val, scale, suffix) {
+format_scaled_number <- function(val, scale, suffix, dm = ",") {
   if (is.na(val)) {
     return(NA_character_)
   }
@@ -67,7 +81,7 @@ format_scaled_number <- function(val, scale, suffix) {
   if (is_effective_integer(scaled)) {
     paste0(round(scaled), suffix)
   } else {
-    paste0(format(round(scaled, 1), decimal.mark = ",", nsmall = 1), suffix)
+    paste0(format(round(scaled, 1), decimal.mark = dm, nsmall = 1), suffix)
   }
 }
 
@@ -84,17 +98,7 @@ format_unscaled_number <- function(val) {
   if (is.na(val)) {
     return(NA_character_)
   }
-
-  # Heltal: ingen decimaler
-  if (is_effective_integer(val)) {
-    format(round(val), big.mark = ".", decimal.mark = ",")
-  } else if (abs(val) < 1) {
-    # Andele (0-1): 2 decimaler
-    format(round(val, 2), big.mark = ".", decimal.mark = ",", nsmall = 2)
-  } else {
-    # Alt andet: 1 decimal
-    format(round(val, 1), big.mark = ".", decimal.mark = ",", nsmall = 1)
-  }
+  .format_locale(val, dm = ",", bm = ".")
 }
 
 #' Format Count Value with K/M/mia Notation (Canonical)
@@ -179,29 +183,10 @@ format_count_english <- function(val) {
 
   if (!is.null(magnitude)) {
     # English equivalent: " mia." -> " B" (billions). K/M unchanged.
-    suffix_en <- switch(magnitude$suffix,
-      " mia." = " B",
-      magnitude$suffix
-    )
-    scaled <- val / magnitude$scale
-    if (is_effective_integer(scaled)) {
-      paste0(round(scaled), suffix_en)
-    } else {
-      paste0(
-        format(round(scaled, 1),
-          big.mark = ",", decimal.mark = ".", nsmall = 1
-        ),
-        suffix_en
-      )
-    }
+    suffix_en <- if (magnitude$suffix == " mia.") " B" else magnitude$suffix
+    format_scaled_number(val, magnitude$scale, suffix_en, dm = ".")
   } else {
-    if (is_effective_integer(val)) {
-      format(round(val), big.mark = ",", decimal.mark = ".")
-    } else if (abs(val) < 1) {
-      format(round(val, 2), big.mark = ",", decimal.mark = ".", nsmall = 2)
-    } else {
-      format(round(val, 1), big.mark = ",", decimal.mark = ".", nsmall = 1)
-    }
+    .format_locale(val, dm = ".", bm = ",")
   }
 }
 
@@ -231,13 +216,7 @@ format_rate_english <- function(val) {
   if (is.na(val)) {
     return(NA_character_)
   }
-  if (is_effective_integer(val)) {
-    format(round(val), decimal.mark = ".")
-  } else if (abs(val) < 1) {
-    format(round(val, 2), decimal.mark = ".", nsmall = 2)
-  } else {
-    format(round(val, 1), decimal.mark = ".", nsmall = 1)
-  }
+  .format_locale(val, dm = ".")
 }
 
 #' Format Rate Value with Danish Notation (Canonical)
@@ -254,15 +233,5 @@ format_rate_danish <- function(val) {
   if (is.na(val)) {
     return(NA_character_)
   }
-
-  # Heltal: ingen decimaler
-  if (is_effective_integer(val)) {
-    format(round(val), decimal.mark = ",")
-  } else if (abs(val) < 1) {
-    # Andele (0-1): 2 decimaler
-    format(round(val, 2), decimal.mark = ",", nsmall = 2)
-  } else {
-    # Alt andet: 1 decimal
-    format(round(val, 1), decimal.mark = ",", nsmall = 1)
-  }
+  .format_locale(val, dm = ",")
 }

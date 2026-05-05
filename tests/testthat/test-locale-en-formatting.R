@@ -102,6 +102,53 @@ test_that("bfh_qic(language='da') (default) bevarer dansk y-akse-format", {
 })
 
 # ----------------------------------------------------------------------------
+# format_y_value() locale-awareness (utils_label_formatting.R)
+# ----------------------------------------------------------------------------
+
+test_that("format_y_value count: 'da' producerer dansk format", {
+  expect_equal(format_y_value(1234, "count", language = "da"), "1,2K")
+  expect_equal(format_y_value(123.5, "count", language = "da"), "123,5")
+})
+
+test_that("format_y_value count: 'en' producerer engelsk format", {
+  expect_equal(format_y_value(1234, "count", language = "en"), "1.2K")
+  expect_equal(format_y_value(123.5, "count", language = "en"), "123.5")
+})
+
+test_that("format_y_value rate: 'da' producerer dansk decimal-tegn", {
+  result <- format_y_value(1.5, "rate", language = "da")
+  expect_true(grepl(",", result, fixed = TRUE))
+})
+
+test_that("format_y_value rate: 'en' producerer engelsk decimal-tegn", {
+  result <- format_y_value(1.5, "rate", language = "en")
+  expect_true(grepl(".", result, fixed = TRUE))
+  expect_false(grepl(",", result, fixed = TRUE))
+})
+
+test_that("format_y_value percent: 'da' producerer dansk komma naer target", {
+  result <- format_y_value(0.887, "percent", target = 0.90, language = "da")
+  expect_true(grepl(",", result, fixed = TRUE))
+})
+
+test_that("format_y_value percent: 'en' producerer engelsk punktum naer target", {
+  result <- format_y_value(0.887, "percent", target = 0.90, language = "en")
+  expect_false(grepl(",", result, fixed = TRUE))
+  expect_true(grepl(".", result, fixed = TRUE))
+})
+
+test_that("format_y_value default: 'en' producerer engelsk decimal-tegn", {
+  result <- format_y_value(1.5, "other", language = "en")
+  expect_true(grepl(".", result, fixed = TRUE))
+  expect_false(grepl(",", result, fixed = TRUE))
+})
+
+test_that("format_y_value default language = 'da' (bagudkompatibilitet)", {
+  result <- format_y_value(1234, "count")
+  expect_equal(result, "1,2K")
+})
+
+# ----------------------------------------------------------------------------
 # spc_plot_config validation
 # ----------------------------------------------------------------------------
 
