@@ -128,7 +128,7 @@ calculate_interval_multiplier <- function(potential_breaks, interval_type) {
   }
 
   # If all multipliers still exceed 15 breaks, use largest
-  tail(multipliers, 1)
+  utils::tail(multipliers, 1)
 }
 
 #' Calculate Date Breaks for X-Axis
