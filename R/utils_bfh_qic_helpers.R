@@ -230,10 +230,15 @@ validate_column_name_expr <- function(col_expr, param_name) {
     normalized_expr <- col_expr[[2]]
   }
   col_str <- deparse(col_expr)
-  valid_pattern <- "^[a-zA-Z][a-zA-Z0-9._]*$"
-  if (!is.symbol(normalized_expr) || !grepl(valid_pattern, as.character(normalized_expr))) {
+  # Unicode letter class \p{L} accepts Danish (aeoeaa) and other non-ASCII
+  # letters in column names. Continuation chars: letters, digits, dot, underscore.
+  # Using perl = TRUE for \p{L} / \p{N} support.
+  valid_pattern <- "^\\p{L}[\\p{L}\\p{N}._]*$"
+  col_char <- if (is.symbol(normalized_expr)) as.character(normalized_expr) else ""
+  if (!is.symbol(normalized_expr) ||
+    !grepl(valid_pattern, col_char, perl = TRUE)) {
     stop(sprintf(
-      "%s must be a simple column name, got: %s\nAvoid special characters, spaces, or expressions",
+      "%s must be a simple column name, got: %s\nAvoid special characters (other than letters, digits, dot, underscore), spaces, or expressions",
       param_name, col_str
     ), call. = FALSE)
   }
