@@ -15,3 +15,15 @@ Logical indicating whether x is a bfh_qic_result object
 \description{
 Check if Object is bfh_qic_result
 }
+\examples{
+\dontrun{
+data <- data.frame(
+  month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+  infections = rpois(12, lambda = 15)
+)
+result <- bfh_qic(data, x = month, y = infections, chart_type = "run")
+is_bfh_qic_result(result)         # TRUE
+is_bfh_qic_result(result$plot)    # FALSE
+}
+
+}
