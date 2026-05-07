@@ -12,25 +12,6 @@ NULL
 # CANONICAL TIME FORMATTING
 # ============================================================================
 
-#' Determine Appropriate Time Unit Based on Data Range
-#'
-#' Selects minutes, hours, or days based on the maximum value in the range.
-#'
-#' @param max_minutes Maximum time value in minutes
-#'
-#' @return Character: "minutes", "hours", or "days"
-#' @keywords internal
-#' @noRd
-determine_time_unit <- function(max_minutes) {
-  if (is.na(max_minutes) || max_minutes < 60) {
-    "minutes"
-  } else if (max_minutes < 1440) {
-    "hours"
-  } else {
-    "days"
-  }
-}
-
 #' Scale Time Value to Appropriate Unit
 #'
 #' Converts minutes to the specified time unit.

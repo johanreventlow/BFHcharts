@@ -254,14 +254,3 @@ format_y_axis_time <- function(qic_data) {
     }
   )
 }
-
-# ============================================================================
-# NOTE: Helper functions moved to canonical files
-# ============================================================================
-# The following functions have been consolidated into dedicated utility files:
-#
-# - format_scaled_number() -> R/utils_number_formatting.R
-# - format_unscaled_number() -> R/utils_number_formatting.R
-# - format_time_with_unit() -> R/utils_time_formatting.R (as format_time_danish())
-#
-# This ensures DRY compliance with a single source of truth for formatting.
