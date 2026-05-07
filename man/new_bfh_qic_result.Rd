@@ -62,3 +62,15 @@ The qicharts2 column contract is stable across minor versions >= 0.7.0.
 Additional columns may be present but should not be relied upon.
 }
 
+\examples{
+\dontrun{
+# bfh_qic() returns a bfh_qic_result via this constructor
+data <- data.frame(
+  month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+  infections = rpois(12, lambda = 15)
+)
+result <- bfh_qic(data, x = month, y = infections, chart_type = "run")
+inherits(result, "bfh_qic_result")
+}
+
+}

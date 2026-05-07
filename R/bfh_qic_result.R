@@ -58,6 +58,17 @@ NULL
 #' The qicharts2 column contract is stable across minor versions >= 0.7.0.
 #' Additional columns may be present but should not be relied upon.
 #'
+#' @examples
+#' \dontrun{
+#' # bfh_qic() returns a bfh_qic_result via this constructor
+#' data <- data.frame(
+#'   month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+#'   infections = rpois(12, lambda = 15)
+#' )
+#' result <- bfh_qic(data, x = month, y = infections, chart_type = "run")
+#' inherits(result, "bfh_qic_result")
+#' }
+#'
 #' @export
 new_bfh_qic_result <- function(plot, summary, qic_data, config) {
   # Validate inputs
@@ -143,6 +154,17 @@ bfh_get_plot <- function(x) {
 #' @param x Object to test
 #'
 #' @return Logical indicating whether x is a bfh_qic_result object
+#'
+#' @examples
+#' \dontrun{
+#' data <- data.frame(
+#'   month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+#'   infections = rpois(12, lambda = 15)
+#' )
+#' result <- bfh_qic(data, x = month, y = infections, chart_type = "run")
+#' is_bfh_qic_result(result) # TRUE
+#' is_bfh_qic_result(result$plot) # FALSE
+#' }
 #'
 #' @export
 is_bfh_qic_result <- function(x) {
