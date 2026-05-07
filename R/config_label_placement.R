@@ -6,14 +6,12 @@
 #         mellem labels og linjer.
 #
 # ANVENDES AF:
-#   - fct_add_spc_labels.R - Label placement logic
-#   - Plot generation system (collision detection)
-#   - Label rendering (gap calculation, marquee sizing)
-#
-# RELATERET:
-#   - config_ui.R - Font scaling configuration
-#   - fct_spc_plot_generation.R - Plot rendering
-#   - See: docs/CONFIGURATION.md for complete guide
+#   - fct_add_spc_labels.R - Label placement logic (entry point)
+#   - utils_label_placement.R - Geometry + collision avoidance
+#   - utils_add_right_labels_marquee.R - Marquee label rendering
+#   - utils_note_placement.R - Annotation placement
+#   - utils_panel_measurement.R - Panel/label sizing
+#   - globals.R - Re-exports config constants
 #
 # BRUG:
 #   config <- get_label_placement_config()

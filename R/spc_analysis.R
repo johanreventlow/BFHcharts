@@ -147,9 +147,6 @@ resolve_target <- function(target_input) {
 }
 
 
-# pluralize_da() and ensure_within_max() are now in R/utils_text_da.R
-
-
 #' Build Analysis Context from bfh_qic_result
 #'
 #' Collects all relevant context from a `bfh_qic_result` object for analysis
@@ -910,10 +907,3 @@ format_target_value <- function(x, y_axis_unit = NULL) {
     format(round(x, 2), decimal.mark = ",", nsmall = 1)
   }
 }
-
-
-# load_spc_texts() er nu defineret i R/utils_i18n.R og laeser fra
-# inst/i18n/{language}.yaml via load_translations()
-#
-# pad_to_minimum(), pick_text() og substitute_placeholders() er nu i
-# R/utils_text_da.R
