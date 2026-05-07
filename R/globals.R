@@ -12,10 +12,7 @@ utils::globalVariables(c(
   # dplyr/qicharts2 columns
   "part", "anhoej.signal",
   "n.crossings", "n.crossings.min",
-  "part_n_cross", "part_n_cross_min",
-
-  # From stats/utils
-  "median", "var", "head", "tail"
+  "part_n_cross", "part_n_cross_min"
 ))
 
 # ============================================================================

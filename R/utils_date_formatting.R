@@ -64,7 +64,7 @@ detect_date_interval <- function(dates, debug = FALSE) {
     return(insufficient_response(length(sorted_dates)))
   }
 
-  median_interval <- median(intervals, na.rm = TRUE)
+  median_interval <- stats::median(intervals, na.rm = TRUE)
 
   # Guard: identiske datoer (median=0) -> insufficient data
   if (median_interval == 0) {
@@ -75,7 +75,7 @@ detect_date_interval <- function(dates, debug = FALSE) {
   if (length(intervals) < 2) {
     consistency <- 1
   } else {
-    interval_variance <- var(intervals, na.rm = TRUE)
+    interval_variance <- stats::var(intervals, na.rm = TRUE)
     consistency <- 1 - (sqrt(interval_variance) / median_interval)
     consistency <- max(0, min(1, consistency))
   }
