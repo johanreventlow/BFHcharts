@@ -242,8 +242,8 @@ test_that("accessor functions work", {
   expect_s3_class(result$qic_data, "data.frame")
   expect_type(result$config, "list")
 
-  # get_plot() function
-  extracted_plot <- get_plot(result)
+  # bfh_get_plot() function
+  extracted_plot <- bfh_get_plot(result)
   expect_s3_class(extracted_plot, "ggplot")
   expect_identical(extracted_plot, result$plot)
 })
@@ -284,14 +284,14 @@ test_that("is_bfh_qic_result identifies objects correctly", {
   expect_false(is_bfh_qic_result("string"))
 })
 
-test_that("get_plot validates input class", {
+test_that("bfh_get_plot validates input class", {
   expect_error(
-    get_plot("not a result"),
+    bfh_get_plot("not a result"),
     "x must be a bfh_qic_result object"
   )
 
   expect_error(
-    get_plot(data.frame()),
+    bfh_get_plot(data.frame()),
     "x must be a bfh_qic_result object"
   )
 })
