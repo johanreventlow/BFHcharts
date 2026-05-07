@@ -658,7 +658,10 @@ bfh_qic <- function(data,
     plot_margin = plot_margin,
     target_value = target_value,
     y_expr_char = as.character(y_expr),
-    n_expr_char = if (!is.null(n_expr)) as.character(n_expr) else NULL
+    n_expr_char = if (!is.null(n_expr)) as.character(n_expr) else NULL,
+    x_expr_char = as.character(x_expr),
+    notes = notes,
+    target_text = target_text
   )
 
   # ---- Byg qic_args + kald qicharts2 ----

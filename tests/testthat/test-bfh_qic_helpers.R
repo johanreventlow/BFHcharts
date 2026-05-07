@@ -172,7 +172,10 @@ call_validate <- function(data = data.frame(x = 1:10, y = 1:10),
                           plot_margin = NULL,
                           target_value = NULL,
                           y_expr_char = "y",
-                          n_expr_char = NULL) {
+                          n_expr_char = NULL,
+                          x_expr_char = NULL,
+                          notes = NULL,
+                          target_text = NULL) {
   validate_bfh_qic_inputs(
     data = data,
     chart_type = chart_type,
@@ -191,7 +194,10 @@ call_validate <- function(data = data.frame(x = 1:10, y = 1:10),
     plot_margin = plot_margin,
     target_value = target_value,
     y_expr_char = y_expr_char,
-    n_expr_char = n_expr_char
+    n_expr_char = n_expr_char,
+    x_expr_char = x_expr_char,
+    notes = notes,
+    target_text = target_text
   )
 }
 
@@ -232,6 +238,133 @@ test_that("validate_bfh_qic_inputs fejler ved plot_margin med forkert laengde", 
 test_that("validate_bfh_qic_inputs accepterer margin()-objekt som plot_margin", {
   m <- ggplot2::margin(t = 5, r = 5, b = 5, l = 5, unit = "mm")
   expect_no_error(call_validate(plot_margin = m))
+})
+
+# ---- x-column validation ---------------------------------------------------
+
+test_that("validate_bfh_qic_inputs rejects missing x column", {
+  expect_error(
+    call_validate(x_expr_char = "missing_col"),
+    regexp = "Column 'missing_col' not found in data"
+  )
+})
+
+test_that("validate_bfh_qic_inputs rejects character x", {
+  d <- data.frame(x = letters[1:5], y = 1:5, stringsAsFactors = FALSE)
+  expect_error(
+    call_validate(data = d, x_expr_char = "x"),
+    regexp = "x must be numeric, Date, or POSIXct"
+  )
+})
+
+test_that("validate_bfh_qic_inputs rejects factor x", {
+  d <- data.frame(x = factor(letters[1:5]), y = 1:5)
+  expect_error(
+    call_validate(data = d, x_expr_char = "x"),
+    regexp = "x must be numeric, Date, or POSIXct"
+  )
+})
+
+test_that("validate_bfh_qic_inputs accepts numeric, Date, POSIXct, integer x", {
+  expect_no_error(call_validate(
+    data = data.frame(x = 1:5, y = 1:5), x_expr_char = "x"
+  ))
+  expect_no_error(call_validate(
+    data = data.frame(x = as.Date("2024-01-01") + 0:4, y = 1:5),
+    x_expr_char = "x"
+  ))
+  expect_no_error(call_validate(
+    data = data.frame(
+      x = as.POSIXct("2024-01-01", tz = "UTC") + 0:4,
+      y = 1:5
+    ),
+    x_expr_char = "x"
+  ))
+  expect_no_error(call_validate(
+    data = data.frame(x = 1L:5L, y = 1:5), x_expr_char = "x"
+  ))
+})
+
+# ---- notes validation ------------------------------------------------------
+
+test_that("validate_bfh_qic_inputs rejects notes wrong length", {
+  d <- data.frame(x = 1:5, y = 1:5)
+  expect_error(
+    call_validate(data = d, notes = c("a", "b")),
+    regexp = "`notes` must have same length as data \\(got 2, expected 5\\)"
+  )
+})
+
+test_that("validate_bfh_qic_inputs rejects non-character notes", {
+  d <- data.frame(x = 1:5, y = 1:5)
+  expect_error(
+    call_validate(data = d, notes = 1:5),
+    regexp = "`notes` must be a character vector or NULL"
+  )
+})
+
+test_that("validate_bfh_qic_inputs accepts NULL notes and all-NA notes", {
+  d <- data.frame(x = 1:5, y = 1:5)
+  expect_no_error(call_validate(data = d, notes = NULL))
+  expect_no_error(call_validate(data = d, notes = rep(NA, 5)))
+  expect_no_error(call_validate(
+    data = d, notes = c("note", NA, NA, NA, NA)
+  ))
+})
+
+# ---- target_text validation ------------------------------------------------
+
+test_that("validate_bfh_qic_inputs rejects non-character target_text", {
+  expect_error(
+    call_validate(target_text = 42),
+    regexp = "`target_text` must be a single character string or NULL"
+  )
+})
+
+test_that("validate_bfh_qic_inputs rejects multi-element target_text", {
+  expect_error(
+    call_validate(target_text = c("a", "b")),
+    regexp = "`target_text` must be a single character string or NULL"
+  )
+})
+
+test_that("validate_bfh_qic_inputs accepts NULL or single-string target_text", {
+  expect_no_error(call_validate(target_text = NULL))
+  expect_no_error(call_validate(target_text = "Target: 5%"))
+})
+
+# ---- bfh_qic() integration: target_text + notes ----------------------------
+
+test_that("bfh_qic rejects non-character target_text", {
+  d <- data.frame(x = 1:10, y = 1:10)
+  expect_error(
+    bfh_qic(d, x = x, y = y, target_text = 42),
+    regexp = "`target_text` must be a single character string or NULL"
+  )
+})
+
+test_that("bfh_qic rejects multi-element target_text", {
+  d <- data.frame(x = 1:10, y = 1:10)
+  expect_error(
+    bfh_qic(d, x = x, y = y, target_text = c("a", "b")),
+    regexp = "`target_text` must be a single character string or NULL"
+  )
+})
+
+test_that("bfh_qic rejects notes wrong length", {
+  d <- data.frame(x = 1:10, y = 1:10)
+  expect_error(
+    bfh_qic(d, x = x, y = y, notes = c("a", "b")),
+    regexp = "`notes` must have same length as data"
+  )
+})
+
+test_that("bfh_qic rejects character x column", {
+  d <- data.frame(x = letters[1:10], y = 1:10, stringsAsFactors = FALSE)
+  expect_error(
+    bfh_qic(d, x = x, y = y),
+    regexp = "x must be numeric, Date, or POSIXct"
+  )
 })
 
 # ============================================================================
