@@ -1,3 +1,9 @@
+# BFHcharts (development)
+
+## Breaking changes
+
+* `get_plot()` omdøbt til `bfh_get_plot()` for at følge `bfh_*` naming-konvention og undgå namespace-collision med ggplot2/plotly. Migration: erstat `get_plot(result)` med `bfh_get_plot(result)` eller brug `result$plot` direkte.
+
 # BFHcharts 0.16.1
 
 ## Security

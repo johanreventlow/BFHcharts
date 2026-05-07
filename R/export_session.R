@@ -139,11 +139,37 @@ bfh_create_export_session <- function(font_path = NULL, inject_assets = NULL,
   session
 }
 
+#' Close a BFH Export Session
+#'
+#' Releases the session tmpdir and marks the session as closed. Subsequent
+#' calls are no-ops. Called automatically by the session finalizer at
+#' garbage collection or R session exit, but explicit `close()` is
+#' recommended for prompt cleanup.
+#'
+#' @param con A \code{bfh_export_session} object created with
+#'   \code{\link{bfh_create_export_session}}.
+#' @param ... Additional arguments (ignored).
+#'
+#' @return Invisibly returns \code{NULL}.
+#'
+#' @method close bfh_export_session
 #' @export
 close.bfh_export_session <- function(con, ...) {
   con$close()
 }
 
+#' Print a BFH Export Session
+#'
+#' Displays a one-line summary of the session: open/closed status,
+#' tmpdir location, and font path when set.
+#'
+#' @param x A \code{bfh_export_session} object created with
+#'   \code{\link{bfh_create_export_session}}.
+#' @param ... Additional arguments (ignored).
+#'
+#' @return The session object invisibly, for pipe chaining.
+#'
+#' @method print bfh_export_session
 #' @export
 print.bfh_export_session <- function(x, ...) {
   status <- if (x$closed()) "closed" else "open"
