@@ -131,7 +131,7 @@ plot.bfh_qic_result <- function(x, ...) {
 #' @return ggplot2 object
 #'
 #' @export
-get_plot <- function(x) {
+bfh_get_plot <- function(x) {
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object", call. = FALSE)
   }
