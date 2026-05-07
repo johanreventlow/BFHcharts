@@ -167,8 +167,8 @@ spc_plot_config <- function(
 #' @param ... Additional arguments (ignored)
 #'
 #' @return Invisibly returns x
-#' @export
 #' @method print spc_plot_config
+#' @exportS3Method
 #' @noRd
 print.spc_plot_config <- function(x, ...) {
   cat("SPC Plot Configuration:\n")
@@ -240,8 +240,8 @@ viewport_dims <- function(
 #' @param ... Additional arguments (ignored)
 #'
 #' @return Invisibly returns x
-#' @export
 #' @method print viewport_dims
+#' @exportS3Method
 #' @noRd
 print.viewport_dims <- function(x, ...) {
   cat("Viewport Dimensions:\n")
