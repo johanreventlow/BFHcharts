@@ -118,6 +118,9 @@ bfh_spc_plot <- function(qic_data,
   if (!"anhoej.signal" %in% names(qic_data)) {
     qic_data$anhoej.signal <- FALSE
   }
+  # Coalesce NA -> FALSE once (precompute) so aes() does not recompute per draw.
+  # NA in anhoej.signal (series too short) is treated as FALSE (solid line).
+  qic_data$anhoej.signal <- dplyr::coalesce(qic_data$anhoej.signal, FALSE)
 
   # Beregn punktfarve baseret paa sigma.signal (outliers faar hospital_blue)
   if ("sigma.signal" %in% names(qic_data)) {
@@ -213,8 +216,7 @@ bfh_spc_plot <- function(qic_data,
     ggplot2::geom_line(
       ggplot2::aes(
         y = cl, group = part,
-        # NA i anhoej.signal (serie for kort) behandles som FALSE (solid linje)
-        linetype = ifelse(is.na(anhoej.signal), FALSE, anhoej.signal)
+        linetype = anhoej.signal
       ),
       color = cols$blue,
       linewidth = cl_linewidth
