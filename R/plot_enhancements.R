@@ -250,12 +250,19 @@ add_plot_enhancements <- function(plot,
             )
         }
 
-        # Buede pile (diagonale labels) - geom_curve kraever en curvature per lag
+        # Buede pile (diagonale labels) - geom_curve kraever en curvature per lag.
+        # Group rows by unique curvature value (typically 2: +/-0.25), so we
+        # emit at most a handful of layers instead of one per row.
         curved <- arrow_data[arrow_data$curvature != 0, ]
-        for (cr in seq_len(nrow(curved))) {
-          plot <- plot +
-            ggplot2::geom_curve(
-              data = curved[cr, ],
+        if (nrow(curved) > 0) {
+          unique_curvatures <- unique(curved$curvature)
+          plot <- purrr::reduce(unique_curvatures, function(p, k) {
+            subset <- curved[curved$curvature == k, , drop = FALSE]
+            if (nrow(subset) == 0) {
+              return(p)
+            }
+            p + ggplot2::geom_curve(
+              data = subset,
               ggplot2::aes(
                 x = .data$arrow_x,
                 y = .data$arrow_y,
@@ -264,10 +271,11 @@ add_plot_enhancements <- function(plot,
               ),
               colour = cols$grey,
               linewidth = 0.3,
-              curvature = curved$curvature[cr],
+              curvature = k,
               arrow = grid::arrow(length = grid::unit(1.5, "mm"), type = "closed"),
               inherit.aes = FALSE
             )
+          }, .init = plot)
         }
       }
 
