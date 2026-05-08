@@ -271,6 +271,9 @@ validate_column_name_expr <- function(col_expr, param_name) {
 #' @param target_value Numerisk maalvaerdi eller NULL
 #' @param y_expr_char Karakterstreng af y-kolonnenavnet (til denominator-validering)
 #' @param n_expr_char Karakterstreng af n-kolonnenavnet eller NULL
+#' @param x_expr_char Karakterstreng af x-kolonnenavnet eller NULL
+#' @param notes Notats-vektor eller NULL
+#' @param target_text Target-label-tekst eller NULL
 #' @return Normaliseret `agg.fun`-vaerdi (NULL hvis ikke angivet, ellers matchet streng)
 #' @keywords internal
 #' @noRd
@@ -291,7 +294,10 @@ validate_bfh_qic_inputs <- function(data,
                                     plot_margin,
                                     target_value,
                                     y_expr_char,
-                                    n_expr_char) {
+                                    n_expr_char,
+                                    x_expr_char = NULL,
+                                    notes = NULL,
+                                    target_text = NULL) {
   if (!is.data.frame(data)) {
     stop("data must be a data frame", call. = FALSE)
   }
@@ -301,6 +307,28 @@ validate_bfh_qic_inputs <- function(data,
       "'data' is empty; bfh_qic() requires at least one row",
       call. = FALSE
     )
+  }
+
+  # x column must exist and be of an x-axis-compatible type. Early
+  # error prevents cryptic qicharts2 failures on e.g. character input.
+  if (!is.null(x_expr_char)) {
+    if (!x_expr_char %in% names(data)) {
+      stop(
+        sprintf("Column '%s' not found in data", x_expr_char),
+        call. = FALSE
+      )
+    }
+    x_data <- data[[x_expr_char]]
+    if (!(is.numeric(x_data) || inherits(x_data, "Date") ||
+      inherits(x_data, "POSIXct") || is.integer(x_data))) {
+      stop(
+        sprintf(
+          "Column '%s' has class '%s'. x must be numeric, Date, or POSIXct. Use as.Date() or as.POSIXct() to convert.",
+          x_expr_char, class(x_data)[1]
+        ),
+        call. = FALSE
+      )
+    }
   }
 
   # y column must be numeric (or integer). Early error prevents
@@ -313,6 +341,32 @@ validate_bfh_qic_inputs <- function(data,
           "column '%s' (y) must be numeric, got: %s",
           y_expr_char, paste(class(y_data), collapse = "/")
         ),
+        call. = FALSE
+      )
+    }
+  }
+
+  # notes must be a character vector (or all-NA) with same length as data.
+  if (!is.null(notes)) {
+    if (!is.character(notes) && !all(is.na(notes))) {
+      stop("`notes` must be a character vector or NULL", call. = FALSE)
+    }
+    if (length(notes) != nrow(data)) {
+      stop(
+        sprintf(
+          "`notes` must have same length as data (got %d, expected %d)",
+          length(notes), nrow(data)
+        ),
+        call. = FALSE
+      )
+    }
+  }
+
+  # target_text must be a single character string (scalar) when provided.
+  if (!is.null(target_text)) {
+    if (!is.character(target_text) || length(target_text) != 1L) {
+      stop(
+        "`target_text` must be a single character string or NULL",
         call. = FALSE
       )
     }
