@@ -4,6 +4,17 @@
 
 * `get_plot()` omdøbt til `bfh_get_plot()` for at følge `bfh_*` naming-konvention og undgå namespace-collision med ggplot2/plotly. Migration: erstat `get_plot(result)` med `bfh_get_plot(result)` eller brug `result$plot` direkte.
 
+## Nye features
+
+* **Native Unicode-tegn (æøå mfl.) tilladt i kolonnenavne.** `bfh_qic()`s
+  column-name-validator har tidligere afvist danske tegn i kolonnenavne, hvilket
+  tvang downstream-applikationer (biSPCharts) til at ASCII-translit'e kolonnenavne
+  før hvert kald. Validator-regex er udvidet fra `[a-zA-Z]` til Unicode-letter-
+  klasse (`\p{L}`) via `perl = TRUE`, så `Tæller`, `Nævner`, `Måned` og lignende
+  hospital-system-eksporter accepteres nativt. Function-call-, operator- og
+  whitespace-detektion er uændret — kun letter-klassen er blevet bredere
+  (#327, fix biSPCharts #562).
+
 # BFHcharts 0.16.1
 
 ## Security
