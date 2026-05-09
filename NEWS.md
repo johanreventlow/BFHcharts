@@ -4,6 +4,19 @@
 
 * `get_plot()` omdøbt til `bfh_get_plot()` for at følge `bfh_*` naming-konvention og undgå namespace-collision med ggplot2/plotly. Migration: erstat `get_plot(result)` med `bfh_get_plot(result)` eller brug `result$plot` direkte.
 
+## Bug fixes
+
+* **Y-akse-expansion bumpet fra 5% til 12.5% (top + bund) for at undgå at
+  boundary-labels (target/CL nær akse-grænse) klippes.** SPC-44-style
+  scenarier — fx udviklingsmål-label `<1%` på p-chart med y-akse 0–10% —
+  klippede tidligere ved nederste plot-kant fordi marquee-label-højden
+  ikke fik plads i 5%-expansion-zonen. PR #164 reducerede default fra 20%
+  til 5% for at fixe whitespace-overskud (#113), men gik for langt for
+  boundary-cases. Ny default placerer data i de midterste ~80% af
+  plot-området, jf. SPC-litteraturens anbefaling. Boundary-aware
+  label-placement (`fct_add_spc_labels.R:300-348`) er uændret.
+  (`Y_AXIS_BASE_EXPANSION_MULT` i `R/globals.R`, refs #164)
+
 ## Nye features
 
 * **Native Unicode-tegn (æøå mfl.) tilladt i kolonnenavne.** `bfh_qic()`s
