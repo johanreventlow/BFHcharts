@@ -222,7 +222,11 @@ test_that("CL at zero with target above does not crash and returns ggplot", {
   expect_true(inherits(result, "gg"))
 })
 
-test_that("boundary labels avoid adding excess whitespace when minimal expansion is enough", {
+test_that("default 12.5% expansion giver forventet panel-range; label-layer kan udvide ved boundary", {
+  # Data 0..0.06 (span 0.06), 12.5% expansion = 0.0075 paa hver side
+  # → range -0.0075..0.0675 fra base-formatter. Boundary-aware
+  # label-placement kan udvide yderligere ved behov for at undgaa
+  # clipping af marquee-labels (target/CL nær akse-graensen).
   qic_data <- data.frame(
     x = as.Date("2024-01-01") + 0:11 * 30,
     y = c(0, 0, 0, 0.06, 0, 0.04, 0, 0, 0, 0, 0, 0),
@@ -235,14 +239,19 @@ test_that("boundary labels avoid adding excess whitespace when minimal expansion
   plot_before_labels <- apply_y_axis_formatting(p, "percent", qic_data)
   range_before <- ggplot2::ggplot_build(plot_before_labels)$layout$panel_params[[1]]$y.range
 
+  # Base-formatter producerer praecis 12.5%-expansion
+  expect_equal(range_before, c(-0.0075, 0.0675), tolerance = 1e-8)
+
+  # Label-layer maa udvide range yderligere for at give plads til marquee-labels.
+  # Kontrakt: range_after dækker MINDST range_before (no shrinking).
   result <- suppressWarnings(add_spc_labels(plot_before_labels, qic_data, y_axis_unit = "percent"))
   range_after <- ggplot2::ggplot_build(result)$layout$panel_params[[1]]$y.range
 
-  expect_equal(range_before, c(-0.003, 0.063), tolerance = 1e-8)
-  expect_equal(range_after, range_before, tolerance = 1e-8)
+  expect_lte(range_after[1], range_before[1] + 1e-8)
+  expect_gte(range_after[2], range_before[2] - 1e-8)
 })
 
-test_that("non-boundary labels keep the minimal default y expansion", {
+test_that("non-boundary labels keep the default y expansion", {
   qic_data <- data.frame(
     x = as.Date("2024-01-01") + 0:11 * 30,
     y = c(40, 52, 48, 55, 47, 51, 49, 53, 50, 48, 52, 60),
@@ -274,6 +283,88 @@ test_that("CL at data maximum with target below does not crash", {
 
   result <- add_spc_labels(p, qic_data, y_axis_unit = "percent")
   expect_true(inherits(result, "gg"))
+})
+
+# Regression: SPC-44 boundary-target clipping (#164-followup) ----
+
+test_that("SPC-44 regression: target near 0% boundary skal have plads under target-line", {
+  # Reproducer SPC-44.pdf-scenariet: p-chart, target=1%, CL ~1.9%,
+  # data spaender 0-10%. Med 5% expansion (foer #164-followup) blev
+  # "<1%"-label klippet ved nederste plot-kant. Med 12.5% expansion
+  # skal target-label kunne sidde under target-linjen uden clipping.
+  # Data inkluderer 0 og 0.10 for at give realistisk panel-range
+  # (matcher "0% .. 10%" akse-format som SPC-44.pdf viser).
+  qic_data <- data.frame(
+    x = as.Date("2024-01-01") + 0:11 * 30,
+    y = c(
+      0.000, 0.060, 0.040, 0.100, 0.020, 0.060,
+      0.000, 0.080, 0.030, 0.050, 0.020, 0.040
+    ),
+    cl = rep(0.019, 12),
+    target = rep(0.01, 12)
+  )
+  p <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_line()
+
+  plot_with_labels <- suppressWarnings(
+    add_spc_labels(
+      apply_y_axis_formatting(p, "percent", qic_data),
+      qic_data,
+      y_axis_unit = "percent"
+    )
+  )
+
+  panel_range <- ggplot2::ggplot_build(plot_with_labels)$layout$panel_params[[1]]$y.range
+  placement <- attr(plot_with_labels, "placement_info")
+
+  # 12.5% expansion paa data 0..0.10 (span 0.10) = 0.0125 paa hver side.
+  # Boundary-aware label-placement kan udvide range yderligere hvis behov,
+  # saa vi tester at panel-bund er MINDST -0.0125 (kan vaere mere negativ).
+  expect_lte(panel_range[1], -0.0125 + 1e-8)
+
+  # placement_info SKAL eksistere og target-label SKAL kunne placeres
+  # uden at faa NA (NA = engine kunne ikke finde lovlig position).
+  expect_false(is.null(placement))
+  expect_false(
+    is.na(placement$yB),
+    info = sprintf(
+      "Target-label kunne ikke placeres (yB=NA, quality=%s). Indikerer at default-expansion stadig er for snaever for boundary-cases.",
+      placement$placement_quality %||% "?"
+    )
+  )
+
+  # Target-label-NPC skal vaere strikt over 0.0 (= panel-bund i NPC)
+  # for at undgaa clipping. Boundary-aware logik (fct_add_spc_labels.R:300-348)
+  # saetter pref_B="under" naar target er i nederste 30%.
+  expect_gt(placement$yB, 0.0)
+})
+
+test_that("Percent-breaks renderer ingen negative ticks selvom expansion gaar < 0%", {
+  # 12.5% expansion paa data 0..0.10 → panel_range -0.0125..0.1125.
+  # Standard ggplot2-breaks skal filtrere negative breakpoints,
+  # saa "-1%"/"-2%"-ticks ikke render. Kontrakt: drop-clamp er sikker.
+  qic_data <- data.frame(
+    x = 1:10,
+    y = seq(0, 0.10, length.out = 10)
+  )
+  p <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
+    ggplot2::geom_point()
+
+  result <- apply_y_axis_formatting(p, "percent", qic_data)
+  built <- ggplot2::ggplot_build(result)
+
+  panel_range <- built$layout$panel_params[[1]]$y.range
+  expect_true(panel_range[1] < 0)
+
+  breaks <- built$layout$panel_params[[1]]$y$get_breaks()
+  breaks <- breaks[!is.na(breaks)]
+  expect_true(
+    all(breaks >= 0),
+    info = sprintf(
+      "Breaks indeholdt negative vaerdier: %s",
+      paste(breaks[breaks < 0], collapse = ", ")
+    )
+  )
 })
 
 # Placement metadata assertions ----
