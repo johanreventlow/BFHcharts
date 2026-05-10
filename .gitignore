@@ -13,6 +13,8 @@
 .httr-oauth
 # pkgdown site
 docs/
+# Review-tracker (dual-review-cycle skill) — tracked despite docs/ ignore
+!docs/reviews/
 # Translation temp files
 po/*~
 # R Environment Variables
