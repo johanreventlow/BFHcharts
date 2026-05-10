@@ -152,8 +152,15 @@ bfh_create_typst_document <- function(chart_image,
   chart_basename <- basename(chart_image)
   local_chart <- file.path(output_dir, chart_basename)
 
-  # Normalize paths to compare (handles relative vs absolute, symlinks, etc.)
+  # Normalize paths to compare (handles relative vs absolute, symlinks, etc.).
+  # Cycle 01 finding S3: validate_export_path() ran on the syntactic input
+  # path BEFORE symlink resolution, so a symlink chart_image -> /var/lib/
+  # connect/tenant-a/data/cached.svg would pass validation but file.copy()
+  # would follow the symlink and pull tenant-A's PHI into the calling
+  # tenant's PDF. Re-validate the resolved (post-symlink) path so the
+  # path-traversal + shell-metachar guards apply to the real target too.
   chart_image_norm <- normalizePath(chart_image, mustWork = TRUE)
+  validate_export_path(chart_image_norm)
   local_chart_norm <- normalizePath(local_chart, mustWork = FALSE)
 
   # Only copy if source and destination are different files
