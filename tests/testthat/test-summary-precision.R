@@ -164,3 +164,33 @@ test_that("format_target_value haandterer raa centerlinje korrekt", {
     info = "format_target_value skal producere samme output pre/post Slice C"
   )
 })
+
+test_that("E4: format_target_value uses locale-aware decimal-mark", {
+  # Cycle 01 finding E4 (review 2026-05-10):
+  # format_target_value previously hardcoded decimal.mark = "," for the
+  # non-percent + non-integer path, producing danish decimals ("1,5") in
+  # english analysis-text. language="en" must produce "1.5".
+  expect_equal(
+    BFHcharts:::format_target_value(1.5, y_axis_unit = "count", language = "da"),
+    "1,5"
+  )
+  expect_equal(
+    BFHcharts:::format_target_value(1.5, y_axis_unit = "count", language = "en"),
+    "1.5"
+  )
+  # Default is danish (backward compatible)
+  expect_equal(
+    BFHcharts:::format_target_value(1.5, y_axis_unit = "count"),
+    "1,5"
+  )
+  # Integer path is locale-independent (always integer string)
+  expect_equal(
+    BFHcharts:::format_target_value(5, y_axis_unit = "count", language = "en"),
+    "5"
+  )
+  # Percent path is locale-independent (always rounds to whole %)
+  expect_equal(
+    BFHcharts:::format_target_value(0.5, y_axis_unit = "percent", language = "en"),
+    "50%"
+  )
+})

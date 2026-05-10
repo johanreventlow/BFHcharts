@@ -46,11 +46,36 @@ test_that("bfh_qic håndterer negative værdier", {
     value = rnorm(12, mean = -10, sd = 5)
   )
 
+  # i-chart accepterer negative værdier (continuous metric, fx temperaturer)
   result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 
   expect_s3_class(result, "bfh_qic_result")
   # Y-værdier skal afspejle de negative inputdata
   expect_true(any(result$qic_data$y < 0))
+})
+
+test_that("E8 regression: count-style charts reject negative y values", {
+  # Cycle 01 finding E8 (review 2026-05-10):
+  # qicharts2 silently rendered negative counts on c/g/t/p/u-charts,
+  # producing statistically meaningless charts that appeared valid to
+  # clinicians. Now caught at validation time with chart-type-aware error.
+  data <- data.frame(
+    date = as.Date("2024-01-01") + 0:9,
+    val = c(5, 3, 8, -1, 4, 6, 2, 7, 5, 3)
+  )
+
+  for (ct in c("c", "g", "t", "u")) {
+    expect_error(
+      bfh_qic(data, x = date, y = val, chart_type = ct),
+      "non-negative",
+      info = paste0("chart_type='", ct, "' should reject negative y")
+    )
+  }
+
+  # i-chart (and run-chart) still accept negative values
+  expect_no_error(
+    bfh_qic(data, x = date, y = val, chart_type = "i")
+  )
 })
 
 test_that("bfh_qic håndterer stor dataset (200 punkter)", {
@@ -114,6 +139,29 @@ test_that("bfh_qic med cl parameter sætter custom centerlinje", {
 
   # Centerlinje skal være 42 (custom)
   expect_true(all(result$qic_data$cl == 42))
+})
+
+test_that("E2 regression: bfh_qic rejects non-finite cl with clear error", {
+  # Cycle 01 finding E2 (review 2026-05-10):
+  # validate_numeric_parameter() admitted Inf because is.na(Inf)=FALSE and
+  # bounds checks Inf < Inf / Inf > Inf both return FALSE. Inf flowed to
+  # qicharts2 / yA_npc machinery where it failed with cryptic
+  # "yA_npc must be finite" -- AFTER the user-supplied-cl warning had
+  # already been emitted, masking the actual root cause.
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  expect_error(
+    bfh_qic(data, x = date, y = value, chart_type = "run", cl = Inf),
+    "cl must be finite"
+  )
+  expect_error(
+    bfh_qic(data, x = date, y = value, chart_type = "run", cl = -Inf),
+    "cl must be finite"
+  )
 })
 
 test_that("bfh_qic med part parameter opretter faser", {
@@ -198,6 +246,21 @@ test_that("bfh_qic med enkelt-række data returnerer objekt (ingen crash)", {
 
   expect_s3_class(result, "bfh_qic_result")
   expect_equal(nrow(result$qic_data), 1)
+})
+
+test_that("E7 regression: freeze=1 on 1-row data is rejected cleanly", {
+  # Cycle 01 finding E7 (review 2026-05-10):
+  # validate_position_indices() previously had max = max(nrow(data)-1, 1L)
+  # which floored at 1, admitting freeze=1 on 1-row data (zero baseline
+  # rows after split). qicharts2 then errored cryptically downstream.
+  # Now: max = nrow(data)-1 directly, so 1-row + freeze=1 is rejected at
+  # validation time with the standard bounds-error.
+  data <- data.frame(date = as.Date("2024-01-01"), value = 42)
+
+  expect_error(
+    bfh_qic(data, x = date, y = value, chart_type = "run", freeze = 1),
+    "data bounds"
+  )
 })
 
 # ============================================================================

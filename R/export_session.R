@@ -87,7 +87,10 @@ bfh_create_export_session <- function(font_path = NULL, inject_assets = NULL,
   }
 
   tmpdir <- tempfile("bfh_batch_")
-  dir.create(tmpdir, recursive = TRUE)
+  # Atomic perms; cycle 01 finding S1 (TOCTOU on staging dir).
+  # Sys.chmod below stays as belt-and-suspenders for platforms with
+  # inconsistent mode= honoring on dir.create (older R / Windows).
+  dir.create(tmpdir, recursive = TRUE, mode = "0700")
   # Sikkerhed: tempfile() leverer en per-bruger isoleret sti i tempdir(),
   # og Sys.chmod(0700) fjerner group/other-permissions. UID-baseret
   # ownership validation is intentionally omitted -- UID is shell-internal and typically

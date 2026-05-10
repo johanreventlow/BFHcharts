@@ -104,6 +104,20 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   # Check which columns exist (run charts don't have lcl/ucl)
   available_cols <- intersect(summary_cols, names(qic_data))
 
+  # Defensive early-return for empty qic_data. bfh_qic() blocks
+  # nrow(data) == 0 upstream (utils_bfh_qic_helpers.R:310), so this only
+  # triggers if qicharts2 itself returns zero rows (extreme exclude=
+  # configuration). Without this, qic_data[1, ] returns a 1-row NA frame
+  # that propagates NAs into runs_signal / crossings_signal columns.
+  # Cycle 01 finding E6.
+  if (nrow(qic_data) == 0L) {
+    empty <- as.data.frame(stats::setNames(
+      replicate(length(available_cols), logical(0), simplify = FALSE),
+      available_cols
+    ), stringsAsFactors = FALSE)
+    return(empty)
+  }
+
   # Extract unique summary rows per part
   # Use split + per-part aggregation for correct Anhoej statistics
   if ("part" %in% names(qic_data)) {

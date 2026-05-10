@@ -115,7 +115,7 @@ bfh_create_typst_document <- function(chart_image,
       )
       if (!dir.exists(src)) {
         stop(
-          "Typst template not found at: ", src, "\n",
+          "Typst template not found at: ", .redact_paths(src), "\n",
           "  This should not happen. Please reinstall BFHcharts.",
           call. = FALSE
         )
@@ -144,7 +144,7 @@ bfh_create_typst_document <- function(chart_image,
   # Copy chart image to output directory (fixes path handling for arbitrary locations)
   if (!file.exists(chart_image)) {
     stop(
-      "Chart image not found: ", chart_image, "\n",
+      "Chart image not found: ", .redact_paths(chart_image), "\n",
       "  Ensure the image file exists.",
       call. = FALSE
     )
@@ -152,8 +152,19 @@ bfh_create_typst_document <- function(chart_image,
   chart_basename <- basename(chart_image)
   local_chart <- file.path(output_dir, chart_basename)
 
-  # Normalize paths to compare (handles relative vs absolute, symlinks, etc.)
+  # Normalize paths to compare (handles relative vs absolute, symlinks, etc.).
+  # If chart_image cannot be resolved (mustWork=TRUE will error here), the
+  # downstream stop() at file.exists() check above already handled it; this
+  # normalizePath is for the dedup-comparison only.
+  #
+  # Cycle 01 finding S3: validate_export_path() ran on the syntactic input
+  # path BEFORE symlink resolution, so a symlink chart_image -> /var/lib/
+  # connect/tenant-a/data/cached.svg would pass validation but file.copy()
+  # would follow the symlink and pull tenant-A's PHI into the calling
+  # tenant's PDF. Re-validate the resolved (post-symlink) path so the
+  # path-traversal + shell-metachar guards apply to the real target too.
   chart_image_norm <- normalizePath(chart_image, mustWork = TRUE)
+  validate_export_path(chart_image_norm)
   local_chart_norm <- normalizePath(local_chart, mustWork = FALSE)
 
   # Only copy if source and destination are different files
@@ -204,13 +215,44 @@ bfh_create_typst_document <- function(chart_image,
   invisible(output)
 }
 
+# Redact filsystem-stier fra strings der kan ende i user-visible errors.
+# Cycle 01 finding S2: stop()/warning()-paths returnerede tidligere raa
+# absolutte stier (template-cache, chart-staging, .typ-files), som
+# eksponerede home-dir-layout, R-library-paths og tempdir-naming til
+# co-tenants paa Connect Cloud hvis biSPCharts surfacede conditionMessage(e).
+# Redact: tempdir() -> <tmpdir>, HOME -> <home>, .libPaths() -> <lib>.
+.redact_paths <- function(text) {
+  if (length(text) == 0L || !is.character(text)) {
+    return(text)
+  }
+  text <- paste(text, collapse = "\n")
+  # tempdir: redact baade raw tempdir() form og normalizePath()-form
+  # (paa macOS er tempdir() "/var/folders/..." mens normalizePath returnerer
+  # "/private/var/folders/..."; begge kan optraede i error-strings afhaengigt
+  # af om path'en er passed gennem normalizePath foer interpolation).
+  td_raw <- tryCatch(tempdir(), error = function(e) "")
+  td_norm <- tryCatch(normalizePath(tempdir(), winslash = "/", mustWork = FALSE),
+    error = function(e) ""
+  )
+  for (td in unique(c(td_raw, td_norm))) {
+    if (nzchar(td)) text <- gsub(td, "<tmpdir>", text, fixed = TRUE)
+  }
+  # HOME (kan vaere "" i CI / non-interactive sessions)
+  home <- Sys.getenv("HOME", unset = "")
+  if (nzchar(home)) text <- gsub(home, "<home>", text, fixed = TRUE)
+  # R-library paths
+  for (lp in tryCatch(.libPaths(), error = function(e) character(0))) {
+    if (nzchar(lp)) text <- gsub(lp, "<lib>", text, fixed = TRUE)
+  }
+  text
+}
+
 # Afkorter compile-output til max `max` tegn for at undgaa laekage af
-# filsystem-stier i fejlbeskeder. Redacter tempdir-stier foerst, derefter
-# truncation. Bruges i begge fejl-branches i bfh_compile_typst().
+# filsystem-stier i fejlbeskeder. Redacter via .redact_paths() (tempdir,
+# HOME, libPaths) foerst, derefter truncation. Bruges i begge
+# fejl-branches i bfh_compile_typst().
 .truncate_compile_output <- function(output, max = 500L) {
-  text <- paste(output, collapse = "\n")
-  td <- normalizePath(tempdir(), winslash = "/", mustWork = FALSE)
-  text <- gsub(td, "<tmpdir>", text, fixed = TRUE)
+  text <- .redact_paths(output)
   substr(text, 1L, max)
 }
 
@@ -328,7 +370,10 @@ bfh_create_typst_document <- function(chart_image,
     return(cached_path)
   }
   dir <- tempfile("bfh_tpl_")
-  dir.create(dir, recursive = TRUE)
+  # Create with restrictive perms atomically; the subsequent Sys.chmod is
+  # belt-and-suspenders for older R versions / Windows where mode= on
+  # dir.create may be ignored. Cycle 01 finding S1 (TOCTOU on staging dir).
+  dir.create(dir, recursive = TRUE, mode = "0700")
   Sys.chmod(dir, mode = "0700", use_umask = FALSE)
   src <- system.file("templates/typst/bfh-template", package = "BFHcharts")
   if (!dir.exists(src)) {
@@ -426,7 +471,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
                               ignore_system_fonts = TRUE,
                               .system2 = system2, .quarto_path = NULL) {
   if (!file.exists(typst_file)) {
-    stop("Typst file not found: ", typst_file, call. = FALSE)
+    stop("Typst file not found: ", .redact_paths(typst_file), call. = FALSE)
   }
 
   # Security: Validate paths before passing to system2()
@@ -442,7 +487,10 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
     .check_traversal(font_path)
     .check_metachars(font_path)
     if (!dir.exists(font_path)) {
-      warning("font_path directory does not exist: ", font_path, call. = FALSE)
+      warning(
+        "font_path directory does not exist: ", .redact_paths(font_path),
+        call. = FALSE
+      )
       font_path <- NULL # falls through to auto-detect below
     }
   }

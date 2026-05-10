@@ -349,6 +349,30 @@ validate_bfh_qic_inputs <- function(data,
         call. = FALSE
       )
     }
+
+    # Cycle 01 finding E8: count-style charts (c, g, t, p, pp, u, up)
+    # require non-negative y. qicharts2 silently rendered negative counts
+    # without warning, producing statistically meaningless charts that
+    # appeared valid to clinicians. Catch at validation time with a
+    # clear chart-type-aware error.
+    count_chart_types <- c("c", "g", "t", "p", "pp", "u", "up")
+    if (chart_type %in% count_chart_types) {
+      neg_idx <- which(!is.na(y_data) & y_data < 0)
+      if (length(neg_idx) > 0L) {
+        stop(
+          sprintf(
+            paste0(
+              "column '%s' (y) contains negative values at row(s): %s. ",
+              "Chart type '%s' requires non-negative counts/proportions."
+            ),
+            y_expr_char,
+            paste(utils::head(neg_idx, 5), collapse = ", "),
+            chart_type
+          ),
+          call. = FALSE
+        )
+      }
+    }
   }
 
   # notes must be a character vector (or all-NA) with same length as data.
@@ -396,10 +420,15 @@ validate_bfh_qic_inputs <- function(data,
     require_sorted = TRUE, require_unique = TRUE,
     min = 2L, max = nrow(data)
   )
+  # Cycle 01 finding E7: previously max = max(nrow(data) - 1L, 1L), which
+  # admitted freeze = 1 on 1-row data (max(0, 1) = 1, freeze == nrow). That
+  # left zero rows after the baseline and produced a cryptic qicharts2
+  # error downstream. Remove the floor so 1-row data fails cleanly with
+  # the validator's own bounds-message ("freeze must be within data bounds").
   validate_position_indices(freeze, "freeze", nrow(data),
     require_sorted = FALSE, require_unique = TRUE,
     require_scalar = TRUE,
-    min = 1L, max = max(nrow(data) - 1L, 1L)
+    min = 1L, max = nrow(data) - 1L
   )
 
   # Warn if freeze baseline is too short for reliable signal detection
