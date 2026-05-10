@@ -338,7 +338,14 @@ prepare_temp_workspace <- function(batch_session) {
   chart_svg <- tempfile(pattern = "chart-", tmpdir = temp_dir, fileext = ".svg")
   typst_file <- tempfile(pattern = "document-", tmpdir = temp_dir, fileext = ".typ")
 
-  dir.create(temp_dir, recursive = TRUE)
+  # Atomic perms via mode= so the dir is never world-readable, even briefly.
+  # Cycle 01 finding S1: the previous two-step (dir.create then chmod)
+  # left a microsecond window where a co-tenant could open a directory-fd
+  # while perms were still default 0755/0775, then continue enumerating
+  # contents after chmod tightened the inode. The Sys.chmod below remains
+  # as belt-and-suspenders for platforms where mode= is honored
+  # inconsistently (older R versions, Windows).
+  dir.create(temp_dir, recursive = TRUE, mode = "0700")
 
   # Sikkerhed: tempfile() leverer en per-bruger isoleret sti i tempdir(),
   # og Sys.chmod(0700) fjerner group/other-permissions. UID-baseret

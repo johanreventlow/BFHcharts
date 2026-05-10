@@ -112,6 +112,21 @@ validate_numeric_parameter <- function(value,
     )), call. = FALSE)
   }
 
+  # Check finiteness explicitly. Without this, Inf/-Inf slip through bounds
+  # checks (Inf < Inf is FALSE, Inf > Inf is FALSE) and reach downstream
+  # qicharts2 / yA_npc machinery where they fail with cryptic messages
+  # like "yA_npc must be finite" after the user-supplied-cl warning has
+  # already been emitted (cycle 01 finding E2). Bypass param_msg() so the
+  # finiteness violation surfaces directly instead of via the more generic
+  # "must be a single numeric value" fallback (Inf IS a single numeric
+  # value -- the issue is finiteness specifically).
+  if (any(!is.finite(value))) {
+    stop(sprintf(
+      "%s must be finite, got: %s",
+      param_name, paste(value, collapse = ", ")
+    ), call. = FALSE)
+  }
+
   # Check length
   if (!is.null(len) && length(value) != len) {
     stop(param_msg(sprintf(
