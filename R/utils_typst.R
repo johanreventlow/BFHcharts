@@ -362,7 +362,10 @@ bfh_create_typst_document <- function(chart_image,
     return(cached_path)
   }
   dir <- tempfile("bfh_tpl_")
-  dir.create(dir, recursive = TRUE)
+  # Create with restrictive perms atomically; the subsequent Sys.chmod is
+  # belt-and-suspenders for older R versions / Windows where mode= on
+  # dir.create may be ignored. Cycle 01 finding S1 (TOCTOU on staging dir).
+  dir.create(dir, recursive = TRUE, mode = "0700")
   Sys.chmod(dir, mode = "0700", use_umask = FALSE)
   src <- system.file("templates/typst/bfh-template", package = "BFHcharts")
   if (!dir.exists(src)) {
