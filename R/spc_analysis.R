@@ -97,7 +97,7 @@ resolve_target <- function(target_input) {
 #'
 #' Internal helper. When `y_axis_unit` is `"percent"` and the target appears
 #' to be expressed on the 0-100 scale (either because `display` contains a
-#' literal `"%"` character, or because `value > 1` for a numeric-only input),
+#' literal `"%"` character, or because `value > 1.5` for a numeric-only input),
 #' the value is divided by 100 so downstream comparisons work on the same
 #' 0-1 proportion scale as the centerline.
 #'
@@ -106,8 +106,12 @@ resolve_target <- function(target_input) {
 #'
 #' **Heuristic:**
 #' Normalize when `y_axis_unit == "percent"` AND
-#'   (`grepl("%", display)` OR `value > 1`)
-#' Preserve otherwise (proportion already correct, or non-percent chart).
+#'   (`grepl("%", display)` OR `value > 1.5`)
+#' Preserve otherwise (proportion already correct, or stretch-target on
+#' proportion scale, or non-percent chart). The 1.5 threshold matches
+#' `validate_target_for_unit()`'s upper bound for `multiply = 1`, so
+#' legitimate stretch-targets like 1.05 (=105% on proportion scale) are
+#' preserved instead of being misclassified as percent-scale input.
 #'
 #' @param value Numeric target value as parsed by `resolve_target()`.
 #' @param display Character display string (may be empty `""` for numeric input).
@@ -140,9 +144,17 @@ resolve_target <- function(target_input) {
   if (is.na(value) || !is.numeric(value)) {
     return(value)
   }
-  # Normalise when display contains "%" OR value > 1
+  # Normalise when display contains "%" OR value > 1.5
   # (OR heuristic covers both string input and numeric input on a 0-100 scale)
-  should_normalize <- isTRUE(grepl("%", display, fixed = TRUE)) || isTRUE(value > 1)
+  #
+  # Threshold rationale: validate_target_for_unit() allows target_value up to
+  # multiply * 1.5 = 1.5 (default multiply=1) for percent charts, supporting
+  # legitimate stretch-targets > 100% on the proportion scale. The previous
+  # threshold (value > 1) misclassified such stretch-targets (1.0, 1.5] as
+  # 0-100 input and divided by 100, producing wrong narrative text in
+  # bfh_generate_analysis(). 1.5 is the validator's max bound -- values above
+  # are unambiguously 0-100 input that needs normalising.
+  should_normalize <- isTRUE(grepl("%", display, fixed = TRUE)) || isTRUE(value > 1.5)
   if (should_normalize) value / 100 else value
 }
 
@@ -721,7 +733,7 @@ bfh_generate_analysis <- function(x,
 # i18n-lookup foregaar her (ikke i orchestrator) for at holde
 # orchestrator fri af cascade-strukturer.
 .evaluate_target_arm <- function(context, flags, texts, target_budget,
-                                 target_tolerance) {
+                                 target_tolerance, language = "da") {
   result <- list(target_text = "", goal_met = FALSE, at_target = FALSE)
   if (!flags$has_target) {
     return(result)
@@ -731,12 +743,17 @@ bfh_generate_analysis <- function(x,
   target_direction <- context$target_direction
   centerline <- context$centerline
 
-  # Foretraek display-streng fra input (fx "<= 2,5"), ellers format numerisk
+  # Foretraek display-streng fra input (fx "<= 2,5"), ellers format numerisk.
+  # language threades igennem til format_target_value() saa engelsk
+  # analyse-tekst faar "1.5" og dansk faar "1,5" (cycle 01 finding E4).
   display_target <- if (!is.null(context$target_display) &&
     nzchar(context$target_display)) {
     context$target_display
   } else {
-    format_target_value(target_value, y_axis_unit = context$y_axis_unit)
+    format_target_value(target_value,
+      y_axis_unit = context$y_axis_unit,
+      language = language
+    )
   }
 
   if (!is.null(target_direction)) {
@@ -839,7 +856,10 @@ build_fallback_analysis <- function(context,
   # --- 1. Stabilitetstekst ---
   if (no_variation) {
     cl_fmt <- if (!is.null(centerline) && !is.na(centerline)) {
-      format_target_value(centerline, y_axis_unit = context$y_axis_unit)
+      format_target_value(centerline,
+        y_axis_unit = context$y_axis_unit,
+        language = language
+      )
     } else {
       i18n_lookup("labels.misc.ukendt", language)
     }
@@ -859,7 +879,8 @@ build_fallback_analysis <- function(context,
   # --- 2. Maalvurdering ---
   target_eval <- .evaluate_target_arm(
     context, flags, texts,
-    target_budget, target_tolerance
+    target_budget, target_tolerance,
+    language = language
   )
   target_text <- target_eval$target_text
   goal_met <- target_eval$goal_met
@@ -885,8 +906,11 @@ build_fallback_analysis <- function(context,
 
 
 # Formater maalvaerdi til visning
-# y_axis_unit bruges til at afgoere om vaerdien skal vises som procent
-format_target_value <- function(x, y_axis_unit = NULL) {
+# y_axis_unit bruges til at afgoere om vaerdien skal vises som procent.
+# language styrer decimal-separator: "da" -> "," (default), "en" -> "."
+# (cycle 01 finding E4: previously hardcoded "," produced danish decimals
+# in english analysis-text, eg. "1,5" instead of "1.5").
+format_target_value <- function(x, y_axis_unit = NULL, language = "da") {
   if (is.null(x) || is.na(x)) {
     return("")
   }
@@ -904,6 +928,7 @@ format_target_value <- function(x, y_axis_unit = NULL) {
   if (is_effective_integer(x)) {
     as.character(as.integer(x))
   } else {
-    format(round(x, 2), decimal.mark = ",", nsmall = 1)
+    decimal_mark <- if (identical(language, "en")) "." else ","
+    format(round(x, 2), decimal.mark = decimal_mark, nsmall = 1)
   }
 }

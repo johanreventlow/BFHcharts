@@ -694,6 +694,46 @@ test_that(".normalize_percent_target: lower-direction percent target normalisere
   expect_equal(result, 0.05, tolerance = 1e-9)
 })
 
+test_that("E1 regression: percent-chart preserves numeric stretch-target in (1, 1.5]", {
+  # Cycle 01 finding E1 (review 2026-05-10):
+  # validate_target_for_unit() allows target_value up to multiply*1.5 = 1.5
+  # for percent charts (legitimate stretch goals > 100% on proportion scale).
+  # Previous 'value > 1' threshold misclassified such targets as percent-scale
+  # input and divided by 100, producing wrong narrative text in
+  # bfh_generate_analysis(). Threshold is now 'value > 1.5' (validator's max).
+  expect_equal(
+    BFHcharts:::.normalize_percent_target(1.05, "", "percent"),
+    1.05,
+    tolerance = 1e-9
+  )
+  expect_equal(
+    BFHcharts:::.normalize_percent_target(1.5, "", "percent"),
+    1.5,
+    tolerance = 1e-9
+  )
+  # Boundary: value just above 1.5 IS percent-scale input -> normalize
+  expect_equal(
+    BFHcharts:::.normalize_percent_target(1.51, "", "percent"),
+    0.0151,
+    tolerance = 1e-9
+  )
+})
+
+test_that("E1 regression: percent-chart still normalizes values clearly on 0-100 scale", {
+  # Sanity: confirm that values comfortably above 1.5 still normalize.
+  # This is the dominant production case and must not regress.
+  expect_equal(
+    BFHcharts:::.normalize_percent_target(50, "", "percent"),
+    0.50,
+    tolerance = 1e-9
+  )
+  expect_equal(
+    BFHcharts:::.normalize_percent_target(100, "", "percent"),
+    1.00,
+    tolerance = 1e-9
+  )
+})
+
 
 # ==============================================================================
 # Regressions-tests: percent-target skalafejl (bug 2026-04-29)
