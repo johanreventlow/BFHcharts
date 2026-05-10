@@ -9,7 +9,9 @@ new_bfh_qic_result(plot, summary, qic_data, config)
 \arguments{
 \item{plot}{ggplot2 object containing the SPC chart}
 
-\item{summary}{tibble with SPC statistics (runs, crossings, control limits)}
+\item{summary}{data.frame with SPC statistics (runs, crossings, control
+limits). Plain \code{data.frame} -- not a \code{tibble}; downstream
+consumers should not rely on tibble-specific subscripting behavior.}
 
 \item{qic_data}{data.frame with raw qicharts2 calculation results}
 
@@ -18,7 +20,12 @@ new_bfh_qic_result(plot, summary, qic_data, config)
 \value{
 An object of class \code{bfh_qic_result} containing:
 \item{plot}{ggplot2 object with the SPC chart}
-\item{summary}{tibble with summary statistics}
+\item{summary}{data.frame with summary statistics (Danish column names).
+Returned as plain \code{data.frame} -- the previous documentation
+incorrectly described it as a \code{tibble}; cycle 01 review aligned
+the doc with the implementation. The class is part of the public
+contract and will not silently flip to \code{tibble} without a
+deprecation cycle.}
 \item{qic_data}{data.frame with qicharts2 calculations}
 \item{config}{list with original parameters}
 }
