@@ -46,11 +46,36 @@ test_that("bfh_qic håndterer negative værdier", {
     value = rnorm(12, mean = -10, sd = 5)
   )
 
+  # i-chart accepterer negative værdier (continuous metric, fx temperaturer)
   result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 
   expect_s3_class(result, "bfh_qic_result")
   # Y-værdier skal afspejle de negative inputdata
   expect_true(any(result$qic_data$y < 0))
+})
+
+test_that("E8 regression: count-style charts reject negative y values", {
+  # Cycle 01 finding E8 (review 2026-05-10):
+  # qicharts2 silently rendered negative counts on c/g/t/p/u-charts,
+  # producing statistically meaningless charts that appeared valid to
+  # clinicians. Now caught at validation time with chart-type-aware error.
+  data <- data.frame(
+    date = as.Date("2024-01-01") + 0:9,
+    val = c(5, 3, 8, -1, 4, 6, 2, 7, 5, 3)
+  )
+
+  for (ct in c("c", "g", "t", "u")) {
+    expect_error(
+      bfh_qic(data, x = date, y = val, chart_type = ct),
+      "non-negative",
+      info = paste0("chart_type='", ct, "' should reject negative y")
+    )
+  }
+
+  # i-chart (and run-chart) still accept negative values
+  expect_no_error(
+    bfh_qic(data, x = date, y = val, chart_type = "i")
+  )
 })
 
 test_that("bfh_qic håndterer stor dataset (200 punkter)", {
