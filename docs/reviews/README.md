@@ -6,7 +6,7 @@ Audit-trail for systematiske dual-review-cycles per `dual-review-cycle`-skill.
 
 | # | Område | Status | PRs | Doc |
 |---|--------|--------|-----|-----|
-| 01 | Production-readiness (v0.17.0) | ⏳ Open PRs awaiting review/merge | #341 E1, #342 E5, #343 E4, #344 E2, #345 S1, #346 S2, #347 S3, #348 E6, #349 E7, #350 E8, #351 audit-trail | [01-production-readiness-2026-05-10.md](01-production-readiness-2026-05-10.md) |
+| 01 | Production-readiness (v0.17.0) | ⏳ Open PRs awaiting review/merge (CI grøn 10/10) | #341 E1, #342 E4, #343 E5, #344 E2, #345 S1, #346 S2, #347 S3, #348 E6, #349 E7, #350 E8, #351 audit-trail | [01-production-readiness-2026-05-10.md](01-production-readiness-2026-05-10.md) |
 
 ## Læringer
 
