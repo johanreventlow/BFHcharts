@@ -12,8 +12,11 @@
 # OAuth2 token
 .httr-oauth
 # pkgdown site
-docs/
-# Review-tracker (dual-review-cycle skill) — tracked despite docs/ ignore
+docs/*
+# Review-tracker (dual-review-cycle skill) — tracked despite docs/ ignore.
+# Pattern docs/* (not docs/) avoids excluding the parent directory so the
+# negation below can re-include subdirs (Git negation cannot re-include
+# files inside an excluded directory).
 !docs/reviews/
 # Translation temp files
 po/*~
