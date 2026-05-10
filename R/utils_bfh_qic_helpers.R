@@ -366,7 +366,7 @@ validate_bfh_qic_inputs <- function(data,
               "Chart type '%s' requires non-negative counts/proportions."
             ),
             y_expr_char,
-            paste(head(neg_idx, 5), collapse = ", "),
+            paste(utils::head(neg_idx, 5), collapse = ", "),
             chart_type
           ),
           call. = FALSE

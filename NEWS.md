@@ -1,3 +1,114 @@
+# BFHcharts 0.17.1
+
+Production-readiness audit (cycle 01, 2026-05-10) drevet af
+`dual-review-cycle`-skill med Codex peer-review. 11 PRs merged til
+develop. Verdict: APPROVE for produktion (multi-tenant Connect Cloud
++ biSPCharts). Test-baseline: 5022 PASS / 0 FAIL.
+
+## Bug fixes
+
+* **`.normalize_percent_target()` bevarer nu numeriske stretch-targets
+  > 1 på proportion-skalaen.** Tidligere heuristik `value > 1`
+  fejltolkede legitime stretch-mål som f.eks. `target_value = 1.05`
+  (= 105% på multiply=1) som procent-skala-input og dividerede med 100,
+  så downstream-narrative i `bfh_generate_analysis()` og PDF-export
+  blev semantisk forkert ("centerlinje over maal" når processen
+  faktisk lå under 105%-stretch). Tighten til `value > 1.5` (validatorens
+  upper bound for multiply=1) -- bryder ingen eksisterende tests, fixer
+  både target=1.05 og boundary-case=1.5. Charten selv (qicharts2-output)
+  var korrekt; kun den genererede analyse-tekst var forvrænget.
+  Empirisk verificeret + Codex peer-review (cycle 01 E1).
+
+* **`bfh_qic(cl = Inf)` afvises nu med klar fejl-besked.** Tidligere
+  `validate_numeric_parameter()` admitterede `Inf`/`-Inf` (`is.na(Inf)
+  == FALSE`, og `Inf < Inf` / `Inf > Inf` returnerer begge FALSE), saa
+  ugyldigt input flød til qicharts2/yA_npc-laget hvor det fejlede
+  kryptisk efter user-supplied-cl-warning allerede var udsendt. Tilføjet
+  eksplicit `is.finite()`-check (cycle 01 E2).
+
+* **`format_target_value()` bruger nu locale-aware decimal-separator.**
+  `bfh_generate_analysis(..., language = "en")` producerede tidligere
+  engelsk analyse-tekst med danske decimaler (`"1,5"` i stedet for
+  `"1.5"`) fordi formatteren hardcodede `decimal.mark = ","`. Threadet
+  `language`-parameter igennem helper + call-sites; default forbliver
+  `"da"` (bagudkompatibel). Integer- og percent-paths uændret
+  (locale-uafhængige). Cycle 01 E4.
+
+* **`format_qic_summary()` returnerer nu tom data.frame ved tom
+  `qic_data` i stedet for en 1-række NA-frame.** `bfh_qic()` blokerer
+  `nrow(data) == 0` upstream, men hvis `qicharts2` selv returnerer
+  empty (extrem `exclude=`-konfiguration), undgår early-return nu
+  NA-propagation til `runs_signal`/`crossings_signal`. Defensive fix
+  (cycle 01 E6).
+
+* **`freeze = 1` på 1-række data afvises nu rent.** Tidligere
+  `validate_position_indices()` floor `max(nrow(data) - 1, 1L)`
+  admitterede `freeze = 1` på 1-row data hvor `freeze == nrow` lod
+  nul observationer tilbage efter baseline-split. Drop floor;
+  `max = nrow(data) - 1`. NULL-freeze stadig OK via `allow_null=TRUE`
+  (cycle 01 E7).
+
+* **Count-style charts (`c`, `g`, `t`, `p`, `pp`, `u`, `up`) afviser
+  nu negative y-værdier ved validation.** qicharts2 renderede tidligere
+  negative counts uden warning -- charten så valid ud men var
+  statistisk meningsløs for klinikere. Chart-type-aware check tilføjes
+  i `validate_bfh_qic_inputs()`; i-chart og run-chart accepterer stadig
+  negative værdier (continuous metrics som temperaturer/differencer)
+  (cycle 01 E8).
+
+## Security
+
+* **Staging-tempdirs oprettes nu atomisk med `mode = "0700"`.** De tre
+  staging-dir-creation-sites (`R/utils_typst.R:330`,
+  `R/utils_export_helpers.R:341`, `R/export_session.R:89`) brugte
+  tidligere to-trins-pattern `dir.create()` -> `Sys.chmod(0700)` der
+  efterlod et microsecond TOCTOU-vindue hvor dir var verden-læsbar.
+  `dir.create(..., mode = "0700")` lukker vinduet; `Sys.chmod()` bevares
+  som belt-and-suspenders for ældre R / Windows hvor `mode=` kan
+  honoreres inkonsistent (cycle 01 S1).
+
+* **Filsystem-paths redacteres nu i user-visible `stop()`/`warning()`-
+  beskeder.** `stop()`/`warning()`-paths i `R/utils_typst.R` afslørede
+  rå absolutte stier (template-cache, chart-staging, font_path) som
+  kunne lække home-dir-layout, R-library-install-path og per-session
+  tempdir-naming til co-tenants på Connect Cloud hvis biSPCharts
+  surfaceer `conditionMessage(e)`. Ny shared `.redact_paths()`-helper
+  stripper `tempdir()` (både raw og normalized form), `HOME`, og
+  `.libPaths()`-prefixes (cycle 01 S2).
+
+* **`bfh_create_typst_document()` re-validerer `chart_image` post-
+  symlink-resolution.** `validate_export_path()` kørte tidligere kun
+  på det syntaktiske input før `normalizePath()` resolverede symlinks.
+  En symlink fra trusted staging-område til /var/lib/connect/tenant-A/
+  PHI-fil ville passere syntaktisk validering, men `file.copy()` følger
+  symlinks for source-filer og ville pulle anden tenants data ind i
+  output-PDF. Fix: re-validate `chart_image_norm` efter `normalizePath`
+  så path-traversal + shell-metachar guards anvendes på det reelle
+  target (cycle 01 S3).
+
+## Documentation
+
+* `bfh_qic_result.R` @return-block dokumenterer nu `$summary` korrekt
+  som `data.frame` (ikke `tibble`). Implementation har altid returneret
+  plain data.frame; doc/code-drift afsløret af Codex peer-review.
+  Eksplicit kontrakt-note: klassen er public-API og vil ikke flippe
+  til tibble uden deprecation-cycle (cycle 01 E5).
+
+* Nyt review-tracker-konvention etableret i `docs/reviews/` per
+  `dual-review-cycle`-skill. Cycle 01 audit-trail tilgængeligt i
+  `docs/reviews/01-production-readiness-2026-05-10.md` med Codex
+  reconcile-section + 5 dokumenterede læringer.
+
+## Internal changes
+
+* `validate_numeric_parameter()` bypasser `param_msg()` ved
+  finiteness-violations så fejl-beskeden ikke falder tilbage paa
+  generisk "must be a single numeric value" (Inf ER et single numeric
+  value -- problemet er finiteness specifikt).
+
+* Pre-push hook race-conditions ved parallelle pushes dokumenteret i
+  memory; sequential push-rytme anbefalet for cycle-merge-driven.
+
 # BFHcharts 0.17.0
 
 ## Breaking changes
@@ -51,20 +162,20 @@
   validering som allerede findes paa `font_path` (`utils_typst.R:389-390`).
   Lukker production-readiness review item 1.2.
 
-* **Typst-compileren koerer nu med `--root <staged-tempdir>`** (defense in
+* **Typst-compileren kører nu med `--root <staged-tempdir>`** (defense in
   depth, `R/utils_typst.R:418-435`). Confiner alle `image()`/`read()`/
-  `include` access til den staged template-directory, saa selv hvis en
+  `include` access til den staged template-directory, så selv hvis en
   fremtidig metadata-felt-validering bliver glemt, kan compileren ikke
   laese udenfor tempdir-traeet. Mitigerer hele klassen af path-traversal-
   vektorer paa compiler-niveau. `--root` tilfoejet til
-  `KNOWN_TYPST_FLAGS`-allowlist saa flag-vaerdien shell-quoteres korrekt.
+  `KNOWN_TYPST_FLAGS`-allowlist så flag-vaerdien shell-quoteres korrekt.
 
 ## Bug fixes
 
-* **`bfh_extract_spc_stats.data.frame()` overfoerer nu
+* **`bfh_extract_spc_stats.data.frame()` overfører nu
   `cl_user_supplied`-attributtet.** Tidligere returnerede data.frame-
   dispatch-pathen altid `NULL` for flaget, selv naar `attr(x,
-  "cl_user_supplied")` var sat paa input -- saa downstream-konsumenter der
+  "cl_user_supplied")` var sat paa input -- så downstream-konsumenter der
   kaldte `bfh_extract_spc_stats(result$summary)` direkte (i stedet for at
   passere hele `bfh_qic_result`-objektet) tabte caveat-rendering i PDF
   lydloest. Nu lazet via `isTRUE(attr(x, "cl_user_supplied"))` paralleelt
@@ -198,15 +309,15 @@
 
 ## Breaking changes
 
-* **`summary$loebelaengde_signal` erstattet af tre nye signal-kolonner.**
+* **`summary$løbelaengde_signal` erstattet af tre nye signal-kolonner.**
   qicharts2's `runs.signal` er det KOMBINEREDE Anhøj-signal (runs ELLER
   crossings violation, beregnet i `crsignal()`). Det legacy navn
-  `loebelaengde_signal` blev læst som "kun runs", hvilket fik klinikere til
+  `løbelaengde_signal` blev læst som "kun runs", hvilket fik klinikere til
   at fejlattribuere crossings-only-mønstre som niveauskift. Migration:
 
   ```r
   # FOR (BFHcharts <= 0.14.x)
-  if (result$summary$loebelaengde_signal[phase]) { ... }
+  if (result$summary$løbelaengde_signal[phase]) { ... }
 
   # EFTER (BFHcharts >= 0.15.0)
   if (isTRUE(result$summary$anhoej_signal[phase])) { ... }     # samme kombinerede flag
@@ -235,7 +346,7 @@
 ## Bug fixes
 
 * Crossings-only data trigger nu `summary$crossings_signal = TRUE` eksplicit
-  (ej længere skjult under det misvisende `loebelaengde_signal`-navn).
+  (ej længere skjult under det misvisende `løbelaengde_signal`-navn).
   Regression-test tilføjet for 4 alternerende fase-blokke a 5 punkter.
 
 ## Internal changes
@@ -414,7 +525,7 @@
   bevarede Typst backslashen literalt i PDF-output (fx `p \< 0.05` i stedet
   for `p < 0.05`). Paavirkede metadatafelter `hospital`, `department`,
   `details`, `author` og `data_definition`. Fixet ved at lade `<` og `>`
-  passere uaendret - de er almindelige tegn i Typst string literals og kan
+  passere uændret - de er almindelige tegn i Typst string literals og kan
   ikke terminere strengen.
 
 # BFHcharts 0.14.0
@@ -547,7 +658,7 @@
 
 * **Shell-injection test assertion.** `test-quarto-isolation.R` asserter nu
   eksplicit at ingen `output*`-mappe oprettes ved shell-injection-tests
-  (validering sker foer `dir.create()`).
+  (validering sker før `dir.create()`).
 
 * **`dev/clean_workdir.R`.** Nyt R-script der idempotent fjerner kendte
   build- og test-artefakter: `BFHcharts.Rcheck/`, tarballs, `doc/`, `Meta/`,
@@ -1084,7 +1195,7 @@
   i production.** Mari/Arial registreres nu som Helvetica-aliaser i
   `grDevices::postscriptFonts()` og `grDevices::pdfFonts()` ved package
   load (ny `.onLoad()` i `R/zzz.R`). Tidligere blev registreringen kun
-  udfoert i test-setup -- production-kald af `bfh_qic()` og
+  udført i test-setup -- production-kald af `bfh_qic()` og
   `ggplot2::ggsave()` producerede ~40-50 harmlose PostScript-warnings per
   kald (fra `grid::C_stringMetric` font-metric-lookup). Registreringen er
   konservativ: eksisterende Mari/Arial-registreringer (fx via
@@ -1115,7 +1226,7 @@
   `.muffle_expected_warnings()`. Helper'en mufler ggplot2 datetime/numeric
   scale-warnings og BFHtheme PostScript-font-warnings (Mari ikke i
   font-database) -- begge er expected behavior. Genuine warnings
-  propageres uaendret. Fungerer som defense-in-depth efter PR #242
+  propageres uændret. Fungerer som defense-in-depth efter PR #242
   (font-aliases onLoad) der eliminerer font-warnings ved kilden. (#200)
 
 ## Sikkerhed
@@ -1123,7 +1234,7 @@
 * **Roxygen-dokumentation eksplicit om trust-grænse for `inject_assets` og
   `template_path`.** Begge parametre i `bfh_export_pdf()` (og
   `inject_assets` i `bfh_create_export_session()`) accepterer
-  caller-supplied kode/templates der koerer med fuld proces-privilege.
+  caller-supplied kode/templates der kører med fuld proces-privilege.
   De er legitim infrastruktur for proprietaere fonts og custom templates,
   men en naiv Shiny-integration der videresender user-input vil skabe en
   privilege-escalation-vektor. Ny `\\section{Security}` markerer eksplicit
@@ -1155,12 +1266,12 @@
   proprietaer Mari-font, og Typst fejler exit 1 paa unknown-font warnings).
   Dette efterlod PDF/PNG-eksport-pipelinen uden CI-coverage -- regressioner
   i template-rendering, font-fallback eller chart-embedding kunne slippe
-  igennem. Ny `.github/workflows/render-tests.yaml` koerer ugentligt
+  igennem. Ny `.github/workflows/render-tests.yaml` kører ugentligt
   (mandage 06:00 UTC) plus on-demand og ved aendringer til
   export-relaterede filer; matrix over ubuntu-latest + macos-latest;
   installerer Quarto 1.5.57 + open fallback-fonts (DejaVu, Liberation,
-  Noto, Roboto); aktiverer `BFHCHARTS_TEST_RENDER=true` saa render-gate'd
-  tests koerer live; uploader PDF/Typst-artifacts ved fejl for
+  Noto, Roboto); aktiverer `BFHCHARTS_TEST_RENDER=true` så render-gate'd
+  tests kører live; uploader PDF/Typst-artifacts ved fejl for
   remote-debugging.
 
 ## Dokumentation
@@ -1171,7 +1282,7 @@
   interventioner haandteres, og hvad target-kontrakten dikterer. Fire nye
   Rmd-vignettes i `vignettes/`:
 
-  - **`chart-types`**: Beslutningstrae fra klinisk spoergsmaal til
+  - **`chart-types`**: Beslutningstrae fra klinisk spoergsmål til
     `chart_type`-valg. Per-type use cases, sample-size guidance,
     anti-patterns. Reference: Provost & Murray (2011).
   - **`phases-and-freeze`**: Distinguere `part` (separate centerlinjer per
@@ -1196,7 +1307,7 @@
   Tidligere auto-inkrementerede `tag-release.yaml` PATCH baseret paa
   eksisterende tags uafhaengigt af DESCRIPTION, hvilket fik tag og
   pakke-version ud af sync (fx blev tag `v0.10.3` oprettet paa commit med
-  `Version: 0.10.1`, saa pak's version-resolver afviste downstream-installs
+  `Version: 0.10.1`, så pak's version-resolver afviste downstream-installs
   med `Can't install dependency BFHcharts@v0.10.3 (>= 0.10.3)`).
   Workflow bruger nu `v` + DESCRIPTION's Version som tag-navn og fejler
   hvis tag allerede eksisterer paa anden commit. Konsekvens: udvikler
@@ -1206,7 +1317,7 @@
 
 * **Spring v0.10.2 og v0.10.3.** Disse tags blev auto-genereret med
   forkert DESCRIPTION-version (0.10.0 og 0.10.1 hhv.) -- v0.10.4 er
-  foerste version hvor tag matcher pakke-version igen.
+  første version hvor tag matcher pakke-version igen.
 
 # BFHcharts 0.10.1
 
