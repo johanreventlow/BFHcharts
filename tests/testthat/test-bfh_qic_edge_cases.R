@@ -141,6 +141,29 @@ test_that("bfh_qic med cl parameter sætter custom centerlinje", {
   expect_true(all(result$qic_data$cl == 42))
 })
 
+test_that("E2 regression: bfh_qic rejects non-finite cl with clear error", {
+  # Cycle 01 finding E2 (review 2026-05-10):
+  # validate_numeric_parameter() admitted Inf because is.na(Inf)=FALSE and
+  # bounds checks Inf < Inf / Inf > Inf both return FALSE. Inf flowed to
+  # qicharts2 / yA_npc machinery where it failed with cryptic
+  # "yA_npc must be finite" -- AFTER the user-supplied-cl warning had
+  # already been emitted, masking the actual root cause.
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  expect_error(
+    bfh_qic(data, x = date, y = value, chart_type = "run", cl = Inf),
+    "cl must be finite"
+  )
+  expect_error(
+    bfh_qic(data, x = date, y = value, chart_type = "run", cl = -Inf),
+    "cl must be finite"
+  )
+})
+
 test_that("bfh_qic med part parameter opretter faser", {
   set.seed(42)
 
