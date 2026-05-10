@@ -97,7 +97,7 @@ resolve_target <- function(target_input) {
 #'
 #' Internal helper. When `y_axis_unit` is `"percent"` and the target appears
 #' to be expressed on the 0-100 scale (either because `display` contains a
-#' literal `"%"` character, or because `value > 1` for a numeric-only input),
+#' literal `"%"` character, or because `value > 1.5` for a numeric-only input),
 #' the value is divided by 100 so downstream comparisons work on the same
 #' 0-1 proportion scale as the centerline.
 #'
@@ -106,8 +106,12 @@ resolve_target <- function(target_input) {
 #'
 #' **Heuristic:**
 #' Normalize when `y_axis_unit == "percent"` AND
-#'   (`grepl("%", display)` OR `value > 1`)
-#' Preserve otherwise (proportion already correct, or non-percent chart).
+#'   (`grepl("%", display)` OR `value > 1.5`)
+#' Preserve otherwise (proportion already correct, or stretch-target on
+#' proportion scale, or non-percent chart). The 1.5 threshold matches
+#' `validate_target_for_unit()`'s upper bound for `multiply = 1`, so
+#' legitimate stretch-targets like 1.05 (=105% on proportion scale) are
+#' preserved instead of being misclassified as percent-scale input.
 #'
 #' @param value Numeric target value as parsed by `resolve_target()`.
 #' @param display Character display string (may be empty `""` for numeric input).
@@ -140,9 +144,17 @@ resolve_target <- function(target_input) {
   if (is.na(value) || !is.numeric(value)) {
     return(value)
   }
-  # Normalise when display contains "%" OR value > 1
+  # Normalise when display contains "%" OR value > 1.5
   # (OR heuristic covers both string input and numeric input on a 0-100 scale)
-  should_normalize <- isTRUE(grepl("%", display, fixed = TRUE)) || isTRUE(value > 1)
+  #
+  # Threshold rationale: validate_target_for_unit() allows target_value up to
+  # multiply * 1.5 = 1.5 (default multiply=1) for percent charts, supporting
+  # legitimate stretch-targets > 100% on the proportion scale. The previous
+  # threshold (value > 1) misclassified such stretch-targets (1.0, 1.5] as
+  # 0-100 input and divided by 100, producing wrong narrative text in
+  # bfh_generate_analysis(). 1.5 is the validator's max bound -- values above
+  # are unambiguously 0-100 input that needs normalising.
+  should_normalize <- isTRUE(grepl("%", display, fixed = TRUE)) || isTRUE(value > 1.5)
   if (should_normalize) value / 100 else value
 }
 
