@@ -111,7 +111,7 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   # that propagates NAs into runs_signal / crossings_signal columns.
   # Cycle 01 finding E6.
   if (nrow(qic_data) == 0L) {
-    empty <- as.data.frame(setNames(
+    empty <- as.data.frame(stats::setNames(
       replicate(length(available_cols), logical(0), simplify = FALSE),
       available_cols
     ), stringsAsFactors = FALSE)
