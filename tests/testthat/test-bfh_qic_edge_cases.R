@@ -200,6 +200,21 @@ test_that("bfh_qic med enkelt-række data returnerer objekt (ingen crash)", {
   expect_equal(nrow(result$qic_data), 1)
 })
 
+test_that("E7 regression: freeze=1 on 1-row data is rejected cleanly", {
+  # Cycle 01 finding E7 (review 2026-05-10):
+  # validate_position_indices() previously had max = max(nrow(data)-1, 1L)
+  # which floored at 1, admitting freeze=1 on 1-row data (zero baseline
+  # rows after split). qicharts2 then errored cryptically downstream.
+  # Now: max = nrow(data)-1 directly, so 1-row + freeze=1 is rejected at
+  # validation time with the standard bounds-error.
+  data <- data.frame(date = as.Date("2024-01-01"), value = 42)
+
+  expect_error(
+    bfh_qic(data, x = date, y = value, chart_type = "run", freeze = 1),
+    "data bounds"
+  )
+})
+
 # ============================================================================
 # BASELINE MINIMUM ADVARSEL TESTS (enforce-baseline-minimum-and-cl-warnings)
 # ============================================================================

@@ -396,10 +396,15 @@ validate_bfh_qic_inputs <- function(data,
     require_sorted = TRUE, require_unique = TRUE,
     min = 2L, max = nrow(data)
   )
+  # Cycle 01 finding E7: previously max = max(nrow(data) - 1L, 1L), which
+  # admitted freeze = 1 on 1-row data (max(0, 1) = 1, freeze == nrow). That
+  # left zero rows after the baseline and produced a cryptic qicharts2
+  # error downstream. Remove the floor so 1-row data fails cleanly with
+  # the validator's own bounds-message ("freeze must be within data bounds").
   validate_position_indices(freeze, "freeze", nrow(data),
     require_sorted = FALSE, require_unique = TRUE,
     require_scalar = TRUE,
-    min = 1L, max = max(nrow(data) - 1L, 1L)
+    min = 1L, max = nrow(data) - 1L
   )
 
   # Warn if freeze baseline is too short for reliable signal detection
