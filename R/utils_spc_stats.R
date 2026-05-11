@@ -157,10 +157,9 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
     return(stats)
   }
 
-  qd <- x$qic_data
-  if ("part" %in% names(qd)) {
-    latest_part <- max(qd$part, na.rm = TRUE)
-    qd <- qd[qd$part == latest_part, ]
+  qd <- filter_qic_to_last_phase(x$qic_data)
+  if (is.null(qd)) {
+    return(stats)
   }
 
   # Sorter efter x saa raekkefoelgen af input-data ikke paavirker
@@ -195,6 +194,21 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
 }
 
 # Internal helpers ============================================================
+
+# Returnerer raekkerne fra qic_data der hoerer til sidste fase (max(part)).
+# Hvis ingen part-kolonne, returneres alle raekker. Hvis qic_data er NULL eller
+# har 0 raekker, returneres NULL. Bruges af build_analysis_context() og
+# bfh_extract_spc_stats() til konsistent sidste-fase-filtering paa tvaers af
+# analyse-tekst og outlier-taeller.
+filter_qic_to_last_phase <- function(qic_data) {
+  if (is.null(qic_data) || nrow(qic_data) == 0L) {
+    return(NULL)
+  }
+  if (!"part" %in% names(qic_data)) {
+    return(qic_data)
+  }
+  qic_data[qic_data$part == max(qic_data$part, na.rm = TRUE), , drop = FALSE]
+}
 
 empty_spc_stats <- function() {
   list(
