@@ -65,7 +65,7 @@ analysis:
     at_target:
       short: "Niveauet ligger tæt på målet ({target})."
       standard: "Niveauet ligger tæt på målet ({target})."
-      detailed: "Niveauet ligger tæt på målet ({target}), inden for den tolerance der accepteres som målopfyldelse."
+      detailed: "Niveauet ligger tæt på målet ({target})."
     over_target:
       short: "Niveauet ligger over målet ({target})."
       standard: "Niveauet ligger over målet ({target})."

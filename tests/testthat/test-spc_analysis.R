@@ -996,3 +996,247 @@ test_that("Target fallback: no target anywhere yields NA target_value", {
   )
   expect_null(ctx$target_direction)
 })
+
+# ==============================================================================
+# Process-variation-based at_target classification
+# (openspec change: at-target-tolerance-process-variation)
+# ==============================================================================
+
+test_that("at_target classifies CORRECTLY for tight process with small target (bug reproducer)", {
+  # Bug rapporteret af maintainer: target = "<1%" (proportionsskala: 0.01),
+  # centerline = 0.019, smalle kontrolgraenser (UCL-LCL ~= 0.01).
+  # Under den gamle regel: tolerance = max(0.01*0.05, 0.01) = 0.01 dominerer ->
+  # |0.019-0.01| = 0.009 <= 0.01 -> at_target = TRUE (forkert).
+  # Under den nye regel: sigma_hat = 0.01/6 ~= 0.0017, 3*sigma_hat ~= 0.005 ->
+  # 0.009 > 0.005 -> at_target = FALSE (korrekt).
+  # NB: target_direction = NULL, ellers rammer vi goal_not_met-grenen.
+  ctx <- fixture_analysis_context(
+    target_value = 0.01,
+    target_direction = NULL,
+    centerline = 0.019,
+    sigma_hat = 0.01 / 6, # half-width = 3*sigma => sigma = (UCL-LCL)/6
+    sigma_data = 0.002,
+    target_display = "0.01"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("over m.let|over malet", txt),
+    info = paste("Forventede over_target, fik:", txt)
+  )
+  expect_false(grepl("t.t p. m.let|naer m.let", txt))
+})
+
+test_that("at_target classifies CORRECTLY when target is inside wide control limits", {
+  # Vid process: UCL=12, LCL=2 -> sigma_hat = 10/6 ~= 1.67, 3*sigma_hat = 5.
+  # target=5, centerline=7 -> |7-5|=2 <= 5 -> at_target = TRUE.
+  ctx <- fixture_analysis_context(
+    target_value = 5,
+    target_direction = NULL,
+    centerline = 7,
+    sigma_hat = 10 / 6,
+    target_display = "5"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("t.t p. m.let", txt),
+    info = paste("Forventede at_target, fik:", txt)
+  )
+})
+
+test_that("at_target falls back to sd(y) when sigma_hat is NA (run chart)", {
+  # Run chart har ingen UCL/LCL -> sigma_hat = NA, men sigma_data = sd(y).
+  # target=10, centerline=11, sd(y)=2 -> |11-10|=1 <= 2 -> at_target = TRUE.
+  ctx <- fixture_analysis_context(
+    target_value = 10,
+    target_direction = NULL,
+    centerline = 11,
+    sigma_hat = NA_real_,
+    sigma_data = 2,
+    target_display = "10"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("t.t p. m.let", txt),
+    info = paste("Forventede at_target via sd-fallback, fik:", txt)
+  )
+})
+
+test_that("at_target falls back to sd(y) and classifies over_target when delta exceeds sd", {
+  # Run chart hvor target ligger uden for sd-baeltet.
+  ctx <- fixture_analysis_context(
+    target_value = 10,
+    target_direction = NULL,
+    centerline = 15,
+    sigma_hat = NA_real_,
+    sigma_data = 2,
+    target_display = "10"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("over m.let", txt),
+    info = paste("Forventede over_target, fik:", txt)
+  )
+})
+
+test_that("at_target uses exact-match when both sigma_hat and sigma_data are zero/NA", {
+  # Degenereret case: konstant y, ingen variation. CL == target -> at_target.
+  ctx <- fixture_analysis_context(
+    target_value = 5,
+    target_direction = NULL,
+    centerline = 5,
+    sigma_hat = 0,
+    sigma_data = 0,
+    target_display = "5"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("t.t p. m.let", txt),
+    info = paste("Forventede at_target via eksakt-match, fik:", txt)
+  )
+})
+
+test_that("at_target eksakt-match: lille forskel klassificeres som over/under", {
+  # CL er minimalt over target med ingen variation -> over_target.
+  ctx <- fixture_analysis_context(
+    target_value = 5,
+    target_direction = NULL,
+    centerline = 5.001,
+    sigma_hat = 0,
+    sigma_data = 0,
+    target_display = "5"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("over m.let", txt))
+})
+
+test_that("at_target classifies inclusively at the 3*sigma_hat boundary", {
+  # Boundary case: |CL - target| = 3*sigma_hat exactly.
+  # Forventning: <=-konvention inkluderer graensen -> at_target.
+  sigma <- 1
+  ctx <- fixture_analysis_context(
+    target_value = 8,
+    target_direction = NULL,
+    centerline = 5,
+    sigma_hat = sigma, # 3*sigma = 3; |5-8| = 3 = 3 -> at_target
+    target_display = "8"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("t.t p. m.let", txt),
+    info = paste("Forventede at_target ved <=-graense, fik:", txt)
+  )
+})
+
+test_that("bfh_build_analysis_context computes sigma_hat from qic_data (constant limits)", {
+  # i-chart med konstante graenser -> sigma_hat = (UCL-LCL)/6 paa hver raekke,
+  # mean er ~konstant.
+  set.seed(2030)
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
+    value = rnorm(24, mean = 100, sd = 10)
+  )
+  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
+  ctx <- bfh_build_analysis_context(result, metadata = list())
+
+  expect_true(is.numeric(ctx$sigma_hat))
+  expect_true(is.finite(ctx$sigma_hat))
+  expect_gt(ctx$sigma_hat, 0)
+  # Forventning: sigma_hat ~= sd(value) * d4-ish for i-chart. Vi kraever blot
+  # konsistens med (UCL-LCL)/6 fra qic_data.
+  qd <- result$qic_data
+  expected <- mean((qd$ucl - qd$lcl) / 6, na.rm = TRUE)
+  expect_equal(ctx$sigma_hat, expected, tolerance = 1e-9)
+})
+
+test_that("bfh_build_analysis_context returns NA sigma_hat for run charts", {
+  set.seed(2031)
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
+    value = rnorm(24, mean = 100, sd = 10)
+  )
+  result <- bfh_qic(test_data, x = date, y = value, chart_type = "run")
+  ctx <- bfh_build_analysis_context(result, metadata = list())
+
+  # Run charts har ingen ucl/lcl -> sigma_hat = NA, men sigma_data > 0.
+  expect_true(is.na(ctx$sigma_hat))
+  expect_true(is.finite(ctx$sigma_data))
+  expect_gt(ctx$sigma_data, 0)
+})
+
+test_that("bfh_build_analysis_context filters qic_data to last phase for sigma", {
+  # Multi-phase via freeze_period: foerste fase har anderledes spredning end
+  # anden fase. sigma_hat skal kun afspejle sidste fase.
+  set.seed(2032)
+  n_per_phase <- 15
+  phase1 <- rnorm(n_per_phase, mean = 50, sd = 20) # vid
+  phase2 <- rnorm(n_per_phase, mean = 50, sd = 5) # smal
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month",
+      length.out = 2 * n_per_phase
+    ),
+    value = c(phase1, phase2)
+  )
+  freeze_date <- test_data$date[n_per_phase]
+
+  result <- bfh_qic(test_data,
+    x = date, y = value, chart_type = "i",
+    freeze = freeze_date
+  )
+  ctx <- bfh_build_analysis_context(result, metadata = list())
+
+  # Verificer: sigma_hat fra sidste fase alene.
+  qd <- result$qic_data
+  if ("part" %in% names(qd)) {
+    qd_last <- qd[qd$part == max(qd$part, na.rm = TRUE), ]
+    expected <- mean((qd_last$ucl - qd_last$lcl) / 6, na.rm = TRUE)
+    expect_equal(ctx$sigma_hat, expected, tolerance = 1e-9,
+      info = "sigma_hat skal beregnes fra sidste fase alene"
+    )
+  } else {
+    skip("freeze_period ikke supporteret af denne qicharts2-version")
+  }
+})
+
+# ==============================================================================
+# target_tolerance deprecation
+# ==============================================================================
+
+test_that("bfh_generate_analysis warns when target_tolerance is passed", {
+  set.seed(2040)
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rnorm(20, mean = 50, sd = 5)
+  )
+  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
+
+  # Eksplicit videregivelse af target_tolerance (selv default-vaerdien) skal
+  # fyre deprecation-warning. missing()-detektion sondrer paa "blev argumentet
+  # angivet", ikke paa "vaerdien er default".
+  expect_warning(
+    bfh_generate_analysis(result, target_tolerance = 0.1),
+    "deprecat"
+  )
+  expect_warning(
+    bfh_generate_analysis(result, target_tolerance = 0.05),
+    "deprecat"
+  )
+})
+
+test_that("bfh_generate_analysis does NOT warn when target_tolerance omitted", {
+  set.seed(2041)
+  test_data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 20),
+    value = rnorm(20, mean = 50, sd = 5)
+  )
+  result <- bfh_qic(test_data, x = date, y = value, chart_type = "i")
+
+  # Default-kald uden argumentet maa ikke fyre advarsel. expect_no_warning
+  # filtrerer kun deprecation-klassen for at undgaa falsk-positive paa andre
+  # advarsler (fx fra qicharts2 om sparsom data).
+  withCallingHandlers(
+    {
+      bfh_generate_analysis(result)
+    },
+    warning = function(w) {
+      if (inherits(w, "lifecycle_warning_deprecated")) {
+        fail("Default-kald maa ikke fyre target_tolerance-deprecation")
+      }
+      invokeRestart("muffleWarning")
+    }
+  )
+  succeed("Default-kald fyrer ikke target_tolerance-deprecation")
+})
