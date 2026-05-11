@@ -1,4 +1,4 @@
-# BFHcharts (development)
+# BFHcharts 0.17.2
 
 ## Bug fixes
 
