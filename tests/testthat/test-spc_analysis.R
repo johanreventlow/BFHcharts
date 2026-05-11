@@ -1158,8 +1158,8 @@ test_that("bfh_build_analysis_context returns NA sigma_hat for run charts", {
 })
 
 test_that("bfh_build_analysis_context filters qic_data to last phase for sigma", {
-  # Multi-phase via freeze_period: foerste fase har anderledes spredning end
-  # anden fase. sigma_hat skal kun afspejle sidste fase.
+  # Multi-phase via freeze (numerisk index): foerste fase har anderledes
+  # spredning end anden fase. sigma_hat skal kun afspejle sidste fase.
   set.seed(2032)
   n_per_phase <- 15
   phase1 <- rnorm(n_per_phase, mean = 50, sd = 20) # vid
@@ -1170,11 +1170,10 @@ test_that("bfh_build_analysis_context filters qic_data to last phase for sigma",
     ),
     value = c(phase1, phase2)
   )
-  freeze_date <- test_data$date[n_per_phase]
 
   result <- bfh_qic(test_data,
     x = date, y = value, chart_type = "i",
-    freeze = freeze_date
+    freeze = n_per_phase
   )
   ctx <- bfh_build_analysis_context(result, metadata = list())
 
