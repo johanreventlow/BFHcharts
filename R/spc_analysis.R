@@ -249,6 +249,28 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
     has_signals <- TRUE
   }
 
+  # Filtrer qic_data til sidste fase (matcher centerline-valget nedenfor).
+  # Bruges baade til n_points og til sigma-estimater i value-neutral
+  # at_target-klassifikation.
+  qd_last_phase <- filter_qic_to_last_phase(x$qic_data)
+
+  # sigma_hat: gennemsnitlig sigma-estimat fra kontrolgraenser (gns((UCL-LCL)/6))
+  # over sidste fase. NA naar kontrolgraenser ikke findes (run charts).
+  sigma_hat <- if (!is.null(qd_last_phase) &&
+    all(c("ucl", "lcl") %in% names(qd_last_phase))) {
+    val <- mean((qd_last_phase$ucl - qd_last_phase$lcl) / 6, na.rm = TRUE)
+    if (is.finite(val)) val else NA_real_
+  } else {
+    NA_real_
+  }
+  # sigma_data: sd(y) over sidste fase, fallback naar sigma_hat mangler.
+  sigma_data <- if (!is.null(qd_last_phase) && "y" %in% names(qd_last_phase)) {
+    val <- stats::sd(qd_last_phase$y, na.rm = TRUE)
+    if (is.finite(val)) val else NA_real_
+  } else {
+    NA_real_
+  }
+
   # Samle kontekst
   context <- list(
     # Fra config
@@ -257,12 +279,8 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
     y_axis_unit = x$config$y_axis_unit,
 
     # Fra qic_data (seneste part hvis median-knaek)
-    n_points = if (!is.null(x$qic_data)) {
-      if ("part" %in% names(x$qic_data)) {
-        sum(x$qic_data$part == max(x$qic_data$part, na.rm = TRUE))
-      } else {
-        nrow(x$qic_data)
-      }
+    n_points = if (!is.null(qd_last_phase)) {
+      nrow(qd_last_phase)
     } else {
       NA_integer_
     },
@@ -280,6 +298,10 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
     # Anhoej statistikker
     spc_stats = spc_stats,
     has_signals = has_signals,
+
+    # Processpredning (til value-neutral at_target-klassifikation)
+    sigma_hat = sigma_hat,
+    sigma_data = sigma_data,
 
     # Bruger-metadata
     data_definition = metadata$data_definition,
@@ -340,9 +362,13 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #'   vector-store usage. The value is always recorded in the audit event.
 #' @param min_chars Minimum characters in AI-generated output. Default 300.
 #' @param max_chars Maximum characters in AI-generated output. Default 375.
-#' @param target_tolerance Fractional tolerance for `at_target` classification
-#'   when `target_direction` is unknown (default 0.05 = 5%). Ignored when the
-#'   user provides `metadata$target` with an operator (retning er da kendt).
+#' @param target_tolerance Deprecated. Argument is preserved in the signature
+#'   for backward compatibility but is no longer used. The `at_target`
+#'   classification now uses process variation (`mean((UCL - LCL) / 6)` over
+#'   the last phase, with `sd(y)` as fallback for run charts) instead of a
+#'   relative-to-target tolerance. Passing a non-default value emits a
+#'   deprecation warning. The parameter will be removed in the next major
+#'   release.
 #' @param language Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Default \code{"da"} preserves backward compatibility.
 #' @param texts_loader Function that returns SPC analysis text templates.
 #'   Defaults to \code{load_spc_texts(language)}. Primarily intended for tests/mocking.
@@ -422,6 +448,24 @@ bfh_generate_analysis <- function(x,
                                   target_tolerance = 0.05,
                                   language = "da",
                                   texts_loader = NULL) {
+  # target_tolerance er deprecated -- value-neutral at_target-klassifikation
+  # bruger nu processens variation (sigma_hat / sd(y)) i stedet for relativ-
+  # til-target tolerance. Parameteren bevares i signaturen for backward
+  # compatibility men ignoreres internt. Fjernes endeligt i naeste major release.
+  if (!missing(target_tolerance)) {
+    rlang::warn(
+      c(
+        "`target_tolerance` is deprecated.",
+        i = paste(
+          "Classification now uses process variation (UCL/LCL or sd(y));",
+          "the argument is ignored."
+        ),
+        i = "Remove the argument from your call to silence this warning."
+      ),
+      class = "lifecycle_warning_deprecated"
+    )
+  }
+
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()", call. = FALSE)
@@ -489,7 +533,6 @@ bfh_generate_analysis <- function(x,
     baseline_analysis <- build_fallback_analysis(context,
       min_chars = min_chars,
       max_chars = max_chars,
-      target_tolerance = target_tolerance,
       language = language,
       texts_loader = texts_loader
     )
@@ -552,7 +595,6 @@ bfh_generate_analysis <- function(x,
   analysis <- build_fallback_analysis(context,
     min_chars = min_chars,
     max_chars = max_chars,
-    target_tolerance = target_tolerance,
     language = language,
     texts_loader = texts_loader
   )
@@ -733,7 +775,7 @@ bfh_generate_analysis <- function(x,
 # i18n-lookup foregaar her (ikke i orchestrator) for at holde
 # orchestrator fri af cascade-strukturer.
 .evaluate_target_arm <- function(context, flags, texts, target_budget,
-                                 target_tolerance, language = "da") {
+                                 language = "da") {
   result <- list(target_text = "", goal_met = FALSE, at_target = FALSE)
   if (!flags$has_target) {
     return(result)
@@ -769,9 +811,27 @@ bfh_generate_analysis <- function(x,
       budget = target_budget
     )
   } else {
-    # Vaerdineutral (bagudkompatibel): at/over/under target
-    tolerance <- max(abs(target_value) * target_tolerance, 0.01)
-    if (abs(centerline - target_value) <= tolerance) {
+    # Vaerdineutral: at/over/under target med processkala-tolerance.
+    # Tre-vejs cascade (se openspec change at-target-tolerance-process-variation):
+    #   1. Kontrolgraense-baseret: |CL - target| <= 3 * sigma_hat
+    #      (svarer trivielt til LCL <= target <= UCL ved konstante 3-sigma-graenser)
+    #   2. Data-sigma fallback:    |CL - target| <= sd(y)
+    #      (run charts og no_variation hvor kontrolgraenser mangler)
+    #   3. Eksakt-match:           |CL - target| < 1e-9
+    #      (degenereret: konstant y, n=1, eller begge sigma er 0)
+    delta <- abs(centerline - target_value)
+    sigma_hat <- context$sigma_hat
+    sigma_data <- context$sigma_data
+    is_at_target <- if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) &&
+      sigma_hat > 0) {
+      delta <= 3 * sigma_hat
+    } else if (is_valid_scalar(sigma_data) && is.finite(sigma_data) &&
+      sigma_data > 0) {
+      delta <= sigma_data
+    } else {
+      delta < 1e-9
+    }
+    if (is_at_target) {
       result$target_text <- pick_text(texts$target$at_target,
         data = list(target = display_target),
         budget = target_budget
@@ -803,7 +863,6 @@ bfh_generate_analysis <- function(x,
 build_fallback_analysis <- function(context,
                                     min_chars = 300,
                                     max_chars = 375,
-                                    target_tolerance = 0.05,
                                     language = "da",
                                     texts_loader = NULL) {
   if (is.null(texts_loader)) {
@@ -879,7 +938,7 @@ build_fallback_analysis <- function(context,
   # --- 2. Maalvurdering ---
   target_eval <- .evaluate_target_arm(
     context, flags, texts,
-    target_budget, target_tolerance,
+    target_budget,
     language = language
   )
   target_text <- target_eval$target_text

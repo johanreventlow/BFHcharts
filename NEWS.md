@@ -1,3 +1,32 @@
+# BFHcharts (development)
+
+## Bug fixes
+
+* **`at_target`-klassifikation bruger nu processens variation som
+  tolerance-skala** i stedet for en relativ-til-target floor. Den gamle
+  regel (`tolerance = max(|target| * target_tolerance, 0.01)`) havde en
+  absolut 0.01-floor uden statistisk begrundelse der dominerede når
+  target selv var lille -- små targets (f.eks. 1 %) blev fejlagtigt
+  klassificeret som "tæt på målet" selv når centerlinjen afveg
+  signifikant (f.eks. 0.019 vs target 0.01 = 90 % afvigelse). Den nye
+  regel forankrer tolerancen i processens egne kontrolgrænser:
+  `|CL - target| <= 3 * sigma_hat` hvor `sigma_hat = mean((UCL - LCL)
+  / 6)` over sidste fase. For run charts (ingen kontrolgrænser) falder
+  vi tilbage til `sd(y)`; for degenererede tilfælde (konstant y) en
+  eksakt-match tolerance. `over_target` / `under_target` er nu rent
+  faktuelle (CL vs target uden tolerance). Berører output fra
+  `bfh_generate_analysis()` for berørte scenarier; `action_key` skifter
+  tilsvarende. Se OpenSpec change `at-target-tolerance-process-variation`.
+
+## Deprecated
+
+* **`bfh_generate_analysis(target_tolerance = ...)` er deprecated.**
+  Argumentet bevares i signaturen for backward compatibility men
+  ignoreres af value-neutral `at_target`-klassifikation der nu bruger
+  processens variation (UCL/LCL eller sd(y)). Eksplicit videregivelse
+  fyrer `lifecycle_warning_deprecated`. Parameter fjernes endeligt i
+  næste major release.
+
 # BFHcharts 0.17.1
 
 Production-readiness audit (cycle 01, 2026-05-10) drevet af

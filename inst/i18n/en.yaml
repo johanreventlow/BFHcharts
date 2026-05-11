@@ -60,7 +60,7 @@ analysis:
     at_target:
       short: "The level is close to the target ({target})."
       standard: "The level is close to the target ({target})."
-      detailed: "The level is close to the target ({target}), within the tolerance accepted as goal achievement."
+      detailed: "The level is close to the target ({target})."
     over_target:
       short: "The level is above the target ({target})."
       standard: "The level is above the target ({target})."
