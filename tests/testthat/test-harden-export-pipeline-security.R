@@ -323,10 +323,10 @@ test_that("escape_typst_string haandterer NULL og tom streng", {
 })
 
 # ============================================================================
-# 4. shQuote fjernet — argv-token sti med mellemrum (smoke test)
+# 4. argv-token sti med mellemrum quotes pr platform (regression-test)
 # ============================================================================
 
-test_that("bfh_compile_typst sender sti MED mellemrum som raet argv-token", {
+test_that("bfh_compile_typst quoter path-args korrekt per platform", {
   skip_on_cran()
 
   # Opret midlertidig mappe med mellemrum i stien
@@ -359,16 +359,28 @@ test_that("bfh_compile_typst sender sti MED mellemrum som raet argv-token", {
     )
   )
 
-  # Args skal vaere en character vector, ikke en shell-streng med shQuote
   expect_true(!is.null(captured_args))
-  # Typst-fil-argumentet maa IKKE indeholde literale anforselstegn
-  typst_arg <- captured_args[captured_args == typst_file]
-  if (length(typst_arg) == 0) {
-    # Find via grep
-    typst_arg <- grep(space_dir, captured_args, fixed = TRUE, value = TRUE)
+
+  # Path-args med mellemrum skal vaere wrapped i OS-passende quotes.
+  # Uden quoting splitter Windows MSVCRT-argv-parseren paa mellemrum (saa
+  # Typst ser "Behandling" + "og" + "pleje/..."), og POSIX /bin/sh fortolker
+  # metachars (parens, $, etc.). Begge brydes uden quotes.
+  typst_arg <- grep(space_dir, captured_args, fixed = TRUE, value = TRUE)
+  expect_true(length(typst_arg) >= 1,
+    info = "path-args skal optraede i captured args (evt. wrapped i quotes)")
+
+  if (.Platform$OS.type == "windows") {
+    # Windows: shQuote(type = "cmd") wrapper i double-quotes; MSVCRT
+    # CommandLineToArgvW stripper outer quotes inden child-process argv.
+    expect_true(all(grepl('^".*"$', typst_arg)),
+      info = paste("Windows path-args skal double-quotes,",
+                   "got:", paste(typst_arg, collapse = "; ")))
+  } else {
+    # POSIX: shQuote() default wrapper i single-quotes for /bin/sh -c.
+    expect_true(all(grepl("^'.*'$", typst_arg)),
+      info = paste("POSIX path-args skal single-quotes,",
+                   "got:", paste(typst_arg, collapse = "; ")))
   }
-  expect_true(length(typst_arg) >= 1)
-  expect_false(any(grepl('^".*"$', typst_arg)))
 })
 
 # ============================================================================

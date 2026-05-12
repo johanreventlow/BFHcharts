@@ -2,6 +2,18 @@
 
 ## Bug fixes
 
+* **PDF-eksport pa Windows virker nu med stier der indeholder mellemrum.**
+  `.safe_system2_capture()` quotede tidligere kun path-args pa POSIX baseret
+  pa en forkert antagelse om at Windows `system2()` sender argv-tokens direkte
+  til child-processen. I virkeligheden paster Windows-versionen alle args
+  sammen til en command-line streng som MSVCRT's argv-parser re-splitter pa
+  uquotede mellemrum. Stier som `C:/output/Behandling og pleje/foo.pdf` blev
+  split saa Typst sa `og` som en uventet positional arg og afbroed med
+  `error: unexpected argument 'og' found`. Path-args quotes nu med
+  `shQuote(type = "cmd")` pa Windows; flag-args (i `KNOWN_TYPST_FLAGS`)
+  forbliver uquotede. Retter regressionen indfoert af commit a528f1b
+  (fix(typst): skip shQuote on Windows in .safe_system2_capture, 2026-05-01).
+
 * **`at_target`-klassifikation bruger nu processens variation som
   tolerance-skala** i stedet for en relativ-til-target floor. Den gamle
   regel (`tolerance = max(|target| * target_tolerance, 0.01)`) havde en
