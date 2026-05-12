@@ -404,31 +404,28 @@ KNOWN_TYPST_FLAGS <- c("--ignore-system-fonts", "--font-path", "--root")
 .is_windows <- function() .Platform$OS.type == "windows"
 
 # Wrapper around system2() that ensures path-like arguments are properly
-# shell-quoted when stdout/stderr capture is requested on POSIX systems.
+# shell-quoted when stdout/stderr capture is requested.
 #
 # Background: R's system2() with stdout=TRUE or stderr=TRUE routes through
-# /bin/sh -c on macOS/Linux (the shell is needed for stream capture). This
-# means all args are joined into a shell command string. Paths that contain
-# shell-special characters (spaces, parens, brackets, $, &, ') will be
-# misinterpreted by the shell unless quoted.
+# /bin/sh -c on macOS/Linux (the shell is needed for stream capture). On
+# Windows the args are concatenated into a command line for CreateProcess,
+# and the child's argv parser (CommandLineToArgvW) splits on unquoted
+# whitespace. Either way, paths containing spaces, parens, brackets, $, &,
+# or quote characters must be quoted or they will be misinterpreted as
+# multiple tokens.
 #
-# Windows: R's system2() does NOT route through cmd.exe -c for stdout/stderr
-# capture; argv-tokens are passed directly to the child process. Adding
-# literal quotes via shQuote() would corrupt the argument values (Quarto sees
-# the quotes as part of the path). Therefore quoting is POSIX-only.
+# Empirical: Windows paths like "C:/Users/<u>/OneDrive - Region Hovedstaden/..."
+# split at the space-dash-space, causing Typst to see "-" as a flag. shQuote()
+# with type="cmd" (Windows default) wraps in double quotes, which Quarto's
+# Typst compiler correctly parses as a single token.
 #
-# Strategy: On POSIX, apply shQuote() to any arg that is NOT in the
-# KNOWN_TYPST_FLAGS allowlist. This is stricter than the previous
-# startsWith("--") heuristic: only explicitly approved flags bypass quoting.
-# Flag values following "--font-path" (i.e. the directory path) are NOT flags
+# Strategy: apply shQuote() to any arg that is NOT in the KNOWN_TYPST_FLAGS
+# allowlist. Flag values following "--font-path" / "--root" are NOT flags
 # and will be quoted as expected.
 #
 # The .system2 parameter is the dependency-injection hook inherited from
 # bfh_compile_typst() so mock injection works end-to-end.
 .safe_system2_capture <- function(cmd, args, ..., .system2 = system2) {
-  if (.is_windows()) {
-    return(.system2(cmd, args = args, ...))
-  }
   quoted_args <- vapply(args, function(arg) {
     if (arg %in% KNOWN_TYPST_FLAGS) {
       arg
