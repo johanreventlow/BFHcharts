@@ -306,14 +306,21 @@ test_that("$ in output path renders actual PDF with literal filename (live Quart
 })
 
 # ============================================================================
-# M18: Windows early-return path in .safe_system2_capture (mock-based)
+# M18: Windows path quoting in .safe_system2_capture (mock-based)
 # ============================================================================
 #
-# .is_windows() is extracted as a helper specifically to allow mocking via
-# local_mocked_bindings(). These tests verify that the Windows branch (no
-# shQuote) is exercised without needing a real Windows OS.
+# Verifies that path args are shQuote'd on Windows. Previously this branch
+# skipped quoting based on the assumption that R's system2() handled argv
+# tokenisation natively, but empirical evidence (paths like
+# "OneDrive - Region Hovedstaden") shows the child process splits on spaces.
+# shQuote(type = "cmd") wraps in double-quotes, which CommandLineToArgvW
+# parses as a single token.
 
-test_that(".safe_system2_capture skips shQuote on Windows (mocked)", {
+test_that(".safe_system2_capture applies shQuote with cmd-style on Windows (mocked)", {
+  skip_on_os("windows") # shQuote() picks Windows style automatically on Windows;
+                        # this test runs on POSIX CI and uses shQuote(type="cmd")
+                        # implicitly inside the function under test.
+
   typst_file <- tempfile(fileext = ".typ")
   writeLines("#text[win test]", typst_file)
   withr::defer(unlink(typst_file))
@@ -328,8 +335,6 @@ test_that(".safe_system2_capture skips shQuote on Windows (mocked)", {
     character(0)
   }
 
-  # Mock .is_windows to return TRUE regardless of the host OS.
-  # with_mocked_bindings() modifies the binding in the loaded package namespace.
   with_mocked_bindings(
     .is_windows = function() TRUE,
     code = {
@@ -341,15 +346,14 @@ test_that(".safe_system2_capture skips shQuote on Windows (mocked)", {
     }
   )
 
-  # On Windows path, args must NOT be wrapped in single-quotes by shQuote
-  expect_false(
-    any(startsWith(captured_args, "'")),
-    info = "Windows branch must not apply shQuote -- args should be unquoted"
-  )
-  # The raw typst_file path should appear literally in the args
+  # Non-flag args must be quoted (any quote style: ' on POSIX, " on Windows).
+  path_args <- captured_args[!captured_args %in% c(
+    "typst", "compile",
+    "--ignore-system-fonts", "--font-path", "--root"
+  )]
   expect_true(
-    any(captured_args == typst_file),
-    info = "Windows branch must pass raw (unquoted) path to system2"
+    all(grepl("^['\"]", path_args)),
+    info = "Path args must be wrapped in quotes so spaces don't split tokens"
   )
 })
 
