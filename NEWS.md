@@ -1,3 +1,19 @@
+# BFHcharts 0.17.3
+
+## Bug fixes
+
+* **`.validate_inject_assets()` accepterer nu `BFHchartsAssets` som
+  default-allowlist.** Tidligere blokerede sikkerheds-guarden
+  `BFHchartsAssets::inject_bfh_assets` med fejlen
+  `inject_assets must come from a trusted package namespace ... not from
+  'BFHchartsAssets'`, selv om BFHchartsAssets er den dokumenterede
+  companion-pakke (se threat-model i `export_pdf.R`). Det fik BFHddl-
+  pipeline til at fejle i `Flush`-fasen ved PDF-eksport. Default-
+  `allowed_namespaces` udvidet til
+  `c("BFHcharts", "biSPCharts", "BFHchartsAssets")`. Downstream
+  pipelines kan nu kalde `bfh_export_pdf(..., inject_assets =
+  BFHchartsAssets::inject_bfh_assets)` uden workaround-options.
+
 # BFHcharts 0.17.2
 
 ## Bug fixes

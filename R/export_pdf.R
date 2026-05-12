@@ -570,12 +570,14 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
 #
 # @param fn The inject_assets argument (NULL or function).
 # @param allowed_namespaces Character vector of package namespaces allowed as
-#   the top-level environment. Defaults to BFHcharts and biSPCharts.
+#   the top-level environment. Defaults to BFHcharts, biSPCharts and
+#   BFHchartsAssets (the documented companion-assets package, see export_pdf.R
+#   threat-model docs and BFHchartsAssets repository).
 # @return fn invisibly.
 # @noRd
 .validate_inject_assets <- function(
   fn,
-  allowed_namespaces = c("BFHcharts", "biSPCharts")
+  allowed_namespaces = c("BFHcharts", "biSPCharts", "BFHchartsAssets")
 ) {
   if (is.null(fn)) {
     return(invisible(NULL))
