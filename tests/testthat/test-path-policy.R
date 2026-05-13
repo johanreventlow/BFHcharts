@@ -318,8 +318,8 @@ test_that("$ in output path renders actual PDF with literal filename (live Quart
 
 test_that(".safe_system2_capture applies shQuote with cmd-style on Windows (mocked)", {
   skip_on_os("windows") # shQuote() picks Windows style automatically on Windows;
-                        # this test runs on POSIX CI and uses shQuote(type="cmd")
-                        # implicitly inside the function under test.
+  # this test runs on POSIX CI and uses shQuote(type="cmd")
+  # implicitly inside the function under test.
 
   typst_file <- tempfile(fileext = ".typ")
   writeLines("#text[win test]", typst_file)
