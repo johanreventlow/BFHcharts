@@ -404,24 +404,25 @@ KNOWN_TYPST_FLAGS <- c("--ignore-system-fonts", "--font-path", "--root")
 .is_windows <- function() .Platform$OS.type == "windows"
 
 # Wrapper around system2() that ensures path-like arguments are properly
-# shell-quoted when stdout/stderr capture is requested.
+# shell-quoted before being concatenated into a single command line.
 #
-# Background: R's system2() with stdout=TRUE or stderr=TRUE routes through
-# /bin/sh -c on macOS/Linux (the shell is needed for stream capture). On
-# Windows the args are concatenated into a command line for CreateProcess,
-# and the child's argv parser (CommandLineToArgvW) splits on unquoted
-# whitespace. Either way, paths containing spaces, parens, brackets, $, &,
-# or quote characters must be quoted or they will be misinterpreted as
-# multiple tokens.
-#
-# Empirical: Windows paths like "C:/Users/<u>/OneDrive - Region Hovedstaden/..."
-# split at the space-dash-space, causing Typst to see "-" as a flag. shQuote()
-# with type="cmd" (Windows default) wraps in double quotes, which Quarto's
-# Typst compiler correctly parses as a single token.
+# Background: R's system2() concatenates args via paste(collapse = " ")
+# WITHOUT auto-quoting on both Windows and POSIX:
+#   * POSIX (stdout/stderr capture): the joined string is passed to /bin/sh -c.
+#     Spaces, parens, brackets, $, &, ' would be misinterpreted unless quoted.
+#   * Windows: the joined string becomes the command line passed to
+#     CreateProcess (or cmd.exe /c when stdout/stderr capture is requested).
+#     Either way, unquoted spaces in argv split the path into multiple tokens
+#     -- e.g. "C:/out/Behandling og pleje/foo.pdf" reaches typst as three
+#     separate args ("Behandling", "og", "pleje/foo.pdf") and the compiler
+#     reports `unexpected argument 'og'`.
 #
 # Strategy: apply shQuote() to any arg that is NOT in the KNOWN_TYPST_FLAGS
-# allowlist. Flag values following "--font-path" / "--root" are NOT flags
-# and will be quoted as expected.
+# allowlist. shQuote() picks the platform-appropriate quoting convention
+# (single-quote on POSIX, double-quote with "cmd" rules on Windows) which is
+# stripped by the child process's argument parser before typst sees the path.
+# Flag values following "--font-path" / "--root" (i.e. the directory path)
+# are NOT flags and will be quoted as expected.
 #
 # The .system2 parameter is the dependency-injection hook inherited from
 # bfh_compile_typst() so mock injection works end-to-end.
