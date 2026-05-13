@@ -1,6 +1,34 @@
-# BFHcharts (development)
+# BFHcharts 0.17.3
 
 ## Bug fixes
+
+* **`.validate_inject_assets()` accepterer nu `BFHchartsAssets` som
+  default-allowlist.** Tidligere blokerede sikkerheds-guarden
+  `BFHchartsAssets::inject_bfh_assets` med fejlen
+  `inject_assets must come from a trusted package namespace ... not from
+  'BFHchartsAssets'`, selv om BFHchartsAssets er den dokumenterede
+  companion-pakke (se threat-model i `export_pdf.R`). Det fik BFHddl-
+  pipeline til at fejle i `Flush`-fasen ved PDF-eksport. Default-
+  `allowed_namespaces` udvidet til
+  `c("BFHcharts", "biSPCharts", "BFHchartsAssets")`. Downstream
+  pipelines kan nu kalde `bfh_export_pdf(..., inject_assets =
+  BFHchartsAssets::inject_bfh_assets)` uden workaround-options.
+
+# BFHcharts 0.17.2
+
+## Bug fixes
+
+* **PDF-eksport pa Windows virker nu med stier der indeholder mellemrum.**
+  `.safe_system2_capture()` quotede tidligere kun path-args pa POSIX baseret
+  pa en forkert antagelse om at Windows `system2()` sender argv-tokens direkte
+  til child-processen. I virkeligheden paster Windows-versionen alle args
+  sammen til en command-line streng som MSVCRT's argv-parser re-splitter pa
+  uquotede mellemrum. Stier som `C:/output/Behandling og pleje/foo.pdf` blev
+  split saa Typst sa `og` som en uventet positional arg og afbroed med
+  `error: unexpected argument 'og' found`. Path-args quotes nu med
+  `shQuote(type = "cmd")` pa Windows; flag-args (i `KNOWN_TYPST_FLAGS`)
+  forbliver uquotede. Retter regressionen indfoert af commit a528f1b
+  (fix(typst): skip shQuote on Windows in .safe_system2_capture, 2026-05-01).
 
 * **`at_target`-klassifikation bruger nu processens variation som
   tolerance-skala** i stedet for en relativ-til-target floor. Den gamle

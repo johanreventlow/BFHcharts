@@ -404,36 +404,40 @@ KNOWN_TYPST_FLAGS <- c("--ignore-system-fonts", "--font-path", "--root")
 .is_windows <- function() .Platform$OS.type == "windows"
 
 # Wrapper around system2() that ensures path-like arguments are properly
-# shell-quoted when stdout/stderr capture is requested on POSIX systems.
+# shell-quoted before being passed to the child process.
 #
-# Background: R's system2() with stdout=TRUE or stderr=TRUE routes through
-# /bin/sh -c on macOS/Linux (the shell is needed for stream capture). This
-# means all args are joined into a shell command string. Paths that contain
+# Background (POSIX): R's system2() with stdout=TRUE or stderr=TRUE routes
+# through /bin/sh -c on macOS/Linux (the shell is needed for stream capture).
+# All args are joined into a shell command string. Paths that contain
 # shell-special characters (spaces, parens, brackets, $, &, ') will be
-# misinterpreted by the shell unless quoted.
+# misinterpreted by the shell unless quoted via shQuote() (single-quote).
 #
-# Windows: R's system2() does NOT route through cmd.exe -c for stdout/stderr
-# capture; argv-tokens are passed directly to the child process. Adding
-# literal quotes via shQuote() would corrupt the argument values (Quarto sees
-# the quotes as part of the path). Therefore quoting is POSIX-only.
+# Background (Windows): R's system2() does NOT route through cmd.exe, but it
+# still pastes all args into a single command-line string via
+# `paste(args, collapse = " ")` before passing the string to CreateProcess.
+# The child process then uses MSVCRT's CommandLineToArgvW rules to re-split
+# the command line into argv tokens -- unquoted whitespace becomes an arg
+# boundary. Without quoting, a path like "C:/output/Behandling og pleje/foo.pdf"
+# is split into three argv tokens ("C:/output/Behandling", "og",
+# "pleje/foo.pdf"), which makes Typst see "og" as an unexpected positional
+# argument. shQuote(type = "cmd") wraps args in double-quotes; the outer
+# quotes are stripped by MSVCRT before reaching the application's argv.
 #
-# Strategy: On POSIX, apply shQuote() to any arg that is NOT in the
-# KNOWN_TYPST_FLAGS allowlist. This is stricter than the previous
-# startsWith("--") heuristic: only explicitly approved flags bypass quoting.
-# Flag values following "--font-path" (i.e. the directory path) are NOT flags
-# and will be quoted as expected.
+# Strategy: apply shQuote() to any arg that is NOT in the KNOWN_TYPST_FLAGS
+# allowlist, using the OS-appropriate quote style. This is stricter than the
+# previous startsWith("--") heuristic: only explicitly approved flags bypass
+# quoting. Flag values following "--font-path" (i.e. the directory path) are
+# NOT flags and will be quoted as expected.
 #
 # The .system2 parameter is the dependency-injection hook inherited from
 # bfh_compile_typst() so mock injection works end-to-end.
 .safe_system2_capture <- function(cmd, args, ..., .system2 = system2) {
-  if (.is_windows()) {
-    return(.system2(cmd, args = args, ...))
-  }
+  quote_type <- if (.is_windows()) "cmd" else "sh"
   quoted_args <- vapply(args, function(arg) {
     if (arg %in% KNOWN_TYPST_FLAGS) {
       arg
     } else {
-      shQuote(arg)
+      shQuote(arg, type = quote_type)
     }
   }, character(1L))
   .system2(cmd, args = quoted_args, ...)

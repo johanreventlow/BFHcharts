@@ -40,6 +40,24 @@ test_that(".validate_inject_assets: BFHcharts namespace function passes silently
   expect_silent(BFHcharts:::.validate_inject_assets(namespace_fn))
 })
 
+test_that(".validate_inject_assets: default allowlist includes BFHchartsAssets", {
+  # BFHchartsAssets is the documented companion-assets package (see export_pdf.R
+  # threat-model docs). It must be in the default allowlist so downstream
+  # pipelines (BFHddl) can pass BFHchartsAssets::inject_bfh_assets without
+  # tripping the runtime guard. Lock in the default value so future edits
+  # don't silently regress the BFHddl integration.
+  defaults <- formals(BFHcharts:::.validate_inject_assets)$allowed_namespaces
+  expect_true("BFHchartsAssets" %in% eval(defaults))
+})
+
+test_that(".validate_inject_assets: BFHchartsAssets::inject_bfh_assets passes silently", {
+  # Integration test: only runs when BFHchartsAssets is actually installed.
+  # Verifies the downstream BFHddl pattern works against the real namespace.
+  skip_if_not_installed("BFHchartsAssets")
+  fn <- BFHchartsAssets::inject_bfh_assets
+  expect_silent(BFHcharts:::.validate_inject_assets(fn))
+})
+
 test_that(".validate_inject_assets: explicit allowed_namespaces accepts base package function", {
   # Passing a function whose topenv is "base" with "base" in allowed_namespaces
   # should pass silently. This exercises the custom-allowlist path.
