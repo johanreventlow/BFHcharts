@@ -54,10 +54,11 @@ test_that("apply_y_axis_formatting applies count formatting", {
   expect_true(length(result$scales$scales) > 0)
 })
 
-test_that("apply_y_axis_formatting uses 12.5% default y expansion", {
-  # Y_AXIS_BASE_EXPANSION_MULT = 0.125 placerer data i de midterste ~80%
+test_that("apply_y_axis_formatting uses 17.5% default y expansion", {
+  # Y_AXIS_BASE_EXPANSION_MULT = 0.175 placerer data i de midterste ~65%
   # af plot-omraadet, jf. SPC-litteraturens anbefaling. Tidligere 5%
-  # (#164) klippede boundary-labels (target/CL nær akse-graensen).
+  # (#164) klippede boundary-labels (target/CL nær akse-graensen);
+  # 12.5% gav for lidt luft til labels over/under datapunkter.
   qic_data <- data.frame(x = 1:3, y = c(40, 50, 60))
   plot <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y)) +
     ggplot2::geom_point()
@@ -65,8 +66,8 @@ test_that("apply_y_axis_formatting uses 12.5% default y expansion", {
   result <- apply_y_axis_formatting(plot, "count", qic_data)
   y_range <- ggplot2::ggplot_build(result)$layout$panel_params[[1]]$y.range
 
-  # data range 40..60 (span 20), 12.5% expansion paa hver side = 2.5
-  expect_equal(y_range, c(37.5, 62.5), tolerance = 1e-8)
+  # data range 40..60 (span 20), 17.5% expansion paa hver side = 3.5
+  expect_equal(y_range, c(36.5, 63.5), tolerance = 1e-8)
 })
 
 test_that("apply_y_axis_formatting applies rate formatting", {
