@@ -222,9 +222,9 @@ test_that("CL at zero with target above does not crash and returns ggplot", {
   expect_true(inherits(result, "gg"))
 })
 
-test_that("default 12.5% expansion giver forventet panel-range; label-layer kan udvide ved boundary", {
-  # Data 0..0.06 (span 0.06), 12.5% expansion = 0.0075 paa hver side
-  # → range -0.0075..0.0675 fra base-formatter. Boundary-aware
+test_that("default 17.5% expansion giver forventet panel-range; label-layer kan udvide ved boundary", {
+  # Data 0..0.06 (span 0.06), 17.5% expansion = 0.0105 paa hver side
+  # → range -0.0105..0.0705 fra base-formatter. Boundary-aware
   # label-placement kan udvide yderligere ved behov for at undgaa
   # clipping af marquee-labels (target/CL nær akse-graensen).
   qic_data <- data.frame(
@@ -239,8 +239,8 @@ test_that("default 12.5% expansion giver forventet panel-range; label-layer kan 
   plot_before_labels <- apply_y_axis_formatting(p, "percent", qic_data)
   range_before <- ggplot2::ggplot_build(plot_before_labels)$layout$panel_params[[1]]$y.range
 
-  # Base-formatter producerer praecis 12.5%-expansion
-  expect_equal(range_before, c(-0.0075, 0.0675), tolerance = 1e-8)
+  # Base-formatter producerer praecis 17.5%-expansion
+  expect_equal(range_before, c(-0.0105, 0.0705), tolerance = 1e-8)
 
   # Label-layer maa udvide range yderligere for at give plads til marquee-labels.
   # Kontrakt: range_after dækker MINDST range_before (no shrinking).
@@ -290,7 +290,7 @@ test_that("CL at data maximum with target below does not crash", {
 test_that("SPC-44 regression: target near 0% boundary skal have plads under target-line", {
   # Reproducer SPC-44.pdf-scenariet: p-chart, target=1%, CL ~1.9%,
   # data spaender 0-10%. Med 5% expansion (foer #164-followup) blev
-  # "<1%"-label klippet ved nederste plot-kant. Med 12.5% expansion
+  # "<1%"-label klippet ved nederste plot-kant. Med 17.5% expansion
   # skal target-label kunne sidde under target-linjen uden clipping.
   # Data inkluderer 0 og 0.10 for at give realistisk panel-range
   # (matcher "0% .. 10%" akse-format som SPC-44.pdf viser).
@@ -317,7 +317,7 @@ test_that("SPC-44 regression: target near 0% boundary skal have plads under targ
   panel_range <- ggplot2::ggplot_build(plot_with_labels)$layout$panel_params[[1]]$y.range
   placement <- attr(plot_with_labels, "placement_info")
 
-  # 12.5% expansion paa data 0..0.10 (span 0.10) = 0.0125 paa hver side.
+  # 17.5% expansion paa data 0..0.10 (span 0.10) = 0.0175 paa hver side.
   # Boundary-aware label-placement kan udvide range yderligere hvis behov,
   # saa vi tester at panel-bund er MINDST -0.0125 (kan vaere mere negativ).
   expect_lte(panel_range[1], -0.0125 + 1e-8)
@@ -340,7 +340,7 @@ test_that("SPC-44 regression: target near 0% boundary skal have plads under targ
 })
 
 test_that("Percent-breaks renderer ingen negative ticks selvom expansion gaar < 0%", {
-  # 12.5% expansion paa data 0..0.10 → panel_range -0.0125..0.1125.
+  # 17.5% expansion paa data 0..0.10 → panel_range -0.0175..0.1175.
   # Standard ggplot2-breaks skal filtrere negative breakpoints,
   # saa "-1%"/"-2%"-ticks ikke render. Kontrakt: drop-clamp er sikker.
   qic_data <- data.frame(

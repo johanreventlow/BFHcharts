@@ -79,9 +79,9 @@ analysis:
       standard: "Niveauet opfylder målet ({target})."
       detailed: "Niveauet opfylder målet ({target}) og ligger på den ønskede side af målværdien."
     goal_not_met:
-      short: "Målet ({target}) er endnu ikke nået."
-      standard: "Niveauet opfylder endnu ikke målet ({target})."
-      detailed: "Niveauet opfylder endnu ikke målet ({target}). Den nuværende praksis når det ikke."
+      short: "Målet ({target}) er ikke nået."
+      standard: "Niveauet opfylder ikke målet ({target})."
+      detailed: "Niveauet opfylder ikke målet, og det vil sandsynligvis ikke ske fremover med nuværende praksis."
 
   action:
     stable_at_target:
