@@ -26,12 +26,13 @@ utils::globalVariables(c(
 # Line extension factor - hvor langt CL/target forlaenges forbi sidste datapunkt
 LINE_EXTENSION_FACTOR <- 0.20
 
-# Default y-axis expansion for chart scales (top + bund). 12.5% placerer
-# data i de midterste ~80% af plot-omraadet, jf. SPC-litteraturens
+# Default y-axis expansion for chart scales (top + bund). 17.5% placerer
+# data i de midterste ~65% af plot-omraadet, jf. SPC-litteraturens
 # anbefaling, og giver luft til marquee-labels (target/CL) naar de
 # ligger i ydre 10-20% af y-aksen. Tidligere 5% (#164) klippede
-# boundary-labels ved akse-graensen.
-Y_AXIS_BASE_EXPANSION_MULT <- 0.125
+# boundary-labels ved akse-graensen; 12.5% var efterfoelgende default
+# men gav for lidt luft til labels over/under datapunkter.
+Y_AXIS_BASE_EXPANSION_MULT <- 0.175
 
 # Y-axis expansion multiplier - matcher ggplot2 expansion(mult = ...)
 Y_AXIS_EXPANSION_MULT <- 0.25

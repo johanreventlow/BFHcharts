@@ -798,6 +798,12 @@ bfh_generate_analysis <- function(x,
     )
   }
 
+  # Erstat ASCII-operatorer med Unicode-sammentrukne tegn i analyseteksten,
+  # saa ">= 90%" rendres som "\U2265 90%" og "<= 2,5" som "\U2264 2,5".
+  # context$target_display selv bevares uaendret (invariant fra resolve_target()).
+  display_target <- gsub(">=", "\U2265", display_target, fixed = TRUE)
+  display_target <- gsub("<=", "\U2264", display_target, fixed = TRUE)
+
   if (!is.null(target_direction)) {
     # Retningsbevidst: "higher" -> CL >= target, "lower" -> CL <= target
     result$goal_met <- switch(target_direction,

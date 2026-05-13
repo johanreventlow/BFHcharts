@@ -6,7 +6,7 @@
 #   1. Quarto binary discovery validation (find_quarto, .validate_binary_path)
 #   2. Compile-error truncation parity (.truncate_compile_output)
 #   3. Control-char escaping i escape_typst_string()
-#   4. shQuote anvendt cross-platform paa argv-vector (smoke test med mellemrum i sti)
+#   4. Ingen shQuote på argv-vector (smoke test med mellemrum i sti)
 #
 # Alle tests er unit-level og kræver ikke live Quarto.
 
@@ -323,16 +323,10 @@ test_that("escape_typst_string haandterer NULL og tom streng", {
 })
 
 # ============================================================================
-# 4. shQuote anvendt — path-token med mellemrum (smoke test)
+# 4. argv-token sti med mellemrum quotes pr platform (regression-test)
 # ============================================================================
-# Historik: Tidligere antagelse var "ingen shQuote paa argv-vector" baseret
-# paa at R's system2() tokeniserede argv natively. Empiri viste (paths som
-# "OneDrive - Region Hovedstaden") at child-processen splittede paa spaces
-# uanset. Fixen anvender shQuote() paa alle platforme (POSIX: type="sh"
-# single-quotes; Windows: type="cmd" double-quotes), undtagen flags i
-# KNOWN_TYPST_FLAGS-allowlisten.
 
-test_that("bfh_compile_typst quoter path med mellemrum (cross-platform)", {
+test_that("bfh_compile_typst quoter path-args korrekt per platform", {
   skip_on_cran()
 
   # Opret midlertidig mappe med mellemrum i stien
@@ -365,29 +359,28 @@ test_that("bfh_compile_typst quoter path med mellemrum (cross-platform)", {
     )
   )
 
-  # Args skal vaere en character vector (ej en samlet shell-streng)
   expect_true(!is.null(captured_args))
-  expect_type(captured_args, "character")
 
-  # Typst-fil-argumentet skal vaere til stede; den faktiske args-entry kan
-  # vaere shQuote-wrapped (POSIX 'path' eller Windows "path"). Match paa
-  # space_dir-substring som er invariant under quote-wrapping.
+  # Path-args med mellemrum skal vaere wrapped i OS-passende quotes.
+  # Uden quoting splitter Windows MSVCRT-argv-parseren paa mellemrum (saa
+  # Typst ser "Behandling" + "og" + "pleje/..."), og POSIX /bin/sh fortolker
+  # metachars (parens, $, etc.). Begge brydes uden quotes.
   typst_arg <- grep(space_dir, captured_args, fixed = TRUE, value = TRUE)
-  expect_true(
-    length(typst_arg) >= 1,
-    info = "Path med mellemrum skal optraede i args (evt. quote-wrapped)"
-  )
+  expect_true(length(typst_arg) >= 1,
+    info = "path-args skal optraede i captured args (evt. wrapped i quotes)")
 
-  # Path-args skal vaere shell-quoted (single- eller double-quote-wrapped)
-  # saa child-processens argv-parser ej splitter paa whitespace.
-  expect_true(
-    all(grepl("^['\"].*['\"]$", typst_arg)),
-    info = paste(
-      "Path-args skal vaere shQuote-wrapped (' paa POSIX, \" paa Windows)",
-      "for at undgaa space-token-split. Faktisk:",
-      paste(typst_arg, collapse = "; ")
-    )
-  )
+  if (.Platform$OS.type == "windows") {
+    # Windows: shQuote(type = "cmd") wrapper i double-quotes; MSVCRT
+    # CommandLineToArgvW stripper outer quotes inden child-process argv.
+    expect_true(all(grepl('^".*"$', typst_arg)),
+      info = paste("Windows path-args skal double-quotes,",
+                   "got:", paste(typst_arg, collapse = "; ")))
+  } else {
+    # POSIX: shQuote() default wrapper i single-quotes for /bin/sh -c.
+    expect_true(all(grepl("^'.*'$", typst_arg)),
+      info = paste("POSIX path-args skal single-quotes,",
+                   "got:", paste(typst_arg, collapse = "; ")))
+  }
 })
 
 # ============================================================================
