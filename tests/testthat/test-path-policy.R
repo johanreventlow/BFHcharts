@@ -306,21 +306,18 @@ test_that("$ in output path renders actual PDF with literal filename (live Quart
 })
 
 # ============================================================================
-# M18: Windows path quoting in .safe_system2_capture (mock-based)
+# M18: .safe_system2_capture quoting applies uniformly across platforms
 # ============================================================================
 #
-# Verifies that path args are shQuote'd on Windows. Previously this branch
-# skipped quoting based on the assumption that R's system2() handled argv
-# tokenisation natively, but empirical evidence (paths like
-# "OneDrive - Region Hovedstaden") shows the child process splits on spaces.
-# shQuote(type = "cmd") wraps in double-quotes, which CommandLineToArgvW
-# parses as a single token.
+# Historical note: previously the Windows branch in .safe_system2_capture
+# returned early without shQuote(), based on the (incorrect) assumption that
+# Windows passes argv tokens directly to the child process. In practice,
+# system2() on Windows joins args with paste(collapse = " ") just like POSIX,
+# so spaces in output paths (e.g. "Behandling og pleje/foo.pdf") would split
+# into multiple tokens and typst would reject `unexpected argument 'og'`.
+# Quoting is therefore applied on both platforms.
 
-test_that(".safe_system2_capture applies shQuote with cmd-style on Windows (mocked)", {
-  skip_on_os("windows") # shQuote() picks Windows style automatically on Windows;
-  # this test runs on POSIX CI and uses shQuote(type="cmd")
-  # implicitly inside the function under test.
-
+test_that(".safe_system2_capture quotes non-flag args on Windows (mocked)", {
   typst_file <- tempfile(fileext = ".typ")
   writeLines("#text[win test]", typst_file)
   withr::defer(unlink(typst_file))
@@ -346,14 +343,26 @@ test_that(".safe_system2_capture applies shQuote with cmd-style on Windows (mock
     }
   )
 
-  # Non-flag args must be quoted (any quote style: ' on POSIX, " on Windows).
+  # Non-flag args must be wrapped in shell quotes so paths with spaces survive
+  # system2()'s paste(collapse = " ") concatenation. shQuote() picks the
+  # platform-appropriate convention (single-quote on POSIX, double-quote on
+  # Windows); accept either since tests may run on either OS.
   path_args <- captured_args[!captured_args %in% c(
     "typst", "compile",
     "--ignore-system-fonts", "--font-path", "--root"
   )]
   expect_true(
-    all(grepl("^['\"]", path_args)),
-    info = "Path args must be wrapped in quotes so spaces don't split tokens"
+    length(path_args) > 0L,
+    info = "expected at least one path-like arg in the captured args"
+  )
+  expect_true(
+    all(grepl("^['\"].*['\"]$", path_args)),
+    info = "Windows branch must wrap path args via shQuote() to survive system2() concatenation"
+  )
+  # The raw (unquoted) typst_file path must NOT appear literally.
+  expect_false(
+    any(captured_args == typst_file),
+    info = "raw typst_file path must be quoted, not passed literally"
   )
 })
 
