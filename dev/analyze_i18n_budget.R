@@ -48,7 +48,7 @@ labels <- yml$labels
 # ----------------------------------------------------------------------------
 # Hold synkront med R/spc_analysis.R:.allocate_text_budget()
 ALLOCATION_POLICY <- list(
-  with_target = list(stability = 0.40, target = 0.15),  # action = 0.45 (rest)
+  with_target = list(stability = 0.45, target = 0.20),  # action = 0.35 (rest)
   no_target   = list(stability = 0.55)                  # action = 0.45 (rest)
 )
 

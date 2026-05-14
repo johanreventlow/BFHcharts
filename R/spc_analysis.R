@@ -659,20 +659,22 @@ bfh_generate_analysis <- function(x,
 
 # Allokerer tegnbudget til stability/target/action dele af fallback-analysen.
 #
-# Med target: stability ~40%, target ~15%, action ~45%.
+# Med target: stability ~45%, target ~20%, action ~35%.
 # Uden target: target-budgettet realloceres til stability (55%) + action (45%).
 #
-# Target-armen har generelt korte tekster (mange varianter er 35-46 tegn),
-# saa 15% raekker. Action-armen har de laengste detailed-varianter (90-176
-# tegn) og fortjener storre andel for at undgaa fallback til 'short'-tekster.
-# Ratio 40/15/45 er Pareto-dominant over 50/15/35: 230 vs 182 detailed-valg
-# ved 156 simulerede scenarier, 0 overflow i begge.
+# Target-armen har differentierede short/standard/detailed-varianter (40-130
+# tegn raa template-laengde) og kraever ~20% for at standard/detailed kan
+# vinde over short-fallback. Stability-armen har mellem-lange detailed-
+# varianter (129-334 tegn) og taeller derfor 45%. Action-armens detailed-
+# varianter (90-176 tegn) faar de resterende 35%. Ratio 45/20/35 valgt efter
+# brug af differentierede target-varianter -- giver 0 overflow og maksimerer
+# antal detailed-valg under denne YAML-tekst-fordeling.
 #
 # Returnerer named integer list: stability_budget, target_budget, action_budget.
 .allocate_text_budget <- function(max_chars, has_target) {
   if (has_target) {
-    stability_budget <- floor(max_chars * 0.40)
-    target_budget <- floor(max_chars * 0.15)
+    stability_budget <- floor(max_chars * 0.45)
+    target_budget <- floor(max_chars * 0.20)
     action_budget <- max_chars - stability_budget - target_budget
   } else {
     stability_budget <- floor(max_chars * 0.55)
