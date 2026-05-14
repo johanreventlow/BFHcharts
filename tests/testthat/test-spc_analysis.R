@@ -574,7 +574,7 @@ test_that("build_fallback_analysis bruger goal_met-tekst når target_direction e
   )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
   # Skal INDEHOLDE "opfylder målet" eller "målet ... nået"
-  expect_true(grepl("opfylder målet|målet.*nået", txt),
+  expect_true(grepl("opfylder (udviklings)?målet|målet.*nået", txt),
     info = paste("Forventede goal_met-sprog, fik:", txt)
   )
   # Må IKKE indeholde den værdineutrale "ligger under målet"
@@ -590,7 +590,7 @@ test_that("build_fallback_analysis bruger goal_not_met når CL overstiger 'lower
   # goal_not_met-tekster udtrykker negation paa flere maader afhaengigt af
   # variant: "opfylder (endnu )?ikke maalet", "endnu ikke naaet", "er ikke
   # naaet", "naar ikke (udviklings)?maalet". Daekker alle nuvaerende formuleringer.
-  expect_true(grepl("opfylder (endnu )?ikke målet|endnu ikke nået|er ikke nået|når ikke (udviklings)?målet", txt),
+  expect_true(grepl("opfylder (endnu )?ikke (udviklings)?målet|endnu ikke nået|er ikke nået|når ikke (udviklings)?målet", txt),
     info = paste("Forventede goal_not_met-sprog, fik:", txt)
   )
 })
@@ -601,7 +601,7 @@ test_that("build_fallback_analysis bruger goal_met for 'higher'-target når CL >
     target_display = ">= 90"
   )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
-  expect_true(grepl("opfylder målet|målet.*nået", txt),
+  expect_true(grepl("opfylder (udviklings)?målet|målet.*nået", txt),
     info = paste("Forventede goal_met, fik:", txt)
   )
 })
@@ -785,7 +785,7 @@ test_that("REGRESSION: build_fallback_analysis producerer 'opfylder målet' for 
   txt <- BFHcharts:::build_fallback_analysis(ctx)
 
   # Teksten bør bekræfte at målet er nået
-  expect_match(txt, "opfylder målet|målet.*opfyldt|målet.*nået",
+  expect_match(txt, "opfylder (udviklings)?målet|målet.*opfyldt|målet.*nået",
     label = "Skal indeholde positivt målbekræftelse"
   )
   # Og IKKE den fejlagtige negative tekst
@@ -815,7 +815,7 @@ test_that("REGRESSION: lower-direction 3% vs '<= 5%' -> goal_met via normaliseri
   expect_equal(ctx$target_direction, "lower")
 
   txt <- BFHcharts:::build_fallback_analysis(ctx)
-  expect_match(txt, "opfylder målet|målet.*opfyldt",
+  expect_match(txt, "opfylder (udviklings)?målet|målet.*opfyldt",
     label = "3% opfylder <= 5% mål"
   )
 })

@@ -948,6 +948,19 @@ build_fallback_analysis <- function(context,
     ""
   }
 
+  # Formateret centerline-vaerdi til {centerline}-placeholder. Bruger
+  # format_target_value() saa centerline rendres pa samme skala som y-aksen
+  # (fx 85% paa percent-charts, 3.2 paa numeric-charts). Tom-fallback til
+  # "ukendt"-label naar centerline er NULL/NA (degenereret data-tilfaelde).
+  cl_fmt <- if (!is.null(centerline) && !is.na(centerline)) {
+    format_target_value(centerline,
+      y_axis_unit = context$y_axis_unit,
+      language = language
+    )
+  } else {
+    i18n_lookup("labels.misc.ukendt", language)
+  }
+
   placeholder_data <- list(
     runs_actual = spc_stats$runs_actual,
     runs_expected = spc_stats$runs_expected,
@@ -960,20 +973,13 @@ build_fallback_analysis <- function(context,
       i18n_lookup("labels.outliers.plural", language)
     ),
     effective_window = spc_stats$effective_window %||% RECENT_OBS_WINDOW,
+    centerline = cl_fmt,
     level_direction = level_direction,
     level_vs_target = level_vs_target
   )
 
   # --- 1. Stabilitetstekst ---
   if (no_variation) {
-    cl_fmt <- if (!is.null(centerline) && !is.na(centerline)) {
-      format_target_value(centerline,
-        y_axis_unit = context$y_axis_unit,
-        language = language
-      )
-    } else {
-      i18n_lookup("labels.misc.ukendt", language)
-    }
     stability <- pick_text(
       texts$stability$no_variation,
       data = list(centerline = cl_fmt),
@@ -988,13 +994,15 @@ build_fallback_analysis <- function(context,
   }
 
   # --- 2. Maalvurdering ---
-  # extra_placeholders giver target-templates adgang til {level_direction}
-  # og {level_vs_target} ved siden af det allerede formaterede {target}.
+  # extra_placeholders giver target-templates adgang til {level_direction},
+  # {level_vs_target} og {centerline} ved siden af det allerede formaterede
+  # {target}.
   target_eval <- .evaluate_target_arm(
     context, flags, texts,
     target_budget,
     language = language,
     extra_placeholders = list(
+      centerline = cl_fmt,
       level_direction = level_direction,
       level_vs_target = level_vs_target
     )
@@ -1004,11 +1012,13 @@ build_fallback_analysis <- function(context,
   at_target <- target_eval$at_target
 
   # --- 3. Handlingsforslag ---
-  # action-templates faar ogsaa adgang til level_*-placeholders saa
-  # goal_met/goal_not_met-tekster kan beskrive niveau-position i forhold til maal.
+  # action-templates faar ogsaa adgang til level_*- og centerline-placeholders
+  # saa goal_met/goal_not_met-tekster kan beskrive niveau-position i forhold
+  # til maal.
   action_key <- .select_action_key(flags, target_direction, goal_met, at_target)
   action <- pick_text(texts$action[[action_key]],
     data = list(
+      centerline = cl_fmt,
       level_direction = level_direction,
       level_vs_target = level_vs_target
     ),
