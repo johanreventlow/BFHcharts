@@ -96,9 +96,9 @@ analysis:
       detailed: "Det nuværende niveau på {centerline} opfylder udviklingsmålet ({target})."
     goal_not_met:
       short: "Målet ({target}) er ikke nået."
-      standard: "Det nuværende niveau opfylder ikke udviklingsmålet på {target}."
+      standard: "Det nuværende niveau når ikke udviklingsmålet på {target}."
       # detailed: "Niveauet opfylder ikke målet, og det vil sandsynligvis ikke ske fremover med nuværende praksis."
-      detailed: "Det nuværende niveau på {centerline} opfylder ikke udviklingsmålet på {target}, og med nuværende praksis vil dette ikke ændre sig."
+      detailed: "Det nuværende niveau på {centerline} når ikke udviklingsmålet på {target}, og med nuværende praksis vil dette ikke ændre sig."
 
   action:
     stable_at_target:
@@ -115,8 +115,8 @@ analysis:
       detailed: "Overvej, om et udviklingsmål kan fastsættes, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres."
     unstable_at_target:
       short: "Undersøg årsagerne til variationen i data."
-      standard: "Målet er opfyldt, men processen er ustabil. Undersøg årsagerne til variationen i data."
-      detailed: "Målet er opfyldt, men processen er ustabil. Undersøg årsagerne til variationen i data, så niveauet kan stabiliseres og fastholdes."
+      standard: "Undersøg årsagerne til at data ikke varierer tilfældigt."
+      detailed: "Undersøg årsagerne til variationen i data, så niveauet kan stabiliseres og fastholdes."
     unstable_not_at_target:
       short: "Identificér og fjern de særlige årsager til variation i data."
       standard: "Prioritér at identificere og fjerne de særlige årsager til variationen i data, før yderligere tiltag iværksættes."
@@ -137,9 +137,9 @@ analysis:
       detailed: "Uden en målrettet indsats vil den nuværende praksis fortsætte med at levere samme resultater og dermed ikke opfylde målet."
     unstable_goal_met:
       short: "Stabilisér processen for at fastholde målopfyldelsen."
-      standard: "Målet er opfyldt, men processen er ustabil. Undersøg årsagerne til variationen i data, så målopfyldelsen kan fastholdes."
+      standard: "Undersøg årsagerne til variationen i data, så målopfyldelsen kan fastholdes."
       # detailed: "Målet er opfyldt, men processen er ustabil. Undersøg årsagerne til variationen i data, så det nuværende niveau kan fastholdes, og målopfyldelsen ikke går tabt."
-      detailed: "Målet er opfyldt, men processen er ustabil. Find årsagerne til variationen, så niveauet fastholdes og målopfyldelsen ikke går tabt."
+      detailed: "Find årsagerne til variationen, så niveauet fastholdes og målopfyldelsen ikke går tabt."
     unstable_goal_not_met:
       short: "Stabilisér processen først, og arbejd derefter mod målet."
       standard: "Identificér først årsager til variationen i data, og stabilisér processen - derefter kan målrettede forbedringstiltag iværksættes."
