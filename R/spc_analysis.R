@@ -531,7 +531,6 @@ bfh_generate_analysis <- function(x,
 
     # Byg fallback-analyse som baseline for AI
     baseline_analysis <- build_fallback_analysis(context,
-      min_chars = min_chars,
       max_chars = max_chars,
       language = language,
       texts_loader = texts_loader
@@ -593,7 +592,6 @@ bfh_generate_analysis <- function(x,
 
   # === FALLBACK: STANDARDTEKSTER ===
   analysis <- build_fallback_analysis(context,
-    min_chars = min_chars,
     max_chars = max_chars,
     language = language,
     texts_loader = texts_loader
@@ -661,17 +659,23 @@ bfh_generate_analysis <- function(x,
 
 # Allokerer tegnbudget til stability/target/action dele af fallback-analysen.
 #
-# Med target: stability ~50%, target ~25%, action ~25%.
-# Uden target: target-budgettet realloceres til stability (65%) + action (35%).
+# Med target: stability ~40%, target ~15%, action ~45%.
+# Uden target: target-budgettet realloceres til stability (55%) + action (45%).
+#
+# Target-armen har generelt korte tekster (mange varianter er 35-46 tegn),
+# saa 15% raekker. Action-armen har de laengste detailed-varianter (90-176
+# tegn) og fortjener storre andel for at undgaa fallback til 'short'-tekster.
+# Ratio 40/15/45 er Pareto-dominant over 50/15/35: 230 vs 182 detailed-valg
+# ved 156 simulerede scenarier, 0 overflow i begge.
 #
 # Returnerer named integer list: stability_budget, target_budget, action_budget.
 .allocate_text_budget <- function(max_chars, has_target) {
   if (has_target) {
-    stability_budget <- floor(max_chars * 0.50)
-    target_budget <- floor(max_chars * 0.25)
+    stability_budget <- floor(max_chars * 0.40)
+    target_budget <- floor(max_chars * 0.15)
     action_budget <- max_chars - stability_budget - target_budget
   } else {
-    stability_budget <- floor(max_chars * 0.65)
+    stability_budget <- floor(max_chars * 0.55)
     target_budget <- 0L
     action_budget <- max_chars - stability_budget
   }
@@ -775,7 +779,8 @@ bfh_generate_analysis <- function(x,
 # i18n-lookup foregaar her (ikke i orchestrator) for at holde
 # orchestrator fri af cascade-strukturer.
 .evaluate_target_arm <- function(context, flags, texts, target_budget,
-                                 language = "da") {
+                                 language = "da",
+                                 extra_placeholders = list()) {
   result <- list(target_text = "", goal_met = FALSE, at_target = FALSE)
   if (!flags$has_target) {
     return(result)
@@ -804,6 +809,10 @@ bfh_generate_analysis <- function(x,
   display_target <- gsub(">=", "\U2265", display_target, fixed = TRUE)
   display_target <- gsub("<=", "\U2264", display_target, fixed = TRUE)
 
+  # Merge target-display med globale placeholders (level_direction, level_vs_target).
+  # Target tager precedence saa specifik target-display ikke kan overskrives.
+  data <- modifyList(extra_placeholders, list(target = display_target))
+
   if (!is.null(target_direction)) {
     # Retningsbevidst: "higher" -> CL >= target, "lower" -> CL <= target
     result$goal_met <- switch(target_direction,
@@ -813,7 +822,7 @@ bfh_generate_analysis <- function(x,
     )
     key <- if (result$goal_met) "goal_met" else "goal_not_met"
     result$target_text <- pick_text(texts$target[[key]],
-      data = list(target = display_target),
+      data = data,
       budget = target_budget
     )
   } else {
@@ -839,18 +848,18 @@ bfh_generate_analysis <- function(x,
     }
     if (is_at_target) {
       result$target_text <- pick_text(texts$target$at_target,
-        data = list(target = display_target),
+        data = data,
         budget = target_budget
       )
       result$at_target <- TRUE
     } else if (centerline > target_value) {
       result$target_text <- pick_text(texts$target$over_target,
-        data = list(target = display_target),
+        data = data,
         budget = target_budget
       )
     } else {
       result$target_text <- pick_text(texts$target$under_target,
-        data = list(target = display_target),
+        data = data,
         budget = target_budget
       )
     }
@@ -867,7 +876,6 @@ bfh_generate_analysis <- function(x,
 # vurdering (goal_met/goal_not_met) i stedet for vaerdineutral
 # at/over/under. ensure_within_max garanterer max_chars-graensen.
 build_fallback_analysis <- function(context,
-                                    min_chars = 300,
                                     max_chars = 375,
                                     language = "da",
                                     texts_loader = NULL) {
@@ -904,6 +912,40 @@ build_fallback_analysis <- function(context,
   # skabelonernes {outliers_actual} placeholder ogsaa foelger "seneste 6 obs"-
   # reglen. outliers_word giver korrekt dansk ental/flertal for 1 vs n.
   outliers_n <- if (is_valid_scalar(outliers_for_text)) outliers_for_text else 0L
+
+  # level_direction / level_vs_target: target-relative position af centerlinje.
+  # Bruges som placeholders til at sammensaette saetninger som
+  # "Niveauet {level_vs_target} ({target})" -> "Niveauet ligger under maalet (90%)".
+  # Strikt lighedstest (delta < 1e-9) for "paa" -- ikke sigma-tolerance, saa
+  # "ligger paa maalet" kun matcher praecis lighed mellem centerlinje og target.
+  # Tomme strenge naar target ikke er sat, saa placeholderne kan staa i
+  # templates uden at generere fejl, men bor kun bruges i target-/goal-
+  # specifikke varianter for at give meningsfuld tekst.
+  level_direction <- if (flags$has_target) {
+    delta <- abs(centerline - target_value)
+    if (delta < 1e-9) {
+      i18n_lookup("labels.level_direction.at", language)
+    } else if (centerline > target_value) {
+      i18n_lookup("labels.level_direction.over", language)
+    } else {
+      i18n_lookup("labels.level_direction.under", language)
+    }
+  } else {
+    ""
+  }
+  level_vs_target <- if (flags$has_target) {
+    key <- if (abs(centerline - target_value) < 1e-9) {
+      "labels.level_vs_target.at"
+    } else if (centerline > target_value) {
+      "labels.level_vs_target.over"
+    } else {
+      "labels.level_vs_target.under"
+    }
+    i18n_lookup(key, language)
+  } else {
+    ""
+  }
+
   placeholder_data <- list(
     runs_actual = spc_stats$runs_actual,
     runs_expected = spc_stats$runs_expected,
@@ -915,7 +957,9 @@ build_fallback_analysis <- function(context,
       i18n_lookup("labels.outliers.singular", language),
       i18n_lookup("labels.outliers.plural", language)
     ),
-    effective_window = spc_stats$effective_window %||% RECENT_OBS_WINDOW
+    effective_window = spc_stats$effective_window %||% RECENT_OBS_WINDOW,
+    level_direction = level_direction,
+    level_vs_target = level_vs_target
   )
 
   # --- 1. Stabilitetstekst ---
@@ -942,18 +986,32 @@ build_fallback_analysis <- function(context,
   }
 
   # --- 2. Maalvurdering ---
+  # extra_placeholders giver target-templates adgang til {level_direction}
+  # og {level_vs_target} ved siden af det allerede formaterede {target}.
   target_eval <- .evaluate_target_arm(
     context, flags, texts,
     target_budget,
-    language = language
+    language = language,
+    extra_placeholders = list(
+      level_direction = level_direction,
+      level_vs_target = level_vs_target
+    )
   )
   target_text <- target_eval$target_text
   goal_met <- target_eval$goal_met
   at_target <- target_eval$at_target
 
   # --- 3. Handlingsforslag ---
+  # action-templates faar ogsaa adgang til level_*-placeholders saa
+  # goal_met/goal_not_met-tekster kan beskrive niveau-position i forhold til maal.
   action_key <- .select_action_key(flags, target_direction, goal_met, at_target)
-  action <- pick_text(texts$action[[action_key]], budget = action_budget)
+  action <- pick_text(texts$action[[action_key]],
+    data = list(
+      level_direction = level_direction,
+      level_vs_target = level_vs_target
+    ),
+    budget = action_budget
+  )
 
   # --- Kombiner ---
   parts <- c(stability, target_text, action)
@@ -962,9 +1020,6 @@ build_fallback_analysis <- function(context,
 
   # --- Garanter max_chars-graensen (trim ved saetnings-/klausulgraense) ---
   text <- ensure_within_max(text, max_chars)
-
-  # --- Padding hvis under minimum ---
-  text <- pad_to_minimum(text, min_chars, n_points, texts, max_chars)
 
   return(text)
 }

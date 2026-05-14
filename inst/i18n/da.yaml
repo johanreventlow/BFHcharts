@@ -8,7 +8,18 @@
 # ANALYSETEKSTER
 # Placeholders: {runs_actual}, {runs_expected}, {crossings_actual},
 #   {crossings_expected}, {outliers_actual}, {outliers_word},
-#   {effective_window}, {centerline}, {target}, {n_points}
+#   {effective_window}, {centerline}, {target}
+#
+# Target-relative placeholders (kun meningsfulde naar target er sat - er tomme
+# strenge ellers, brug derfor kun i target/action-templates der allerede er
+# target-betingede):
+#   {level_direction} -> "over" | "under" | "paa"  (single word)
+#   {level_vs_target} -> "ligger over maalet" | "ligger under maalet" |
+#                        "ligger paa maalet"      (forhaandsformuleret klausul)
+#
+# Note: "ligger paa maalet" rendres kun ved STRIKT lighed mellem centerlinje
+# og target. Brug ikke {level_vs_target} i at_target-templates (som matcher
+# bredere sigma-tolerance) -- der vil renderingen ikke matche template-intentionen.
 # ==============================================================================
 
 analysis:
@@ -131,14 +142,6 @@ analysis:
       standard: "Identificér først årsager til variationen i data, og stabilisér processen - derefter kan målrettede forbedringstiltag iværksættes."
       detailed: "Identificér først årsager til variationen i data, og stabilisér processen — først når processen er stabil, kan effekten af nye forbedringstiltag mod målet vurderes pålideligt."
 
-  # padding:
-  #   data_points:
-  #     short: "Vurderingen bygger på {n_points} datapunkter."
-  #     standard: "Vurderingen bygger på {n_points} datapunkter i den seneste procesperiode."
-  #   generic:
-  #     short: "Fortsatte målinger vil vise om mønsteret fastholdes."
-  #     standard: "Fortsatte målinger vil vise om mønsteret fastholdes, eller om processen udvikler sig."
-
 # ==============================================================================
 # ETIKETTER
 # ==============================================================================
@@ -156,6 +159,19 @@ labels:
   outliers:
     singular: "observation"
     plural: "observationer"
+
+  # Target-relativ position af centerlinje. Bruges af {level_direction}
+  # og {level_vs_target} placeholders i analysis-texts. Strikt lighed
+  # (|centerline - target| < 1e-9) udloeser "at"/"paa".
+  level_direction:
+    over: "over"
+    under: "under"
+    at: "på"
+
+  level_vs_target:
+    over: "ligger over målet"
+    under: "ligger under målet"
+    at: "ligger på målet"
 
   details:
     periode: "Periode"

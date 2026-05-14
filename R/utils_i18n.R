@@ -72,7 +72,7 @@ i18n_lookup <- function(key, language = "da") {
 #'
 #' Returnerer \code{analysis}-sektionen af i18n-filen, som har samme
 #' struktur som det gamle \code{inst/texts/spc_analysis.yml}
-#' (stability, target, action, padding paa oeverste niveau).
+#' (stability, target, action paa oeverste niveau).
 #'
 #' @param language Sprogkode, \code{"da"} eller \code{"en"}.
 #'

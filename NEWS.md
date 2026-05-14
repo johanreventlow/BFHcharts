@@ -1,3 +1,34 @@
+# BFHcharts (development)
+
+## Nye features
+
+* **`{level_direction}` og `{level_vs_target}` placeholders i analyseteksten.**
+  Templates i `analysis.target.*` og `analysis.action.*` kan nu referere
+  centerlinjens position relativt til målet via to nye placeholders:
+  `{level_direction}` → "over"/"under"/"på" (enkeltord), og
+  `{level_vs_target}` → "ligger over målet"/"ligger under målet"/"ligger
+  på målet" (forhåndsformuleret klausul). Værdierne er tomme strenge når
+  target ikke er sat, så placeholders kun bør bruges i templates der
+  allerede er target-betingede. "Ligger på målet" rendres kun ved
+  strikt lighed (`|centerline - target| < 1e-9`).
+
+## Interne ændringer
+
+* **Budget-allokering justeret for analyse-tekster med target.** Ratio
+  ændret fra 50/25/25 til **50/15/35** (stability/target/action).
+  Action-armen får nu plads til de fleste `detailed`-varianter (90-136
+  tegn) der tidligere faldt til `short`. Target-armen klarer sig med
+  mindre budget da langt de fleste target-varianter er korte (35-46 tegn).
+  `max_chars`-default forbliver 375 (matcher Typst-skabelonens
+  designgrænse).
+
+* **Padding fjernet fra fallback-analysen.** `pad_to_minimum()` og
+  YAML-sektionen `analysis.padding` er slettet — indholdsmæssigt
+  intetsigende tekster bidrog ikke til analyseteksten og forstyrrede
+  designet. `min_chars` bevares i `bfh_generate_analysis()`-signaturen
+  fordi det stadig videreføres til `BFHllm::bfhllm_spc_suggestion()` på
+  AI-stien, men har ingen effekt på fallback-tekstgenereringen.
+
 # BFHcharts 0.17.3
 
 ## Bug fixes

@@ -109,37 +109,3 @@ pick_text <- function(variants, data = list(), budget = Inf) {
 
   return("")
 }
-
-
-# Tilfoej padding-tekst hvis teksten er under minimumlaengde.
-# max_chars sikrer at padding ikke spraenger det absolutte loft.
-pad_to_minimum <- function(text, min_chars, n_points, texts, max_chars = Inf) {
-  if (nchar(text) >= min_chars) {
-    return(text)
-  }
-
-  # Plads til padding: respekter baade min og max
-  available <- max_chars - nchar(text) - 1L # -1 for space-separator
-
-  if (!is.null(n_points) && !is.na(n_points) && available > 0) {
-    padding <- pick_text(texts$padding$data_points,
-      data = list(n_points = n_points),
-      budget = min(min_chars - nchar(text), available)
-    )
-    if (nchar(padding) > 0 && nchar(text) + nchar(padding) + 1L <= max_chars) {
-      text <- paste(text, padding)
-    }
-  }
-
-  available <- max_chars - nchar(text) - 1L
-  if (nchar(text) < min_chars && available > 0) {
-    padding <- pick_text(texts$padding$generic,
-      budget = min(min_chars - nchar(text), available)
-    )
-    if (nchar(padding) > 0 && nchar(text) + nchar(padding) + 1L <= max_chars) {
-      text <- paste(text, padding)
-    }
-  }
-
-  text
-}

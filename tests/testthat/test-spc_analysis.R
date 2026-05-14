@@ -560,7 +560,7 @@ test_that("bfh_build_analysis_context bevarer numerisk target uden retning", {
 test_that("build_fallback_analysis overstiger aldrig max_chars", {
   for (mx in c(200L, 275L, 375L, 500L)) {
     ctx <- fixture_analysis_context(target_value = 50, target_direction = "lower", centerline = 45)
-    txt <- BFHcharts:::build_fallback_analysis(ctx, min_chars = 50, max_chars = mx)
+    txt <- BFHcharts:::build_fallback_analysis(ctx, max_chars = mx)
     expect_lte(nchar(txt), mx,
       label = sprintf("max_chars=%d giver %d tegn", mx, nchar(txt))
     )
@@ -587,7 +587,10 @@ test_that("build_fallback_analysis bruger goal_not_met når CL overstiger 'lower
     target_display = "<= 2,5"
   )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
-  expect_true(grepl("opfylder (endnu )?ikke målet|endnu ikke nået", txt),
+  # goal_not_met-tekster udtrykker negation paa flere maader afhaengigt af
+  # variant: "opfylder (endnu )?ikke maalet", "endnu ikke naaet", "er ikke
+  # naaet", "naar ikke (udviklings)?maalet". Daekker alle nuvaerende formuleringer.
+  expect_true(grepl("opfylder (endnu )?ikke målet|endnu ikke nået|er ikke nået|når ikke (udviklings)?målet", txt),
     info = paste("Forventede goal_not_met-sprog, fik:", txt)
   )
 })
@@ -612,7 +615,7 @@ test_that("build_fallback_analysis bruger værdineutral tekst når target_direct
 
 test_that("build_fallback_analysis reallokerer budget når target mangler", {
   ctx_no_target <- fixture_analysis_context(target_value = NA_real_, target_direction = NULL)
-  txt <- BFHcharts:::build_fallback_analysis(ctx_no_target, min_chars = 300, max_chars = 400)
+  txt <- BFHcharts:::build_fallback_analysis(ctx_no_target, max_chars = 400)
   # Uden target skal stability+action fylde meste af max_chars
   expect_gte(nchar(txt), 250)
   expect_lte(nchar(txt), 400)

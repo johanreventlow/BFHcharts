@@ -120,14 +120,6 @@ analysis:
       standard: "The process is unstable and does not meet the target. First identify the special causes of variation before implementing targeted measures."
       detailed: "The process is unstable and does not meet the target. First identify the special causes of variation — only once the process is stable can the effect of new improvement measures towards the target be reliably assessed."
 
-  padding:
-    data_points:
-      short: "The assessment is based on {n_points} data points."
-      standard: "The assessment is based on {n_points} data points in the most recent process period."
-    generic:
-      short: "Continued measurements will show whether the pattern is sustained."
-      standard: "Continued measurements will show whether the pattern is sustained or the process is developing."
-
 # ==============================================================================
 # LABELS
 # ==============================================================================
@@ -145,6 +137,19 @@ labels:
   outliers:
     singular: "observation"
     plural: "observations"
+
+  # Target-relative position of centerline. Used by {level_direction} and
+  # {level_vs_target} placeholders in analysis texts. Strict equality
+  # (|centerline - target| < 1e-9) triggers the "at" variant.
+  level_direction:
+    over: "above"
+    under: "below"
+    at: "at"
+
+  level_vs_target:
+    over: "is above the target"
+    under: "is below the target"
+    at: "is at the target"
 
   details:
     periode: "Period"
