@@ -1022,10 +1022,10 @@ test_that("at_target classifies CORRECTLY for tight process with small target (b
     target_display = "0.01"
   )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
-  expect_true(grepl("over m.let|over malet", txt),
+  expect_true(grepl("over (udviklings)?m.let|over (udviklings)?malet", txt),
     info = paste("Forventede over_target, fik:", txt)
   )
-  expect_false(grepl("t.t p. m.let|naer m.let", txt))
+  expect_false(grepl("t.t p. (udviklings)?m.let|naer (udviklings)?m.let", txt))
 })
 
 test_that("at_target classifies CORRECTLY when target is inside wide control limits", {
@@ -1039,7 +1039,7 @@ test_that("at_target classifies CORRECTLY when target is inside wide control lim
     target_display = "5"
   )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
-  expect_true(grepl("t.t p. m.let", txt),
+  expect_true(grepl("t.t p. (udviklings)?m.let", txt),
     info = paste("Forventede at_target, fik:", txt)
   )
 })
@@ -1056,7 +1056,7 @@ test_that("at_target falls back to sd(y) when sigma_hat is NA (run chart)", {
     target_display = "10"
   )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
-  expect_true(grepl("t.t p. m.let", txt),
+  expect_true(grepl("t.t p. (udviklings)?m.let", txt),
     info = paste("Forventede at_target via sd-fallback, fik:", txt)
   )
 })
@@ -1072,7 +1072,7 @@ test_that("at_target falls back to sd(y) and classifies over_target when delta e
     target_display = "10"
   )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
-  expect_true(grepl("over m.let", txt),
+  expect_true(grepl("over (udviklings)?m.let", txt),
     info = paste("Forventede over_target, fik:", txt)
   )
 })
@@ -1088,7 +1088,7 @@ test_that("at_target uses exact-match when both sigma_hat and sigma_data are zer
     target_display = "5"
   )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
-  expect_true(grepl("t.t p. m.let", txt),
+  expect_true(grepl("t.t p. (udviklings)?m.let", txt),
     info = paste("Forventede at_target via eksakt-match, fik:", txt)
   )
 })
@@ -1104,7 +1104,7 @@ test_that("at_target eksakt-match: lille forskel klassificeres som over/under", 
     target_display = "5"
   )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
-  expect_true(grepl("over m.let", txt))
+  expect_true(grepl("over (udviklings)?m.let", txt))
 })
 
 test_that("at_target classifies inclusively at the 3*sigma_hat boundary", {
@@ -1119,7 +1119,7 @@ test_that("at_target classifies inclusively at the 3*sigma_hat boundary", {
     target_display = "8"
   )
   txt <- BFHcharts:::build_fallback_analysis(ctx)
-  expect_true(grepl("t.t p. m.let", txt),
+  expect_true(grepl("t.t p. (udviklings)?m.let", txt),
     info = paste("Forventede at_target ved <=-graense, fik:", txt)
   )
 })
@@ -1168,7 +1168,8 @@ test_that("bfh_build_analysis_context filters qic_data to last phase for sigma",
   phase1 <- rnorm(n_per_phase, mean = 50, sd = 20) # vid
   phase2 <- rnorm(n_per_phase, mean = 50, sd = 5) # smal
   test_data <- data.frame(
-    date = seq.Date(as.Date("2024-01-01"), by = "month",
+    date = seq.Date(as.Date("2024-01-01"),
+      by = "month",
       length.out = 2 * n_per_phase
     ),
     value = c(phase1, phase2)
@@ -1185,7 +1186,8 @@ test_that("bfh_build_analysis_context filters qic_data to last phase for sigma",
   if ("part" %in% names(qd)) {
     qd_last <- qd[qd$part == max(qd$part, na.rm = TRUE), ]
     expected <- mean((qd_last$ucl - qd_last$lcl) / 6, na.rm = TRUE)
-    expect_equal(ctx$sigma_hat, expected, tolerance = 1e-9,
+    expect_equal(ctx$sigma_hat, expected,
+      tolerance = 1e-9,
       info = "sigma_hat skal beregnes fra sidste fase alene"
     )
   } else {
