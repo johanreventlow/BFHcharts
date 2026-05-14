@@ -1,5 +1,16 @@
 # BFHcharts (development)
 
+## Bug fixes
+
+* **PDF-font-substitution rettet via BFHchartsAssets 0.1.1.** Mari-fontfilernes
+  OS/2-metadata havde forkerte `usWeightClass`-værdier (alle satte til 400
+  for Light/Book/Heavy/Poster). Konsekvensen var inkonsistent font-
+  substitution på macOS, hvor `MariHeavy` kunne blive valgt som "Mari"-
+  regular til brødtekst. Windows og Posit Connect Cloud rendrede korrekt.
+  Fix er udført i BFHchartsAssets (v0.1.1) — opdatér til mindst denne
+  version for korrekt PDF-rendering på alle platforms. Ingen ændringer
+  kræves i BFHcharts-koden eller -templates.
+
 ## Nye features
 
 * **`{level_direction}` og `{level_vs_target}` placeholders i analyseteksten.**
