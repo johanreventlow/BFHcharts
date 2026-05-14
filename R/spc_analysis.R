@@ -271,6 +271,21 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
     NA_real_
   }
 
+  # n_on_cl_ratio: andel af datapunkter der ligger EKSAKT paa centerlinjen
+  # (|y - cl| < 1e-9). Bruges af .detect_signal_flags() til
+  # majority_at_centerline-detection. Strikt eksakt-match (ikke sigma-
+  # relativ) -- vi flagger kun klart diskrete data-symptomer.
+  n_on_cl_ratio <- if (!is.null(qd_last_phase) &&
+    all(c("y", "cl") %in% names(qd_last_phase))) {
+    y <- qd_last_phase$y
+    cl_vals <- qd_last_phase$cl
+    on_cl <- abs(y - cl_vals) < 1e-9
+    n_valid <- sum(!is.na(on_cl))
+    if (n_valid > 0) sum(on_cl, na.rm = TRUE) / n_valid else NA_real_
+  } else {
+    NA_real_
+  }
+
   # Samle kontekst
   context <- list(
     # Fra config
@@ -302,6 +317,7 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
     # Processpredning (til value-neutral at_target-klassifikation)
     sigma_hat = sigma_hat,
     sigma_data = sigma_data,
+    n_on_cl_ratio = n_on_cl_ratio,
 
     # Bruger-metadata
     data_definition = metadata$data_definition,
@@ -641,6 +657,15 @@ bfh_generate_analysis <- function(x,
     is.na(spc_stats$crossings_actual)
   no_variation <- runs_missing && crossings_missing
 
+  # majority_at_cl: >= 50% af datapunkter ligger eksakt paa centerlinjen
+  # (uden at alle er identiske -- no_variation har fortrinsret). Flag'er
+  # typisk grov maaleskala eller diskret rapportering der forringer SPC-
+  # tolkning. Eksakt-match (1e-9) per spec; ingen sigma-relativ tolerance.
+  n_on_cl_ratio <- context$n_on_cl_ratio
+  majority_at_cl <- !no_variation &&
+    is_valid_scalar(n_on_cl_ratio) && is.finite(n_on_cl_ratio) &&
+    n_on_cl_ratio >= 0.5
+
   has_target <- !is.null(target_value) && !is.na(target_value) &&
     is.numeric(target_value) &&
     !is.null(centerline) && !is.na(centerline)
@@ -651,6 +676,7 @@ bfh_generate_analysis <- function(x,
     has_outliers = has_outliers,
     is_stable = is_stable,
     no_variation = no_variation,
+    majority_at_cl = majority_at_cl,
     has_target = has_target,
     outliers_for_text = outliers_for_text
   )
@@ -735,18 +761,25 @@ bfh_generate_analysis <- function(x,
 #   3. !has_target: simple cascade -> "stable_no_target",
 #      "unstable_no_target"
 #
-# goal_met og at_target er evalueret af caller; helper er pure dispatch.
-.select_action_key <- function(flags, target_direction, goal_met, at_target) {
+# goal_met, at_target og near_target er evalueret af caller; helper er pure
+# dispatch. Prioritet i direction-aware gren: goal_met > near_target >
+# goal_not_met (matcher .evaluate_target_arm() priority).
+.select_action_key <- function(flags, target_direction, goal_met, at_target,
+                               near_target = FALSE) {
   is_stable <- flags$is_stable
   has_target <- flags$has_target
 
   if (has_target && !is.null(target_direction)) {
     if (is_stable && goal_met) {
       "stable_goal_met"
+    } else if (is_stable && near_target) {
+      "stable_near_target"
     } else if (is_stable && !goal_met) {
       "stable_goal_not_met"
     } else if (!is_stable && goal_met) {
       "unstable_goal_met"
+    } else if (!is_stable && near_target) {
+      "unstable_near_target"
     } else {
       "unstable_goal_not_met"
     }
@@ -768,12 +801,13 @@ bfh_generate_analysis <- function(x,
 
 # Evaluer maalvurderings-arm af fallback-analysen.
 #
-# Returnerer named list (target_text, goal_met, at_target). Bruges af
-# orchestrator + .select_action_key().
+# Returnerer named list (target_text, goal_met, at_target, near_target).
+# Bruges af orchestrator + .select_action_key().
 #
 # Tre dispatch-veje (matcher .select_action_key()'s tre cascade-grene):
 #   1. has_target + target_direction: retningsbevidst goal_met-evaluering
-#      via centerline-vs-target sammenligning.
+#      via centerline-vs-target sammenligning + sigma-cascade for
+#      near_target naar strict-condition fejler.
 #   2. has_target uden target_direction: vaerdineutral at_target/over/under
 #      med tolerance.
 #   3. !has_target: target_text = "".
@@ -783,7 +817,10 @@ bfh_generate_analysis <- function(x,
 .evaluate_target_arm <- function(context, flags, texts, target_budget,
                                  language = "da",
                                  extra_placeholders = list()) {
-  result <- list(target_text = "", goal_met = FALSE, at_target = FALSE)
+  result <- list(
+    target_text = "", goal_met = FALSE,
+    at_target = FALSE, near_target = FALSE
+  )
   if (!flags$has_target) {
     return(result)
   }
@@ -816,13 +853,40 @@ bfh_generate_analysis <- function(x,
   data <- modifyList(extra_placeholders, list(target = display_target))
 
   if (!is.null(target_direction)) {
-    # Retningsbevidst: "higher" -> CL >= target, "lower" -> CL <= target
+    # Retningsbevidst: prioritet er strikt goal_met > near_target >
+    # goal_not_met. CL paa korrekt side af target laeses altid som
+    # "opfyldt" uanset afstand; near_target reserveres for "forkert side
+    # men inden for proces-stoej" (sigma-cascade matcher path A).
     result$goal_met <- switch(target_direction,
       "higher" = centerline >= target_value,
       "lower"  = centerline <= target_value,
       FALSE
     )
-    key <- if (result$goal_met) "goal_met" else "goal_not_met"
+    if (!result$goal_met) {
+      # Strict-condition fejler -- check om delta er inden for tolerance.
+      # Samme tre-vejs cascade som value-neutral gren (sigma_hat ->
+      # sigma_data -> eksakt). Tolerance-faldet for higher/lower er
+      # symmetrisk om target; retningen kodes via {level_direction}.
+      delta <- abs(centerline - target_value)
+      sigma_hat <- context$sigma_hat
+      sigma_data <- context$sigma_data
+      result$near_target <- if (is_valid_scalar(sigma_hat) &&
+        is.finite(sigma_hat) && sigma_hat > 0) {
+        delta <= 3 * sigma_hat
+      } else if (is_valid_scalar(sigma_data) &&
+        is.finite(sigma_data) && sigma_data > 0) {
+        delta <= sigma_data
+      } else {
+        delta < 1e-9
+      }
+    }
+    key <- if (result$goal_met) {
+      "goal_met"
+    } else if (result$near_target) {
+      "near_target"
+    } else {
+      "goal_not_met"
+    }
     result$target_text <- pick_text(texts$target[[key]],
       data = data,
       budget = target_budget
@@ -979,9 +1043,18 @@ build_fallback_analysis <- function(context,
   )
 
   # --- 1. Stabilitetstekst ---
+  # Prioritet: no_variation > majority_at_centerline > signal-baseret dispatch.
+  # no_variation kraever Anhoej-stats er NA (alle identiske); majority_at_cl
+  # tillader normal variation men flagger >= 50% punkter eksakt paa CL.
   if (no_variation) {
     stability <- pick_text(
       texts$stability$no_variation,
+      data = list(centerline = cl_fmt),
+      budget = stability_budget
+    )
+  } else if (isTRUE(flags$majority_at_cl)) {
+    stability <- pick_text(
+      texts$stability$majority_at_centerline,
       data = list(centerline = cl_fmt),
       budget = stability_budget
     )
@@ -1010,12 +1083,16 @@ build_fallback_analysis <- function(context,
   target_text <- target_eval$target_text
   goal_met <- target_eval$goal_met
   at_target <- target_eval$at_target
+  near_target <- target_eval$near_target
 
   # --- 3. Handlingsforslag ---
   # action-templates faar ogsaa adgang til level_*- og centerline-placeholders
   # saa goal_met/goal_not_met-tekster kan beskrive niveau-position i forhold
   # til maal.
-  action_key <- .select_action_key(flags, target_direction, goal_met, at_target)
+  action_key <- .select_action_key(flags, target_direction, goal_met,
+    at_target,
+    near_target = near_target
+  )
   action <- pick_text(texts$action[[action_key]],
     data = list(
       centerline = cl_fmt,

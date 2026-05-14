@@ -1,5 +1,31 @@
 # BFHcharts (development)
 
+## Nye features
+
+* **Direction-aware "tæt på"-klassifikation for operator-targets.**
+  `.evaluate_target_arm()` bruger nu samme proces-variation-cascade
+  (`3*sigma_hat` → `sd(y)` → eksakt-match) for retningsbevidste targets
+  (`>= 90%`, `<= 5%`) som allerede var aktiv for value-neutral path. Når
+  centerlinjen ligger på "forkert" side af målet men inden for processens
+  naturlige variation, klassificeres tilstanden som `near_target` i
+  stedet for `goal_not_met`. Prioritet: strikt `goal_met` (CL på korrekt
+  side) > `near_target` (forkert side + inden for tolerance) >
+  `goal_not_met`. **Behavior change**: scenarier hvor `|CL - target| <=
+  3*sigma_hat` flipper fra "ikke opfyldt" til "lige under/over målet" i
+  output. (OpenSpec: `goal-direction-tolerance`)
+
+* **Nye action-arm-keys `stable_near_target` og `unstable_near_target`.**
+  Renderes når `near_target == TRUE` i target-armen. Bruger
+  `{level_direction}`-placeholder til at sige "lige under målet"
+  (higher-direction-mangel) eller "lige over målet" (lower-direction-
+  overskridelse).
+
+* **Ny stability-arm-key `majority_at_centerline`.** Aktiveres når >= 50%
+  af datapunkterne ligger eksakt på centerlinjen (`|y - cl| < 1e-9`) men
+  ikke alle er identiske (`no_variation` har fortrinsret). Flagger typisk
+  diskret rapportering eller grov måleskala der forringer SPC-tolkningen.
+  Tilgængelig på dansk og engelsk.
+
 ## Bug fixes
 
 * **PDF-font-substitution rettet via BFHchartsAssets 0.1.1.** Mari-fontfilernes

@@ -30,6 +30,14 @@ analysis:
       standard: "Niveauet ligger fast på {centerline}, og processen kan derfor ikke vurderes med statistisk proceskontrol."
       detailed: "Niveauet ligger fast på {centerline}. Da alle datapunkter er identiske, kan processen ikke vurderes med statistisk proceskontrol."
 
+    majority_at_centerline:
+      # Aktiveres naar >= 50% af datapunkter ligger EKSAKT paa centerlinjen
+      # ({centerline}) men ikke alle er identiske. Flag'er typisk diskret
+      # rapportering eller grov maaleskala der forringer SPC-tolkning.
+      short: "Mange datapunkter ligger præcis på centerlinjen ({centerline})."
+      standard: "En stor del af datapunkterne ligger præcis på centerlinjen ({centerline}), hvilket kan tyde på begrænset opløsning i målingerne."
+      detailed: "En stor del af datapunkterne ligger præcis på centerlinjen ({centerline}). Det kan skyldes begrænset måleskala eller diskret rapportering, som forringer SPC-tolkningen."
+
     no_signals:
       short: "Processen er stabil og forudsigelig."
       # standard: "Processen er stabil og forudsigelig. Variationen er naturlig og uden systematiske ændringer."
@@ -99,6 +107,13 @@ analysis:
       standard: "Det nuværende niveau når ikke udviklingsmålet på {target}."
       # detailed: "Niveauet opfylder ikke målet, og det vil sandsynligvis ikke ske fremover med nuværende praksis."
       detailed: "Det nuværende niveau på {centerline} når ikke udviklingsmålet på {target}, og med nuværende praksis vil dette ikke ændre sig."
+    near_target:
+      # Bruges naar CL ligger paa forkert side af target men inden for
+      # 3*sigma_hat (eller sd(y)) -- statistisk ej til at skelne fra
+      # maalet. {level_direction} rendres som "over"/"under"/"paa".
+      short: "Niveauet ligger lige {level_direction} udviklingsmålet ({target})."
+      standard: "Det nuværende niveau ligger lige {level_direction} udviklingsmålet ({target})."
+      detailed: "Det nuværende niveau på {centerline} ligger lige {level_direction} udviklingsmålet ({target})."
 
   action:
     stable_at_target:
@@ -134,12 +149,23 @@ analysis:
     stable_goal_not_met:
       short: "En målrettet indsats er nødvendig."
       standard: "Der kræves en målrettet indsats for at flytte niveauet i den ønskede retning."
-      detailed: "Uden en målrettet indsats vil den nuværende praksis fortsætte med at levere samme resultater og dermed ikke opfylde målet."
+      detailed: "Uden en målrettet indsats vil den nuværende praksis fortsætte med at levere samme resultater, {level_direction} målet."
     unstable_goal_met:
       short: "Stabilisér processen for at fastholde målopfyldelsen."
       standard: "Undersøg årsagerne til variationen i data, så målopfyldelsen kan fastholdes."
       # detailed: "Målet er opfyldt, men processen er ustabil. Undersøg årsagerne til variationen i data, så det nuværende niveau kan fastholdes, og målopfyldelsen ikke går tabt."
       detailed: "Find årsagerne til variationen, så niveauet fastholdes og målopfyldelsen ikke går tabt."
+    stable_near_target:
+      # Statistisk taet paa target men paa forkert side ({level_direction}).
+      # Tekst formuleres som om maalet i praksis er naaet.
+      short: "Niveauet er praktisk talt på målet."
+      standard: "Niveauet ligger så tæt på målet at det reelt er nået. Overvåg processen løbende."
+      detailed: "Niveauet ligger lige {level_direction} målet, men inden for processens naturlige variation. Hold øje med udviklingen."
+    unstable_near_target:
+      # Som stable_near_target men ustabil proces -- stabiliseringsfokus.
+      short: "Stabilisér processen for at sikre fortsat målopfyldelse."
+      standard: "Niveauet ligger tæt på målet, men processen er ustabil. Undersøg årsagerne til variationen i data."
+      detailed: "Niveauet ligger lige {level_direction} målet, men processen er ustabil. Stabilisér den, så målopfyldelse kan fastholdes."
     unstable_goal_not_met:
       short: "Stabilisér processen først, og arbejd derefter mod målet."
       standard: "Identificér først årsager til variationen i data, og stabilisér processen - derefter kan målrettede forbedringstiltag iværksættes."

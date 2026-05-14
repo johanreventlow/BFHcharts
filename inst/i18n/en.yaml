@@ -14,6 +14,14 @@ analysis:
       standard: "The level is constant at {centerline}. The process cannot be assessed using statistical process control."
       detailed: "The level is constant at {centerline}. Because all data points are identical, statistical process control cannot be applied."
 
+    majority_at_centerline:
+      # Triggered when >= 50% of data points lie EXACTLY on the centerline
+      # but not all are identical. Typically flags discrete reporting or
+      # coarse measurement scale that degrades SPC interpretation.
+      short: "Many data points lie exactly on the centerline ({centerline})."
+      standard: "A large share of the data points lie exactly on the centerline ({centerline}), which may indicate limited measurement resolution."
+      detailed: "A large share of the data points lie exactly on the centerline ({centerline}). This may be due to coarse measurement scale or discrete reporting, which weakens SPC interpretation."
+
     no_signals:
       short: "The process is stable and predictable."
       standard: "The process is stable and predictable. Variation is natural with no systematic changes."
@@ -77,6 +85,13 @@ analysis:
       short: "The target ({target}) has not yet been met."
       standard: "The level does not yet meet the target ({target})."
       detailed: "The level does not yet meet the target ({target}). Current practice does not achieve it."
+    near_target:
+      # Used when CL is on the wrong side of target but within 3*sigma_hat
+      # (or sd(y)) -- statistically indistinguishable from the target.
+      # {level_direction} renders as "above"/"below"/"at".
+      short: "The level is just {level_direction} the target ({target})."
+      standard: "The current level is just {level_direction} the target ({target})."
+      detailed: "The current level of {centerline} is just {level_direction} the target ({target})."
 
   action:
     stable_at_target:
@@ -115,6 +130,17 @@ analysis:
       short: "Stabilise the process to sustain goal achievement."
       standard: "Although the target is currently met, the process is unstable. Investigate the causes of variation to sustain goal achievement."
       detailed: "Although the target is currently met, the process is unstable. Investigate the causes of variation so the current level can be sustained and goal achievement is not lost."
+    stable_near_target:
+      # Statistically near target but on the wrong side ({level_direction}).
+      # Text framed as practically meeting the target.
+      short: "The level is essentially at the target."
+      standard: "The level is close enough to the target to be effectively met. Continue to monitor."
+      detailed: "The level is just {level_direction} the target but within the process's natural variation. Monitor on an ongoing basis."
+    unstable_near_target:
+      # Like stable_near_target but unstable -- stabilisation focus.
+      short: "Stabilise the process to ensure continued goal achievement."
+      standard: "The level is close to the target but the process is unstable. Investigate the causes of variation."
+      detailed: "The level is just {level_direction} the target but the process is unstable. Stabilise it so goal achievement can be sustained."
     unstable_goal_not_met:
       short: "Stabilise the process first, then work towards the target."
       standard: "The process is unstable and does not meet the target. First identify the special causes of variation before implementing targeted measures."
