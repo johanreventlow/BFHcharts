@@ -1,4 +1,4 @@
-# BFHcharts (development)
+# BFHcharts 0.18.0
 
 ## Nye features
 
