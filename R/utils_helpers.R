@@ -250,10 +250,13 @@ validate_target_for_unit <- function(target_value, y_axis_unit, multiply) {
 #' - Ratio charts (`p`, `pp`, `u`, `up`) require `n_col` non-NULL.
 #' - `n` must be numeric.
 #' - `n` must be finite (no `Inf`/`-Inf`).
-#' - All non-`NA` values must satisfy `n > 0`.
-#' - For proportion charts (`p`, `pp`): every row with both `y` and `n` present
-#'   must satisfy `y <= n`.
+#' - `n` must be non-negative (>= 0). Negative denominators are rejected because
+#'   they pollute centerline computation via sum-aggregation.
+#' - `n = 0` is permitted: qicharts2 produces NaN for the affected row,
+#'   ggplot skips the point. Centerline computed from remaining valid rows.
 #' - `NA` in individual rows of `n` is permitted (qicharts2 drops them).
+#' - For proportion charts (`p`, `pp`): `y > n` is permitted. qicharts2 plots
+#'   proportion > 1 as outlier signal over ucl=1.
 #' - All other chart types skip validation.
 #'
 #' **Error format:** Violation messages identify offending row numbers
@@ -270,7 +273,6 @@ validate_target_for_unit <- function(target_value, y_axis_unit, multiply) {
 #' @noRd
 validate_denominator_data <- function(chart_type, data, y_col, n_col) {
   RATIO_CHARTS <- c("p", "pp", "u", "up")
-  PROPORTION_CHARTS <- c("p", "pp")
 
   if (!chart_type %in% RATIO_CHARTS) {
     return(invisible(NULL))
@@ -308,37 +310,20 @@ validate_denominator_data <- function(chart_type, data, y_col, n_col) {
     ), call. = FALSE)
   }
 
-  zero_neg_rows <- which(non_na & is.finite(n_data) & n_data <= 0)
-  if (length(zero_neg_rows) > 0) {
+  # n < 0 forurener cl-beregning (sum-aggregation). n = 0 tillades:
+  # qicharts2 producerer NaN i den ene raekke, valide raekker bevarer cl.
+  neg_rows <- which(non_na & is.finite(n_data) & n_data < 0)
+  if (length(neg_rows) > 0) {
     stop(sprintf(
-      "denominator column `%s` must be > 0, got %s at row(s): %s",
+      "denominator column `%s` must be >= 0, got negative values %s at row(s): %s. Negative denominators pollute centerline computation.",
       n_col,
-      paste(n_data[zero_neg_rows], collapse = ", "),
-      paste(zero_neg_rows, collapse = ", ")
+      paste(n_data[neg_rows], collapse = ", "),
+      paste(neg_rows, collapse = ", ")
     ), call. = FALSE)
   }
 
-  if (chart_type %in% PROPORTION_CHARTS) {
-    if (!y_col %in% names(data)) {
-      return(invisible(NULL))
-    }
-    y_data <- data[[y_col]]
-    if (!is.numeric(y_data)) {
-      return(invisible(NULL))
-    }
-
-    both_present <- !is.na(y_data) & !is.na(n_data)
-    violation_rows <- which(both_present & y_data > n_data)
-    if (length(violation_rows) > 0) {
-      stop(sprintf(
-        "Proportion chart \"%s\" requires y <= n. Violation at row(s): %s (y = %s, n = %s)",
-        chart_type,
-        paste(violation_rows, collapse = ", "),
-        paste(y_data[violation_rows], collapse = ", "),
-        paste(n_data[violation_rows], collapse = ", ")
-      ), call. = FALSE)
-    }
-  }
+  # y > n for p/pp tillades nu: qicharts2 plotter proportion > 1 som
+  # outlier-signal over ucl=1. Tidligere fejlede valideringen.
 
   invisible(NULL)
 }
