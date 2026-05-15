@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: target-direction-aware classification SHALL use process-variation tolerance
 
@@ -122,8 +122,6 @@ condition as a data-quality symptom.
        NOT `majority_at_centerline`
 
 ---
-
-## ADDED Requirements
 
 ### Requirement: action-arm SHALL expose near_target action keys
 
