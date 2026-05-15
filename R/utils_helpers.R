@@ -300,9 +300,7 @@ validate_denominator_data <- function(chart_type, data, y_col, n_col) {
     ), call. = FALSE)
   }
 
-  non_na <- !is.na(n_data)
-
-  inf_rows <- which(non_na & is.infinite(n_data))
+  inf_rows <- which(is.infinite(n_data))
   if (length(inf_rows) > 0) {
     stop(sprintf(
       "denominator column `%s` contains Inf/-Inf at row(s): %s. Denominators must be finite.",
@@ -310,20 +308,15 @@ validate_denominator_data <- function(chart_type, data, y_col, n_col) {
     ), call. = FALSE)
   }
 
-  # n < 0 forurener cl-beregning (sum-aggregation). n = 0 tillades:
-  # qicharts2 producerer NaN i den ene raekke, valide raekker bevarer cl.
-  neg_rows <- which(non_na & is.finite(n_data) & n_data < 0)
+  neg_rows <- which(is.finite(n_data) & n_data < 0)
   if (length(neg_rows) > 0) {
     stop(sprintf(
-      "denominator column `%s` must be >= 0, got negative values %s at row(s): %s. Negative denominators pollute centerline computation.",
+      "denominator column `%s` must be >= 0, got %s at row(s): %s",
       n_col,
       paste(n_data[neg_rows], collapse = ", "),
       paste(neg_rows, collapse = ", ")
     ), call. = FALSE)
   }
-
-  # y > n for p/pp tillades nu: qicharts2 plotter proportion > 1 som
-  # outlier-signal over ucl=1. Tidligere fejlede valideringen.
 
   invisible(NULL)
 }
