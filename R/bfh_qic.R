@@ -683,6 +683,28 @@ bfh_qic <- function(data,
   )
   qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
 
+  # Auto-mean substitution for run charts: when >=50% of last-phase
+  # observations sit exactly on the qicharts2-computed median, switch the
+  # last-phase centerline to mean. Skipped when:
+  #   - user supplied cl= explicitly (cl is non-NULL)
+  #   - freeze is set: freeze deliberately fixes CL to the freeze-window
+  #     median, so a high tie-ratio is by design (baseline = 10, later
+  #     phase = 20 -> 50% on CL is expected and informative)
+  # Implementation piggybacks on qicharts2's NA-fallback: earlier phases
+  # get NA cl -> qic.run() falls back to median per phase for those; last
+  # phase gets mean -> no NA -> qic.run uses our value.
+  cl_auto_mean_substituted <- FALSE
+  if (is.null(cl) && is.null(freeze) &&
+    detect_majority_at_median_lastphase(qic_data, chart_type)) {
+    qic_args$cl <- build_last_phase_auto_cl(
+      raw_data = data,
+      qic_data = qic_data,
+      x_col_name = as.character(x_expr)
+    )
+    qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
+    cl_auto_mean_substituted <- TRUE
+  }
+
   # Warn when custom cl overrides the data-estimated process mean in Anhoej calculation
   if (!is.null(cl) && any(c("runs.signal", "crossings.signal") %in% names(qic_data))) {
     warning(
@@ -758,6 +780,7 @@ bfh_qic <- function(data,
     plot = plot,
     summary_result = summary_result,
     config = config,
-    return.data = return.data
+    return.data = return.data,
+    cl_auto_mean = cl_auto_mean_substituted
   )
 }

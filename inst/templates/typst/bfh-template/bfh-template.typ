@@ -21,9 +21,15 @@
 //                     table indicating that the centerline was set manually
 //                     and Anhøj signals were computed against it (not the
 //                     data-estimated process mean). Default false.
-//   cl_caveat_text: Pre-translated caveat text rendered when
-//                   cl_user_supplied is true. Resolved server-side via
-//                   inst/i18n/{da,en}.yaml -> labels.caveats.cl_user_supplied.
+//   cl_auto_mean: Boolean. When true, render a caveat note indicating that
+//                 the run-chart centerline was auto-switched from median to
+//                 mean because >=50% of last-phase observations sat exactly
+//                 on the median. Mutually exclusive with cl_user_supplied.
+//                 Default false.
+//   cl_caveat_text: Pre-translated caveat text rendered when either
+//                   cl_user_supplied or cl_auto_mean is true. Resolved
+//                   server-side via inst/i18n/{da,en}.yaml ->
+//                   labels.caveats.{cl_user_supplied|cl_auto_mean}.
 //   footer_content: Additional content to display below the chart (optional)
 //   logo_path: Path to hospital logo image (optional). When none (default), no
 //              foreground logo is rendered -- PDF compiles successfully without
@@ -48,6 +54,7 @@
   outliers_actual: none,
   is_run_chart: false,
   cl_user_supplied: false,
+  cl_auto_mean: false,
   cl_caveat_text: none,
   footer_content: none,
   logo_path: none,
@@ -310,14 +317,18 @@ grid.cell(
              )},
            )
          }
-         // User-supplied centerline caveat (italic, grey, smaller font).
-         // Rendered only when bfh_qic() received a non-NULL cl argument.
-         // See ADR-003 (warning-blind clinical readers).
-         #if cl_user_supplied {
+         // Centerline-caveat (italic, grey, smaller font). Rendered when
+         // bfh_qic() either received a non-NULL cl argument
+         // (cl_user_supplied=true) OR auto-switched a run-chart's
+         // centerline from median to mean (cl_auto_mean=true). Flags are
+         // mutually exclusive. See ADR-003 (warning-blind clinical readers).
+         #if cl_user_supplied or cl_auto_mean {
            block(width: 100%, inset: (top: 2mm),
              text(fill: rgb("888888"), size: 9pt, style: "italic",
                if cl_caveat_text != none {
                  cl_caveat_text
+               } else if cl_auto_mean {
+                 "Niveaulinje skiftet til gennemsnit"
                } else {
                  "Centerlinje fastsat manuelt"
                }

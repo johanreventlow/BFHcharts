@@ -195,3 +195,5 @@ labels:
   caveats:
     cl_user_supplied: >-
       Centerline manually specified — Anhøj signal computed against the user-supplied centerline, not the data-estimated process mean.
+    cl_auto_mean: >-
+      Centerline switched to mean because at least half of the observations in the last phase fell exactly on the median. The Anhøj analysis is computed against the mean to avoid false-negative signals from discrete data.

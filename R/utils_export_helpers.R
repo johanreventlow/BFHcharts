@@ -477,14 +477,25 @@ compose_typst_document <- function(x, chart_svg, typst_file,
     }
   }
 
-  # Resolve cl_user_supplied caveat text server-side. The Typst template
-  # receives a pre-translated string rather than embedding i18n logic.
-  # See ADR-003: PDF caveat is the second surface for warning-blind clinical
-  # readers when the caller supplies a custom centerline to bfh_qic().
+  # Resolve cl_user_supplied / cl_auto_mean caveat text server-side. The
+  # Typst template receives a pre-translated string rather than embedding
+  # i18n logic. See ADR-003: PDF caveat is the second surface for
+  # warning-blind clinical readers when centerline derivation deviates
+  # from data-estimated median.
+  #
+  # Mutual exclusivity: cl_auto_mean only fires when cl_user_supplied is
+  # FALSE (auto-sub guarded by is.null(cl) in bfh_qic()). Branching here
+  # is therefore safe; precedence given to cl_user_supplied for defense
+  # in depth.
+  caveat_lang <- x$config$language %||% "da"
   if (isTRUE(spc_stats$cl_user_supplied)) {
-    caveat_lang <- x$config$language %||% "da"
     metadata_full$cl_caveat_text <- i18n_lookup(
       "labels.caveats.cl_user_supplied",
+      caveat_lang
+    )
+  } else if (isTRUE(spc_stats$cl_auto_mean)) {
+    metadata_full$cl_caveat_text <- i18n_lookup(
+      "labels.caveats.cl_auto_mean",
       caveat_lang
     )
   }
