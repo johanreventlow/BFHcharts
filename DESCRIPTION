@@ -16,7 +16,6 @@ Description: A modern R package for creating Statistical Process Control (SPC)
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 SystemRequirements: Quarto CLI (>= 1.4.0) for PDF export via Typst templates
 URL: https://github.com/johanreventlow/BFHcharts
 BugReports: https://github.com/johanreventlow/BFHcharts/issues
@@ -56,3 +55,4 @@ Remotes:
     johanreventlow/BFHtheme,
     johanreventlow/BFHllm
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

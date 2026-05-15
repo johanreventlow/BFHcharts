@@ -34,9 +34,9 @@ analysis:
       # Aktiveres naar >= 50% af datapunkter ligger EKSAKT paa centerlinjen
       # ({centerline}) men ikke alle er identiske. Flag'er typisk diskret
       # rapportering eller grov maaleskala der forringer SPC-tolkning.
-      short: "Mange datapunkter ligger præcis på centerlinjen ({centerline})."
-      standard: "En stor del af datapunkterne ligger præcis på centerlinjen ({centerline}), hvilket kan tyde på begrænset opløsning i målingerne."
-      detailed: "En stor del af datapunkterne ligger præcis på centerlinjen ({centerline}). Det kan skyldes begrænset måleskala eller diskret rapportering, som forringer SPC-tolkningen."
+      short: "Mange datapunkter ligger præcis på niveaulinjen ({centerline})."
+      standard: "En stor del af datapunkterne ligger præcis på niveaulinjen ({centerline}), hvilket kan tyde på begrænset opløsning i målingerne."
+      detailed: "En stor del af datapunkterne ligger præcis på niveaulinjen ({centerline}). Analysen ser på variation i data og er derfor ikke velegnet til at vurdere denne proces."
 
     no_signals:
       short: "Processen er stabil og forudsigelig."
@@ -130,7 +130,7 @@ analysis:
       detailed: "Overvej, om et udviklingsmål kan fastsættes, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres."
     unstable_at_target:
       short: "Undersøg årsagerne til variationen i data."
-      standard: "Undersøg årsagerne til at data ikke varierer tilfældigt."
+      standard: "Undersøg årsagerne til, at data ikke varierer tilfældigt."
       detailed: "Undersøg årsagerne til variationen i data, så niveauet kan stabiliseres og fastholdes."
     unstable_not_at_target:
       short: "Identificér og fjern de særlige årsager til variation i data."
@@ -158,14 +158,15 @@ analysis:
     stable_near_target:
       # Statistisk taet paa target men paa forkert side ({level_direction}).
       # Tekst formuleres som om maalet i praksis er naaet.
-      short: "Niveauet er praktisk talt på målet."
-      standard: "Niveauet ligger så tæt på målet at det reelt er nået. Overvåg processen løbende."
-      detailed: "Niveauet ligger lige {level_direction} målet, men inden for processens naturlige variation. Hold øje med udviklingen."
+      short: "Niveauet ligger lige {level_direction} målet."
+      standard: "Niveauet ligger meget tæt på målet. Overvåg processen løbende."
+      # detailed: "Det nuværende niveau ligger meget tæt på udviklingsmålet. Hold øje med udviklingen."
+      detailed: "Overvej, om forbedring er nødvendig, eller acceptér den lille difference, og overvåg blot processen fremover."
     unstable_near_target:
       # Som stable_near_target men ustabil proces -- stabiliseringsfokus.
-      short: "Stabilisér processen for at sikre fortsat målopfyldelse."
-      standard: "Niveauet ligger tæt på målet, men processen er ustabil. Undersøg årsagerne til variationen i data."
-      detailed: "Niveauet ligger lige {level_direction} målet, men processen er ustabil. Stabilisér den, så målopfyldelse kan fastholdes."
+      short: "Niveauet er tæt på målet. Stabilisér processen."
+      standard: "Målet er næsten nået, men processen er ustabil. Undersøg, hvad der påvirker den naturlige variation."
+      detailed: "Niveauet ligger lige {level_direction} målet, men processen er ikke stabil. Undersøg, hvad der påvirker den naturlige variation."
     unstable_goal_not_met:
       short: "Stabilisér processen først, og arbejd derefter mod målet."
       standard: "Identificér først årsager til variationen i data, og stabilisér processen - derefter kan målrettede forbedringstiltag iværksættes."
