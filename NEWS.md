@@ -1,3 +1,28 @@
+# BFHcharts 0.19.0
+
+## Breaking changes
+
+* `validate_denominator_data()` tillader nu `n = 0` for ratio-charts
+  (p/pp/u/up). Tidligere kastede funktionen hård fejl; nu beregnes
+  værdier af qicharts2 som NaN (punkter tegnes ej i plottet). Klinisk
+  fortolkning: `n = 0` = "ingen patienter den periode" = valid input.
+  Centerline beregnes fra valide rækker (sum-aggregation), uændret af
+  n=0-rækker. Ramt downstream: biSPCharts `fct_spc_plot_generation.R`
+  pre-filter (linje 128-148) er nu overflødig og bør fjernes.
+* `y > n` for proportion-charts (p/pp) tillades nu. qicharts2 plotter
+  proportion > 1 som outlier-signal over ucl-linjen (capped på 1.0).
+  Tidligere fejlede valideringen med "y <= n"-besked.
+
+## Internt
+
+* `n = Inf/-Inf` fejler stadig hård — Inf forurener hele plottet med
+  cl/ucl=0 (empirisk verificeret).
+* `n < 0` fejler stadig hård. Fejlbesked opdateret fra "must be > 0"
+  til "must be >= 0, got negative values at row(s): X. Negative
+  denominators pollute centerline computation." Negative denominatorer
+  forurener cl-beregning globalt: ALL n<0 → cl<0; mixed n<0 → cl
+  forurenes af negative bidrag i sum-aggregation.
+
 # BFHcharts 0.18.0
 
 ## Nye features
