@@ -2,6 +2,22 @@
 
 ## Nye features
 
+* **Auto-substitution af median → gennemsnit ved diskret run-chart-data.**
+  Når mindst 50 % af observationerne i seneste fase af et run chart
+  ligger eksakt på medianen (typisk symptom på grov rapportering eller
+  diskret målestok), skifter `bfh_qic()` automatisk seneste fases
+  centerlinje fra median til gennemsnit. Tidligere faser beholder
+  medianen. Anhøj-signalerne rekomputeres mod den nye centerlinje,
+  så analysen ikke kollapser i meningsløse tællinger på grund af
+  ligheder mellem y-værdier og CL. Detection sker via et
+  probe→retry-mønster (to qicharts2-kald) og piggybackbar på
+  qicharts2's `cl=NA`-fallback til at bevare tidligere fasers median.
+  PDF-caveat-feltet flagger substitutionen som "Niveaulinje skiftet
+  til gennemsnit". Eksplicit `cl=`-parameter overruler altid
+  auto-substitutionen.
+
+
+
 * **Direction-aware "tæt på"-klassifikation for operator-targets.**
   `.evaluate_target_arm()` bruger nu samme proces-variation-cascade
   (`3*sigma_hat` → `sd(y)` → eksakt-match) for retningsbevidste targets

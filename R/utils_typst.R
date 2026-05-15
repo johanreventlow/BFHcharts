@@ -672,18 +672,31 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
     params$is_run_chart <- if (spc_stats$is_run_chart) "true" else "false"
   }
 
-  # User-supplied centerline caveat: emit boolean + pre-translated text
-  # so the template can render the caveat without embedding i18n logic.
-  # Default false: existing renders are untouched (no visual clutter).
+  # Centerline-caveat: emit boolean + pre-translated text so the template
+  # can render the caveat without embedding i18n logic. Two flags
+  # (cl_user_supplied + cl_auto_mean) share one tekst-slot. Mutually
+  # exclusive by construction (see bfh_qic auto-sub guard on is.null(cl)).
+  # Default false: existing renders are untouched.
+  cl_caveat_active <- isTRUE(spc_stats$cl_user_supplied) ||
+    isTRUE(spc_stats$cl_auto_mean)
   if (isTRUE(spc_stats$cl_user_supplied)) {
     params$cl_user_supplied <- "true"
+  }
+  if (isTRUE(spc_stats$cl_auto_mean)) {
+    params$cl_auto_mean <- "true"
+  }
+  if (cl_caveat_active) {
     caveat_text <- metadata$cl_caveat_text
     if (is.null(caveat_text) || !nzchar(caveat_text)) {
       # Defensive fallback: compose_typst_document() resolves the text via
       # i18n; if a caller invokes build_typst_content() directly without
       # populating metadata$cl_caveat_text, emit a neutral marker so the
       # template's caveat block still renders.
-      caveat_text <- "Centerlinje fastsat manuelt"
+      caveat_text <- if (isTRUE(spc_stats$cl_auto_mean)) {
+        "Niveaulinje skiftet til gennemsnit"
+      } else {
+        "Centerlinje fastsat manuelt"
+      }
     }
     params$cl_caveat_text <- sprintf('"%s"', escape_typst_string(caveat_text))
   }

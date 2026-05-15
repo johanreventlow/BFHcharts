@@ -178,20 +178,26 @@ add_anhoej_signal <- function(qic_data) {
 #' @param summary_result data.frame med SPC-summary
 #' @param config liste med konfigurationsparametre
 #' @param return.data logical
+#' @param cl_auto_mean logical; TRUE if last-phase centerline was
+#'   auto-substituted from median to mean due to >=50% of observations
+#'   sitting exactly on the median. Mutually exclusive with
+#'   cl_user_supplied (auto-sub only fires when user did NOT pass cl=).
 #' @return En af: `bfh_qic_result` S3-objekt (default) eller `qic_data` data.frame
 #' @keywords internal
 #' @noRd
 build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
-                                 return.data) {
+                                 return.data, cl_auto_mean = FALSE) {
   # Mark whether the centerline was user-supplied (vs data-estimated).
   # Surfaces in PDF caveat + downstream consumers without polluting the
   # column-iteration surface (lapply(summary, ...) patterns unaffected).
   cl_user_supplied <- !is.null(config$cl)
   attr(summary_result, "cl_user_supplied") <- cl_user_supplied
+  attr(summary_result, "cl_auto_mean") <- isTRUE(cl_auto_mean)
 
   if (return.data) {
     # Attach to raw data.frame too for parity with the S3 path.
     attr(qic_data, "cl_user_supplied") <- cl_user_supplied
+    attr(qic_data, "cl_auto_mean") <- isTRUE(cl_auto_mean)
     return(qic_data)
   } else {
     return(
@@ -203,6 +209,105 @@ build_bfh_qic_return <- function(qic_data, plot, summary_result, config,
       )
     )
   }
+}
+
+#' Detect auto-mean substitution trigger in the last phase of qic_data
+#'
+#' Returns TRUE if (a) chart_type is "run", AND (b) at least 50% of
+#' observations in the last phase lie exactly on the qicharts2-computed
+#' median centerline (|y - cl| < 1e-9). Pure function over qic_data.
+#'
+#' Detection is scoped to the LAST phase only -- matches the
+#' filter_qic_to_last_phase() convention used elsewhere in
+#' bfh_build_analysis_context() and bfh_extract_spc_stats(). Clinically
+#' the last phase represents current-process state, which is the
+#' interesting case for auto-substitution.
+#'
+#' @param qic_data Output from a probe call to `qicharts2::qic()` with
+#'   `cl = NULL` (median centerline)
+#' @param chart_type Character; only "run" triggers detection
+#' @param threshold Fraction in [0, 1]; default 0.5
+#' @param tol Numeric tolerance for exact match against cl; default 1e-9
+#' @return Logical scalar
+#' @keywords internal
+#' @noRd
+detect_majority_at_median_lastphase <- function(qic_data,
+                                                chart_type,
+                                                threshold = 0.5,
+                                                tol = 1e-9) {
+  if (!identical(chart_type, "run")) {
+    return(FALSE)
+  }
+  if (is.null(qic_data) || !all(c("y", "cl") %in% names(qic_data))) {
+    return(FALSE)
+  }
+  qd <- filter_qic_to_last_phase(qic_data)
+  if (is.null(qd) || nrow(qd) == 0L) {
+    return(FALSE)
+  }
+  y <- qd$y
+  cl <- qd$cl
+  valid <- !is.na(y) & !is.na(cl)
+  if (sum(valid) < 2L) {
+    return(FALSE)
+  }
+  # Guard: constant y -> no-variation path owns this case; skip auto-sub.
+  if (stats::var(y[valid]) < tol) {
+    return(FALSE)
+  }
+  on_cl <- abs(y[valid] - cl[valid]) < tol
+  sum(on_cl) / sum(valid) >= threshold
+}
+
+#' Build raw-data-length cl-vector that substitutes mean for the last phase
+#'
+#' Returns a numeric vector of length `nrow(raw_data)` suitable for passing
+#' to `qicharts2::qic(cl = ...)`. Rows belonging to the last phase get the
+#' last-phase mean; rows in earlier phases get NA so that qicharts2's
+#' per-phase median fallback applies.
+#'
+#' qicharts2 contract relied upon (verified empirically via probe):
+#' - `qic()` evaluates `cl` in the data environment and bundles it as a
+#'   column into the raw data frame BEFORE `qic.agg()` collapses duplicates.
+#' - `qic.agg()` keeps `cl = x$cl[1]` per aggregated group -- so constant
+#'   cl over raw rows survives mean/median/sum aggregation unchanged.
+#' - `qic.run()` checks `anyNA(x$cl)` per phase; if any aggregated row in
+#'   a phase has cl=NA, the entire phase is replaced with median(y) for
+#'   that phase. This is precisely what we want for non-substituted phases.
+#'
+#' Implementation matches raw rows to the last phase via x-value membership
+#' against the last-phase x-values from the probe qic_data.
+#'
+#' @param raw_data Original data frame passed to bfh_qic() (pre-aggregation)
+#' @param qic_data Output from probe qic-call (post-aggregation)
+#' @param x_col_name Character; name of the x column in raw_data
+#' @return Numeric vector of length nrow(raw_data) -- NA for non-last-phase
+#'   rows, last-phase-mean for last-phase rows
+#' @keywords internal
+#' @noRd
+build_last_phase_auto_cl <- function(raw_data, qic_data, x_col_name) {
+  qd_last <- filter_qic_to_last_phase(qic_data)
+  if (is.null(qd_last) || nrow(qd_last) == 0L) {
+    return(rep(NA_real_, nrow(raw_data)))
+  }
+  # Compute last-phase mean from POST-aggregation y (correct statistical
+  # level; mean of already-aggregated subgroup means).
+  last_mean <- mean(qd_last$y, na.rm = TRUE)
+  if (!is.finite(last_mean)) {
+    return(rep(NA_real_, nrow(raw_data)))
+  }
+  # Match raw rows to last phase by x-value membership. Works for charts
+  # with duplicate raw x (daily->monthly agg): all raw rows with x in the
+  # last-phase x-set get the same mean -> qic.agg collapses to cl[1] =
+  # mean (constant input).
+  raw_x <- raw_data[[x_col_name]]
+  last_x_values <- qd_last$x
+  new_cl <- rep(NA_real_, nrow(raw_data))
+  # Equality semantics for Date / numeric / character / factor all
+  # handled by %in% via match() -- consistent with qicharts2's own
+  # x-value handling.
+  new_cl[raw_x %in% last_x_values] <- last_mean
+  new_cl
 }
 
 # ============================================================================

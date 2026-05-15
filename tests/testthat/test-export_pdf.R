@@ -364,7 +364,7 @@ test_that("bfh_extract_spc_stats extracts statistics from valid summary", {
   expect_named(stats, c(
     "runs_expected", "runs_actual", "crossings_expected",
     "crossings_actual", "outliers_expected", "outliers_actual",
-    "cl_user_supplied"
+    "cl_user_supplied", "cl_auto_mean"
   ))
 
   # Verify values

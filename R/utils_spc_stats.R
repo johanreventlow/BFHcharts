@@ -93,6 +93,7 @@ bfh_extract_spc_stats.data.frame <- function(x) {
   # bfh_qic_result method so downstream consumers (PDF caveat, biSPCharts
   # UI) get the same flag regardless of which dispatch path they hit.
   stats$cl_user_supplied <- isTRUE(attr(x, "cl_user_supplied"))
+  stats$cl_auto_mean <- isTRUE(attr(x, "cl_auto_mean"))
 
   if (nrow(x) == 0) {
     return(stats)
@@ -139,8 +140,11 @@ bfh_extract_spc_stats.bfh_qic_result <- function(x) {
 
   # Surface user-supplied centerline flag so PDF/UI consumers can render
   # the warning-blind-clinical-reader caveat. Mirrors the attribute set
-  # in build_bfh_qic_return().
+  # in build_bfh_qic_return(). cl_auto_mean parallels cl_user_supplied;
+  # the two flags are mutually exclusive (auto-sub only fires when user
+  # did NOT supply cl=).
   stats$cl_user_supplied <- isTRUE(attr(x$summary, "cl_user_supplied"))
+  stats$cl_auto_mean <- isTRUE(attr(x$summary, "cl_auto_mean"))
 
   # Run charts har ingen kontrolgraenser -> outlier-felter skal vaere NULL,
   # selvom format_qic_summary() har tilfoejet aggregerede outlier-kolonner.
@@ -218,7 +222,8 @@ empty_spc_stats <- function() {
     crossings_actual = NULL,
     outliers_expected = NULL,
     outliers_actual = NULL,
-    cl_user_supplied = NULL
+    cl_user_supplied = NULL,
+    cl_auto_mean = NULL
   )
 }
 

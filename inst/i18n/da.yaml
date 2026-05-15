@@ -222,3 +222,5 @@ labels:
   caveats:
     cl_user_supplied: >-
       Midtlinje fastsat manuelt — Anhøj-signal beregnet mod denne, ikke data-estimeret middelværdi.
+    cl_auto_mean: >-
+      Niveaulinjen er skiftet til gennemsnit, fordi mindst halvdelen af observationerne i seneste fase lå præcis på medianen. Anhøj-analysen er beregnet mod gennemsnittet for at undgå falske negative signaler ved diskrete data.
