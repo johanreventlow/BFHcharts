@@ -166,7 +166,7 @@ analysis:
       # Som stable_near_target men ustabil proces -- stabiliseringsfokus.
       short: "Niveauet er tæt på målet. Stabilisér processen."
       standard: "Målet er næsten nået, men processen er ustabil. Undersøg, hvad der påvirker den naturlige variation."
-      detailed: "Undersøg hvad der påvirker processen, og arbejd for at stabilisere den. Vurdér så om niveauet er tilfredsstillende."
+      detailed: "Undersøg, hvad der påvirker processen, og arbejd for at stabilisere den. Vurdér så, om niveauet er tilfredsstillende."
     unstable_goal_not_met:
       short: "Stabilisér processen først, og arbejd derefter mod målet."
       standard: "Identificér først årsager til variationen i data, og stabilisér processen - derefter kan målrettede forbedringstiltag iværksættes."
