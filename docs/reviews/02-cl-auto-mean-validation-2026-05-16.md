@@ -96,6 +96,69 @@ detect_majority_at_median_per_phase <- function(qic_data, chart_type,
 
 ---
 
+## H4 [HIGH] — Date x + multiply: cl-vektor all-NA, qicharts2 fallback til median (silent), men flag fyrer (user-reported)
+
+**Lokation:** R/utils_bfh_qic_helpers.R:288-311 + R/bfh_qic.R:686-712
+
+**Symptom:** Bruger leverede konkret xlsx (`data_biSPCharts13.xlsx`) + PDF (`SPC-45.pdf`). PDF viste "NUV. NIVEAU 0,0%" og caveat-tekst "Niveaulinjen er skiftet til gennemsnit" — men 0,0% er medianen, ikke gennemsnittet (mean ≈ 0,45%).
+
+**Root cause (empirisk reproduceret 2026-05-16):**
+1. Raw data har `Dato` som `Date`-klasse
+2. qicharts2 upcaster internt Date → `POSIXct` (UTC) i probe-call output
+3. `build_auto_cl_for_phases()`: `raw_x %in% qd_p$x` matcher Date vs POSIXct → returnerer **all-FALSE** for alle rækker
+4. `new_cl` forbliver `rep(NA, nrow(raw_data))`
+5. Anden qic-call ser cl=NA per række → `qic.run()`'s `anyNA(x$cl)`-fallback fyrer → median brugt for hele trigger-fasen
+6. `cl_auto_mean_substituted <- TRUE` sættes alligevel → PDF-caveat lyver
+
+**Verifikation:**
+```r
+d <- readxl::read_excel("tmp/data_biSPCharts13.xlsx")
+d$Dato <- as.Date(d$Dato, format = "%d-%m-%Y")
+probe <- qicharts2::qic(x = Dato, y = Infektioner, n = Opererede.patienter,
+                        data = d, chart = "run", part = 12,
+                        multiply = 100, return.data = TRUE)
+class(d$Dato)   # "Date"
+class(probe$x)  # "POSIXct" "POSIXt"
+sum(d$Dato %in% probe$x)  # 0   <-- bug
+```
+
+**Sekundær bug (afsløret af fix):** qicharts2 multiplicerer user-supplied `cl=` med `multiply`. Vores `phase_mean` beregnes fra post-multiply `qd_p$y` (e.g., percent), så pass-through gav 100×-overskydende cl (45.24% i stedet for 0.45%).
+
+```r
+# Empirisk:
+qic(..., multiply = 100, cl = 0.025, ...)$cl  # = 2.5  (multiplied)
+qic(..., multiply = 100, cl = 2.5, ...)$cl    # = 250  (multiplied again)
+```
+
+**Konsekvens:**
+- Single-phase OG multi-phase run-charts med Date-x + n= viste median, ikke mean — selvom caveat hævdede swap. Mest klinisk-relevante use-case (månedlige infektions-rater) ramt.
+- Bug eksisterede både pre-PR #371 (initial implementation) og post-PR #376 (per-phase rewrite uden klasse-håndtering).
+- Test-suite missede bug fordi alle tests bruger `x = 1:N` (integer, ingen klasse-konvertering).
+
+**Foreslået fix:**
+1. **Cross-class x-normalisering** i `build_auto_cl_for_phases()`: når `qic_data$x` er POSIXct og `raw_x` er Date, coerce raw_x med `as.POSIXct(., tz = "UTC")` før `%in%`. Symmetrisk for omvendt retning.
+2. **Multiply-divider:** `build_auto_cl_for_phases()` tager nu `multiply`-argument; `phase_mean` divideres med multiply før returnering.
+3. **Guard:** `bfh_qic()` sætter kun `cl_auto_mean_substituted=TRUE` hvis `any(!is.na(new_cl))` — undgår caveat-løgne ved fremtidige silent-substitution-failures.
+
+**Regression-test:**
+```r
+test_that("bfh_qic auto-mean works for Date x + n= + multiply", {
+  d <- data.frame(
+    Dato = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    Infektioner = c(2, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0),
+    Opererede = c(124, 118, 130, 126, 135, 120, 108, 125, 131, 127, 133, 122)
+  )
+  r <- bfh_qic(d, x = Dato, y = Infektioner, n = Opererede,
+               chart_type = "run", multiply = 100, return.data = TRUE)
+  expect_true(isTRUE(attr(r, "cl_auto_mean")))
+  expect_equal(unique(r$cl)[1], mean(r$y), tolerance = 1e-4)
+})
+```
+
+**Anbefaling:** Critical — denne bug forklarer 100 % af brugerens observation. Fix sammen med H1 + H3 i samme PR.
+
+---
+
 ## H3 [MEDIUM] — `exclude=` ignoreres af både trigger-detection og replacement-mean (Codex-found)
 
 **Lokation:** R/utils_bfh_qic_helpers.R:248-259 (detection) + R/utils_bfh_qic_helpers.R:288-311 (replacement)

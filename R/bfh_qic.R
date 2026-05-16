@@ -703,14 +703,22 @@ bfh_qic <- function(data,
   if (is.null(cl) && is.null(freeze)) {
     trigger_phases <- detect_majority_at_median_per_phase(qic_data, chart_type)
     if (length(trigger_phases) > 0L) {
-      qic_args$cl <- build_auto_cl_for_phases(
+      new_cl <- build_auto_cl_for_phases(
         raw_data = data,
         qic_data = qic_data,
         x_col_name = as.character(x_expr),
-        trigger_phases = trigger_phases
+        trigger_phases = trigger_phases,
+        multiply = multiply
       )
-      qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
-      cl_auto_mean_substituted <- TRUE
+      # Cycle 02 H4 guard: only proceed if the cl-vector actually contains
+      # non-NA values for trigger phases. Otherwise qic.run()'s NA-fallback
+      # would silently revert to median for everything, leaving the user
+      # with a caveat that claims substitution while CL is unchanged.
+      if (any(!is.na(new_cl))) {
+        qic_args$cl <- new_cl
+        qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
+        cl_auto_mean_substituted <- TRUE
+      }
     }
   }
 

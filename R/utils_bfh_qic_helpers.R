@@ -309,18 +309,35 @@ detect_majority_at_median_per_phase <- function(qic_data,
 #' @param trigger_phases Integer vector of part-IDs to substitute (from
 #'   `detect_majority_at_median_per_phase()`). Empty vector returns an
 #'   all-NA cl-vector.
+#' @param multiply Numeric scalar (default 1). The probe call's
+#'   `multiply` argument. qicharts2 multiplies a user-supplied `cl=` by
+#'   this factor internally, so we must pass the mean on the pre-multiply
+#'   scale to make the final centerline land on the intended (post-
+#'   multiply) value. Empirically verified for run-charts with n=.
 #' @return Numeric vector of length nrow(raw_data) -- NA for non-trigger-
-#'   phase rows, phase-specific mean for trigger-phase rows.
+#'   phase rows, phase-specific mean (divided by multiply) for trigger-
+#'   phase rows.
 #' @keywords internal
 #' @noRd
 build_auto_cl_for_phases <- function(raw_data, qic_data, x_col_name,
-                                     trigger_phases) {
+                                     trigger_phases, multiply = 1) {
   if (length(trigger_phases) == 0L ||
     is.null(qic_data) || nrow(qic_data) == 0L) {
     return(rep(NA_real_, nrow(raw_data)))
   }
   has_part <- "part" %in% names(qic_data)
   raw_x <- raw_data[[x_col_name]]
+  # Cross-class x normalisation (cycle 02 H4 fix). qicharts2 upcasts Date
+  # input to POSIXct internally, so a Date raw column will not %in%-match
+  # the POSIXct probe output -- silently leaving new_cl all-NA and
+  # triggering qic.run()'s median-fallback for the entire phase. Convert
+  # raw_x to POSIXct UTC when qd$x is POSIXct so equality semantics align.
+  qd_x_sample <- qic_data$x
+  if (inherits(qd_x_sample, "POSIXt") && inherits(raw_x, "Date")) {
+    raw_x <- as.POSIXct(raw_x, tz = "UTC")
+  } else if (inherits(raw_x, "POSIXt") && inherits(qd_x_sample, "Date")) {
+    raw_x <- as.Date(raw_x)
+  }
   new_cl <- rep(NA_real_, nrow(raw_data))
   for (p in trigger_phases) {
     qd_p <- if (has_part) {
@@ -339,8 +356,12 @@ build_auto_cl_for_phases <- function(raw_data, qic_data, x_col_name,
     if (sum(include_mask) == 0L) next
     phase_mean <- mean(qd_p$y[include_mask], na.rm = TRUE)
     if (!is.finite(phase_mean)) next
-    # Match raw rows by x-value membership. Equality semantics for
-    # Date / numeric / character / factor all handled by %in% via match().
+    # qicharts2 re-applies `multiply` to user-supplied cl. Divide here
+    # so the post-multiply rendered cl equals the intended mean.
+    if (is.numeric(multiply) && length(multiply) == 1L &&
+      is.finite(multiply) && multiply != 0) {
+      phase_mean <- phase_mean / multiply
+    }
     new_cl[raw_x %in% qd_p$x] <- phase_mean
   }
   new_cl

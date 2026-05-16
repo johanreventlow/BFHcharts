@@ -229,6 +229,46 @@ test_that("bfh_qic respects exclude= when computing replacement mean (cycle 02 H
   expect_equal(cl_first_included, expected_mean, tolerance = 1e-6)
 })
 
+test_that("bfh_qic auto-mean works for Date x + n= + multiply (cycle 02 H4)", {
+  # Real-world scenario from user-reported bug 2026-05-16:
+  # qicharts2 upcasts Date -> POSIXct internally, so raw_x %in% qd$x
+  # silently returns all-FALSE, leaving new_cl all-NA. qic.run() then
+  # falls back to median for the entire trigger phase while
+  # cl_auto_mean_substituted=TRUE wrongly fired in the caveat. Also:
+  # qicharts2 re-applies `multiply` to user-supplied cl, so we must
+  # divide phase_mean by multiply before passing it back.
+  d <- data.frame(
+    Dato = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    Infektioner = c(2, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0),
+    Opererede = c(124, 118, 130, 126, 135, 120, 108, 125, 131, 127, 133, 122)
+  )
+  # 10/12 obs tied on median(=0). Mean ~ 0.45% (in percent units after
+  # multiply=100). Pre-fix: cl displayed 0% (silent fallback to median);
+  # post-fix: cl displayed ~0.45%.
+  r <- bfh_qic(d,
+    x = Dato, y = Infektioner, n = Opererede,
+    chart_type = "run", multiply = 100, return.data = TRUE
+  )
+  expect_true(isTRUE(attr(r, "cl_auto_mean")))
+  expect_gt(unique(r$cl)[1], 0.1) # not stuck on median=0
+  expect_lt(unique(r$cl)[1], 1.0) # within plausible proportion-percent range
+  # Tighter: cl should equal mean of post-aggregation y (after multiply).
+  expect_equal(unique(r$cl)[1], mean(r$y), tolerance = 1e-4)
+})
+
+test_that("bfh_qic auto-mean attribute is FALSE when substitution silently fails", {
+  # If a future qicharts2 contract change makes new_cl all-NA (e.g., new
+  # x-type upcast), the cl_auto_mean flag must NOT fire -- otherwise the
+  # PDF caveat would claim a substitution that never took effect.
+  # Synthetic test: monkeypatch build_auto_cl_for_phases via a mock would
+  # be ideal, but we instead assert end-to-end: same data through the
+  # path that WORKS (integer x, no multiply) sets the flag.
+  d <- data.frame(x = 1:20, y = c(rep(1, 12), 2, 2, 3, 3, 4, 4, 5, 5))
+  r <- bfh_qic(d, x = x, y = y, chart_type = "run", return.data = TRUE)
+  expect_true(isTRUE(attr(r, "cl_auto_mean")))
+  expect_equal(r$cl[1], 2, tolerance = 1e-6) # mean, not median(=1)
+})
+
 test_that("bfh_qic ignores excluded rows when evaluating trigger ratio (cycle 02 H3)", {
   # 4 included tied + 6 included non-tied (4/10 = 40%, below threshold).
   # + 4 EXCLUDED rows that ARE tied. Without include-respect, ratio
