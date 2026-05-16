@@ -77,3 +77,4 @@ ventetid_chart.png
 !inst/**/*.png
 !tests/testthat/_snaps/**/*.png
 !man/figures/*.png
+tmp/

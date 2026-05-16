@@ -2,15 +2,26 @@
 
 ## Bug fixes
 
-* **Auto-substitution af median → gennemsnit håndterer nu multi-phase
-  og `exclude=` korrekt** (cycle 02 dual-review). Tidligere version
-  fra 0.18.0 evaluerede kun sidste fase: tidligere fase med ≥50 % obs
-  tied til sin median forblev på median-CL og producerede degenererede
-  Anhøj-signaler. Detection iterer nu pr. fase og swapper hver fase
-  uafhængigt. Samtidigt respekteres `exclude=` nu både i trigger-
-  beregning og replacement-mean: tidligere indgik excluded outliers i
-  begge, hvilket gav misvisende ny CL. Cycle 02 review:
-  `docs/reviews/02-cl-auto-mean-validation-2026-05-16.md`.
+* **Auto-substitution af median → gennemsnit håndterer nu multi-phase,
+  `exclude=` og Date+multiply korrekt** (cycle 02 dual-review).
+  Tidligere version fra 0.18.0 havde tre distinkte bugs:
+  - **H1 multi-phase:** evaluerede kun sidste fase. Tidligere faser
+    tied til deres median forblev på median-CL med degenererede Anhøj-
+    signaler. Fix: per-fase iteration + uafhængig swap.
+  - **H3 exclude:** trigger-tæller OG replacement-mean ignorerede
+    `qic_data$include`. Excluded outliers forurenede ny CL. Fix:
+    include-mask i begge steps.
+  - **H4 Date + multiply (user-reported):** qicharts2 upcaster Date
+    → POSIXct i probe-output, så `raw_x %in% qd$x` returnerede all-
+    FALSE for Date-kolonner. Den nye cl-vektor blev all-NA →
+    qicharts2 fallback til median for hele trigger-fasen, men
+    `cl_auto_mean`-flag (og PDF-caveat) fyrede alligevel. Samtidig
+    multiplicerede qicharts2 vores user-cl med `multiply` så
+    percent-skalerede mean-værdier blev 100× for store. Fix: cross-
+    class x-normalisering + multiply-divider + guard mod silent-fail
+    flag-sætning.
+
+  Cycle 02 review: `docs/reviews/02-cl-auto-mean-validation-2026-05-16.md`.
 
 ## Breaking changes
 
