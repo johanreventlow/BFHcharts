@@ -1,5 +1,17 @@
 # BFHcharts 0.19.0
 
+## Bug fixes
+
+* **Auto-substitution af median → gennemsnit håndterer nu multi-phase
+  og `exclude=` korrekt** (cycle 02 dual-review). Tidligere version
+  fra 0.18.0 evaluerede kun sidste fase: tidligere fase med ≥50 % obs
+  tied til sin median forblev på median-CL og producerede degenererede
+  Anhøj-signaler. Detection iterer nu pr. fase og swapper hver fase
+  uafhængigt. Samtidigt respekteres `exclude=` nu både i trigger-
+  beregning og replacement-mean: tidligere indgik excluded outliers i
+  begge, hvilket gav misvisende ny CL. Cycle 02 review:
+  `docs/reviews/02-cl-auto-mean-validation-2026-05-16.md`.
+
 ## Breaking changes
 
 * `validate_denominator_data()` tillader nu `n = 0` for ratio-charts
