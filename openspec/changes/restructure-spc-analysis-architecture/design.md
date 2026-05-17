@@ -322,6 +322,62 @@ over n=20 er detection robust mod outlier-clustering.
 Tier styrer **også om en konklusion overhovedet rapporteres** (lav tier
 → kort tekst med eksplicit usikkerhed, ikke spekulativ påstand).
 
+### i18n-key-naming-konvention
+
+Composition-lag refererer i18n-tekst via **stier under
+`analysis.*`/`labels.*`** der mappes til `da.yaml`/`en.yaml`-YAML-træ.
+
+| Konceptuel kategori | YAML-sti-præfiks | Render-stage |
+|---------------------|------------------|--------------|
+| Stability-base | `analysis.stability.<key>` | Base sentence (mandatory) |
+| Stability-override | `analysis.base.<key>` (not_evaluable, no_variation, discrete_scale_extreme) | Erstatter stability-base |
+| Target-clause | `analysis.target.<key>` | Target evaluation (når target sat) |
+| Action-clause | `analysis.action.<key>` | Action recommendation (mandatory) |
+| Modifier-clause | `analysis.modifier.<group>.<variant>` | Cascade-trin 3-7 (kontekstuel) |
+| Tail-caveat | `analysis.modifier.<caveat_type>_caveat.<variant>` | Cascade-trin 10 (lavest prioritet) |
+| Labels | `labels.<group>.<key>` (caveats, outliers, level_direction, ...) | Re-brugbare i18n-strings |
+
+**Variant-sufix-konvention:** Hver template har 3 længde-varianter:
+
+- `short` — bruges når tegnbudget er trangt
+- `standard` — default-budget
+- `detailed` — bruges når tegnbudget tillader fuld klinisk forklaring
+
+`pick_text()`-helper (R/utils_text_da.R) vælger længst-passende variant
+inden for restbudget. Inkonsekvent variant-tilstedeværelse forårsager
+sprog-parity-test-failure.
+
+**Modifier-key-naming:**
+
+```
+analysis.modifier.<group>.<variant>
+
+group ∈ {magnitude, direction, baseline_delta, phase_intervention,
+         chart_class, variable_cl_caveat, cl_disclosure_caveat,
+         freshness_caveat, few_obs_caveat, discrete_scale,
+         historic_outliers_clause, seasonality_caveat, trend_form}
+
+variant — group-specifik (small/medium/large, favorable/unfavorable,
+         improvement/deterioration/no_change, ...)
+```
+
+**Render_context resolution-mapping:**
+
+Templates med placeholders trækker værdier fra `render_context` ej
+`features`/`aux`:
+
+| Placeholder | Kilde i `bfh_spc_analysis` |
+|-------------|----------------------------|
+| `{target}` | `render_context$target_display` |
+| `{centerline}` | `render_context$centerline_formatted` |
+| `{outliers_word}` | `texts$labels$outliers[[render_context$outliers_word_key]]` |
+| `{effective_window}` | `render_context$effective_window` |
+| `{level_direction}` | computed runtime via `features` + `aux` |
+| `{level_vs_target}` | computed runtime via `features` + `aux` |
+
+Renderer SKAL bruge `render_context`-værdier verbatim — re-derivation
+fra `features`/`aux` er forbudt (silent-display-drift-risk).
+
 ### Determinisme + analysis_date-injection
 
 `bfh_extract_spc_features()` SHALL være deterministisk: samme
