@@ -188,9 +188,14 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 3: Magnitude modifier (sigma-shift)
+### Slice 3: Magnitude modifier (sigma-shift) — ✅ INCLUDE
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** INCLUDE.
+> **Implementation-note:** Brug relative % primært ("~30% ændring"),
+> sigma-fraseringer som backup ("svarende til ~2 sigma"). Klinikere
+> forstår % bedre end sigma-jargon.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Magnitude-modifier tilføjer fraseringer som "svarende til ~2 sigma"
 > eller "et fald på ~30%" til stability-tekster der ellers kun siger
 > "skift i niveau".
@@ -214,9 +219,11 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 4: Direction modifier (uden target)
+### Slice 4: Direction modifier (uden target) — ✅ INCLUDE
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** INCLUDE.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Aktuel `target_direction` virker kun når target er sat. Mange charts
 > (mortalitet, infektion, ventetid) har implicit klinisk retning.
 > Slice tilføjer `metadata$direction = c("higher_better", "lower_better",
@@ -242,9 +249,13 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 5: Baseline-delta + phase-intervention (post-intervention)
+### Slice 5: Baseline-delta + phase-intervention (post-intervention) — ✅ INCLUDE
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** INCLUDE.
+> **Implementation-note:** Højeste kliniske værdi af alle slices.
+> Kvantitativ effekt-rapportering driver forbedrings-arbejde.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Slice tilføjer kvantitativ baseline-vs-nuværende-fase sammenligning
 > ("Niveauet er faldet fra 8,2 til 5,7 — 30% fald siden interventionen").
 > Aktiveres når `part >= 2`.
@@ -270,9 +281,15 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 6: Chart-class modifier
+### Slice 6: Chart-class modifier — ❌ SKIP
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** SKIP. Næsten kun i-charts og p-charts i
+> brug (>90%); chart-class-specifik prose giver lille gevinst for
+> typisk brug.
+> **Schema-stabilitet:** `chart_class`-akse bevares i schema med
+> `NA`/default-værdi; render-lag bruger den ej til prose-modifikatorer.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Slice tilføjer chart-type-specifik fortolkning. Eksempler:
 > - **Rate (u-chart):** "per {denominator}-enheder"
 > - **Proportion (p-chart):** "andel" + denominator-noter
@@ -299,9 +316,11 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 7: Variable kontrolgrænser (caveat)
+### Slice 7: Variable kontrolgrænser (caveat) — ✅ INCLUDE
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** INCLUDE.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Når p/u/xbar-charts har varierende stikprøvestørrelse, varierer
 > kontrolgrænserne. Slice tilføjer caveat:
 > "Kontrolgrænserne varierer pga. svingende stikprøvestørrelse. Fortolk
@@ -324,9 +343,11 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 8: Few-obs / not-evaluable sektion (NY DETEKTION + DISPATCH)
+### Slice 8: Few-obs / not-evaluable sektion (NY DETEKTION + DISPATCH) — ✅ INCLUDE
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** INCLUDE.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Når n < 12, er Anhøj-vurdering upålidelig. I dag bruger pipeline
 > alligevel stability-templates uden eksplicit usikkerheds-markør.
 > Slice introducerer `confidence_tier = "low"` der **erstatter**
@@ -362,9 +383,12 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 9: CL-disclosure i prose
+### Slice 9: CL-disclosure i prose — ✅ INCLUDE
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** INCLUDE. Minimal effort: genbruger
+> eksisterende `labels.caveats.cl_*` i18n-strings.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Eksisterende `caveats.cl_user_supplied` + `caveats.cl_auto_mean` er
 > wired til Typst-PDF + export-helpers men IKKE til
 > `bfh_generate_analysis()`-output. Konsumenter ud over PDF (app-UI,
@@ -393,9 +417,16 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 10: Data-freshness caveat
+### Slice 10: Data-freshness caveat — ❌ SKIP
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** SKIP. Pipeline garanterer fresh data;
+> freshness-caveat aldrig relevant.
+> **Bevarelse fra Phase 0.4:** `analysis_date` 3-vejs resolution-helper
+> bevares (driver determinisme uafhængigt af freshness-detektion).
+> **Schema-stabilitet:** `freshness`-akse bevares i schema med
+> `NA`-default; ingen detection-arbejde + ingen prose-modifier.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Når seneste obs er gammel (> threshold måneder), tilføjes:
 > "Seneste observation er fra {dato} — analysen afspejler ikke nyere
 > udvikling."
@@ -430,9 +461,14 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 11: Historic outliers clause
+### Slice 11: Historic outliers clause — 🟡 DEFER
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** DEFER. Text-redundans hvis plot vises;
+> klinikere ser outliers visuelt. Lav klinisk merværdi i tekst-form.
+> **Schema-stabilitet:** `outlier_history`-akse bevares i schema med
+> `NA`-default; kan aktiveres i senere change uden schema-bump.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Aktuel logik bruger `outliers_recent_count` (seneste 6 obs).
 > Historiske outliers ignoreres bevidst. Slice tilføjer clause:
 > "Tidligere outliers ses i diagrammet (n=X) men er uden for det
@@ -455,9 +491,16 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 12: Trend vs step detektion
+### Slice 12: Trend vs step detektion — 🟡 DEFER
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** DEFER. Høj teknisk barriere
+> (changepoint-detection); risiko for misclassifikation; kalibrering
+> kræver dedikeret klinisk reviewer-runde. Værdifuldt men umoden
+> teknologi til denne change.
+> **Schema-stabilitet:** `trend_form`-akse bevares i schema med
+> `NA`-default; kan aktiveres i senere change uden schema-bump.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Anhøj-runs flag'er både gradvise trends og pludselige step-skift som
 > "lang serie". Slice tilføjer slope-fit-baseret skelnen:
 > - **Step:** Pludselig ændring (ofte event-baseret intervention)
@@ -481,9 +524,13 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 13: Seasonality educational caveat
+### Slice 13: Seasonality educational caveat — ❌ SKIP
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** SKIP. Meta-niveau caveat der kan
+> distrahere fra core-fortolkning; klinikere ved typisk om deres
+> data har sæsoner. Lav unique value.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > SPC fanger ikke periodiske mønstre (sæson, ugedag, måned). Lange
 > serier (n > 24) kan have skjult cyklicitet. Slice tilføjer educational
 > caveat på detailed-varianter:
@@ -503,9 +550,13 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 14: Discrete scale udvidelse
+### Slice 14: Discrete scale udvidelse — ✅ INCLUDE
 
-> **🟡 BRUGER-BESLUTNING:**
+> **Beslutning 2026-05-17:** INCLUDE. Diskret-skala-problemer er
+> almindeligt i jeres data; 3-tier giver mere nuanceret feedback end
+> binær flag.
+>
+> **Original BRUGER-BESLUTNING kontekst:**
 > Aktuel `majority_at_centerline` (>=50% punkter på CL) er binær.
 > Slice udvider til 3-tier (mild/moderate/extreme) baseret på ratio +
 > tilføjer specifik anbefaling om måleskala-revision når extreme.
@@ -585,22 +636,36 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-## Beslutnings-sammenfatning
-
-Når bruger har gennemgået alle slices, opdatér her:
+## Beslutnings-sammenfatning (bruger-godkendt 2026-05-17)
 
 | Slice | Title | Status | Note |
 |-------|-------|--------|------|
-| 3 | Magnitude modifier | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 4 | Direction (uden target) | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 5 | Baseline-delta + phase | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 6 | Chart-class modifier | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 7 | Variable CL caveat | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 8 | Few-obs / not-evaluable | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 9 | CL-disclosure i prose | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 10 | Data-freshness | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 11 | Historic outliers | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 12 | Trend vs step | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 13 | Seasonality caveat | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 14 | Discrete scale ext. | `[ ] INCLUDE / [ ] SKIP / [ ] DEFER` | |
-| 99 | Validation infra | `[ ] INCLUDE / [ ] DEFER` | Anbefales INCLUDE |
+| 3 | Magnitude modifier | ✅ **INCLUDE** | Brug % primært, sigma kun som backup |
+| 4 | Direction (uden target) | ✅ **INCLUDE** | Chart-class-defaults + metadata$direction |
+| 5 | Baseline-delta + phase | ✅ **INCLUDE** | Højeste kliniske værdi |
+| 6 | Chart-class modifier | ❌ **SKIP** | Næsten kun i/p-charts; lav ROI |
+| 7 | Variable CL caveat | ✅ **INCLUDE** | Common i klinisk kvalitets-data |
+| 8 | Few-obs / not-evaluable | ✅ **INCLUDE** | Overlapper Phase 1.1.2 confidence_tier |
+| 9 | CL-disclosure i prose | ✅ **INCLUDE** | Fylder dokumenteret hul; minimal effort |
+| 10 | Data-freshness | ❌ **SKIP** | Pipeline garanterer fresh data |
+| 11 | Historic outliers | 🟡 **DEFER** | Text-redundans; plot viser outliers visuelt |
+| 12 | Trend vs step | 🟡 **DEFER** | Høj teknisk barriere; umoden detection |
+| 13 | Seasonality caveat | ❌ **SKIP** | Meta-noise risk; lav unique value |
+| 14 | Discrete scale ext. | ✅ **INCLUDE** | Almindeligt i jeres data |
+| 99 | Validation infra | ✅ **INCLUDE** | Fundamentet for klinisk validitet |
+
+**Implementations-scope:**
+- INCLUDE (7 slices): 3, 4, 5, 7, 8, 9, 14
+- SKIP (3 slices): 6, 10, 13 (slettes ikke fra tasks.md — bevares som
+  reference men ikke implementeres)
+- DEFER (2 slices): 11, 12 (kan blive separat change senere hvis behov
+  opstår)
+
+**Konsekvens for Phase 1 (feature-extraction):**
+- Aksen `chart_class` kan opbygges minimalt (kun i-, p-værdier brugt
+  i prose; resten lagres som NA-default per schema-stability)
+- Aksen `freshness` lagres med NA-default; ingen detection-arbejde
+- Aksen `discrete_scale` opbygges som 4-tier enum
+  (none/mild/moderate/extreme) for Slice 14
+- Aksen `trend_form`, `outlier_history` lagres med NA-default for
+  schema-stability (deferred slices)
