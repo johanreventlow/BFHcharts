@@ -18,18 +18,37 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 - [ ] 0.1.3 Identificér eventuel cross-repo impact (biSPCharts thin
        wrapper-lag)
 
-### 0.2 Feature-objekt schema
+### 0.2 Feature-objekt schema (Model A: key-only)
 
-- [ ] 0.2.1 Definér formelt `bfh_spc_analysis` S3-class
-- [ ] 0.2.2 Definér `schema_version` semver-policy
+- [ ] 0.2.1 Definér formelt `bfh_spc_analysis` S3-class:
+       - `features` (12 ortogonale akser, raw values)
+       - `aux` (incl. `analysis_date` for determinisme)
+       - `render_context` (target_display, y_axis_unit, formaterede
+         strings, operator_unicode, outliers_word_key, effective_window,
+         chart_type)
+       - `conclusions` (i18n-nøgler: stability_key, target_key, action_key)
+       - `caveats` (named list af nøgler, NULL hvis inaktiv)
+       - `suggested_actions` (character-vektor af nøgler)
+- [ ] 0.2.2 Definér `schema_version` semver-policy (eller drop hvis
+       JSON-export ej er kerne-mål — beslutning M1)
 - [ ] 0.2.3 Skriv `print.bfh_spc_analysis()` + `format.bfh_spc_analysis()`
 - [ ] 0.2.4 Skriv `as.list.bfh_spc_analysis()` for JSON-serialisering
 
 ### 0.3 Composition-contract
 
 - [ ] 0.3.1 Dokumentér modifier-prioritets-rækkefølge (kanonisk liste)
-- [ ] 0.3.2 Dokumentér budget-allokerings-regler (base/modifier/tail)
+- [ ] 0.3.2 Dokumentér budget-allokerings-regler (base/modifier/tail) —
+       skal kalibreres mod corpus i Phase 1.4
 - [ ] 0.3.3 Dokumentér sprog-parity-krav
+
+### 0.4 Determinisme + analysis_date-injection
+
+- [ ] 0.4.1 Definér 3-vejs præcedens-resolution:
+       1. `metadata$analysis_date` (eksplicit)
+       2. `getOption("BFHcharts.analysis_date")` (global override)
+       3. `Sys.Date()` (production-default)
+- [ ] 0.4.2 Skriv `.resolve_analysis_date(metadata)`-helper
+- [ ] 0.4.3 Dokumentér i roxygen + audit-replay-use-case
 
 ---
 
@@ -37,45 +56,97 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ### 1.1 Feature-extraction-lag (`R/spc_features.R`)
 
-- [ ] 1.1.1 Skriv `bfh_extract_spc_features(x, metadata)` — pure funktion
+- [ ] 1.1.1 Skriv `bfh_extract_spc_features(x, metadata)` — pure
+       deterministisk funktion
 - [ ] 1.1.2 Implementér detektion for **eksisterende** akser:
-       - `stability_pattern` (8 værdier, fra `.detect_signal_flags()`)
+       - `stability_pattern` (10 værdier inkl. no_variation,
+         not_evaluable; fra `.detect_signal_flags()`)
        - `target_relation` (4 værdier, fra `.evaluate_target_arm()`)
-       - `confidence_tier` (3 værdier, ny baseret på n + sigma)
-- [ ] 1.1.3 Aux-felter: `sigma_hat`, `n_points`, `centerline`,
-       `effective_window`, `latest_obs_date` (sidstnævnte ekstraheret
-       fra `x$qic_data` hvis x-kolonne er Date)
-- [ ] 1.1.4 Returnér tomme/`NA`-værdier for nye akser (3+) der ikke
+       - `confidence_tier` (3 værdier, **chart-type-aware**):
+         - `high`: n ≥ 20 AND finite spredning-estimat
+         - `med`: n ∈ [12, 19] AND finite spredning-estimat
+         - `low`: n < N_MIN OR ingen centerline OR both sigma_hat+sigma_data NA
+         - **Vigtigt:** Run-charts har sigma_hat=NA by design — brug
+           sigma_data + n_points + Anhøj-stats. Brug IKKE
+           `is.na(sigma_hat)` alene som low-trigger.
+- [ ] 1.1.3 Definér ny konstant `N_MIN = 12L` i `R/globals.R` med
+       litteratur-reference (Anhøj & Olesen 2014)
+- [ ] 1.1.4 Aux-felter: `sigma_hat`, `sigma_data`, `n_points`,
+       `centerline`, `effective_window`, `latest_obs_date`,
+       `analysis_date` (resolvet via 3-vejs præcedens)
+- [ ] 1.1.5 `render_context`-felter: ekstraher target_display,
+       y_axis_unit, formaterede strings, operator_unicode,
+       outliers_word_key (fra eksisterende `format_target_value()`,
+       `pluralize_da()`)
+- [ ] 1.1.6 Returnér default-værdier for nye akser (3+) der ikke
        endnu detekteres — sikrer schema-stabilitet
-- [ ] 1.1.5 Tests: `tests/testthat/test-spc-features.R` — én test
-       pr. akse-værdi
+- [ ] 1.1.7 Tests: `tests/testthat/test-spc-features.R` — én test
+       pr. akse-værdi + determinisme-test + chart-type-aware
+       confidence-test (run-charts er `high` confidence ved n=24
+       trods `is.na(sigma_hat)`)
 
 ### 1.2 Composition-lag (`R/spc_compose.R`)
 
 - [ ] 1.2.1 Skriv `bfh_analyse(x, metadata, language)` — komposerer
-       feature-objekt + texts til `bfh_spc_analysis`
-- [ ] 1.2.2 Conclusions-mapping (features → conclusion-keys)
-- [ ] 1.2.3 Caveats-liste (NULL'er for ikke-aktive caveats)
+       feature-objekt til `bfh_spc_analysis` (**ingen texts_loader-
+       parameter** — Model A key-only)
+- [ ] 1.2.2 Conclusions-mapping (features → conclusion-keys via
+       eksisterende `.select_stability_key()` /
+       `.select_action_key()`-pattern)
+- [ ] 1.2.3 Caveats-liste (NULL'er for ikke-aktive caveats; nøgler
+       for aktive — render-lag resolverer tekst)
 - [ ] 1.2.4 Suggested-actions afledt af action-key + modifikatorer
-- [ ] 1.2.5 Tests: `test-spc-compose.R`
+       (character-vektor af i18n-nøgler)
+- [ ] 1.2.5 Tests: `test-spc-compose.R` — verificér key-only-output
+       (ingen resolverede tekst-strenge i features/caveats/
+       suggested_actions)
 
 ### 1.3 Render-lag (`R/spc_render.R`)
 
-- [ ] 1.3.1 Skriv `bfh_render_analysis(analysis, max_chars)` — fra
-       struktureret objekt til character
-- [ ] 1.3.2 Implementér modifier-cascade-orchestrator (uden faktiske
+- [ ] 1.3.1 Skriv `bfh_render_analysis(analysis, max_chars,
+       texts_loader = NULL)` — fra struktureret objekt til character.
+       texts_loader respekterer eksisterende default-pattern
+       (`load_spc_texts(analysis$language)` hvis NULL).
+- [ ] 1.3.2 Resolvér i18n-nøgler fra `analysis$conclusions`,
+       `analysis$caveats`, `analysis$suggested_actions` til tekst
+- [ ] 1.3.3 Brug `analysis$render_context` (target_display,
+       y_axis_unit, centerline_formatted, operator_unicode,
+       outliers_word_key) — re-deriver IKKE fra features/aux
+- [ ] 1.3.4 Implementér modifier-cascade-orchestrator (uden faktiske
        modifikatorer aktiveret endnu — kun base + target + action)
-- [ ] 1.3.3 Budget-allokering med prioritets-trimming
-- [ ] 1.3.4 Tests: `test-spc-render.R`
+- [ ] 1.3.5 Budget-allokering med prioritets-trimming (kalibreres
+       mod corpus i 1.4)
+- [ ] 1.3.6 Tests: `test-spc-render.R`
 
-### 1.4 Parity-test mod eksisterende output
+### 1.4 Parity-test mod eksisterende output (coverage-matrix)
 
-- [ ] 1.4.1 Byg golden-corpus skelet i
-       `tests/testthat/golden/spc_analysis/` med 15-20 cases der
-       dækker eksisterende dispatch-rum
-- [ ] 1.4.2 Snapshot-test: `bfh_render_analysis(bfh_analyse(x))` matcher
-       `bfh_generate_analysis(x)` bit-for-bit på hele corpus
-- [ ] 1.4.3 Bevar parity-test som regression-gate gennem cut-over
+- [ ] 1.4.1 Definér coverage-matrix (mekanisk parameter-sweep):
+       - 10 stability-keys × {target, no-target}                  → 20
+       - no_variation + majority_at_centerline + not_evaluable    → 6
+       - target-direction-grene: numeric + operator (higher/lower) → 6
+       - Sprog: da + en                                            → ×2
+       - y_axis_unit: percent + non-percent                        → +12
+       - Trim-boundary: max_chars 100, 200, 375                    → +12
+       Total: ~50-60 cases via systematisk sweep
+- [ ] 1.4.2 Build golden-corpus i
+       `tests/testthat/golden/spc_analysis/matrix/` via
+       parameter-sweep-script (`tests/scripts/build_golden_corpus.R`)
+- [ ] 1.4.3 Tilføj **10-15 kuraterede klinisk-validerede cases** i
+       `tests/testthat/golden/spc_analysis/clinical/` (real bfh_qic_result
+       fra biSPCharts-brug + klinisk reviewer-input på forventet output)
+- [ ] 1.4.4 Snapshot-test med **semantisk match**:
+       - Eksakt tekst-equality efter whitespace-normalisering
+       - Tegnbudget-trim acceptabel inden for ±5 tegn fra base
+       - Decimal-separator-tolerance kun ved intenderet sprog-skift
+       - Helper: `expect_semantic_text_equal(actual, expected,
+         tolerance_chars = 5)`
+- [ ] 1.4.5 Hver case pinner `metadata$analysis_date` eksplicit
+       (sikrer reproduktbar golden-snapshot)
+- [ ] 1.4.6 Bevar parity-test som regression-gate gennem cut-over
+- [ ] 1.4.7 Budget-allokering kalibreres mod corpus: dokumentér final
+       ratio (afløser midlertidigt 60/25/15) som spec-final efter
+       empirisk fit. Mål: 0% action-arm-truncation, modifier-pool-
+       truncation acceptabel hvis caveat-prioritet bevares.
 
 ---
 
@@ -253,13 +324,19 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 
 ---
 
-### Slice 8: Few-obs / not-evaluable sektion
+### Slice 8: Few-obs / not-evaluable sektion (NY DETEKTION + DISPATCH)
 
 > **🟡 BRUGER-BESLUTNING:**
 > Når n < 12, er Anhøj-vurdering upålidelig. I dag bruger pipeline
 > alligevel stability-templates uden eksplicit usikkerheds-markør.
 > Slice introducerer `confidence_tier = "low"` der **erstatter**
 > base-sentence med dedikeret not-evaluable-tekst.
+>
+> **Note:** Dette er **ny feature**, ej refactor af eksisterende
+> `anhoej_not_evaluable`-label (som er ubrugt i nuværende R/-kode,
+> kun en i18n-streng). Slice introducerer ny detektion,
+> ny `N_MIN`-konstant (default 12 baseret på Anhøj 2014), og ny
+> override-dispatch-vej.
 >
 > **Include hvis:** I oplever ofte korte serier (n < 12) og vil have
 > eksplicit "for tidligt at konkludere"-budskab.
@@ -268,15 +345,20 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 >
 > **Beslutning:** `[ ] INCLUDE  [ ] SKIP  [ ] DEFER`
 
-- [ ] 8.1 Tilføj `confidence_tier`-akse (low/medium/high)
-- [ ] 8.2 Detektion: `n_points < 12 || is.na(sigma_hat)` → low
-- [ ] 8.3 i18n: `analysis.base.not_evaluable.{short,standard,detailed}`
-       (eksisterende `anhoej_not_evaluable`-label udvides til fuld
-       sektion)
-- [ ] 8.4 Render-integration: low-tier erstatter stability-base;
-       target+action gøres kortere/eksplicit hedged
-- [ ] 8.5 Golden-corpus: +3 cases (n=5, n=10, n=11)
-- [ ] 8.6 Klinisk review
+- [ ] 8.1 Tilføj `confidence_tier`-akse (low/medium/high) til
+       features-schema. Bemærk: Phase 1.1.2 implementerer allerede
+       chart-type-aware detektion; denne slice **aktiverer** brugen
+       af `low` som override-trigger.
+- [ ] 8.2 i18n: `analysis.base.not_evaluable.{short,standard,detailed}`
+       som ny sektion i `da.yaml` + `en.yaml` (separate fra eksisterende
+       label-string `anhoej_not_evaluable`)
+- [ ] 8.3 Render-integration: `confidence_tier == "low"` erstatter
+       stability-base med `not_evaluable`-tekst; target+action gøres
+       kortere/eksplicit hedged
+- [ ] 8.4 Golden-corpus: +3 cases (n=5, n=10, n=11) + 1 case for
+       run-chart med n=24 (verificér IKKE markeret low trods
+       is.na(sigma_hat))
+- [ ] 8.5 Klinisk review
 
 ---
 
@@ -327,12 +409,24 @@ giver mening. Faser med gate kan vælges fra uden at blokere de øvrige.
 > **Beslutning:** `[ ] INCLUDE  [ ] SKIP  [ ] DEFER`
 
 - [ ] 10.1 Tilføj `freshness`-akse (current/stale/very_stale)
-- [ ] 10.2 Detektion: `max(x_dato) - Sys.Date()` med konfigurerbar
-       threshold via `getOption("BFHcharts.freshness_threshold_days")`
+- [ ] 10.2 Detektion: `max(x_dato) - analysis_date` hvor analysis_date
+       er **resolvet via 3-vejs præcedens** (Phase 0.4.1):
+       - `metadata$analysis_date` (eksplicit per-call) — vinder altid
+       - `getOption("BFHcharts.analysis_date")` — global override
+       - `Sys.Date()` — production-default
+- [ ] 10.2.1 Threshold via `getOption("BFHcharts.freshness_threshold_days",
+       default = 90L)` for stale; `* 2` for very_stale
+- [ ] 10.2.2 Lagre `analysis_date` + `data_age_days` i `bfh_spc_analysis$aux`
+       for replay-sporbarhed
 - [ ] 10.3 i18n: `analysis.modifier.freshness_caveat.{stale,very_stale}`
 - [ ] 10.4 Render-integration: tail-caveat
-- [ ] 10.5 Golden-corpus: +2 cases
+- [ ] 10.5 Golden-corpus: +2 cases — hver case pinner `analysis_date`
+       eksplicit så snapshot er reproduktbar
 - [ ] 10.6 Klinisk review
+- [ ] 10.7 Determinisme-test: kald `bfh_extract_spc_features()` to gange
+       med samme `analysis_date` på samme dato vs forskellig dato →
+       output identisk når `analysis_date` pinned, forskelligt når
+       Sys.Date()-fallback bruges
 
 ---
 

@@ -20,24 +20,33 @@ Ud over disse 5 strukturelle huller findes flere **eksisterende felter der
 ikke er wired**:
 
 6. **Baseline-delta ved part >= 2** — `x$summary` har data, ingen template.
-7. **Sigma-shift magnitude** — `context$sigma_hat` beregnes, bruges ikke.
+7. **Sigma-shift magnitude som prose-modifier** — `context$sigma_hat` bruges
+   allerede til target-arm-dispatch (at_target / near_target evaluering), men
+   magnitudet (small/medium/large bucket) eksponeres **ej** som prose-modifier
+   ("svarende til ~2 sigma" / "~30% ændring").
 8. **Direction uden target** — chart-types har implicit retning
    (mortalitet, infektion → lower better; rettidighed → higher better).
 9. **CL-disclosure i prose** — `caveats.cl_user_supplied` /
    `caveats.cl_auto_mean` rendres i Typst-PDF + export-helpers, men
    `bfh_generate_analysis()`-output rører dem aldrig. Tekst-only-konsumenter
    (UI, AI-prompt-anker) mister informationen.
-10. **Anhøj-not-evaluable som sektion** — `analysis.anhoej_not_evaluable`
-    er kort label, ikke fuld erstatning af stability-arm ved n<12.
+10. **Anhøj-not-evaluable som dispatch-sektion (ny detektion)** —
+    `analysis.anhoej_not_evaluable` findes som **ubrugt i18n-label** (0 R-
+    referencer uden for `inst/i18n/`). Forslag introducerer **ny detektion**
+    (n-threshold via ny `N_MIN`-konstant, default 12 per Anhøj-litteratur) +
+    **ny override-dispatch-vej** der erstatter stability-arm når
+    `confidence_tier == "low"`. Note: dette er ny feature, ikke refactor af
+    eksisterende label.
 11. **Data-freshness** — ingen caveat når seneste obs er gammel.
 12. **Trend vs step** — Anhøj-runs skelner ikke; tekst siger uniformt
     "skift i niveau".
 
 Den principielle løsning er **ikke** at tilføje 12 nye nøgler til
-cascade-dispatchen. Dispatch-rummet eksploderer: nuværende 56
-stability×action-kombinationer multiplicerer til tusinder hvis alle
-dimensioner kodes som flad cascade. Vedligehold + klinisk validering bliver
-uigennemførligt.
+cascade-dispatchen. Dispatch-rummet eksploderer: nuværende dispatch har
+**roughly 50+ reachable text paths** (afhænger af counting-method: 10
+stability-keys × ~5 effektive action-paths × target-formaterings-varianter).
+Multiplicerer til tusinder hvis alle 12 nye dimensioner kodes som flad
+cascade. Vedligehold + klinisk validering bliver uigennemførligt.
 
 I stedet: **strukturér analyseteksten som feature-extraction +
 composition-lag**. Detektion adskilles fra formulering. Tekst-output
@@ -45,6 +54,18 @@ sammensættes af **base-templates + modifier-cascade** (kompositionel
 skalering, ej multiplikativ). Et **struktureret analyse-objekt** bliver
 primær output; rentekst er én af flere render-views (PDF, UI, AI-prompt,
 audit-log, JSON).
+
+**Arkitektur-model: Key-only** — `bfh_analyse()` returnerer struktureret
+objekt med **i18n-nøgler** (ej resolverede tekst-strenge), aux-data og
+render-context. Al sprog-/tekst-resolution sker i `bfh_render_analysis()`
+der modtager `texts_loader` (eksisterende parameter respekteres
+bagudkompatibelt). Konsekvenser:
+
+- JSON-export af `bfh_analyse()`-output er **sprog-neutral** (kun nøgler).
+- Audit-replay kan re-rendre samme analyse på andet sprog uden
+  re-computation.
+- Eksisterende `texts_loader`-tests virker uændret gennem
+  `bfh_generate_analysis()`-wrapperen.
 
 ## What Changes
 
@@ -54,9 +75,30 @@ i18n-corpus. **Bevarer eksisterende public-API-signaturer** —
 character-streng inden for tegnbudget.
 
 **Tilføjer** ny eksporteret funktion `bfh_analyse()` der returnerer
-struktureret `bfh_spc_analysis`-objekt med named features, conclusions,
-confidence, caveats, suggested_actions. `bfh_generate_analysis()`
-implementeres som thin wrapper omkring `bfh_analyse()` + render-lag.
+struktureret `bfh_spc_analysis`-objekt med named features, **render_context**
+(target_display, y_axis_unit, formaterede strenge, pluralization-state),
+conclusions som **i18n-nøgler**, caveats som nøgle-liste,
+suggested_actions som character-vektor af **nøgler**.
+`bfh_generate_analysis()` implementeres som thin wrapper omkring
+`bfh_analyse()` + render-lag.
+
+**Determinisme:** `bfh_extract_spc_features()` SHALL være deterministisk —
+samme input ⇒ samme output. `analysis_date` (brugt af freshness-detektion)
+injiceres via 3-vejs præcedens-resolution:
+
+1. `metadata$analysis_date` (eksplicit per-call) — vinder altid
+2. `getOption("BFHcharts.analysis_date")` — global override (typisk i tests)
+3. `Sys.Date()` — production-default
+
+Resolvet `analysis_date` lagres i `analysis$aux$analysis_date` for audit-
+replay-sporbarhed.
+
+**AI-integration uændret kontrakt:** `bfh_generate_analysis(use_ai = TRUE)`
+sender fortsat **rendered character** som `baseline_analysis` til
+`BFHllm::bfhllm_spc_suggestion()`. Det strukturerede `bfh_spc_analysis`-
+objekt sendes **ej** til AI i denne change — separat fremtidig change kan
+introducere `structured_analysis`-felt i BFHllm-context når use-case er
+afklaret.
 
 **Arkitektonisk skift:**
 

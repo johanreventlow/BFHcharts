@@ -1,13 +1,16 @@
 ## ADDED Requirements
 
-### Requirement: bfh_analyse SHALL return a structured bfh_spc_analysis S3 object
+### Requirement: bfh_analyse SHALL return a structured bfh_spc_analysis S3 object (key-only model)
 
 The package SHALL export `bfh_analyse(x, metadata, language)` that returns
-a structured `bfh_spc_analysis` S3-object containing named features,
-conclusions, confidence, caveats and suggested_actions derived from a
-`bfh_qic_result`. The object SHALL be the primary canonical
-representation; rentekst-rendering via `bfh_render_analysis()` is one of
-multiple views.
+a structured `bfh_spc_analysis` S3-object using the **key-only model**:
+conclusions, caveats and suggested_actions SHALL contain i18n-keys
+(not resolved text strings). Text resolution SHALL occur exclusively in
+`bfh_render_analysis()` via `texts_loader`.
+
+This model preserves backward compatibility with existing
+`bfh_generate_analysis(texts_loader = ...)` tests and enables
+language-neutral JSON-export + audit-replay use cases.
 
 **Function Signature:**
 ```r
@@ -21,27 +24,37 @@ bfh_analyse(
 **Parameters:**
 - `x`: `bfh_qic_result` object (required)
 - `metadata`: Optional list with `data_definition`, `target`, `direction`,
-  `hospital`, `department`
-- `language`: Output language for caveats and conclusions
+  `hospital`, `department`, `analysis_date`
+- `language`: Default language tag stored in object for downstream
+  render-defaults; SHALL NOT cause text resolution at this stage
 
-**Returns:** Object of class `bfh_spc_analysis` with documented schema
-(see `schema_version`-field).
+**Returns:** Object of class `bfh_spc_analysis` with documented schema.
 
 The returned object SHALL contain at minimum:
 
-- `schema_version` (character, semver) — schema version of this object
-- `language` (character, "da"/"en")
-- `features` (named list) — ortogonale fortolknings-akser
-- `aux` (named list) — beregnede hjælpe-værdier (sigma_hat,
-  baseline_centerline, baseline_delta, latest_obs_date, ...)
-- `conclusions` (named list) — afledte konklusion-nøgler (stability,
-  target, action)
+- `schema_version` (character, semver-pattern) — schema version
+- `language` (character, "da"/"en") — default for downstream render
+- `features` (named list) — ortogonale fortolknings-akser (raw values)
+- `aux` (named list) — beregnede hjælpe-værdier inkl. `sigma_hat`,
+  `sigma_data`, `n_points`, `centerline`, `baseline_centerline`,
+  `baseline_delta`, `latest_obs_date`, `analysis_date` (resolveret via
+  3-vejs præcedens), `data_age_days`
+- `render_context` (named list) — preserved render-state SHALL inkludere
+  `target_display` (uændret user-input), `centerline_formatted`,
+  `y_axis_unit`, `operator_unicode`, `outliers_word_key`
+  (`"singular"`/`"plural"`), `effective_window`, `chart_type`
+- `conclusions` (named list) — i18n-nøgler: `stability_key`,
+  `target_key`, `action_key`
 - `confidence` (character, "low"/"medium"/"high")
-- `caveats` (named list) — aktive caveats (NULL for inaktive)
-- `suggested_actions` (character vector) — handlingsforslag
+- `caveats` (named list) — nøgle-strings for aktive caveats (NULL hvis
+  inaktiv)
+- `suggested_actions` (character vector) — i18n-nøgler (ej resolverede
+  tekst-strenge)
 
 The object SHALL inherit from `bfh_spc_analysis`-class. `print()`,
-`format()` and `as.list()` SHALL be defined as S3 methods.
+`format()` and `as.list()` SHALL be defined as S3 methods. `bfh_analyse()`
+SHALL NOT accept a `texts_loader` parameter (loader-ownership lives in
+`bfh_render_analysis()`).
 
 #### Scenario: Basic analysis produces structured object
 
@@ -92,7 +105,7 @@ deterministic: identical input SHALL produce identical output.
 
 The function SHALL produce at minimum the following axes:
 
-- `stability_pattern`: one of
+- `stability_pattern`: one of 10 values
   `c("no_signals", "runs_only", "crossings_only", "outliers_only",
     "runs_crossings", "runs_outliers", "crossings_outliers",
     "all_signals", "no_variation", "not_evaluable")`
@@ -105,12 +118,31 @@ Additional axes (`magnitude`, `direction`, `phase_context`, `freshness`,
 `NA`/empty values when their detection is not yet activated. This
 guarantees schema stability across feature-slice activation.
 
-`confidence_tier` SHALL be computed deterministically:
+**`confidence_tier` SHALL be computed deterministically AND
+chart-type-aware:**
 
-- `"low"` when `n_points < 12` OR `is.na(sigma_hat)` OR
-  centerline is not finite
-- `"medium"` when `n_points ∈ [12, 19]` AND has finite CL
-- `"high"` when `n_points >= 20` AND has finite sigma_hat
+Run-charts have `sigma_hat = NA` by design (no control limits) — this is
+NOT a degenerate state. The equivalent spread-estimate for run-charts is
+`sigma_data` (`sd(y)`). Confidence-tier rules:
+
+- `"high"` when `n_points >= 20` AND has finite spread-estimate
+  (`sigma_hat` for control-charts; `sigma_data` for run-charts)
+- `"medium"` when `n_points ∈ [12, 19]` AND has finite spread-estimate
+- `"low"` when:
+  - `n_points < N_MIN` (default 12, see `R/globals.R`) OR
+  - centerline is not finite OR
+  - both `sigma_hat` AND `sigma_data` are NA
+
+**Forbid-pattern:** `is.na(sigma_hat)` alone SHALL NOT trigger `"low"` —
+this would erroneously classify valid run-charts (sigma_hat=NA by design)
+as `"low"`-confidence / not_evaluable. Existing test
+`test-spc_analysis.R:1148` asserts run-chart `sigma_hat = NA` invariant.
+
+`bfh_extract_spc_features()` SHALL accept `metadata$analysis_date` (or
+fall back to `getOption("BFHcharts.analysis_date")` or `Sys.Date()`) and
+SHALL store the resolved value in `aux$analysis_date`. Same `x` +
+`metadata` SHALL produce identical features regardless of calendar day,
+provided `analysis_date` is pinned.
 
 #### Scenario: Feature extraction is deterministic
 
@@ -137,13 +169,57 @@ features <- bfh_extract_spc_features(result_short)
 expect_equal(features$confidence_tier, "low")
 ```
 
+#### Scenario: Run-chart with sigma_hat=NA SHALL NOT be marked low confidence
+
+**Given** `bfh_qic_result` from a 24-point run-chart (sigma_hat=NA, sigma_data finite)
+**When** `bfh_extract_spc_features()` is called
+**Then** `features$confidence_tier` SHALL equal `"high"`
+**And** `aux$sigma_hat` SHALL be `NA_real_`
+**And** `aux$sigma_data` SHALL be finite
+
+```r
+result_run <- bfh_qic(test_data_n24, x = date, y = value, chart_type = "run")
+features <- bfh_extract_spc_features(result_run)
+expect_equal(features$confidence_tier, "high")
+expect_true(is.na(features$aux$sigma_hat) || is.na(result_run$qic_data$ucl[1]))
+expect_true(is.finite(features$aux$sigma_data))
+```
+
+#### Scenario: analysis_date injection preserves determinism
+
+**Given** identical `bfh_qic_result` and `metadata$analysis_date = "2026-01-15"`
+**When** `bfh_extract_spc_features()` is called on different calendar days
+**Then** both calls SHALL return identical `aux$analysis_date`
+**And** identical `features$freshness`
+**And** identical full feature vector
+
+```r
+metadata <- list(analysis_date = as.Date("2026-01-15"))
+features1 <- bfh_extract_spc_features(result, metadata)
+features2 <- bfh_extract_spc_features(result, metadata)
+expect_identical(features1, features2)
+expect_equal(features1$aux$analysis_date, as.Date("2026-01-15"))
+```
+
 ---
 
 ### Requirement: bfh_render_analysis SHALL compose text via deterministic modifier cascade
 
 The package SHALL provide `bfh_render_analysis(analysis, max_chars,
-texts_loader)` that renders a `bfh_spc_analysis`-object to character
-output via a deterministic composition cascade.
+texts_loader = NULL)` that renders a `bfh_spc_analysis`-object to
+character output via a deterministic composition cascade.
+
+`bfh_render_analysis()` SHALL own all i18n-resolution: keys in
+`analysis$conclusions`, `analysis$caveats` and `analysis$suggested_actions`
+are resolved to text via the supplied `texts_loader` (or the default
+`load_spc_texts(analysis$language)` when `texts_loader = NULL`).
+
+`bfh_render_analysis()` SHALL use values from `analysis$render_context`
+(target_display, centerline_formatted, y_axis_unit, operator_unicode,
+outliers_word_key) when rendering placeholders. It SHALL NOT re-derive
+these values from `analysis$features` or `analysis$aux`, since that would
+risk display-drift (eg. changing `">= 90%"` to a different operator-form
+or losing singular/plural agreement).
 
 **Composition order (kanonisk, dokumenteret):**
 
@@ -348,23 +424,33 @@ expect_length(analysis, 1)
 expect_lte(nchar(analysis), 375)
 ```
 
-#### Scenario: AI-path uses bfh_analyse output as baseline
+#### Scenario: AI-path uses rendered character as baseline
 
 **Given** `use_ai = TRUE` and `data_consent = "explicit"`
 **When** `bfh_generate_analysis()` is called
 **Then** internt SHALL `bfh_analyse()` kaldes først
-**And** resultatet SHALL passes til BFHllm som `baseline_analysis` i
-       `llm_context`-objektet
+**And** `bfh_render_analysis()` SHALL kaldes for at producere rendered
+       character output
+**And** den rendered character SHALL passes til BFHllm som
+       `baseline_analysis` i `llm_context`-objektet (matcher eksisterende
+       BFHllm-contract — `context$baseline_analysis` er character, ej
+       struktureret objekt)
 **And** audit-event SHALL emittes som hidtil
 
 ```r
 # Mocked test — verificerer call-pattern
 mock_bfhllm <- function(spc_result, context, ...) {
+  expect_type(context$baseline_analysis, "character")
   expect_true(nchar(context$baseline_analysis) > 0)
   "AI-generated text"
 }
 # ... test setup ...
 ```
+
+**Note:** Det strukturerede `bfh_spc_analysis`-objekt sendes IKKE til
+BFHllm i denne change. Future-change kan introducere
+`structured_analysis`-felt i BFHllm-context når BFHllm-side support +
+audit-event-test er specificeret.
 
 ---
 
