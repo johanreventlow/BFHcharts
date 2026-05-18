@@ -123,6 +123,22 @@ bfh_render_analysis <- function(analysis,
   parts <- parts[nchar(parts) > 0]
   text <- paste(parts, collapse = " ")
 
+  # Cycle 07 finding #1: priority-aware trim. ensure_within_max() trims
+  # blind fra slutningen og kan klippe action_text vaek selv om
+  # modifier_sentence + tail_caveats er optional. Drop low-priority
+  # segments FOR blind-clip naar total overskrider max_chars.
+  # Priority (low -> high): modifier_sentence > tail_caveats > target_text.
+  # stability_text + action_text er klinisk must-keep.
+  if (nchar(text) > max_chars) {
+    drop_candidates <- c(modifier_sentence, tail_caveats, target_text)
+    for (segment in drop_candidates) {
+      if (!nzchar(segment)) next
+      parts <- parts[parts != segment]
+      text <- paste(parts, collapse = " ")
+      if (nchar(text) <= max_chars) break
+    }
+  }
+
   ensure_within_max(text, max_chars)
 }
 

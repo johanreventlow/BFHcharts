@@ -178,3 +178,34 @@ test_that("bfh_render_analysis(): no target -> intet target-arm-clause", {
   expect_no_match(text, "Det nuværende niveau ligger")
   expect_no_match(text, "Det nuværende niveau opfylder")
 })
+
+
+# ==========================================================================
+# Cycle 07 finding #1: priority-aware trim
+# ==========================================================================
+# Naar total prose overskrider max_chars, drop modifier_sentence + tail_caveats
+# + target_text FOER blind clip. stability_text + action_text er klinisk
+# must-keep og maa ikke klippes vaek af ensure_within_max() fra slutningen.
+
+test_that("bfh_render_analysis(): priority-trim bevarer action ved tight budget", {
+  # Phased data trigger modifier_sentence (baseline_delta + magnitude +
+  # direction). Action-text er sidst i parts-vektor -> blind clip ville
+  # klippe action_text vaek foer modifier_sentence.
+  result <- bfh_qic(fixture_phase_phased(seed = 994L, current_mean = 55),
+    x = date, y = value, chart_type = "i", part = 12L
+  )
+  analysis <- bfh_analyse(result,
+    metadata = list(
+      analysis_date = as.Date("2026-05-17"),
+      direction = "higher_better"
+    )
+  )
+
+  # Reviewer's konkret pain point: max_chars=375 + modifier aktiv klippede
+  # "Overvej..."-handlingen vaek. Verificér action bevares.
+  text <- bfh_render_analysis(analysis, max_chars = 375L)
+  expect_lte(nchar(text), 375L)
+  # Action-arm-prose indeholder typisk "Overvej" eller "Undersoeg" eller
+  # "Find" -- mindst eet skal bevares ved tight budget.
+  expect_match(text, "Overvej|Undersøg|Find|Fortsæt", ignore.case = FALSE)
+})
