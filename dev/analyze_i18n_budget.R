@@ -164,6 +164,173 @@ print_arm("target", analysis$target, budget_with$target, budget_no$target)
 print_arm("action", analysis$action, budget_with$action, budget_no$action)
 
 # ----------------------------------------------------------------------------
+# 1b) MODIFIER-SAETNING (cycle 05 finding #2)
+# ----------------------------------------------------------------------------
+# Modifier-sentence-budget er separat pool: max(80L, floor(max_chars * 0.30)).
+# Composeren samler op til 3 aktive modifiers (magnitude + direction +
+# baseline_delta) til EN saetning -- se .compose_modifier_sentence().
+MODIFIER_BUDGET <- max(80L, floor(MAX_CHARS * 0.30))
+cat(sprintf("== 1b) Modifier-saetning (budget=%d, sep pool) ==\n",
+  MODIFIER_BUDGET))
+cat("   Clauses (lowercase, ingen trailing period) -- samles til saetning.\n\n")
+
+print_modifier_arm <- function(arm_name, arm_data, budget) {
+  cat(sprintf("--- modifier.%s ---\n", arm_name))
+  cat(sprintf("  %-32s %5s %5s %5s  %s\n", "key.variant", "shrt", "std", "detl", "fits-budget"))
+  for (key in names(arm_data)) {
+    variants <- arm_data[[key]]
+    if (!is.list(variants)) next
+    # Handle nested structure (baseline_delta.lead/standalone)
+    if (!any(c("short", "standard", "detailed") %in% names(variants))) {
+      for (sub_key in names(variants)) {
+        sub <- variants[[sub_key]]
+        if (!is.list(sub)) next
+        sl <- if (is.null(sub$short)) NA else nchar(sub$short)
+        stl <- if (is.null(sub$standard)) NA else nchar(sub$standard)
+        dl <- if (is.null(sub$detailed)) NA else nchar(sub$detailed)
+        best <- if (!is.na(dl) && dl <= budget) "detl"
+          else if (!is.na(stl) && stl <= budget) "std"
+          else if (!is.na(sl) && sl <= budget) "shrt"
+          else "OVER"
+        cat(sprintf("  %-32s %5s %5s %5s  %s\n",
+          sprintf("%s.%s", key, sub_key),
+          ifelse(is.na(sl), "-", sl),
+          ifelse(is.na(stl), "-", stl),
+          ifelse(is.na(dl), "-", dl), best))
+      }
+      next
+    }
+    sl <- if (is.null(variants$short)) NA else nchar(variants$short)
+    stl <- if (is.null(variants$standard)) NA else nchar(variants$standard)
+    dl <- if (is.null(variants$detailed)) NA else nchar(variants$detailed)
+    best <- if (!is.na(dl) && dl <= budget) "detl"
+      else if (!is.na(stl) && stl <= budget) "std"
+      else if (!is.na(sl) && sl <= budget) "shrt"
+      else "OVER"
+    cat(sprintf("  %-32s %5s %5s %5s  %s\n", key,
+      ifelse(is.na(sl), "-", sl),
+      ifelse(is.na(stl), "-", stl),
+      ifelse(is.na(dl), "-", dl), best))
+  }
+  cat("\n")
+}
+
+if (!is.null(analysis$modifier)) {
+  print_modifier_arm("magnitude", analysis$modifier$magnitude, MODIFIER_BUDGET)
+  print_modifier_arm("direction", analysis$modifier$direction, MODIFIER_BUDGET)
+  print_modifier_arm("baseline_delta", analysis$modifier$baseline_delta, MODIFIER_BUDGET)
+  print_modifier_arm("compose", analysis$modifier$compose, MODIFIER_BUDGET)
+}
+
+# ----------------------------------------------------------------------------
+# 1c) NOT_EVALUABLE per low_confidence_reason (cycle 05 finding #5)
+# ----------------------------------------------------------------------------
+cat("== 1c) base.not_evaluable per low_confidence_reason ==\n")
+cat("   Overrider stability-arm fuldstaendigt naar confidence_tier=='low'.\n")
+cat(sprintf("   Bruges med stability-budget (m.tgt=%d / u.tgt=%d).\n\n",
+  budget_with$stability, budget_no$stability))
+
+if (!is.null(analysis$base$not_evaluable)) {
+  cat(sprintf("  %-20s %5s %5s %5s  %-12s %-12s\n",
+    "reason.variant", "shrt", "std", "detl", "fits m.tgt", "fits u.tgt"))
+  for (reason in names(analysis$base$not_evaluable)) {
+    v <- analysis$base$not_evaluable[[reason]]
+    if (!is.list(v)) next
+    sl <- if (is.null(v$short)) NA else nchar(v$short)
+    stl <- if (is.null(v$standard)) NA else nchar(v$standard)
+    dl <- if (is.null(v$detailed)) NA else nchar(v$detailed)
+    best_with <- if (!is.na(dl) && dl <= budget_with$stability) "detl"
+      else if (!is.na(stl) && stl <= budget_with$stability) "std"
+      else if (!is.na(sl) && sl <= budget_with$stability) "shrt"
+      else "OVER"
+    best_no <- if (!is.na(dl) && dl <= budget_no$stability) "detl"
+      else if (!is.na(stl) && stl <= budget_no$stability) "std"
+      else if (!is.na(sl) && sl <= budget_no$stability) "shrt"
+      else "OVER"
+    cat(sprintf("  %-20s %5s %5s %5s  m=%-10s u=%-10s\n", reason,
+      ifelse(is.na(sl), "-", sl),
+      ifelse(is.na(stl), "-", stl),
+      ifelse(is.na(dl), "-", dl), best_with, best_no))
+  }
+  cat("\n")
+}
+
+# ----------------------------------------------------------------------------
+# 1d) TAIL CAVEATS (cl_source + discrete_scale + variable_cl)
+# ----------------------------------------------------------------------------
+cat("== 1d) Tail-caveats (labels.caveats.*) ==\n")
+cat("   Appendes som tail-clauses efter stability+target+action; tager fra ledig plads.\n\n")
+caveat_keys <- c("cl_user_supplied", "cl_auto_mean", "variable_cl",
+  "discrete_scale_mild", "discrete_scale_moderate")
+for (k in caveat_keys) {
+  v <- labels$caveats[[k]]
+  if (is.null(v)) next
+  cat(sprintf("  %-26s %3d tegn\n", k, nchar(v)))
+}
+cat("\n")
+
+
+# ----------------------------------------------------------------------------
+# Helper: compose modifier sentence (mirror af .compose_modifier_sentence)
+# ----------------------------------------------------------------------------
+compose_modifier_sentence <- function(magnitude, direction, has_baseline,
+                                       pct_abs = 10L, baseline_value = "50,00",
+                                       current_value = "55,00",
+                                       budget = MODIFIER_BUDGET) {
+  m <- analysis$modifier
+  if (is.null(m)) return(list(text = "", variant = NA_character_, fits = NA))
+
+  has_mag <- !is.null(magnitude) && magnitude %in% c("small", "medium", "large")
+  has_dir <- !is.null(direction) && direction %in% c("favorable", "unfavorable")
+
+  if (!has_baseline && !has_mag && !has_dir) {
+    return(list(text = "", variant = NA_character_, fits = NA))
+  }
+
+  mag_clause <- if (has_mag) {
+    pick_variant(m$magnitude[[magnitude]],
+      data = list(pct_abs = pct_abs), budget = budget)$text
+  } else ""
+  dir_clause <- if (has_dir) {
+    pick_variant(m$direction[[direction]], data = list(), budget = budget)$text
+  } else ""
+
+  baseline_data <- list(baseline_value = baseline_value,
+                        current_value = current_value)
+
+  if (has_baseline && (nzchar(mag_clause) || nzchar(dir_clause))) {
+    lead <- pick_variant(m$baseline_delta$lead,
+      data = baseline_data, budget = budget)$text
+    tail <- paste(c(mag_clause, dir_clause)[nzchar(c(mag_clause, dir_clause))],
+      collapse = " ")
+    out <- paste0(lead, ", ", tail, ".")
+    list(text = out, variant = "lead+tail",
+         fits = nchar(out) <= budget)
+  } else if (has_baseline) {
+    r <- pick_variant(m$baseline_delta$standalone,
+      data = baseline_data, budget = budget)
+    list(text = r$text, variant = paste0("standalone.", r$variant),
+         fits = r$fits)
+  } else if (nzchar(mag_clause)) {
+    clauses <- if (nzchar(dir_clause)) paste(mag_clause, dir_clause) else mag_clause
+    r <- pick_variant(m$compose$mod_only,
+      data = list(clauses = clauses), budget = budget)
+    list(text = r$text,
+         variant = sprintf("mod_only.%s+%s%s", magnitude,
+           if (has_dir) "dir" else "", if (has_dir) paste0("(", direction, ")") else ""),
+         fits = r$fits)
+  } else if (nzchar(dir_clause)) {
+    r <- pick_variant(m$compose$dir_only,
+      data = list(clauses = dir_clause), budget = budget)
+    list(text = r$text,
+         variant = sprintf("dir_only.%s", direction),
+         fits = r$fits)
+  } else {
+    list(text = "", variant = NA_character_, fits = NA)
+  }
+}
+
+# ----------------------------------------------------------------------------
 # 2) SCENARIE-SIMULERING
 # ----------------------------------------------------------------------------
 # Definer alle relevante scenarier som tuples:
@@ -328,6 +495,128 @@ results <- lapply(scenarios, function(sc) {
   )
 })
 res <- do.call(rbind, results)
+
+# ----------------------------------------------------------------------------
+# 2b) MODIFIER-SAETNING + TAIL-CAVEATS + LOW-CONFIDENCE (cycle 05 extensions)
+# ----------------------------------------------------------------------------
+# Modifier-sentence har separat budget-pool. Vi simulerer alle
+# (magnitude x direction x phase_context)-kombinationer for at maale
+# fits-rate + variant-fordeling.
+cat("== 2b) Modifier-saetning, tail-caveats, low-confidence ==\n\n")
+
+# 2b.1 Modifier-kombinationer
+mod_scenarios <- list()
+for (mag in list(NULL, "small", "medium", "large")) {
+  for (dir in list(NULL, "favorable", "unfavorable")) {
+    for (has_b in c(FALSE, TRUE)) {
+      mag_lbl <- if (is.null(mag)) "none" else mag
+      dir_lbl <- if (is.null(dir)) "none" else dir
+      mod_scenarios[[length(mod_scenarios) + 1L]] <- list(
+        magnitude = mag, direction = dir, has_baseline = has_b,
+        label = sprintf("mag=%s,dir=%s,baseline=%s", mag_lbl, dir_lbl, has_b)
+      )
+    }
+  }
+}
+
+mod_results <- lapply(mod_scenarios, function(sc) {
+  out <- compose_modifier_sentence(sc$magnitude, sc$direction, sc$has_baseline)
+  data.frame(
+    label = sc$label,
+    has_active = !is.na(out$variant),
+    variant = out$variant %||% NA_character_,
+    text_len = nchar(out$text),
+    fits = out$fits %||% NA,
+    stringsAsFactors = FALSE
+  )
+})
+mod_df <- do.call(rbind, mod_results)
+active_mod <- mod_df[mod_df$has_active, ]
+
+cat(sprintf("Modifier-sentence (budget=%d): %d aktive ud af %d kombinationer\n",
+  MODIFIER_BUDGET, nrow(active_mod), nrow(mod_df)))
+if (nrow(active_mod) > 0) {
+  cat(sprintf("  text_len: min=%d  median=%d  mean=%d  max=%d  budget=%d\n",
+    min(active_mod$text_len), as.integer(median(active_mod$text_len)),
+    as.integer(mean(active_mod$text_len)), max(active_mod$text_len),
+    MODIFIER_BUDGET))
+  cat(sprintf("  over budget: %d (%.1f%%)\n",
+    sum(!active_mod$fits, na.rm = TRUE),
+    100 * mean(!active_mod$fits, na.rm = TRUE)))
+  cat(sprintf("  variant-distribution: %s\n",
+    paste(sprintf("%s=%d", names(table(active_mod$variant)),
+      as.integer(table(active_mod$variant))), collapse = "  ")))
+}
+cat("\n")
+
+# 2b.2 Low-confidence (not_evaluable) -- override stability completely
+cat("Low-confidence (not_evaluable) override-cases:\n")
+cat(sprintf("  Tager stability-budget (%d m.tgt / %d u.tgt); skipper target+action+modifier.\n",
+  budget_with$stability, budget_no$stability))
+lc_results <- list()
+for (reason in c("few_obs", "no_centerline", "no_spread")) {
+  for (has_tgt in c(FALSE, TRUE)) {
+    bdg <- if (has_tgt) budget_with$stability else budget_no$stability
+    templates <- analysis$base$not_evaluable[[reason]]
+    if (is.null(templates)) next
+    # Realistic n_points per reason (few_obs => low n; others => n=15+)
+    n_pts <- if (reason == "few_obs") 8L else 15L
+    r <- pick_variant(templates, data = list(n_points = n_pts), budget = bdg)
+    lc_results[[length(lc_results) + 1L]] <- data.frame(
+      reason = reason, has_target = has_tgt, n_points = n_pts,
+      variant = r$variant, text_len = nchar(r$text),
+      fits = r$fits, stringsAsFactors = FALSE
+    )
+  }
+}
+lc_df <- do.call(rbind, lc_results)
+cat(sprintf("  %-15s %-7s %5s %-10s %5s %s\n",
+  "reason", "tgt?", "n", "variant", "len", "fits"))
+for (i in seq_len(nrow(lc_df))) {
+  r <- lc_df[i, ]
+  cat(sprintf("  %-15s %-7s %5d %-10s %5d %s\n",
+    r$reason, ifelse(r$has_target, "yes", "no"),
+    r$n_points, r$variant, r$text_len,
+    ifelse(isTRUE(r$fits), "OK", "OVER")))
+}
+cat("\n")
+
+# 2b.3 Tail-caveats: tæl additiv mod stability+target+action+modifier
+cat("Tail-caveats: individual + worst-case kombineret additivt-tilskud\n")
+caveat_lens <- sapply(c("cl_user_supplied", "cl_auto_mean", "variable_cl",
+  "discrete_scale_mild", "discrete_scale_moderate"),
+  function(k) nchar(labels$caveats[[k]] %||% ""))
+caveat_lens <- caveat_lens[caveat_lens > 0]
+# Realistic max-simultaneous: cl_source + discrete_scale + variable_cl = 3 stk
+# (cl_user_supplied OR cl_auto_mean, og discrete_scale_mild OR _moderate)
+worst_combo <- nchar(labels$caveats$cl_user_supplied %||% "") +
+  nchar(labels$caveats$discrete_scale_moderate %||% "") +
+  nchar(labels$caveats$variable_cl %||% "") +
+  2L  # 2 space-separators
+cat(sprintf("  Per caveat: %s\n",
+  paste(sprintf("%s=%d", names(caveat_lens), as.integer(caveat_lens)),
+    collapse = "  ")))
+cat(sprintf("  Worst-case 3 caveats samlet: %d tegn (additiv mod stab+tgt+act+mod)\n\n",
+  worst_combo))
+
+# 2b.4 Full-stack worst-case forecast
+cat("Full-stack worst-case forecast (alle 4 layers active):\n")
+stab_worst <- max(res$stab_len)
+tgt_worst <- max(res$tgt_len)
+act_worst <- max(res$act_len)
+mod_worst <- if (nrow(active_mod) > 0) max(active_mod$text_len) else 0L
+total_worst <- stab_worst + tgt_worst + act_worst + mod_worst + worst_combo + 4L
+cat(sprintf("  stability: %d  +  target: %d  +  action: %d  +  modifier: %d  +  caveats: %d  +  separators: 4\n",
+  stab_worst, tgt_worst, act_worst, mod_worst, worst_combo))
+cat(sprintf("  = %d tegn  vs max_chars=%d  (headroom=%+d)\n",
+  total_worst, MAX_CHARS, MAX_CHARS - total_worst))
+if (total_worst > MAX_CHARS) {
+  cat(sprintf("  ADVARSEL: worst-case overskrider max_chars med %d tegn.\n",
+    total_worst - MAX_CHARS))
+  cat("  ensure_within_max() vil trimme i bunden ved aktuelle scenarios.\n")
+}
+cat("\n")
+
 
 # ----------------------------------------------------------------------------
 # 3) AGGREGEREDE STATISTIKKER
