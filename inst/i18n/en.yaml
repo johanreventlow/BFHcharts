@@ -64,6 +64,44 @@ analysis:
 
   anhoej_not_evaluable: "not evaluable (series too short)"
 
+  # Slice 4 INCLUDE: direction-aware modifier (without target).
+  # Appended to stability-text when features$direction is in
+  # (favorable, unfavorable). Driven by metadata$direction + baseline-delta.
+  modifier:
+    # Slice 3 INCLUDE: magnitude-bucket. {pct_abs} is |delta|/baseline in %.
+    magnitude:
+      small:
+        short: "(~{pct_abs}% change)."
+        standard: "(a minor change of ~{pct_abs}%)."
+        detailed: "(a minor change of ~{pct_abs}% in the level since the previous phase)."
+      medium:
+        short: "(~{pct_abs}% change)."
+        standard: "(a change of ~{pct_abs}%)."
+        detailed: "(a moderate change of ~{pct_abs}% in the level since the previous phase)."
+      large:
+        short: "(~{pct_abs}% change)."
+        standard: "(a substantial change of ~{pct_abs}%)."
+        detailed: "(a substantial change of ~{pct_abs}% in the level since the previous phase)."
+
+    # Slice 5 INCLUDE: baseline-delta + phase-intervention.
+    # {baseline_value} + {current_value} are substituted with formatted
+    # centerline values. Activated when features$phase_context ==
+    # "post_intervention" (multi-phase + detectable baseline).
+    baseline_delta:
+      short: "From {baseline_value} to {current_value}."
+      standard: "The level has shifted from {baseline_value} to {current_value} since the previous phase."
+      detailed: "Compared with the previous phase the level has shifted from {baseline_value} to {current_value}."
+
+    direction:
+      favorable:
+        short: "in the desired direction."
+        standard: "in the desired direction."
+        detailed: "The level has moved in the desired direction compared to the previous phase."
+      unfavorable:
+        short: "in the wrong direction."
+        standard: "in the opposite of the desired direction."
+        detailed: "The level has moved in the opposite of the desired direction compared to the previous phase."
+
   # Slice 8 INCLUDE: Few-obs / not-evaluable. When confidence_tier=="low"
   # replaces the entire stability-base section. Triggered when
   # n_points < N_MIN (=12) or missing centerline/sigma estimate.

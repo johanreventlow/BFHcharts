@@ -84,6 +84,44 @@ analysis:
 
   anhoej_not_evaluable: "ikke evaluerbar (for kort serie)"
 
+  # Slice 4 INCLUDE: direction-aware modifier (uden target).
+  # Appendes til stability-text naar features$direction in
+  # (favorable, unfavorable). Bygger paa metadata$direction + baseline-delta.
+  modifier:
+    # Slice 3 INCLUDE: magnitude-bucket. {pct_abs} er |delta|/baseline i %.
+    magnitude:
+      small:
+        short: "(~{pct_abs}% forandring)."
+        standard: "(en mindre forandring på ~{pct_abs}%)."
+        detailed: "(en mindre forandring på ~{pct_abs}% i niveauet siden tidligere fase)."
+      medium:
+        short: "(~{pct_abs}% forandring)."
+        standard: "(en forandring på ~{pct_abs}%)."
+        detailed: "(en moderat forandring på ~{pct_abs}% i niveauet siden tidligere fase)."
+      large:
+        short: "(~{pct_abs}% forandring)."
+        standard: "(en betydelig forandring på ~{pct_abs}%)."
+        detailed: "(en betydelig forandring på ~{pct_abs}% i niveauet siden tidligere fase)."
+
+    # Slice 5 INCLUDE: baseline-delta + phase-intervention.
+    # {baseline_value} + {current_value} substituteres med formaterede
+    # centerline-vaerdier. Aktiveres naar features$phase_context ==
+    # "post_intervention" (multi-phase + detekterbar baseline).
+    baseline_delta:
+      short: "Fra {baseline_value} til {current_value}."
+      standard: "Niveauet er flyttet fra {baseline_value} til {current_value} siden tidligere fase."
+      detailed: "Sammenlignet med tidligere fase er niveauet flyttet fra {baseline_value} til {current_value}."
+
+    direction:
+      favorable:
+        short: "i positiv retning."
+        standard: "i den ønskede retning."
+        detailed: "Niveauet har bevæget sig i den ønskede retning siden tidligere fase."
+      unfavorable:
+        short: "i forkert retning."
+        standard: "i den modsatte af den ønskede retning."
+        detailed: "Niveauet har bevæget sig i den modsatte af den ønskede retning siden tidligere fase."
+
   # Slice 8 INCLUDE: Few-obs / not-evaluable. Naar confidence_tier=="low"
   # erstattes hele stability-base-sektionen af disse templates. Aktiveres
   # naar n_points < N_MIN (=12) eller manglende centerline/sigma-estimat.

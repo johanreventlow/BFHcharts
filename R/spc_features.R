@@ -66,6 +66,11 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
   flags <- .detect_signal_flags(context)
   target_eval <- .evaluate_target_relation(context, flags)
 
+  # Injicer baseline_centerline som context-attribut saa .resolve_direction()
+  # kan udfoere delta-baseret favorable/unfavorable-vurdering uden ekstra
+  # arg-threading.
+  attr(context, "baseline_centerline") <- .extract_baseline_centerline(x)
+
   # --- features ---
   features <- list(
     # AKTIV AKSE (Phase 1 detection):
@@ -75,6 +80,13 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 
     # AKTIV AKSE (kan udfyldes af Slice 5 baseline-delta):
     phase_context = .resolve_phase_context(x),
+
+    # AKTIV AKSE (Slice 3 magnitude):
+    magnitude = .compute_magnitude(
+      baseline_delta = .compute_baseline_delta(x),
+      sigma_hat = context$sigma_hat,
+      sigma_data = context$sigma_data
+    ),
 
     # AKTIV AKSE (Slice 9 CL-disclosure):
     cl_source = .resolve_cl_source(context$spc_stats),
@@ -89,7 +101,6 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 
     # SKIP/DEFER-akser: NA-default for schema-stabilitet
     trend_form = NA_character_, # Slice 12 DEFER
-    magnitude = NA_character_, # Slice 3 detection (Phase 3)
     direction = .resolve_direction(context, metadata),
     freshness = NA_character_, # Slice 10 SKIP
     chart_class = .resolve_chart_class(context$chart_type),
@@ -109,6 +120,7 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     latest_obs_date = .extract_latest_obs_date(x),
     baseline_centerline = .extract_baseline_centerline(x),
     baseline_delta = .compute_baseline_delta(x),
+    baseline_delta_pct = .compute_baseline_delta_pct(x),
     outliers_actual = context$spc_stats$outliers_actual %||% NA_integer_,
     outliers_recent_count = context$spc_stats$outliers_recent_count %||% NA_integer_,
     runs_actual = context$spc_stats$runs_actual,
@@ -305,7 +317,16 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     return("single")
   }
   n_phases <- length(unique(stats::na.omit(x$summary$fase)))
-  if (n_phases > 1L) "multi" else "single"
+  # Slice 5 INCLUDE: multi-phase med detekterbar baseline tagged som
+  # post_intervention (driver baseline-delta-modifier rendering).
+  if (n_phases <= 1L) {
+    return("single")
+  }
+  baseline <- .extract_baseline_centerline(x)
+  if (!is.null(baseline) && !is.na(baseline)) {
+    return("post_intervention")
+  }
+  "multi"
 }
 
 
@@ -334,10 +355,54 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 # "unknown" som default; metadata$direction-override respekteres dog
 # allerede her saa Phase 1 caller kan teste mekanismen.
 .resolve_direction <- function(context, metadata) {
-  # Phase 1 placeholder: returnerer altid "unknown". Slice 4 INCLUDE
-  # mapper context-aktuel retning til favorable/unfavorable og bruger
-  # metadata$direction-override (Phase 3+).
-  "unknown"
+  # Slice 4 INCLUDE: direction-aware vurdering uden target.
+  # metadata$direction kan vaere "higher_better", "lower_better",
+  # eller "neutral". Resulterende features$direction afhaenger af:
+  #   - metadata$direction sat: kraever baseline_centerline (part>=2) for
+  #     at vurdere favorable vs unfavorable via delta-sign.
+  #   - metadata$direction missing: returnerer "unknown".
+  #   - metadata$direction == "neutral": returnerer "neutral".
+  # Direction-vurdering for single-phase data er for ambitios (kraever
+  # changepoint-detection, Slice 12 DEFER). Single-phase + meta-direction
+  # returnerer "neutral".
+
+  meta_dir <- metadata$direction %||% NULL
+  if (is.null(meta_dir)) {
+    return("unknown")
+  }
+  if (identical(meta_dir, "neutral")) {
+    return("neutral")
+  }
+  if (!meta_dir %in% c("higher_better", "lower_better")) {
+    return("unknown")
+  }
+
+  # Kraever baseline-CL for delta-baseret vurdering
+  baseline <- .extract_baseline_centerline_from_context(context)
+  if (is.null(baseline) || is.na(baseline) ||
+    !is_valid_scalar(context$centerline)) {
+    return("neutral") # metadata-direction sat men single-phase data
+  }
+
+  delta <- context$centerline - baseline
+  if (abs(delta) < 1e-9) {
+    return("neutral")
+  }
+
+  # Favorable: data bevaeger sig mod oensket retning
+  is_favorable <- (identical(meta_dir, "higher_better") && delta > 0) ||
+    (identical(meta_dir, "lower_better") && delta < 0)
+  if (is_favorable) "favorable" else "unfavorable"
+}
+
+
+# Helper: baseline-CL er ej i context-objektet -- skal hentes fra x$summary.
+# bfh_extract_spc_features-caller har x i scope; .resolve_direction har ej.
+# Vi udnytter dog at context er bygget fra x og baseline er beregnet i
+# .extract_baseline_centerline(x). For Slice 4 lader vi caller injicere
+# baseline via context-attribut (sat i bfh_extract_spc_features).
+.extract_baseline_centerline_from_context <- function(context) {
+  attr(context, "baseline_centerline", exact = TRUE)
 }
 
 
@@ -499,6 +564,49 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
   current <- x$summary$centerlinje[nrow(x$summary)]
   baseline <- x$summary$centerlinje[nrow(x$summary) - 1L]
   current - baseline
+}
+
+
+# Baseline-delta som procent af baseline_centerline. NA naar baseline=0
+# eller mangler. Bruges af Slice 3 magnitude-modifier.
+.compute_baseline_delta_pct <- function(x) {
+  delta <- .compute_baseline_delta(x)
+  baseline <- .extract_baseline_centerline(x)
+  if (is.na(delta) || is.na(baseline) || abs(baseline) < 1e-9) {
+    return(NA_real_)
+  }
+  100 * delta / baseline
+}
+
+
+# Slice 3 INCLUDE: Magnitude-bucket via sigma-shift-ratio.
+# Returnerer "small" | "medium" | "large" | NA_character_.
+#   small:  |delta|/sigma < 1.0
+#   medium: 1.0 <= |delta|/sigma < 2.0
+#   large:  |delta|/sigma >= 2.0
+# Sigma-prioritet: sigma_hat (control-limits-based) > sigma_data (sd(y)).
+# Returnerer NA naar baseline_delta mangler eller alle sigma-estimater
+# er NA/zero.
+.compute_magnitude <- function(baseline_delta, sigma_hat, sigma_data) {
+  if (is.null(baseline_delta) || is.na(baseline_delta) ||
+    abs(baseline_delta) < 1e-9) {
+    return(NA_character_)
+  }
+  sigma <- if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) && sigma_hat > 0) {
+    sigma_hat
+  } else if (is_valid_scalar(sigma_data) && is.finite(sigma_data) && sigma_data > 0) {
+    sigma_data
+  } else {
+    return(NA_character_)
+  }
+  ratio <- abs(baseline_delta) / sigma
+  if (ratio < 1.0) {
+    "small"
+  } else if (ratio < 2.0) {
+    "medium"
+  } else {
+    "large"
+  }
 }
 
 

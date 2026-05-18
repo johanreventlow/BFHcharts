@@ -72,20 +72,43 @@ bfh_render_analysis <- function(analysis,
   # Byg placeholder-data fra render_context + aux + features
   placeholder_data <- .build_placeholder_data(analysis, texts, language)
 
+  # Override-paths (no_variation, majority_at_centerline) + low-confidence
+  # gating beregnes oppe foran modifier-pool og target+action-arms.
+  is_override <- analysis$conclusions$stability_key %in%
+    c("no_variation", "majority_at_centerline")
+  is_low_confidence <- identical(analysis$confidence, "low") && !is_override
+
   # --- 1. Stabilitetstekst ---
   stability_text <- .render_stability(
     analysis, texts, budgets$stability_budget, placeholder_data, language
   )
 
+  # --- 1b. Modifier-pool: magnitude (Slice 3 INCLUDE) + direction (Slice 4 INCLUDE) ---
+  # Appender til stability-output. Rekkefolge: magnitude foer direction
+  # saa prose-floder naturligt ("skift i niveau (~30% forandring) i
+  # den oenskede retning").  Aktiveres kun udenfor override-paths +
+  # non-low-confidence.
+  if (!is_low_confidence && !is_override) {
+    magnitude_text <- .render_magnitude_modifier(analysis, texts, language)
+    if (nzchar(magnitude_text)) {
+      stability_text <- paste(stability_text, magnitude_text)
+    }
+    direction_text <- .render_direction_modifier(analysis, texts, language)
+    if (nzchar(direction_text)) {
+      stability_text <- paste(stability_text, direction_text)
+    }
+    # Slice 5: baseline-delta + phase-intervention
+    baseline_delta_text <- .render_baseline_delta_modifier(analysis, texts, language)
+    if (nzchar(baseline_delta_text)) {
+      stability_text <- paste(stability_text, baseline_delta_text)
+    }
+  }
+
   # --- 2. Maalvurdering ---
   # Slice 8: low-confidence skipper target+action helt. Med under N_MIN
   # observationer er konkrete maal-/handlings-anbefalinger ej forsvarlige.
   # Override-paths (no_variation, majority_at_centerline) bevarer
-  # target+action selv ved low confidence -- de er specifikke data-
-  # egenskaber, ej "for kort serie".
-  is_override <- analysis$conclusions$stability_key %in%
-    c("no_variation", "majority_at_centerline")
-  is_low_confidence <- identical(analysis$confidence, "low") && !is_override
+  # target+action selv ved low confidence.
   target_text <- if (is_low_confidence) {
     ""
   } else {
@@ -109,6 +132,99 @@ bfh_render_analysis <- function(analysis,
   text <- paste(parts, collapse = " ")
 
   ensure_within_max(text, max_chars)
+}
+
+
+# ---------------------------------------------------------------------------
+# Magnitude modifier (Slice 3 INCLUDE)
+# ---------------------------------------------------------------------------
+
+# Resolverer features$magnitude til prose-clause med {pct_abs}-substitution.
+# Returnerer "" naar magnitude=NA eller baseline_delta_pct mangler.
+.render_magnitude_modifier <- function(analysis, texts, language) {
+  mag <- analysis$features$magnitude
+  if (is.null(mag) || is.na(mag) ||
+    !mag %in% c("small", "medium", "large")) {
+    return("")
+  }
+  pct <- analysis$aux$baseline_delta_pct
+  if (!is_valid_scalar(pct) || !is.finite(pct)) {
+    return("")
+  }
+
+  templates <- texts$modifier$magnitude[[mag]]
+  if (is.null(templates)) {
+    return("")
+  }
+
+  data <- list(pct_abs = abs(round(pct, 0)))
+  pick_text(templates, data = data, budget = 200L)
+}
+
+
+# ---------------------------------------------------------------------------
+# Baseline-delta modifier (Slice 5 INCLUDE)
+# ---------------------------------------------------------------------------
+
+# Resolverer phase_context == "post_intervention" til prose-clause med
+# {baseline_value} + {current_value} substitution. Returnerer "" naar
+# phase_context != post_intervention eller baseline-aux mangler.
+.render_baseline_delta_modifier <- function(analysis, texts, language) {
+  if (!identical(analysis$features$phase_context, "post_intervention")) {
+    return("")
+  }
+  baseline_cl <- analysis$aux$baseline_centerline
+  current_cl <- analysis$aux$centerline
+  if (!is_valid_scalar(baseline_cl) || !is.finite(baseline_cl) ||
+    !is_valid_scalar(current_cl) || !is.finite(current_cl)) {
+    return("")
+  }
+
+  templates <- texts$modifier$baseline_delta
+  if (is.null(templates)) {
+    return("")
+  }
+
+  y_axis_unit <- analysis$render_context$y_axis_unit
+  baseline_value <- format_target_value(baseline_cl,
+    y_axis_unit = y_axis_unit, language = language
+  )
+  current_value <- analysis$render_context$centerline_formatted
+  if (!nzchar(current_value)) {
+    current_value <- format_target_value(current_cl,
+      y_axis_unit = y_axis_unit, language = language
+    )
+  }
+
+  data <- list(
+    baseline_value = baseline_value,
+    current_value = current_value
+  )
+  pick_text(templates, data = data, budget = 200L)
+}
+
+
+# ---------------------------------------------------------------------------
+# Direction modifier (Slice 4 INCLUDE)
+# ---------------------------------------------------------------------------
+
+# Resolverer features$direction til prose-clause (favorable/unfavorable).
+# Returnerer "" naar direction in (neutral, unknown) eller texts mangler.
+.render_direction_modifier <- function(analysis, texts, language) {
+  dir <- analysis$features$direction
+  if (!dir %in% c("favorable", "unfavorable")) {
+    return("")
+  }
+  templates <- texts$modifier$direction[[dir]]
+  if (is.null(templates)) {
+    return("")
+  }
+  # Brug standard-variant; budget-allokering haandteres af caller
+  template_value <- templates$standard %||% templates$short %||% ""
+  if (!nzchar(template_value)) {
+    return("")
+  }
+  template_value
 }
 
 
