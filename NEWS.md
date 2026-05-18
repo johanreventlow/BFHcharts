@@ -1,3 +1,106 @@
+# BFHcharts 0.20.0 (development)
+
+## Nye features
+
+* **Struktureret SPC-analyse via `bfh_analyse()` + `bfh_render_analysis()`**
+  (ADR-003). Tre-lags arkitektur erstatter monolitisk
+  `build_fallback_analysis()`-cascade:
+
+  - `bfh_extract_spc_features(x, metadata)` — pure deterministisk
+    feature-extraction af 12 ortogonale fortolknings-akser
+  - `bfh_analyse(x, metadata, language)` — komposerer struktureret
+    `bfh_spc_analysis` S3-objekt (key-only model: i18n-nøgler, ej
+    resolverede strenge)
+  - `bfh_render_analysis(analysis, max_chars, texts_loader)` —
+    resolverer nøgler til character via texts_loader
+
+  Use-cases: PDF-eksport (eksisterende `bfh_generate_analysis()`
+  delegerer til ny pipeline; backward-compatibel), app-UI badge-
+  rendering, AI-prompt-anker, audit-replay, JSON-export.
+
+* **7 nye fortolknings-akser** aktiveret via modifier-cascade:
+
+  - **Slice 3 (Magnitude)**: `features$magnitude` lagrer sigma-shift-
+    bucket (small/medium/large). Rendres som "(~30% forandring)"-clause
+    appendet til stability-text.
+  - **Slice 4 (Direction)**: `metadata$direction = higher_better /
+    lower_better / neutral` driver favorable/unfavorable-vurdering via
+    baseline-delta. Rendres som "i den ønskede retning"-clause.
+  - **Slice 5 (Baseline-delta + phase-intervention)**: Ved `part >= 2`
+    rendres "Niveauet er flyttet fra X til Y siden tidligere fase".
+  - **Slice 7 (Variable kontrolgrænser)**: p/u/xbar-charts med
+    svingende stikprøvestørrelse får tail-caveat.
+  - **Slice 8 (Few-obs / not-evaluable)**: `n < N_MIN` (= 12 per
+    Anhøj 2014) erstatter stability-base med "for kort serie"-tekst.
+    Target+action arms skippes ved low-confidence.
+  - **Slice 9 (CL-disclosure i prose)**: `cl_user_supplied` +
+    `cl_auto_mean` caveats appender til prose (var hidtil kun i
+    PDF-sidebar).
+  - **Slice 14 (Discrete scale 3-tier)**: `n_on_cl_ratio` mapper til
+    4-tier enum (none/mild/moderate/extreme). Mild/moderate som tail-
+    caveat; extreme bevarer eksisterende `majority_at_centerline`-base-
+    override.
+
+* **Chart-type-aware confidence-tier**: Run-charts har `sigma_hat = NA`
+  by design. `is.na(sigma_hat)` alene udløser IKKE `confidence_tier =
+  "low"` — bruger `sigma_data` (sd(y)) som spread-estimat for run-
+  charts. Tidligere logik ville have fejlmarkeret valide 24-punkt run-
+  charts som "for kort serie".
+
+* **analysis_date 3-vejs præcedens** (`R/utils_analysis_date.R`):
+  Driver deterministisk freshness-detektion og audit-replay-evne.
+  Resolution-order: `metadata$analysis_date` >
+  `getOption("BFHcharts.analysis_date")` > `Sys.Date()`. Resolvet
+  værdi lagres i `analysis$aux$analysis_date`.
+
+## Internal changes
+
+* `bfh_spc_analysis` S3-class (`R/bfh_spc_analysis_class.R`):
+  constructor + validator + `print` / `format` / `as.list`-methods.
+  Schema-version "1.0.0" via `BFH_SPC_ANALYSIS_SCHEMA_VERSION`-konstant,
+  bumpes uafhængigt af pakke-version.
+
+* `N_MIN = 12L`-konstant + `BFHCHARTS_OPT_ANALYSIS_DATE`-konstant
+  tilføjet til `R/globals.R`.
+
+* Shared helpers i `R/spc_analysis.R`:
+  - `.compute_level_keys()` — fælles (direction_key, vs_target_key)-
+    triplet for legacy `build_fallback_analysis()` + ny `spc_render.R`.
+  - `.normalize_target_operators()` — fælles ASCII >=/<=  →  Unicode
+    ≥/≤ konvertering for legacy + ny pipeline.
+
+* `build_fallback_analysis()` markeret som `@keywords internal @noRd`
+  backward-compat-layer; vil blive fjernet i næste major release.
+
+## Validation infrastructure
+
+* **Bilingual parity CI-gate** (`tests/testthat/test-i18n_bilingual_parity.R`,
+  61 tests): YAML key-paritet + placeholder-paritet (med
+  `KNOWN_DIVERGENCES`-whitelist for 11 pre-existing legacy-mismatches) +
+  `format_target_value()`-decimal-separator pr. sprog.
+
+* **Schema-stability tests** (`tests/testthat/test-spc_schema_stability.R`,
+  23 tests): Top-level fields invariant, JSON-roundtrip,
+  `.simulate_downstream_consumer()`-sentry mod breaking changes for
+  biSPCharts.
+
+* **Golden-corpus snapshot** (`tests/testthat/test-spc_golden_corpus.R` +
+  `tests/testthat/_snaps/spc_golden_corpus.md`, 12 snapshots):
+  Parametric sweep over stability × target × language × budget-matrix.
+  Regression-gate ved enhver render-output-aendring.
+
+## Test-suite
+
+* 5446 PASS, 0 FAIL, 57 SKIP (+283 nye tests siden 0.19.0).
+
+## Refs
+
+* ADR-003: `docs/adr/ADR-003-structured-spc-analysis-architecture.md`
+* Openspec change (archived): `openspec/changes/archive/2026-05-18-
+  restructure-spc-analysis-architecture/`
+* Dual-review-cycle 03: `docs/reviews/03-structured-spc-analysis-
+  proposal-2026-05-17.md`
+
 # BFHcharts 0.19.0
 
 ## Bug fixes

@@ -18,6 +18,10 @@ docs/*
 # negation below can re-include subdirs (Git negation cannot re-include
 # files inside an excluded directory).
 !docs/reviews/
+# ADRs (architecture-decision-records) tracked for arkitektur-historik.
+!docs/adr/
+# Migration-guides tracked for cross-repo coordination.
+!docs/MIGRATION_*.md
 # Translation temp files
 po/*~
 # R Environment Variables
