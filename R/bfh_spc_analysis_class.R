@@ -200,6 +200,19 @@ validate_bfh_spc_analysis <- function(x) {
     )
   }
 
+  # Cycle 06 M1: low_confidence_reason-enum (matcher confidence_tier
+  # symmetry). NA_character_ er gyldig naar tier != "low".
+  lcr <- x$features$low_confidence_reason
+  if (!is.null(lcr) && !is.na(lcr) && !lcr %in% LOW_CONFIDENCE_REASONS) {
+    stop(
+      sprintf(
+        "features$low_confidence_reason = %s er ej i {%s}",
+        sQuote(lcr), paste(LOW_CONFIDENCE_REASONS, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+
   invisible(x)
 }
 

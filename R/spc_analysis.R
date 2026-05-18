@@ -267,24 +267,18 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
   # Udtraek SPC statistikker (inkl. outliers fra qic_data)
   spc_stats <- bfh_extract_spc_stats(x)
 
-  # Detect om der er signaler (sikker mod NULL og NA)
-  has_signals <- FALSE
-  if (is_valid_scalar(spc_stats$runs_actual) && is_valid_scalar(spc_stats$runs_expected)) {
-    if (spc_stats$runs_actual > spc_stats$runs_expected) {
-      has_signals <- TRUE
-    }
-  }
-  if (is_valid_scalar(spc_stats$crossings_actual) && is_valid_scalar(spc_stats$crossings_expected)) {
-    if (spc_stats$crossings_actual < spc_stats$crossings_expected) {
-      has_signals <- TRUE
-    }
-  }
-  # has_signals skal afspejle om AKTUELLE signaler eksisterer - brug samme
-  # recent-count som analyseteksten (fallback til outliers_actual hvis ukendt).
-  outliers_for_flag <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
-  if (is_valid_scalar(outliers_for_flag) && outliers_for_flag > 0) {
-    has_signals <- TRUE
-  }
+  # Detect om der er signaler. Delegerer til atomic-detectors (cycle 06
+  # M2 DRY-cleanup) -- samme detection som .detect_signal_flags() +
+  # AI-egress-gate. Behavior-neutral refactor; field bevares for test/
+  # fixture-kontrakt.
+  has_signals <-
+    .has_runs_signal(spc_stats$runs_actual, spc_stats$runs_expected) ||
+      .has_crossings_signal(
+        spc_stats$crossings_actual, spc_stats$crossings_expected
+      ) ||
+      .has_outliers_signal(
+        spc_stats$outliers_recent_count, spc_stats$outliers_actual
+      )
 
   # Filtrer qic_data til sidste fase (matcher centerline-valget nedenfor).
   # Bruges baade til n_points og til sigma-estimater i value-neutral

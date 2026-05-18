@@ -230,6 +230,23 @@ test_that("parity: stable data, cl = 50 (cl_user_supplied) -- Slice 9 caveat akt
 })
 
 
+# Cycle 06 M3: cl_user_supplied substring-assertion er IKKE tautologisk
+# (verificerer Slice 9 caveat-prose rendres) og lever derfor i separat
+# non-skipped test-block. Resterende parity-tests forbliver skipped.
+test_that("Slice 9: cl_user_supplied caveat rendres i bfh_generate_analysis output", {
+  suppressWarnings({
+    res <- bfh_qic(TEST_STABLE_DATA,
+      x = date, y = value, chart_type = "i", cl = 50
+    )
+  })
+  text <- bfh_generate_analysis(res,
+    metadata = list(analysis_date = as.Date("2026-05-17")),
+    max_chars = 375L, min_chars = 300L, use_ai = FALSE
+  )
+  expect_match(text, "midtlinje fastsat manuelt", ignore.case = TRUE)
+})
+
+
 # ==========================================================================
 # Sub-corpus 8: sprog (en)
 # ==========================================================================
