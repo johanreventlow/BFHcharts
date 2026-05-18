@@ -69,9 +69,9 @@ typ_file <- bfh_create_typst_document(
 \seealso{
 \code{\link{bfh_extract_spc_stats}}, \code{\link{bfh_merge_metadata}}
 
-Other utility-functions: 
-\code{\link{bfh_extract_spc_stats}()},
-\code{\link{bfh_generate_details}()},
-\code{\link{bfh_merge_metadata}()}
+Other utility-functions:
+\code{\link[=bfh_extract_spc_stats]{bfh_extract_spc_stats()}},
+\code{\link[=bfh_generate_details]{bfh_generate_details()}},
+\code{\link[=bfh_merge_metadata]{bfh_merge_metadata()}}
 }
 \concept{utility-functions}

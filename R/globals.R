@@ -168,6 +168,50 @@ BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT <- "BFHcharts.allow_globalenv_inject"
 #' The path is shell-metachar validated and existence-checked before use.
 BFHCHARTS_OPT_QUARTO_PATH <- "BFHcharts.quarto_path"
 
+#' Option name: analysis_date override
+#'
+#' When set, `.resolve_analysis_date()` uses this Date as the analysis
+#' anchor instead of `Sys.Date()`. Lower priority than per-call
+#' `metadata$analysis_date`. Intended for test-suites (set in `setup.R`)
+#' and audit-replay scenarios where determinism across calendar days
+#' matters.
+BFHCHARTS_OPT_ANALYSIS_DATE <- "BFHcharts.analysis_date"
+
+#' Minimum observation count for full Anhoej-evaluability
+#'
+#' Below this threshold, `confidence_tier` collapses to `"low"` and the
+#' renderer substitutes the `not_evaluable`-base. Default value follows
+#' Anhoej & Olesen (2014) detection-power analysis: run-detection-power
+#' drops sharply below n = 12.
+#'
+#' Anhoej J, Olesen AV (2014). Run charts revisited: a simulation study
+#' of run chart rules for detection of non-random variation in health
+#' care processes. PLoS One. 9(11):e113825.
+N_MIN <- 12L
+
+#' Low-confidence reason enum
+#'
+#' Set af gyldige `low_confidence_reason`-vaerdier ved
+#' `confidence_tier == "low"`. Bruges af feature-extraction
+#' (`.compute_low_confidence_reason`), render-dispatch
+#' (`.render_stability` -> `texts$base$not_evaluable[[reason]]`) og
+#' schema-validator. NA_character_ er gyldig vaerdi naar tier != "low".
+LOW_CONFIDENCE_REASONS <- c("few_obs", "no_centerline", "no_spread")
+
+#' Magnitude-modifier ratio-cap
+#'
+#' Safety-cap for `.compute_magnitude()` baseline-delta-sigma-ratio.
+#' Microscopic sigma (~1e-12) fra near-constant data combineret med
+#' float-noise baseline-delta kan producere astronomical ratios and
+#' falsk "large"-klassifikation. Ratio > cap returnerer NA i stedet
+#' for magnitude-bucket. Default `100` svarer til 100 sigma-shifts --
+#' empirisk usandsynligt klinisk-meaningful + klart-ufysisk for
+#' kontrolgraense-baseret SPC.
+#'
+#' Cycle 04 H2 fix (2026-05-18). Foreloebigt safety-net; permanent
+#' loesning kraever sigma-floor med scale/unit-awareness.
+MAGNITUDE_RATIO_CAP <- 100
+
 #' Option name: suppress unit auto-detection message
 #'
 #' When `TRUE`, `bfh_export_pdf()` and friends do not emit the informational

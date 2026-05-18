@@ -84,6 +84,90 @@ analysis:
 
   anhoej_not_evaluable: "ikke evaluerbar (for kort serie)"
 
+  # Slice 3-5 INCLUDE: modifier-clauses.
+  # Templates er clause-form (lowercase, ingen trailing period). Komposeres
+  # til EN sammenhaengende saetning af .compose_modifier_sentence() i
+  # spc_render.R (cycle 05 finding #2 fix). Sentence-frame styres af
+  # composeren baseret paa hvilke modifiers er aktive.
+  modifier:
+    # Magnitude-bucket clause. {pct_abs} = |delta|/baseline i %.
+    magnitude:
+      small:
+        short: "~{pct_abs}% forandring"
+        standard: "en mindre forandring på ~{pct_abs}%"
+        detailed: "en mindre niveauforandring på ~{pct_abs}%"
+      medium:
+        short: "~{pct_abs}% forandring"
+        standard: "en forandring på ~{pct_abs}%"
+        detailed: "en moderat niveauforandring på ~{pct_abs}%"
+      large:
+        short: "~{pct_abs}% forandring"
+        standard: "en betydelig forandring på ~{pct_abs}%"
+        detailed: "en betydelig niveauforandring på ~{pct_abs}%"
+
+    # Direction-clause. Composeren joiner uden komma (clause flowes
+    # naturligt med foregaaende magnitude eller baseline_delta).
+    direction:
+      favorable:
+        short: "i positiv retning"
+        standard: "i den ønskede retning"
+        detailed: "i den ønskede retning"
+      unfavorable:
+        # Cycle 05 tekst-stramning: 'i uønsket retning' (mildere end
+        # 'i forkert retning'/'modsatte'), klinisk-neutralt sprog.
+        short: "i uønsket retning"
+        standard: "i uønsket retning"
+        detailed: "væk fra den ønskede retning"
+
+    # Baseline-delta sentence-frame. Composeren bruger 'lead' naar
+    # magnitude/direction kombineres; 'standalone' naar baseline_delta
+    # er eneste aktive modifier (afsluttet med period).
+    # {baseline_value} + {current_value} substitueres med formaterede CL.
+    baseline_delta:
+      lead:
+        short: "Niveauet er flyttet fra {baseline_value} til {current_value}"
+        standard: "Niveauet er flyttet fra {baseline_value} til {current_value} siden tidligere fase"
+        detailed: "Sammenlignet med tidligere fase er niveauet flyttet fra {baseline_value} til {current_value}"
+      standalone:
+        short: "Niveauet er flyttet fra {baseline_value} til {current_value}."
+        standard: "Niveauet er flyttet fra {baseline_value} til {current_value} siden tidligere fase."
+        detailed: "Sammenlignet med tidligere fase er niveauet flyttet fra {baseline_value} til {current_value}."
+
+    # Compose-frames: brugt naar baseline_delta IKKE aktiv men magnitude
+    # og/eller direction findes. {clauses} = magnitude + direction joinet.
+    compose:
+      mod_only:
+        short: "Niveauet viser {clauses}."
+        standard: "Niveauet viser {clauses}."
+        detailed: "Niveauet viser {clauses}."
+      dir_only:
+        short: "Niveauet bevæger sig {clauses}."
+        standard: "Niveauet bevæger sig {clauses}."
+        detailed: "Niveauet bevæger sig {clauses}."
+
+  # Slice 8 INCLUDE: Few-obs / not-evaluable. Naar confidence_tier=="low"
+  # erstattes hele stability-base-sektionen af disse templates.
+  #
+  # Cycle 05 finding #5: dispatch paa low_confidence_reason saa prose
+  # matcher faktisk aarsag (few_obs / no_centerline / no_spread).
+  # Tidligere altid "Med kun {n_points} observationer..." selv naar
+  # n >= N_MIN men centerline eller spread manglede -- klinisk
+  # misvisende.
+  base:
+    not_evaluable:
+      few_obs:
+        short: "For kort serie til vurdering."
+        standard: "Med kun {n_points} observationer kan processen endnu ikke vurderes pålideligt med statistisk proceskontrol."
+        detailed: "Med kun {n_points} observationer er datagrundlaget for spinkelt til pålidelig vurdering med statistisk proceskontrol. Anhøj-reglerne kræver typisk mindst 12 observationer for at have detektionsstyrke."
+      no_centerline:
+        short: "Mangler beregnet kontrolgrundlag."
+        standard: "Serien kan ikke vurderes pålideligt med statistisk proceskontrol, fordi der ikke kan beregnes en centerlinje."
+        detailed: "Med {n_points} observationer foreligger der ikke et beregneligt kontrolgrundlag (manglende centerlinje), så Anhøj-reglerne kan ikke anvendes på serien."
+      no_spread:
+        short: "Mangler beregnet variation."
+        standard: "Serien kan ikke vurderes pålideligt med statistisk proceskontrol, fordi variationen i data ikke kan estimeres."
+        detailed: "Med {n_points} observationer kan spredning i data ikke estimeres pålideligt, så kontrolgrænser og Anhøj-regler er ikke meningsfulde for serien."
+
   target:
     at_target:
       short: "Niveauet ligger tæt på udviklingsmålet ({target})."
@@ -160,13 +244,17 @@ analysis:
       # Tekst formuleres som om maalet i praksis er naaet.
       short: "Niveauet ligger lige {level_direction} målet."
       standard: "Niveauet ligger meget tæt på målet. Overvåg processen løbende."
-      # detailed: "Det nuværende niveau ligger meget tæt på udviklingsmålet. Hold øje med udviklingen."
-      detailed: "Overvej, om forbedring er nødvendig, eller acceptér den lille difference, og overvåg blot processen fremover."
+      # Cycle 05 tekst-stramning: 'Vurdér om forskellen er praktisk
+      # betydende' er mindre normativt end 'acceptér den lille difference'.
+      detailed: "Vurdér, om forskellen er praktisk betydende, og overvåg ellers blot processen fremover."
     unstable_near_target:
       # Som stable_near_target men ustabil proces -- stabiliseringsfokus.
       short: "Niveauet er tæt på målet. Stabilisér processen."
-      standard: "Målet er næsten nået, men processen er ustabil. Undersøg, hvad der påvirker den naturlige variation."
-      detailed: "Undersøg, hvad der påvirker processen, og arbejd for at stabilisere den. Vurdér så, om niveauet er tilfredsstillende."
+      # Cycle 05 tekst-stramning: 'særlige årsager til variation' er
+      # SPC-faglig terminologi (Anhoej/Shewhart-litteratur), ej
+      # 'naturlige variation' der konnoterer common-cause.
+      standard: "Målet er næsten nået, men processen er ustabil. Undersøg, hvilke særlige årsager der påvirker variationen."
+      detailed: "Undersøg, hvilke særlige årsager der påvirker processen, og arbejd for at stabilisere den. Vurdér så, om niveauet er tilfredsstillende."
     unstable_goal_not_met:
       short: "Stabilisér processen først, og arbejd derefter mod målet."
       standard: "Identificér først årsager til variationen i data, og stabilisér processen - derefter kan målrettede forbedringstiltag iværksættes."
@@ -224,3 +312,13 @@ labels:
       Midtlinje fastsat manuelt — Anhøj-signal beregnet mod denne, ikke data-estimeret middelværdi.
     cl_auto_mean: >-
       Niveaulinjen er skiftet til gennemsnit, fordi mindst halvdelen af observationerne i seneste fase lå præcis på medianen.
+    # Slice 14 INCLUDE: discrete-scale mild/moderate tail-caveats.
+    # extreme tier haandteres via stability.majority_at_centerline-template.
+    discrete_scale_mild: >-
+      Nogle datapunkter ligger præcis på niveaulinjen — kan tyde på diskret målerskala.
+    discrete_scale_moderate: >-
+      En betydelig andel af datapunkterne ligger præcis på niveaulinjen, hvilket kan forringe SPC-tolkningen.
+    # Slice 7 INCLUDE: variable kontrolgraenser pga svingende
+    # stikproevestoerrelse i p/u/xbar-charts.
+    variable_cl: >-
+      Kontrolgrænserne varierer, typisk fordi nævner/stikprøvestørrelse ændrer sig over tid — fortolk afvigelser med blik for n i hver periode.

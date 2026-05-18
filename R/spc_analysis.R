@@ -8,6 +8,43 @@
 # Interne helpers (resolve_target, pluralize_da, ensure_within_max)
 # ---------------------------------------------------------------------------
 
+# Konverter ASCII-operatorer (>=, <=) til Unicode-sammentrukne tegn
+# (\U2265, \U2264) i target-display-strenge til klinisk prose-rendering.
+# Bruges af baade .evaluate_target_arm() (legacy) og spc_render.R
+# (struktureret pipeline). Holder operator-mappingen i en enkelt
+# autoritativ kilde.
+.normalize_target_operators <- function(x) {
+  if (is.null(x) || !nzchar(x)) {
+    return(x)
+  }
+  x <- gsub(">=", "\U2265", x, fixed = TRUE)
+  gsub("<=", "\U2264", x, fixed = TRUE)
+}
+
+# Compute target-relativ position af centerlinje som i18n-key-triplet.
+# Returnerer list(direction_key, vs_target_key) hvor begge er strenge
+# "at" | "over" | "under" -- eller NULL hvis target ej sat. Caller
+# resolverer keys via i18n_lookup(paste0("labels.level_*.", key)).
+#
+# Erstatter dual-computation i build_fallback_analysis() (linje 990-1013)
+# og struktureret spc_render.R (.compute_level_direction +
+# .compute_level_vs_target).
+.compute_level_keys <- function(centerline, target_value, has_target) {
+  if (!isTRUE(has_target) || !is_valid_scalar(centerline) ||
+    !is_valid_scalar(target_value)) {
+    return(NULL)
+  }
+  delta <- abs(centerline - target_value)
+  pos <- if (delta < 1e-9) {
+    "at"
+  } else if (centerline > target_value) {
+    "over"
+  } else {
+    "under"
+  }
+  list(direction_key = pos, vs_target_key = pos)
+}
+
 # Resolve target for analysis context via fallback chain.
 #
 # Order of precedence:
@@ -230,24 +267,18 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
   # Udtraek SPC statistikker (inkl. outliers fra qic_data)
   spc_stats <- bfh_extract_spc_stats(x)
 
-  # Detect om der er signaler (sikker mod NULL og NA)
-  has_signals <- FALSE
-  if (is_valid_scalar(spc_stats$runs_actual) && is_valid_scalar(spc_stats$runs_expected)) {
-    if (spc_stats$runs_actual > spc_stats$runs_expected) {
-      has_signals <- TRUE
-    }
-  }
-  if (is_valid_scalar(spc_stats$crossings_actual) && is_valid_scalar(spc_stats$crossings_expected)) {
-    if (spc_stats$crossings_actual < spc_stats$crossings_expected) {
-      has_signals <- TRUE
-    }
-  }
-  # has_signals skal afspejle om AKTUELLE signaler eksisterer - brug samme
-  # recent-count som analyseteksten (fallback til outliers_actual hvis ukendt).
-  outliers_for_flag <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
-  if (is_valid_scalar(outliers_for_flag) && outliers_for_flag > 0) {
-    has_signals <- TRUE
-  }
+  # Detect om der er signaler. Delegerer til atomic-detectors (cycle 06
+  # M2 DRY-cleanup) -- samme detection som .detect_signal_flags() +
+  # AI-egress-gate. Behavior-neutral refactor; field bevares for test/
+  # fixture-kontrakt.
+  has_signals <-
+    .has_runs_signal(spc_stats$runs_actual, spc_stats$runs_expected) ||
+      .has_crossings_signal(
+        spc_stats$crossings_actual, spc_stats$crossings_expected
+      ) ||
+      .has_outliers_signal(
+        spc_stats$outliers_recent_count, spc_stats$outliers_actual
+      )
 
   # Filtrer qic_data til sidste fase (matcher centerline-valget nedenfor).
   # Bruges baade til n_points og til sigma-estimater i value-neutral
@@ -500,8 +531,15 @@ bfh_generate_analysis <- function(x,
     stop("min_chars must be less than max_chars", call. = FALSE)
   }
 
-  # Byg kontekst
-  context <- bfh_build_analysis_context(x, metadata)
+  # Byg struktureret analyse-objekt (Phase 2 cut-over: bfh_analyse +
+  # bfh_render_analysis erstatter monolitisk build_fallback_analysis).
+  # Public-API-signatur uaendret -- intern delegation til ny pipeline.
+  spc_analysis <- bfh_analyse(x, metadata = metadata, language = language)
+  baseline_analysis <- bfh_render_analysis(
+    spc_analysis,
+    max_chars = max_chars,
+    texts_loader = texts_loader
+  )
 
   # Check AI availability and consent - explicit opt-in required
   if (isTRUE(use_ai)) {
@@ -529,39 +567,48 @@ bfh_generate_analysis <- function(x,
 
   if (isTRUE(use_ai)) {
     # === AI-GENERERET ANALYSE ===
+    # baseline_analysis-contract uaendret: rendered character bevares
+    # som anker for BFHllm. Struktureret objekt sendes IKKE til AI i
+    # denne change (separat fremtidig change kan introducere det).
+
+    # signals_detected: TRUE kun naar Anhoej-flags (runs/crossings/outliers)
+    # rent faktisk er aktive -- data-quality states (not_evaluable,
+    # majority_at_centerline, no_variation) er IKKE SPC-signaler men
+    # evaluerbarhed/data-form-issues og maa ikke sendes som "signal" til
+    # BFHllm (cycle 05 finding #4 fix). Delegerer til samme atomare
+    # detectors som .detect_signal_flags() -- forhindrer drift mellem
+    # feature-extraction og AI-egress-gate.
+    aux <- spc_analysis$aux
+    has_signals <-
+      .has_runs_signal(aux$runs_actual, aux$runs_expected) ||
+        .has_crossings_signal(aux$crossings_actual, aux$crossings_expected) ||
+        .has_outliers_signal(aux$outliers_recent_count, aux$outliers_actual)
 
     # Byg SPC metadata til BFHllm
     spc_result <- list(
       metadata = list(
-        chart_type = context$chart_type,
-        n_points = context$n_points,
-        signals_detected = if (context$has_signals) 1L else 0L,
+        chart_type = spc_analysis$render_context$chart_type,
+        n_points = spc_analysis$aux$n_points,
+        signals_detected = if (has_signals) 1L else 0L,
         anhoej_rules = list(
-          longest_run = context$spc_stats$runs_actual,
-          n_crossings = context$spc_stats$crossings_actual,
-          n_crossings_min = context$spc_stats$crossings_expected
+          longest_run = spc_analysis$aux$runs_actual,
+          n_crossings = spc_analysis$aux$crossings_actual,
+          n_crossings_min = spc_analysis$aux$crossings_expected
         )
       ),
       qic_data = x$qic_data
     )
 
-    # Byg fallback-analyse som baseline for AI
-    baseline_analysis <- build_fallback_analysis(context,
-      max_chars = max_chars,
-      language = language,
-      texts_loader = texts_loader
-    )
-
     # Byg kontekst til BFHllm
     llm_context <- list(
-      data_definition = context$data_definition %||% "",
-      chart_title = context$chart_title %||% "",
-      y_axis_unit = context$y_axis_unit %||% "",
-      target_value = context$target_value,
-      hospital = context$hospital %||% "",
-      department = context$department %||% "",
-      n_points = context$n_points,
-      centerline = context$centerline,
+      data_definition = metadata$data_definition %||% "",
+      chart_title = x$config$chart_title %||% "",
+      y_axis_unit = spc_analysis$render_context$y_axis_unit %||% "",
+      target_value = spc_analysis$aux$target_value,
+      hospital = metadata$hospital %||% "",
+      department = metadata$department %||% "",
+      n_points = spc_analysis$aux$n_points,
+      centerline = spc_analysis$aux$centerline,
       # Fagligt korrekt baseline-analyse baseret paa Anhoej-regler
       baseline_analysis = baseline_analysis
     )
@@ -581,7 +628,7 @@ bfh_generate_analysis <- function(x,
     ))
 
     # Call BFHllm
-    analysis <- tryCatch(
+    ai_text <- tryCatch(
       {
         BFHllm::bfhllm_spc_suggestion(
           spc_result = spc_result,
@@ -601,18 +648,13 @@ bfh_generate_analysis <- function(x,
       }
     )
 
-    if (!is.null(analysis) && nchar(analysis) > 0) {
-      return(analysis)
+    if (!is.null(ai_text) && nchar(ai_text) > 0) {
+      return(ai_text)
     }
   }
 
   # === FALLBACK: STANDARDTEKSTER ===
-  analysis <- build_fallback_analysis(context,
-    max_chars = max_chars,
-    language = language,
-    texts_loader = texts_loader
-  )
-  return(analysis)
+  baseline_analysis
 }
 
 
@@ -628,24 +670,43 @@ bfh_generate_analysis <- function(x,
 # Pure: samme input -> samme output. Bruges af build_fallback_analysis() til
 # at drive cascade-dispatch og budget-allokering uden at flade detection-
 # logikken sammen med i18n-opslag.
+# Atomic Anhoej-signal-detectors. Shared mellem .detect_signal_flags()
+# (feature-extraction) og AI-path has_signals (LLM-egress gate). Holder
+# semantik konsistent paa tvaers af call-sites -- ej re-implement risiko
+# (cycle 05 finding #4: tidligere drift mellem stability_pattern og
+# AI-signal-set).
+.has_runs_signal <- function(runs_actual, runs_expected) {
+  is_valid_scalar(runs_actual) && is_valid_scalar(runs_expected) &&
+    runs_actual > runs_expected
+}
+
+.has_crossings_signal <- function(crossings_actual, crossings_expected) {
+  is_valid_scalar(crossings_actual) && is_valid_scalar(crossings_expected) &&
+    crossings_actual < crossings_expected
+}
+
+.has_outliers_signal <- function(outliers_recent_count, outliers_actual) {
+  # Brug recent_count (seneste 6 obs) saa analyseteksten kun beskriver AKTUELLE
+  # outliers. Fald tilbage til outliers_actual naar kun summary-baserede stats
+  # er tilgaengelige.
+  outliers_for_text <- outliers_recent_count %||% outliers_actual
+  is_valid_scalar(outliers_for_text) && outliers_for_text > 0
+}
+
+
 .detect_signal_flags <- function(context) {
   spc_stats <- context$spc_stats
   target_value <- context$target_value
   centerline <- context$centerline
 
-  has_runs <- is_valid_scalar(spc_stats$runs_actual) &&
-    is_valid_scalar(spc_stats$runs_expected) &&
-    spc_stats$runs_actual > spc_stats$runs_expected
-
-  has_crossings <- is_valid_scalar(spc_stats$crossings_actual) &&
-    is_valid_scalar(spc_stats$crossings_expected) &&
-    spc_stats$crossings_actual < spc_stats$crossings_expected
-
-  # Brug recent_count (seneste 6 obs) saa analyseteksten kun beskriver AKTUELLE
-  # outliers. Fald tilbage til outliers_actual naar kun summary-baserede stats
-  # er tilgaengelige.
+  has_runs <- .has_runs_signal(spc_stats$runs_actual, spc_stats$runs_expected)
+  has_crossings <- .has_crossings_signal(
+    spc_stats$crossings_actual, spc_stats$crossings_expected
+  )
   outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
-  has_outliers <- is_valid_scalar(outliers_for_text) && outliers_for_text > 0
+  has_outliers <- .has_outliers_signal(
+    spc_stats$outliers_recent_count, spc_stats$outliers_actual
+  )
 
   is_stable <- !has_runs && !has_crossings && !has_outliers
 
@@ -842,11 +903,9 @@ bfh_generate_analysis <- function(x,
     )
   }
 
-  # Erstat ASCII-operatorer med Unicode-sammentrukne tegn i analyseteksten,
-  # saa ">= 90%" rendres som "\U2265 90%" og "<= 2,5" som "\U2264 2,5".
+  # Erstat ASCII-operatorer med Unicode-sammentrukne tegn i analyseteksten.
   # context$target_display selv bevares uaendret (invariant fra resolve_target()).
-  display_target <- gsub(">=", "\U2265", display_target, fixed = TRUE)
-  display_target <- gsub("<=", "\U2264", display_target, fixed = TRUE)
+  display_target <- .normalize_target_operators(display_target)
 
   # Merge target-display med globale placeholders (level_direction, level_vs_target).
   # Target tager precedence saa specifik target-display ikke kan overskrives.
@@ -935,12 +994,24 @@ bfh_generate_analysis <- function(x,
 }
 
 
-# Intern funktion: Byg komplet fallback-analysetekst
-# Allokerer tegnbudget til stability/target/action dele
-# og vaelger passende variant for hver del. Naar context$target_direction
-# er non-NULL (udledt fra fx "<= 2,5"), bruges retningsbevidst maal-
+# Intern funktion: Byg komplet fallback-analysetekst.
+#
+# BACKWARD-COMPAT LAYER (post-Phase-2 cut-over):
+# Primary path for bfh_generate_analysis() er nu bfh_analyse() +
+# bfh_render_analysis() (R/spc_compose.R + R/spc_render.R).
+# build_fallback_analysis bevares som intern fallback for direct-callere
+# (test-spc_analysis.R + eventuelle eksterne :::-konsumenter) -- vil
+# blive fjernet i naeste major release efter mindst et stabilt release-
+# cycle med den nye pipeline.
+#
+# Allokerer tegnbudget til stability/target/action dele og vaelger
+# passende variant for hver del. Naar context$target_direction er
+# non-NULL (udledt fra fx "<= 2,5"), bruges retningsbevidst maal-
 # vurdering (goal_met/goal_not_met) i stedet for vaerdineutral
 # at/over/under. ensure_within_max garanterer max_chars-graensen.
+#
+# @keywords internal
+# @noRd
 build_fallback_analysis <- function(context,
                                     max_chars = 375,
                                     language = "da",
@@ -987,27 +1058,14 @@ build_fallback_analysis <- function(context,
   # Tomme strenge naar target ikke er sat, saa placeholderne kan staa i
   # templates uden at generere fejl, men bor kun bruges i target-/goal-
   # specifikke varianter for at give meningsfuld tekst.
-  level_direction <- if (flags$has_target) {
-    delta <- abs(centerline - target_value)
-    if (delta < 1e-9) {
-      i18n_lookup("labels.level_direction.at", language)
-    } else if (centerline > target_value) {
-      i18n_lookup("labels.level_direction.over", language)
-    } else {
-      i18n_lookup("labels.level_direction.under", language)
-    }
+  level_keys <- .compute_level_keys(centerline, target_value, flags$has_target)
+  level_direction <- if (!is.null(level_keys)) {
+    i18n_lookup(paste0("labels.level_direction.", level_keys$direction_key), language)
   } else {
     ""
   }
-  level_vs_target <- if (flags$has_target) {
-    key <- if (abs(centerline - target_value) < 1e-9) {
-      "labels.level_vs_target.at"
-    } else if (centerline > target_value) {
-      "labels.level_vs_target.over"
-    } else {
-      "labels.level_vs_target.under"
-    }
-    i18n_lookup(key, language)
+  level_vs_target <- if (!is.null(level_keys)) {
+    i18n_lookup(paste0("labels.level_vs_target.", level_keys$vs_target_key), language)
   } else {
     ""
   }

@@ -290,3 +290,133 @@ fixture_numeric_data <- function(n = 24, mean = 100, sd = 10, seed = 42) {
     y = rnorm(n, mean = mean, sd = sd)
   )
 }
+
+
+# =============================================================================
+# Structured SPC analysis fixtures (Phase 99 + 100 test-infra)
+# =============================================================================
+
+#' Stable test-data (24 punkter, rnorm 50, sd=3-5)
+#'
+#' Producerer deterministisk single-phase data uden signals. Brugt af
+#' structured-analysis test-files (test-spc_features, test-spc_compose,
+#' test-spc_render, test-spc_schema_stability, test-spc_golden_corpus).
+#' withr::with_seed scoper RNG saa fixture ej forurener test-order.
+#'
+#' @param seed RNG-seed
+#' @param n Antal observationer
+#' @param mean Vaerdi-mean
+#' @param sd Standard-afvigelse
+#' @return data.frame med date + value
+#' @keywords internal
+fixture_phase_stable <- function(seed = 991L, n = 24L, mean = 50, sd = 5) {
+  withr::with_seed(seed, {
+    data.frame(
+      date = seq(as.Date("2024-01-01"), by = "month", length.out = n),
+      value = round(rnorm(n, mean, sd), 1)
+    )
+  })
+}
+
+
+#' Konstant data (no_variation override)
+#' @keywords internal
+fixture_phase_constant <- function(n = 24L, value = 50) {
+  data.frame(
+    date = seq(as.Date("2024-01-01"), by = "month", length.out = n),
+    value = rep(value, n)
+  )
+}
+
+
+#' Kort serie (n < N_MIN -> low confidence)
+#' @keywords internal
+fixture_phase_short <- function(seed = 992L, n = 8L) {
+  withr::with_seed(seed, {
+    data.frame(
+      date = seq(as.Date("2024-01-01"), by = "month", length.out = n),
+      value = round(rnorm(n, 50, 3), 1)
+    )
+  })
+}
+
+
+#' Shift data (runs_only-signal forventet)
+#' @keywords internal
+fixture_phase_shifted <- function(seed = 993L) {
+  withr::with_seed(seed, {
+    data.frame(
+      date = seq(as.Date("2024-01-01"), by = "month", length.out = 24L),
+      value = c(rep(45, 12L), rep(55, 12L)) + rnorm(24L, 0, 0.3)
+    )
+  })
+}
+
+
+#' Multi-phase data (baseline + intervention)
+#'
+#' NB: round=FALSE matcher legacy fixture_phased() pattern (raw rnorm-
+#' vaerdier). Test-suite-fixtures der har baseret snapshots paa raw
+#' vaerdier bevarer parity. Andre Slice 3/4/5-tests bruger round=TRUE.
+#'
+#' @keywords internal
+fixture_phase_phased <- function(seed = 994L, baseline_mean = 50,
+                                 current_mean = 55, sigma_d = 1.0, n = 12L,
+                                 round = FALSE) {
+  withr::with_seed(seed, {
+    values <- c(
+      rnorm(n, mean = baseline_mean, sd = sigma_d),
+      rnorm(n, mean = current_mean, sd = sigma_d)
+    )
+    if (round) values <- round(values, 1)
+    data.frame(
+      date = seq(as.Date("2024-01-01"), by = "month", length.out = 2 * n),
+      value = values
+    )
+  })
+}
+
+
+# Memo-cache for bfh_qic-result + bfh_analyse-objekter. Test-suite genbruger
+# samme kombinationer paa tvaers af tests; cache fjerner gentagen
+# qicharts2-pipeline-cost (~485ms per kald).
+.fixture_qic_cache <- new.env(parent = emptyenv())
+.fixture_analyse_cache <- new.env(parent = emptyenv())
+
+
+#' Memoised bfh_qic for test-suite re-brug
+#'
+#' @keywords internal
+fixture_qic_cached <- function(data, ..., cache_key = NULL) {
+  if (is.null(cache_key)) {
+    return(bfh_qic(data, ...))
+  }
+  if (is.null(.fixture_qic_cache[[cache_key]])) {
+    .fixture_qic_cache[[cache_key]] <- bfh_qic(data, ...)
+  }
+  .fixture_qic_cache[[cache_key]]
+}
+
+
+#' Memoised bfh_analyse for test-suite re-brug
+#'
+#' Default analysis_date = 2026-05-18 (pinned for deterministisk
+#' freshness-detektion paa tvaers af kalenderdage).
+#'
+#' @keywords internal
+fixture_analyse_cached <- function(qic_result, metadata = list(),
+                                   language = "da", cache_key = NULL) {
+  if (is.null(metadata$analysis_date)) {
+    metadata$analysis_date <- as.Date("2026-05-18")
+  }
+  if (is.null(cache_key)) {
+    return(bfh_analyse(qic_result, metadata = metadata, language = language))
+  }
+  if (is.null(.fixture_analyse_cache[[cache_key]])) {
+    .fixture_analyse_cache[[cache_key]] <- bfh_analyse(
+      qic_result,
+      metadata = metadata, language = language
+    )
+  }
+  .fixture_analyse_cache[[cache_key]]
+}
