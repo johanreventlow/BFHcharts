@@ -82,8 +82,8 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     # Data-quality sub-akser:
     data_quality = list(
       few_obs = isTRUE(context$n_points < N_MIN),
-      variable_cl = NA, # Slice 7 detection (Phase 3)
-      discrete_scale = if (isTRUE(flags$majority_at_cl)) "moderate" else "none",
+      variable_cl = .detect_variable_cl(x),
+      discrete_scale = .resolve_discrete_scale_tier(context$n_on_cl_ratio),
       missing_denominators = NA # Slice 6 (SKIP)
     ),
 
@@ -366,6 +366,65 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     "s" = "individuals",
     NA_character_
   )
+}
+
+
+# ---------------------------------------------------------------------------
+# Variable-CL detection (Slice 7 INCLUDE)
+# ---------------------------------------------------------------------------
+
+# Returnerer TRUE hvis kontrolgraense-bredden (UCL-LCL) varierer
+# vaesentligt over tid -- typisk pga svingende stikproevestoerrelse
+# i p/u/xbar-charts. Threshold er coefficient-of-variation > 10%
+# (sd(range) / abs(mean(range))). Run-charts har ingen UCL/LCL og
+# returnerer FALSE.
+.detect_variable_cl <- function(x) {
+  qd <- x$qic_data
+  if (is.null(qd) || !all(c("ucl", "lcl") %in% names(qd))) {
+    return(FALSE)
+  }
+  range_w <- qd$ucl - qd$lcl
+  range_w <- range_w[!is.na(range_w) & is.finite(range_w)]
+  if (length(range_w) < 2L) {
+    return(FALSE)
+  }
+  mean_w <- mean(range_w)
+  if (!is.finite(mean_w) || abs(mean_w) < 1e-9) {
+    return(FALSE)
+  }
+  cv <- stats::sd(range_w) / abs(mean_w)
+  isTRUE(is.finite(cv) && cv > 0.10)
+}
+
+
+# ---------------------------------------------------------------------------
+# Discrete-scale tier (Slice 14 INCLUDE)
+# ---------------------------------------------------------------------------
+
+# Mapper n_on_cl_ratio (andel af obs eksakt paa centerlinje) til 4-tier:
+#  none:     ratio < 0.20 -- normal proces-spredning
+#  mild:     ratio in [0.20, 0.35) -- nogen koncentration paa CL
+#  moderate: ratio in [0.35, 0.50) -- udtalt koncentration
+#  extreme:  ratio >= 0.50 -- majority_at_centerline-override aktiv,
+#            haandteres af stability_pattern == "majority_at_centerline"
+#
+# Tier "extreme" matcher eksisterende majority_at_cl-detektion -- den
+# stability_pattern-override haandterer prose-rendering. mild/moderate
+# bidrager via tail-caveat. "none" producerer ingen caveat.
+.resolve_discrete_scale_tier <- function(n_on_cl_ratio) {
+  if (!is_valid_scalar(n_on_cl_ratio) || !is.finite(n_on_cl_ratio)) {
+    return("none")
+  }
+  if (n_on_cl_ratio >= 0.50) {
+    return("extreme")
+  }
+  if (n_on_cl_ratio >= 0.35) {
+    return("moderate")
+  }
+  if (n_on_cl_ratio >= 0.20) {
+    return("mild")
+  }
+  "none"
 }
 
 

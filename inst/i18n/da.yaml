@@ -233,3 +233,13 @@ labels:
       Midtlinje fastsat manuelt — Anhøj-signal beregnet mod denne, ikke data-estimeret middelværdi.
     cl_auto_mean: >-
       Niveaulinjen er skiftet til gennemsnit, fordi mindst halvdelen af observationerne i seneste fase lå præcis på medianen. Anhøj-analysen er beregnet mod gennemsnittet for at undgå falske negative signaler ved diskrete data.
+    # Slice 14 INCLUDE: discrete-scale mild/moderate tail-caveats.
+    # extreme tier haandteres via stability.majority_at_centerline-template.
+    discrete_scale_mild: >-
+      Nogle datapunkter ligger præcis på niveaulinjen — kan tyde på diskret målerskala.
+    discrete_scale_moderate: >-
+      En betydelig andel af datapunkterne ligger præcis på niveaulinjen, hvilket peger på en grov målerskala der kan forringe SPC-tolkningen.
+    # Slice 7 INCLUDE: variable kontrolgraenser pga svingende
+    # stikproevestoerrelse i p/u/xbar-charts.
+    variable_cl: >-
+      Kontrolgrænserne varierer fordi stikprøvestørrelsen ændrer sig over tid — fortolk afvigelser med blik for n i hver periode.

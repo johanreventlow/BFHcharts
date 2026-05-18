@@ -181,6 +181,7 @@ bfh_analyse <- function(x, metadata = list(), language = c("da", "en")) {
 # SKIP/DEFER caveats forbliver NULL men felterne er i schema.
 .compose_caveats <- function(features, intermediate, aux) {
   cl_source <- features$cl_source
+  ds_tier <- features$data_quality$discrete_scale
 
   list(
     cl_source = if (cl_source == "user_supplied") {
@@ -192,7 +193,21 @@ bfh_analyse <- function(x, metadata = list(), language = c("da", "en")) {
     },
     freshness = NULL, # Slice 10 SKIP
     few_obs = if (isTRUE(features$data_quality$few_obs)) "few_obs" else NULL,
-    variable_cl = NULL, # Slice 7 detection (Phase 3)
+    # Slice 7: variable kontrolgraenser pga svingende n.
+    variable_cl = if (isTRUE(features$data_quality$variable_cl)) {
+      "variable_cl"
+    } else {
+      NULL
+    },
+    # Slice 14: mild/moderate som tail-caveat. extreme haandteres via
+    # stability_pattern="majority_at_centerline" (full base-override).
+    discrete_scale = if (identical(ds_tier, "mild")) {
+      "discrete_scale_mild"
+    } else if (identical(ds_tier, "moderate")) {
+      "discrete_scale_moderate"
+    } else {
+      NULL
+    },
     historic_outliers = NULL, # Slice 11 DEFER
     seasonality = NULL # Slice 13 SKIP
   )

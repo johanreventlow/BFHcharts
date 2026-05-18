@@ -132,9 +132,27 @@ bfh_render_analysis <- function(analysis,
     }
   }
 
-  # Phase 3+ tilfoejer: freshness, variable_cl, historic_outliers,
-  # seasonality. Hver tjekker analysis$caveats[[slot]] og resolverer
-  # via i18n.
+  # Slice 14: discrete-scale mild/moderate. extreme tier rendres som
+  # stability-base via majority_at_centerline (ej tail).
+  ds_key <- analysis$caveats$discrete_scale
+  if (!is.null(ds_key) && nzchar(ds_key)) {
+    ds_text <- i18n_lookup(paste0("labels.caveats.", ds_key), language)
+    if (!is.null(ds_text) && nzchar(ds_text)) {
+      parts <- c(parts, ds_text)
+    }
+  }
+
+  # Slice 7: variable kontrolgraenser (p/u/xbar med svingende n)
+  vc_key <- analysis$caveats$variable_cl
+  if (!is.null(vc_key) && nzchar(vc_key)) {
+    vc_text <- i18n_lookup(paste0("labels.caveats.", vc_key), language)
+    if (!is.null(vc_text) && nzchar(vc_text)) {
+      parts <- c(parts, vc_text)
+    }
+  }
+
+  # Phase 3+ tilfoejer: freshness, historic_outliers, seasonality. Hver
+  # tjekker analysis$caveats[[slot]] og resolverer via i18n.
 
   if (length(parts) == 0L) {
     return("")
