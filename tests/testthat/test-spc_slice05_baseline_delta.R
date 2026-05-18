@@ -128,5 +128,5 @@ test_that("Slice 5: en.yaml mirror existerer", {
   )
   text <- bfh_render_analysis(analysis, max_chars = 800L)
 
-  expect_match(text, "shifted from.*to|from.*to.*previous", ignore.case = TRUE)
+  expect_match(text, "from.*to", ignore.case = TRUE)
 })

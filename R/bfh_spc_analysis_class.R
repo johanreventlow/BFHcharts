@@ -158,7 +158,8 @@ validate_bfh_spc_analysis <- function(x) {
 
   required_render_context <- c(
     "target_display", "centerline_formatted", "y_axis_unit",
-    "operator_unicode", "outliers_word_key", "chart_type"
+    "operator_unicode", "outliers_word_key", "effective_window",
+    "chart_type"
   )
   missing_render <- setdiff(required_render_context, names(x$render_context))
   if (length(missing_render) > 0) {

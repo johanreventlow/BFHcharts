@@ -14,14 +14,18 @@ TEST_DATA_MIN <- data.frame(
 )
 
 
-test_that("Slice 8: n < N_MIN udloeser confidence_tier=low + not_evaluable-base", {
+test_that("Slice 8: n < N_MIN udloeser confidence_tier=low + stability_pattern=not_evaluable", {
   res <- bfh_qic(TEST_DATA_SHORT, x = date, y = value, chart_type = "i")
   analysis <- bfh_analyse(res,
     metadata = list(analysis_date = as.Date("2026-05-18"))
   )
 
+  # Cycle 04 H4 + M1 fix: stability_pattern canonical "not_evaluable" naar
+  # confidence=low. caveats$few_obs dropped -- low-confidence-override er
+  # primaer mekanisme.
   expect_equal(analysis$confidence, "low")
-  expect_equal(analysis$caveats$few_obs, "few_obs")
+  expect_equal(analysis$features$stability_pattern, "not_evaluable")
+  expect_null(analysis$caveats$few_obs)
 })
 
 

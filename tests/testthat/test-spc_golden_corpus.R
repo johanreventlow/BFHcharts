@@ -16,45 +16,15 @@
 
 ANALYSIS_DATE <- as.Date("2026-05-18")
 
-# Fixture-fabrikker
-fixture_stable <- function() {
-  set.seed(991L)
-  data.frame(
-    date = seq(as.Date("2024-01-01"), by = "month", length.out = 24L),
-    value = round(rnorm(24L, 50, 3), 1)
-  )
-}
-
-fixture_constant <- function() {
-  data.frame(
-    date = seq(as.Date("2024-01-01"), by = "month", length.out = 24L),
-    value = rep(50, 24L)
-  )
-}
-
-fixture_short <- function() {
-  set.seed(992L)
-  data.frame(
-    date = seq(as.Date("2024-01-01"), by = "month", length.out = 8L),
-    value = round(rnorm(8L, 50, 3), 1)
-  )
-}
-
-fixture_shifted <- function() {
-  set.seed(993L)
-  data.frame(
-    date = seq(as.Date("2024-01-01"), by = "month", length.out = 24L),
-    value = c(rep(45, 12L), rep(55, 12L)) + rnorm(24L, 0, 0.3)
-  )
-}
-
-fixture_phased <- function() {
-  set.seed(994L)
-  data.frame(
-    date = seq(as.Date("2024-01-01"), by = "month", length.out = 24L),
-    value = c(rnorm(12L, 50, 1), rnorm(12L, 55, 1))
-  )
-}
+# Fixture-fabrikker hentes fra helper-fixtures.R:
+#   fixture_phase_stable, fixture_phase_constant, fixture_phase_short,
+#   fixture_phase_shifted, fixture_phase_phased
+# (set.seed scoped via withr::with_seed -- ej test-order-afhaengigt)
+fixture_stable <- function() fixture_phase_stable(seed = 991L, sd = 3)
+fixture_constant <- function() fixture_phase_constant()
+fixture_short <- function() fixture_phase_short(seed = 992L)
+fixture_shifted <- function() fixture_phase_shifted(seed = 993L)
+fixture_phased <- function() fixture_phase_phased(seed = 994L, current_mean = 55)
 
 
 # Helper: kor full pipeline + return text (deterministisk via pinned date)

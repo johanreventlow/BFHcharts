@@ -124,7 +124,7 @@ test_that("bfh_analyse(): cl_user_supplied caveat aktiveres af cl=", {
   expect_equal(analysis$caveats$cl_source, "cl_user_supplied")
 })
 
-test_that("bfh_analyse(): few_obs caveat aktiveres for n < 12", {
+test_that("bfh_analyse(): n < 12 udloeser confidence=low + stability_pattern=not_evaluable", {
   short_data <- data.frame(
     date = seq(as.Date("2024-01-01"), by = "month", length.out = 8L),
     value = c(50, 52, 48, 51, 49, 53, 47, 50)
@@ -132,8 +132,14 @@ test_that("bfh_analyse(): few_obs caveat aktiveres for n < 12", {
   result <- bfh_qic(short_data, x = date, y = value, chart_type = "i")
   analysis <- bfh_analyse(result)
 
-  expect_equal(analysis$caveats$few_obs, "few_obs")
+  # Cycle 04 H4 fix: stability_pattern returnerer "not_evaluable" som
+  # canonical low-confidence-state (downstream UI badges matches rendered
+  # prose). Cycle 04 M1 fix: few_obs-caveat dropped -- low-confidence-
+  # override i stability-base er primaer mekanisme.
   expect_equal(analysis$confidence, "low")
+  expect_equal(analysis$features$stability_pattern, "not_evaluable")
+  expect_equal(analysis$conclusions$stability_key, "not_evaluable")
+  expect_null(analysis$caveats$few_obs)
 })
 
 

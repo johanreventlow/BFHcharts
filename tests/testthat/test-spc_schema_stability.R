@@ -7,22 +7,20 @@
 # Spec: openspec/specs/spc-analysis-api/spec.md ADDED requirement
 #       "bfh_spc_analysis schema_version SHALL follow semver"
 
-set.seed(994L)
-TEST_DATA_SCHEMA <- data.frame(
-  date = seq(as.Date("2024-01-01"), by = "month", length.out = 24L),
-  value = round(rnorm(24L, 50, 5), 1)
-)
+TEST_DATA_SCHEMA <- fixture_phase_stable(seed = 994L, sd = 5)
 
 
+# Memoiseret schema-fixture: cacher (target, language)-kombinationer
+# saa gentagne kald sparer ~485ms bfh_qic + ~28ms bfh_analyse per kald.
+# Test-suite-runtime falder fra ~6s til ~1s for denne fil.
 make_schema_fixture <- function(target_text = NULL, language = "da") {
-  res <- bfh_qic(TEST_DATA_SCHEMA,
+  cache_key <- paste0("schema:", target_text %||% "NULL", ":", language)
+  res <- fixture_qic_cached(TEST_DATA_SCHEMA,
     x = date, y = value, chart_type = "i",
-    target_text = target_text
+    target_text = target_text,
+    cache_key = paste0("qic:", cache_key)
   )
-  bfh_analyse(res,
-    metadata = list(analysis_date = as.Date("2026-05-18")),
-    language = language
-  )
+  fixture_analyse_cached(res, language = language, cache_key = cache_key)
 }
 
 
@@ -115,9 +113,13 @@ test_that("Phase 99.4: JSON-roundtrip preserverer alle top-level fields", {
 # Simulerer hvad biSPCharts vil checke: schema_version + central felt-set.
 # Hvis bfh_spc_analysis brydes, fanges det her foer biSPCharts-side bryder.
 .simulate_downstream_consumer <- function(analysis) {
-  # Tjek schema-version-prefix (MAJOR matcher)
+  # Tjek schema-version-prefix (MAJOR matcher pakkens current MAJOR).
+  # Bruger konstant istedet for hardcoded "1" saa downstream-simulering
+  # foelger MAJOR-bumps automatisk.
+  current_major <- strsplit(BFHcharts:::BFH_SPC_ANALYSIS_SCHEMA_VERSION, ".", fixed = TRUE)[[1]][1]
+  expected_prefix <- paste0("^", current_major, "\\.")
   v <- analysis$schema_version
-  if (is.null(v) || !grepl("^1\\.", v)) {
+  if (is.null(v) || !grepl(expected_prefix, v)) {
     stop("downstream consumer: incompatible schema_version: ", v)
   }
   # Tjek conclusions er keys (ej tekst)

@@ -73,32 +73,40 @@ bfh_render_analysis <- function(analysis,
   placeholder_data <- .build_placeholder_data(analysis, texts, language)
 
   # Override-paths (no_variation, majority_at_centerline) + low-confidence
-  # gating beregnes oppe foran modifier-pool og target+action-arms.
+  # (key=="not_evaluable" per H4 fix) gating beregnes foran modifier-pool
+  # og target+action-arms.
   is_override <- analysis$conclusions$stability_key %in%
     c("no_variation", "majority_at_centerline")
-  is_low_confidence <- identical(analysis$confidence, "low") && !is_override
+  is_low_confidence <- identical(analysis$conclusions$stability_key, "not_evaluable")
 
   # --- 1. Stabilitetstekst ---
   stability_text <- .render_stability(
     analysis, texts, budgets$stability_budget, placeholder_data, language
   )
 
-  # --- 1b. Modifier-pool: magnitude (Slice 3 INCLUDE) + direction (Slice 4 INCLUDE) ---
-  # Appender til stability-output. Rekkefolge: magnitude foer direction
-  # saa prose-floder naturligt ("skift i niveau (~30% forandring) i
-  # den oenskede retning").  Aktiveres kun udenfor override-paths +
-  # non-low-confidence.
+  # --- 1b. Modifier-pool: magnitude (Slice 3) + direction (Slice 4) + baseline-delta (Slice 5) ---
+  # H5 fix (cycle 04): proportional modifier-budget. Tidligere fixed 200L
+  # produced broken prose ved max_chars=200. Per-modifier-budget beregnes
+  # som ~25% af max_chars delt paa antal potentielt-aktive modifikatorer.
   if (!is_low_confidence && !is_override) {
-    magnitude_text <- .render_magnitude_modifier(analysis, texts, language)
+    n_potential_modifiers <- 3L # magnitude + direction + baseline_delta
+    modifier_budget <- max(40L, floor(max_chars * 0.25 / n_potential_modifiers))
+
+    magnitude_text <- .render_magnitude_modifier(analysis, texts, language,
+      budget = modifier_budget
+    )
     if (nzchar(magnitude_text)) {
       stability_text <- paste(stability_text, magnitude_text)
     }
-    direction_text <- .render_direction_modifier(analysis, texts, language)
+    direction_text <- .render_direction_modifier(analysis, texts, language,
+      budget = modifier_budget
+    )
     if (nzchar(direction_text)) {
       stability_text <- paste(stability_text, direction_text)
     }
-    # Slice 5: baseline-delta + phase-intervention
-    baseline_delta_text <- .render_baseline_delta_modifier(analysis, texts, language)
+    baseline_delta_text <- .render_baseline_delta_modifier(analysis, texts, language,
+      budget = modifier_budget
+    )
     if (nzchar(baseline_delta_text)) {
       stability_text <- paste(stability_text, baseline_delta_text)
     }
@@ -141,7 +149,7 @@ bfh_render_analysis <- function(analysis,
 
 # Resolverer features$magnitude til prose-clause med {pct_abs}-substitution.
 # Returnerer "" naar magnitude=NA eller baseline_delta_pct mangler.
-.render_magnitude_modifier <- function(analysis, texts, language) {
+.render_magnitude_modifier <- function(analysis, texts, language, budget = 200L) {
   mag <- analysis$features$magnitude
   if (is.null(mag) || is.na(mag) ||
     !mag %in% c("small", "medium", "large")) {
@@ -158,7 +166,7 @@ bfh_render_analysis <- function(analysis,
   }
 
   data <- list(pct_abs = abs(round(pct, 0)))
-  pick_text(templates, data = data, budget = 200L)
+  pick_text(templates, data = data, budget = budget)
 }
 
 
@@ -169,7 +177,7 @@ bfh_render_analysis <- function(analysis,
 # Resolverer phase_context == "post_intervention" til prose-clause med
 # {baseline_value} + {current_value} substitution. Returnerer "" naar
 # phase_context != post_intervention eller baseline-aux mangler.
-.render_baseline_delta_modifier <- function(analysis, texts, language) {
+.render_baseline_delta_modifier <- function(analysis, texts, language, budget = 200L) {
   if (!identical(analysis$features$phase_context, "post_intervention")) {
     return("")
   }
@@ -186,21 +194,21 @@ bfh_render_analysis <- function(analysis,
   }
 
   y_axis_unit <- analysis$render_context$y_axis_unit
+  # H1 fix: format begge vaerdier ved render-time med caller-language.
+  # Tidligere brugte vi cached render_context$centerline_formatted (hardcoded
+  # 'da') for current -> mixed decimals i en-output.
   baseline_value <- format_target_value(baseline_cl,
     y_axis_unit = y_axis_unit, language = language
   )
-  current_value <- analysis$render_context$centerline_formatted
-  if (!nzchar(current_value)) {
-    current_value <- format_target_value(current_cl,
-      y_axis_unit = y_axis_unit, language = language
-    )
-  }
+  current_value <- format_target_value(current_cl,
+    y_axis_unit = y_axis_unit, language = language
+  )
 
   data <- list(
     baseline_value = baseline_value,
     current_value = current_value
   )
-  pick_text(templates, data = data, budget = 200L)
+  pick_text(templates, data = data, budget = budget)
 }
 
 
@@ -210,7 +218,7 @@ bfh_render_analysis <- function(analysis,
 
 # Resolverer features$direction til prose-clause (favorable/unfavorable).
 # Returnerer "" naar direction in (neutral, unknown) eller texts mangler.
-.render_direction_modifier <- function(analysis, texts, language) {
+.render_direction_modifier <- function(analysis, texts, language, budget = 200L) {
   dir <- analysis$features$direction
   if (!dir %in% c("favorable", "unfavorable")) {
     return("")
@@ -219,12 +227,8 @@ bfh_render_analysis <- function(analysis,
   if (is.null(templates)) {
     return("")
   }
-  # Brug standard-variant; budget-allokering haandteres af caller
-  template_value <- templates$standard %||% templates$short %||% ""
-  if (!nzchar(template_value)) {
-    return("")
-  }
-  template_value
+  # Budget-aware variant-valg via pick_text (H5 fix cycle 04).
+  pick_text(templates, data = list(), budget = budget)
 }
 
 
@@ -286,8 +290,18 @@ bfh_render_analysis <- function(analysis,
 
   level <- .resolve_level_placeholders(analysis, language)
 
+  # H1 fix: format centerline ved render-time med caller-language. Tidligere
+  # cached render_context$centerline_formatted hardcoded 'da' -> mixed
+  # decimals for language='en'.
+  centerline_str <- if (!is.null(aux$centerline) && !is.na(aux$centerline)) {
+    format_target_value(aux$centerline,
+      y_axis_unit = rc$y_axis_unit, language = language
+    )
+  } else {
+    i18n_lookup("labels.misc.ukendt", language) %||% ""
+  }
+
   list(
-    # Anhoej-stats fra aux
     runs_actual = aux$runs_actual,
     runs_expected = aux$runs_expected,
     crossings_actual = aux$crossings_actual,
@@ -295,7 +309,7 @@ bfh_render_analysis <- function(analysis,
     outliers_actual = aux$outliers_recent_count %||% aux$outliers_actual,
     outliers_word = outliers_word,
     effective_window = aux$effective_window %||% RECENT_OBS_WINDOW,
-    centerline = rc$centerline_formatted,
+    centerline = centerline_str,
     target = rc$target_display,
     level_direction = level$direction,
     level_vs_target = level$vs_target
@@ -358,8 +372,11 @@ bfh_render_analysis <- function(analysis,
     return(pick_text(templates, data = data, budget = budget))
   }
 
-  # Slice 8: low-confidence override (ej for override-paths ovenfor)
-  if (identical(analysis$confidence, "low")) {
+  # H4 fix: stability_key == "not_evaluable" er nu canonical low-confidence-
+  # state (.resolve_stability_pattern returnerer noeglen). Render-lag matcher
+  # key, ej confidence-tier separat -- feature-state og rendered output er
+  # konsistente.
+  if (identical(key, "not_evaluable")) {
     templates <- texts$base$not_evaluable %||% NULL
     if (!is.null(templates)) {
       data <- list(
@@ -368,7 +385,6 @@ bfh_render_analysis <- function(analysis,
       )
       return(pick_text(templates, data = data, budget = budget))
     }
-    # Fallback til legacy-label hvis ny base.not_evaluable mangler i loader
   }
 
   templates <- texts$stability[[key]]

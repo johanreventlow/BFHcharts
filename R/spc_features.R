@@ -90,11 +90,16 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
   attr(context, "baseline_centerline") <- baseline_centerline
 
   # --- features ---
+  # H4 fix: compute confidence_tier foer stability_pattern, saa low-confidence
+  # kan returnere "not_evaluable" som feature-value (downstream consumer-
+  # contract matcher rendered output).
+  confidence_tier <- .compute_confidence_tier(context, x)
+
   features <- list(
     # AKTIV AKSE (Phase 1 detection):
-    stability_pattern = .resolve_stability_pattern(flags),
+    stability_pattern = .resolve_stability_pattern(flags, confidence_tier),
     target_relation = target_eval$target_relation,
-    confidence_tier = .compute_confidence_tier(context, x),
+    confidence_tier = confidence_tier,
 
     # AKTIV AKSE (kan udfyldes af Slice 5 baseline-delta):
     phase_context = .resolve_phase_context(x, baseline_centerline),
@@ -163,6 +168,9 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
       aux$outliers_actual,
       aux$outliers_recent_count
     ),
+    # N1 fix: effective_window er spec-required i render_context (cycle 04).
+    # Dupliceres med aux$effective_window for spec-konform downstream-access.
+    effective_window = aux$effective_window %||% NA_integer_,
     chart_type = context$chart_type %||% "i"
   )
 
@@ -203,12 +211,19 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 # Returnerer i18n-noegle for stability-arm baseret paa eksisterende
 # flag-detection. Prioritet matcher build_fallback_analysis():
 # no_variation > majority_at_centerline > signal-baseret dispatch.
-.resolve_stability_pattern <- function(flags) {
+.resolve_stability_pattern <- function(flags, confidence_tier = NULL) {
+  # H4 fix: low-confidence (kort serie / manglende spread-estimat) returnerer
+  # "not_evaluable" som feature-value -- downstream UI badges baseret paa
+  # stability_pattern matcher saa rendered prose. Override-paths
+  # (no_variation, majority_at_centerline) bevarer deres egen overlay.
   if (isTRUE(flags$no_variation)) {
     return("no_variation")
   }
   if (isTRUE(flags$majority_at_cl)) {
     return("majority_at_centerline")
+  }
+  if (identical(confidence_tier, "low")) {
+    return("not_evaluable")
   }
   .select_stability_key(flags) # Returnerer 8 signal-baserede noegler
 }
@@ -604,18 +619,11 @@ DISCRETE_SCALE_TIERS <- c("none", "mild", "moderate", "extreme")
 # Render_context helpers
 # ---------------------------------------------------------------------------
 
-# Format centerline til prose-display. Genbruger eksisterende
-# format_target_value() der haandterer percent-konvertering + decimal-
-# separator efter language.
+# DEPRECATED: kept for backward-compat. Centerline-formatering flyttet til
+# render-time i bfh_render_analysis (cycle 04 H1 fix). Aux har raw-vaerdi;
+# render-lag formaters med analysis$language.
 .format_centerline_for_render <- function(context) {
-  cl <- context$centerline
-  if (is.null(cl) || is.na(cl)) {
-    return("")
-  }
-  format_target_value(cl,
-    y_axis_unit = context$y_axis_unit,
-    language = "da"
-  )
+  ""
 }
 
 

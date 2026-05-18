@@ -201,7 +201,10 @@ bfh_analyse <- function(x, metadata = list(), language = c("da", "en")) {
   list(
     cl_source = cl_caveat,
     freshness = NULL, # Slice 10 SKIP
-    few_obs = if (isTRUE(features$data_quality$few_obs)) "few_obs" else NULL,
+    # M1 fix (cycle 04): few_obs-caveat fjernet -- low-confidence-override
+    # i stability-base er primaer mekanisme (Slice 8). Bevares som NULL-slot
+    # for schema-stabilitet.
+    few_obs = NULL,
     # Slice 7: variable kontrolgraenser pga svingende n.
     variable_cl = if (isTRUE(features$data_quality$variable_cl)) "variable_cl" else NULL,
     discrete_scale = ds_caveat,

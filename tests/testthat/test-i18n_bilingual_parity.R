@@ -127,6 +127,27 @@ test_that("Phase 99.3: placeholders matches mellem da og en per nøgle", {
   } else {
     expect_true(TRUE)
   }
+
+  # Staleness-check: verificer at KNOWN_DIVERGENCES-entries stadig
+  # divergerer. Hvis en entry er blevet fikset i en yaml-update, skal
+  # whitelist-pat tilsvarende renses op (ej silent stale-bevarelse).
+  stale_entries <- character(0L)
+  for (path in KNOWN_DIVERGENCES) {
+    da_value <- .path_get(da, path)
+    en_value <- .path_get(en, path)
+    if (!is.character(da_value) || !is.character(en_value)) next
+    da_ph <- .extract_placeholders(da_value)
+    en_ph <- .extract_placeholders(en_value)
+    if (setequal(da_ph, en_ph)) {
+      stale_entries <- c(stale_entries, path)
+    }
+  }
+  if (length(stale_entries) > 0L) {
+    fail(paste0(
+      "STALE KNOWN_DIVERGENCES (placeholders matches nu -- fjern fra whitelist):\n  ",
+      paste(stale_entries, collapse = "\n  ")
+    ))
+  }
 })
 
 
