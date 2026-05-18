@@ -9,7 +9,7 @@
 
 test_that("Slice 7: detect_variable_cl FALSE naar UCL/LCL mangler", {
   fake_run <- list(qic_data = data.frame(x = 1:10, y = rnorm(10)))
-  expect_false(BFHcharts:::.detect_variable_cl(fake_run))
+  expect_false(BFHcharts:::.detect_variable_cl(fake_run, chart_class = "proportion"))
 })
 
 test_that("Slice 7: detect_variable_cl FALSE naar UCL/LCL er konstante", {
@@ -17,7 +17,7 @@ test_that("Slice 7: detect_variable_cl FALSE naar UCL/LCL er konstante", {
     x = 1:10, y = rnorm(10),
     ucl = rep(60, 10), lcl = rep(40, 10)
   ))
-  expect_false(BFHcharts:::.detect_variable_cl(fake_i))
+  expect_false(BFHcharts:::.detect_variable_cl(fake_i, chart_class = "proportion"))
 })
 
 test_that("Slice 7: detect_variable_cl TRUE naar UCL/LCL varierer >10%", {
@@ -27,7 +27,7 @@ test_that("Slice 7: detect_variable_cl TRUE naar UCL/LCL varierer >10%", {
     ucl = c(60, 72, 48, 66, 54),
     lcl = c(40, 48, 32, 44, 36)
   ))
-  expect_true(BFHcharts:::.detect_variable_cl(fake_p))
+  expect_true(BFHcharts:::.detect_variable_cl(fake_p, chart_class = "proportion"))
 })
 
 test_that("Slice 7: detect_variable_cl FALSE naar variation <= 10%", {
@@ -37,7 +37,37 @@ test_that("Slice 7: detect_variable_cl FALSE naar variation <= 10%", {
     ucl = c(60, 60.5, 59.5, 60.25, 60),
     lcl = c(40, 39.5, 40.5, 39.75, 40)
   ))
-  expect_false(BFHcharts:::.detect_variable_cl(fake_low))
+  expect_false(BFHcharts:::.detect_variable_cl(fake_low, chart_class = "proportion"))
+})
+
+
+# Cycle 05 finding #1: chart-class gate -- variable_cl kun aktiv paa
+# subgrouped chart-classes. I-chart med phase-split har ej "svingende
+# stikproevestoerrelse" -- den signal-type haandteres af baseline-delta.
+test_that("Cycle 05 finding #1: i-chart med phase-split -> variable_cl FALSE", {
+  # Samme high-variation data som forrige test -- men chart_class
+  # "individuals" -> gate bloker -> FALSE selv hvis UCL/LCL varierer.
+  fake_i_phase <- list(qic_data = data.frame(
+    x = 1:5, y = c(50, 51, 49, 60, 61),
+    ucl = c(55, 55, 55, 65, 65), # phase-skift -> CL-shift
+    lcl = c(45, 45, 45, 55, 55)
+  ))
+  expect_false(BFHcharts:::.detect_variable_cl(fake_i_phase, chart_class = "individuals"))
+  # Run/c/g/t/rare_events: ogsa FALSE
+  expect_false(BFHcharts:::.detect_variable_cl(fake_i_phase, chart_class = "run"))
+  expect_false(BFHcharts:::.detect_variable_cl(fake_i_phase, chart_class = "count"))
+  expect_false(BFHcharts:::.detect_variable_cl(fake_i_phase, chart_class = "rare_events"))
+})
+
+test_that("Cycle 05 finding #1: subgrouped chart_class (xbar/s) gate-allowed", {
+  # Slice 6 SKIP men chart_class=subgrouped skal alligevel kunne
+  # udloese variable_cl-caveat (finding #6 mapping-fix).
+  fake_xbar <- list(qic_data = data.frame(
+    x = 1:5, y = c(50, 51, 49, 50.5, 50),
+    ucl = c(60, 72, 48, 66, 54),
+    lcl = c(40, 48, 32, 44, 36)
+  ))
+  expect_true(BFHcharts:::.detect_variable_cl(fake_xbar, chart_class = "subgrouped"))
 })
 
 

@@ -64,52 +64,85 @@ analysis:
 
   anhoej_not_evaluable: "not evaluable (series too short)"
 
-  # Slice 4 INCLUDE: direction-aware modifier (without target).
-  # Appended to stability-text when features$direction is in
-  # (favorable, unfavorable). Driven by metadata$direction + baseline-delta.
+  # Slice 3-5 INCLUDE: modifier-clauses.
+  # Templates are clause-form (lowercase, no trailing period). Composed
+  # into ONE coherent sentence by .compose_modifier_sentence() in
+  # spc_render.R (cycle 05 finding #2 fix). Sentence-frame chosen by
+  # composer based on which modifiers are active.
   modifier:
-    # Slice 3 INCLUDE: magnitude-bucket. {pct_abs} is |delta|/baseline in %.
+    # Magnitude-bucket clause. {pct_abs} = |delta|/baseline as %.
     magnitude:
       small:
-        short: "(~{pct_abs}% change)."
-        standard: "(a minor change of ~{pct_abs}%)."
-        detailed: "(a minor change of ~{pct_abs}% in the level since the previous phase)."
+        short: "~{pct_abs}% change"
+        standard: "a minor change of ~{pct_abs}%"
+        detailed: "a minor change of ~{pct_abs}% in the level"
       medium:
-        short: "(~{pct_abs}% change)."
-        standard: "(a change of ~{pct_abs}%)."
-        detailed: "(a moderate change of ~{pct_abs}% in the level since the previous phase)."
+        short: "~{pct_abs}% change"
+        standard: "a change of ~{pct_abs}%"
+        detailed: "a moderate change of ~{pct_abs}% in the level"
       large:
-        short: "(~{pct_abs}% change)."
-        standard: "(a substantial change of ~{pct_abs}%)."
-        detailed: "(a substantial change of ~{pct_abs}% in the level since the previous phase)."
+        short: "~{pct_abs}% change"
+        standard: "a substantial change of ~{pct_abs}%"
+        detailed: "a substantial change of ~{pct_abs}% in the level"
 
-    # Slice 5 INCLUDE: baseline-delta + phase-intervention.
-    # {baseline_value} + {current_value} are substituted with formatted
-    # centerline values. Activated when features$phase_context ==
-    # "post_intervention" (multi-phase + detectable baseline).
-    baseline_delta:
-      short: "From {baseline_value} to {current_value}."
-      standard: "The level has shifted from {baseline_value} to {current_value} since the previous phase."
-      detailed: "Compared with the previous phase the level has shifted from {baseline_value} to {current_value}."
-
+    # Direction-clause. Composer joins without comma (flows naturally
+    # after preceding magnitude or baseline_delta).
     direction:
       favorable:
-        short: "in the desired direction."
-        standard: "in the desired direction."
-        detailed: "The level has moved in the desired direction compared to the previous phase."
+        short: "in the desired direction"
+        standard: "in the desired direction"
+        detailed: "in the desired direction"
       unfavorable:
-        short: "in the wrong direction."
-        standard: "in the opposite of the desired direction."
-        detailed: "The level has moved in the opposite of the desired direction compared to the previous phase."
+        short: "in an undesired direction"
+        standard: "in an undesired direction"
+        detailed: "away from the desired direction"
+
+    # Baseline-delta sentence-frame. Composer uses 'lead' when combined
+    # with magnitude/direction; 'standalone' when baseline_delta is sole
+    # active modifier (terminated with period).
+    baseline_delta:
+      lead:
+        short: "The level has shifted from {baseline_value} to {current_value}"
+        standard: "The level has shifted from {baseline_value} to {current_value} since the previous phase"
+        detailed: "Compared with the previous phase the level has shifted from {baseline_value} to {current_value}"
+      standalone:
+        short: "The level has shifted from {baseline_value} to {current_value}."
+        standard: "The level has shifted from {baseline_value} to {current_value} since the previous phase."
+        detailed: "Compared with the previous phase the level has shifted from {baseline_value} to {current_value}."
+
+    # Compose-frames: used when baseline_delta NOT active but magnitude
+    # and/or direction present. {clauses} = magnitude + direction joined.
+    compose:
+      mod_only:
+        short: "The level shows {clauses}."
+        standard: "The level shows {clauses}."
+        detailed: "The level shows {clauses}."
+      dir_only:
+        short: "The level is moving {clauses}."
+        standard: "The level is moving {clauses}."
+        detailed: "The level is moving {clauses}."
 
   # Slice 8 INCLUDE: Few-obs / not-evaluable. When confidence_tier=="low"
-  # replaces the entire stability-base section. Triggered when
-  # n_points < N_MIN (=12) or missing centerline/sigma estimate.
+  # replaces the entire stability-base section.
+  #
+  # Cycle 05 finding #5: dispatch on low_confidence_reason so prose
+  # matches actual cause (few_obs / no_centerline / no_spread).
+  # Previously always "With only {n_points}..." even when n >= N_MIN
+  # but centerline or spread was missing -- clinically misleading.
   base:
     not_evaluable:
-      short: "Series too short for assessment."
-      standard: "With only {n_points} observations the process cannot yet be reliably assessed with statistical process control."
-      detailed: "With only {n_points} observations the data is too sparse for reliable assessment with statistical process control. Anhoej rules typically require at least 12 observations for detection power."
+      few_obs:
+        short: "Series too short for assessment."
+        standard: "With only {n_points} observations the process cannot yet be reliably assessed with statistical process control."
+        detailed: "With only {n_points} observations the data is too sparse for reliable assessment with statistical process control. Anhoej rules typically require at least 12 observations for detection power."
+      no_centerline:
+        short: "Missing computable control baseline."
+        standard: "The series cannot be reliably assessed with statistical process control because no centerline could be computed."
+        detailed: "With {n_points} observations no computable control baseline (missing centerline) is available, so Anhoej rules cannot be applied to the series."
+      no_spread:
+        short: "Missing computable variation."
+        standard: "The series cannot be reliably assessed with statistical process control because variation in the data cannot be estimated."
+        detailed: "With {n_points} observations the spread in the data cannot be reliably estimated, so control limits and Anhoej rules are not meaningful for the series."
 
   target:
     at_target:

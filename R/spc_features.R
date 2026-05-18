@@ -100,6 +100,15 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     stability_pattern = .resolve_stability_pattern(flags, confidence_tier),
     target_relation = target_eval$target_relation,
     confidence_tier = confidence_tier,
+    # Cycle 05 finding #5: primary reason for low-confidence (NA naar
+    # confidence_tier != "low"). Drives render-lag template-dispatch saa
+    # not_evaluable-prose matcher faktisk aarsag (few_obs vs no_centerline
+    # vs no_spread).
+    low_confidence_reason = if (identical(confidence_tier, "low")) {
+      .compute_low_confidence_reason(context)
+    } else {
+      NA_character_
+    },
 
     # AKTIV AKSE (kan udfyldes af Slice 5 baseline-delta):
     phase_context = .resolve_phase_context(x, baseline_centerline),
@@ -117,7 +126,7 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     # Data-quality sub-akser:
     data_quality = list(
       few_obs = isTRUE(context$n_points < N_MIN),
-      variable_cl = .detect_variable_cl(x),
+      variable_cl = .detect_variable_cl(x, chart_class = .resolve_chart_class(context$chart_type)),
       discrete_scale = .resolve_discrete_scale_tier(context$n_on_cl_ratio),
       missing_denominators = NA # Slice 6 (SKIP)
     ),
@@ -338,6 +347,39 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 }
 
 
+# Cycle 05 finding #5 fix: low_confidence_reason-akse.
+# Returnerer primaer aarsag til low-confidence:
+#   "few_obs"       -- n < N_MIN
+#   "no_centerline" -- centerline NA/non-finite
+#   "no_spread"     -- baade sigma_hat og sigma_data NA/zero
+#   NA_character_   -- confidence_tier != "low"
+#
+# Prioritets-raekkefoelge: few_obs > no_centerline > no_spread. Naar
+# flere aarsager findes vinder den foerste (sandsynligvis dominerende
+# klinisk-fortolkning). Render-lag dispatcher template-variant paa
+# reason saa not_evaluable-prose matcher faktisk aarsag.
+.compute_low_confidence_reason <- function(context) {
+  n_points <- context$n_points
+  centerline <- context$centerline
+  sigma_hat <- context$sigma_hat
+  sigma_data <- context$sigma_data
+
+  if (is.null(n_points) || is.na(n_points) || n_points < N_MIN) {
+    return("few_obs")
+  }
+  has_centerline <- is_valid_scalar(centerline) && is.finite(centerline)
+  if (!has_centerline) {
+    return("no_centerline")
+  }
+  has_spread <- (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) && sigma_hat > 0) ||
+    (is_valid_scalar(sigma_data) && is.finite(sigma_data) && sigma_data > 0)
+  if (!has_spread) {
+    return("no_spread")
+  }
+  NA_character_
+}
+
+
 # ---------------------------------------------------------------------------
 # Phase-context (single vs multi vs post_intervention)
 # ---------------------------------------------------------------------------
@@ -447,6 +489,13 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 
 # Mapper chart_type til chart_class. Slice 6 SKIP betyder ej brugt til
 # prose-modifikatorer, men aksen lagres for schema-stabilitet.
+#
+# Cycle 05 finding #6 fix: xbar/s mappes til "subgrouped" (ej
+# individuals). Klasserne reflekterer hvordan sigma/CL beregnes:
+#   individuals  = i/mr (single obs per time)
+#   subgrouped   = xbar/s (mean/sd af subgroup ved hvert time-point)
+# Variable_cl-detection gating bruger "subgrouped" som indikator for
+# varying-n CL.
 .resolve_chart_class <- function(chart_type) {
   if (is.null(chart_type) || is.na(chart_type)) {
     return(NA_character_)
@@ -462,8 +511,8 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     "c" = "count",
     "g" = "rare_events",
     "t" = "rare_events",
-    "xbar" = "individuals",
-    "s" = "individuals",
+    "xbar" = "subgrouped",
+    "s" = "subgrouped",
     NA_character_
   )
 }
@@ -478,7 +527,21 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 # i p/u/xbar-charts. Threshold er coefficient-of-variation > 10%
 # (sd(range) / abs(mean(range))). Run-charts har ingen UCL/LCL og
 # returnerer FALSE.
-.detect_variable_cl <- function(x) {
+#
+# Cycle 05 finding #1 fix: chart-class-gate.
+# Variable CL caveat-tekst siger eksplicit "svingende stikproeve-
+# stoerrelse" -- gaelder kun subgrouped chart-classes (proportion,
+# rate, subgrouped-mean). Paa i-charts med phase-split (part=2) er
+# CL-variation drevet af phase, ej n -- den signal-type haandteres
+# af baseline-delta-modifier (Slice 5), ej variable_cl-caveat.
+# Gating fjerner klinisk-misvisende caveat fra i/mr/run/c/g/t-charts.
+.detect_variable_cl <- function(x, chart_class = NULL) {
+  # Gate: variable_cl caveat-prose forudsaetter subgrouped chart-class.
+  # NA chart_class (uventet) -> FALSE for safety.
+  subgrouped <- c("proportion", "rate", "subgrouped")
+  if (!is_valid_scalar(chart_class) || !chart_class %in% subgrouped) {
+    return(FALSE)
+  }
   qd <- x$qic_data
   if (is.null(qd) || !all(c("ucl", "lcl") %in% names(qd))) {
     return(FALSE)

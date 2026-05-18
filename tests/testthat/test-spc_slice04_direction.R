@@ -145,7 +145,7 @@ test_that("Slice 4: unfavorable direction appender 'modsat' clause", {
   )
   text <- bfh_render_analysis(analysis, max_chars = 800L)
 
-  expect_match(text, "modsatte|forkert", ignore.case = TRUE)
+  expect_match(text, "uønsket retning|væk fra den ønskede", ignore.case = TRUE)
 })
 
 
@@ -162,7 +162,7 @@ test_that("Slice 4: neutral/unknown emitter ingen direction-clause", {
   text <- bfh_render_analysis(analysis)
 
   expect_no_match(text, "ønskede retning")
-  expect_no_match(text, "modsatte")
+  expect_no_match(text, "uønsket retning")
 })
 
 

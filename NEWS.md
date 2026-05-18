@@ -53,6 +53,84 @@
   `getOption("BFHcharts.analysis_date")` > `Sys.Date()`. Resolvet
   værdi lagres i `analysis$aux$analysis_date`.
 
+## Bug fixes (cycle 04 + 05 dual-review)
+
+Cycle 04 (final-state branch-review, 2026-05-18) + cycle 05 (user-led
+audit efter cycle 04 fixes) identificerede 14 fund. Fixes:
+
+* **H1 (HIGH, cycle 04)**: Mixed decimal-separators ved `language="en"`.
+  `render_context$centerline_formatted` pre-computed med hardcoded "da";
+  baseline-delta-modifier mixede engelske/danske decimal-tegn. Fix:
+  centerline formaters ved render-time med caller-language.
+
+* **H4 (HIGH, cycle 04)**: `features$stability_pattern` advertise
+  `"not_evaluable"` men sattes aldrig. Render erstattede template ved
+  low-confidence, men feature-key forblev "runs_only" etc. Fix:
+  `.resolve_stability_pattern()` returnerer "not_evaluable" naar
+  `confidence_tier == "low"`.
+
+* **H5 (MEDIUM, cycle 04)**: Fixed 200L modifier-budget producerede
+  brudt prose ved `max_chars=200`. Fix: proportional modifier-budget
+  baseret paa `max_chars * 0.25 / n_modifiers`.
+
+* **N1 (MEDIUM, cycle 04)**: `render_context$effective_window`
+  spec-required men ikke implementeret. Fix: tilfoejet til render_context
+  + validator + schema-test.
+
+* **H2 (MEDIUM, cycle 05)**: `.compute_magnitude` accepterede
+  microscopic sigma (`sigma_hat ~ 1e-12` fra near-constant data) ->
+  float-noise baseline-delta klassificeret som "large". Fix:
+  `MAGNITUDE_RATIO_CAP = 100` returnerer NA ved ratios over cap.
+
+* **H3 (MEDIUM, cycle 05)**: Spec kraevede `aux$data_age_days` men
+  Slice 10 (Freshness) SKIP-besluttet -> ingen detection-use-case.
+  Fix: spec-konsistens (`data_age_days` fjernet fra required-list).
+
+* **Cycle 05 finding #1 (HIGH)**: `detect_variable_cl()` udloeste falsk
+  caveat paa I-charts med phase-split (CL-variation drevet af phase,
+  ej n). Fix: chart-class-gate -- caveat aktiv kun paa subgrouped
+  chart-classes (proportion/rate/subgrouped).
+
+* **Cycle 05 finding #2 (HIGH)**: Modifier-konkatenering producerede
+  grammatisk brudt prose ("... uden tegn paa systematiske aendringer.
+  (en betydelig forandring paa ~10%). i den oenskede retning. Fra X
+  til Y."). Fix: `.compose_modifier_sentence()` bygger EN sammen-
+  haengende saetning. Templates redesignet som clause-form (lowercase,
+  ingen trailing period); composer vaelger sentence-frame baseret paa
+  hvilke modifiers er aktive.
+
+* **Cycle 05 finding #4 (MEDIUM)**: AI-path `signals_detected` ud-
+  ledtes af `stability_pattern != no_signals/no_variation`. Data-
+  quality states (`not_evaluable`, `majority_at_centerline`) lekkede
+  som "signaler" til BFHllm. Fix: brug runs/crossings/outliers flags
+  direkte (sande Anhoej-signaler).
+
+* **Cycle 05 finding #5 (MEDIUM)**: `not_evaluable`-prose sagde altid
+  "Med kun {n_points} observationer..." selv naar n >= N_MIN men
+  centerline/spread manglede -- klinisk misvisende. Fix: ny
+  `low_confidence_reason`-feature-akse (few_obs/no_centerline/
+  no_spread) driver template-dispatch. Render-prose matcher faktisk
+  aarsag.
+
+* **Cycle 05 finding #6 (LOW)**: `chart_class` mappede xbar/s til
+  "individuals". Fix: nu "subgrouped" (matcher hvordan sigma/CL
+  beregnes).
+
+* **Cycle 05 tekst-stramninger**:
+  - direction.unfavorable: "i forkert retning" -> "i uoenskede retning"
+  - stable_near_target.detailed: "accepter den lille difference" ->
+    "Vurder om forskellen er praktisk betydende" (mindre normativt)
+  - unstable_near_target.standard: "naturlige variation" -> "saerlige
+    aarsager til variation" (Anhoej/Shewhart-terminologi)
+  - not_evaluable.few_obs.detailed: "detektions-styrke" ->
+    "detektionsstyrke" (sammensat ord)
+
+* **Test-cleanup**: `test-spc_parity_phase1.R` tautologisk post Phase 2
+  cut-over (bfh_generate_analysis() delegerer internt til samme
+  pipeline). 12 sammenligning-tests skip'es med rationale; determinism-
+  test bevares som idempotens-gate. Snapshot-tests mod frozen baseline
+  er planlagt follow-up.
+
 ## Internal changes
 
 * `bfh_spc_analysis` S3-class (`R/bfh_spc_analysis_class.R`):

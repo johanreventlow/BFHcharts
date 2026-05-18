@@ -115,9 +115,18 @@ The function SHALL produce at minimum the following axes:
 
 Additional axes (`magnitude`, `direction`, `phase_context`, `freshness`,
 `chart_class`, `cl_source`, `outlier_history`, `trend_form`,
-`data_quality`) SHALL be present in the returned structure with
-`NA`/empty values when their detection is not yet activated. This
-guarantees schema stability across feature-slice activation.
+`data_quality`, `low_confidence_reason`) SHALL be present in the
+returned structure with `NA`/empty values when their detection is not
+yet activated. This guarantees schema stability across feature-slice
+activation.
+
+`low_confidence_reason` SHALL be one of
+`c("few_obs", "no_centerline", "no_spread", NA_character_)`. The axis
+is `NA_character_` when `confidence_tier != "low"`. When
+`confidence_tier == "low"` the axis SHALL identify the primary
+detection trigger (priority: `few_obs > no_centerline > no_spread`).
+The render layer SHALL dispatch `base.not_evaluable` template variants
+on this axis (cycle 05 finding #5).
 
 **`confidence_tier` SHALL be computed deterministically AND
 chart-type-aware:**

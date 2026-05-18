@@ -84,32 +84,16 @@ bfh_render_analysis <- function(analysis,
     analysis, texts, budgets$stability_budget, placeholder_data, language
   )
 
-  # --- 1b. Modifier-pool: magnitude (Slice 3) + direction (Slice 4) + baseline-delta (Slice 5) ---
-  # H5 fix (cycle 04): proportional modifier-budget. Tidligere fixed 200L
-  # produced broken prose ved max_chars=200. Per-modifier-budget beregnes
-  # som ~25% af max_chars delt paa antal potentielt-aktive modifikatorer.
-  if (!is_low_confidence && !is_override) {
-    n_potential_modifiers <- 3L # magnitude + direction + baseline_delta
-    modifier_budget <- max(40L, floor(max_chars * 0.25 / n_potential_modifiers))
-
-    magnitude_text <- .render_magnitude_modifier(analysis, texts, language,
-      budget = modifier_budget
-    )
-    if (nzchar(magnitude_text)) {
-      stability_text <- paste(stability_text, magnitude_text)
-    }
-    direction_text <- .render_direction_modifier(analysis, texts, language,
-      budget = modifier_budget
-    )
-    if (nzchar(direction_text)) {
-      stability_text <- paste(stability_text, direction_text)
-    }
-    baseline_delta_text <- .render_baseline_delta_modifier(analysis, texts, language,
-      budget = modifier_budget
-    )
-    if (nzchar(baseline_delta_text)) {
-      stability_text <- paste(stability_text, baseline_delta_text)
-    }
+  # --- 1b. Modifier-saetning: magnitude + direction + baseline-delta (cycle 05 finding #2) ---
+  # Tidligere paste-konkatenering producerede brudt prose (fragments med
+  # parens, lowercase-leadings, dobbelt-perioder). Composeren bygger nu
+  # EN sammenhaengende saetning ved at vaelge sentence-frame baseret paa
+  # hvilke modifikatorer er aktive.
+  modifier_sentence <- if (!is_low_confidence && !is_override) {
+    modifier_budget <- max(80L, floor(max_chars * 0.30))
+    .compose_modifier_sentence(analysis, texts, language, budget = modifier_budget)
+  } else {
+    ""
   }
 
   # --- 2. Maalvurdering ---
@@ -135,7 +119,7 @@ bfh_render_analysis <- function(analysis,
   # Future slices appender til samme pool (freshness, variable_cl, ...).
   tail_caveats <- .render_tail_caveats(analysis, texts, language)
 
-  parts <- c(stability_text, target_text, action_text, tail_caveats)
+  parts <- c(stability_text, modifier_sentence, target_text, action_text, tail_caveats)
   parts <- parts[nchar(parts) > 0]
   text <- paste(parts, collapse = " ")
 
@@ -144,91 +128,111 @@ bfh_render_analysis <- function(analysis,
 
 
 # ---------------------------------------------------------------------------
-# Magnitude modifier (Slice 3 INCLUDE)
+# Modifier sentence composer (cycle 05 finding #2 fix)
 # ---------------------------------------------------------------------------
 
-# Resolverer features$magnitude til prose-clause med {pct_abs}-substitution.
-# Returnerer "" naar magnitude=NA eller baseline_delta_pct mangler.
-.render_magnitude_modifier <- function(analysis, texts, language, budget = 200L) {
-  mag <- analysis$features$magnitude
-  if (is.null(mag) || is.na(mag) ||
-    !mag %in% c("small", "medium", "large")) {
-    return("")
-  }
-  pct <- analysis$aux$baseline_delta_pct
-  if (!is_valid_scalar(pct) || !is.finite(pct)) {
-    return("")
-  }
+# Bygger EN sammenhaengende modifier-saetning af op til 3 aktive modifiers
+# (baseline_delta, magnitude, direction). Erstatter den tidligere
+# paste-konkatenering af fragmenter, som producerede brudt prose.
+#
+# Sentence-frame styres af kombinationen:
+#  baseline_delta + (magnitude eller direction) -> "lead, {mag} {dir}."
+#  baseline_delta kun                           -> "standalone."
+#  magnitude + direction (ej baseline)          -> "Niveauet viser {mag} {dir}."
+#  magnitude kun                                -> "Niveauet viser {mag}."
+#  direction kun                                -> "Niveauet bevaeger sig {dir}."
+#  ingen aktive                                 -> ""
+#
+# Returnerer character af laengde 1 (potentielt "").
+.compose_modifier_sentence <- function(analysis, texts, language, budget = 200L) {
+  features <- analysis$features
+  aux <- analysis$aux
 
-  templates <- texts$modifier$magnitude[[mag]]
-  if (is.null(templates)) {
-    return("")
-  }
+  has_baseline <- identical(features$phase_context, "post_intervention") &&
+    is_valid_scalar(aux$baseline_centerline) && is.finite(aux$baseline_centerline) &&
+    is_valid_scalar(aux$centerline) && is.finite(aux$centerline)
 
-  data <- list(pct_abs = abs(round(pct, 0)))
-  pick_text(templates, data = data, budget = budget)
-}
+  has_mag <- !is.null(features$magnitude) && !is.na(features$magnitude) &&
+    features$magnitude %in% c("small", "medium", "large") &&
+    is_valid_scalar(aux$baseline_delta_pct) && is.finite(aux$baseline_delta_pct)
 
+  has_dir <- !is.null(features$direction) &&
+    features$direction %in% c("favorable", "unfavorable")
 
-# ---------------------------------------------------------------------------
-# Baseline-delta modifier (Slice 5 INCLUDE)
-# ---------------------------------------------------------------------------
-
-# Resolverer phase_context == "post_intervention" til prose-clause med
-# {baseline_value} + {current_value} substitution. Returnerer "" naar
-# phase_context != post_intervention eller baseline-aux mangler.
-.render_baseline_delta_modifier <- function(analysis, texts, language, budget = 200L) {
-  if (!identical(analysis$features$phase_context, "post_intervention")) {
-    return("")
-  }
-  baseline_cl <- analysis$aux$baseline_centerline
-  current_cl <- analysis$aux$centerline
-  if (!is_valid_scalar(baseline_cl) || !is.finite(baseline_cl) ||
-    !is_valid_scalar(current_cl) || !is.finite(current_cl)) {
+  if (!has_baseline && !has_mag && !has_dir) {
     return("")
   }
 
-  templates <- texts$modifier$baseline_delta
-  if (is.null(templates)) {
-    return("")
+  # Hent clause-templates (variant-aware via pick_text).
+  mag_clause <- if (has_mag) {
+    templates <- texts$modifier$magnitude[[features$magnitude]]
+    if (is.null(templates)) {
+      ""
+    } else {
+      pct <- abs(round(aux$baseline_delta_pct, 0))
+      pick_text(templates, data = list(pct_abs = pct), budget = budget)
+    }
+  } else {
+    ""
   }
 
-  y_axis_unit <- analysis$render_context$y_axis_unit
-  # H1 fix: format begge vaerdier ved render-time med caller-language.
-  # Tidligere brugte vi cached render_context$centerline_formatted (hardcoded
-  # 'da') for current -> mixed decimals i en-output.
-  baseline_value <- format_target_value(baseline_cl,
-    y_axis_unit = y_axis_unit, language = language
-  )
-  current_value <- format_target_value(current_cl,
-    y_axis_unit = y_axis_unit, language = language
-  )
-
-  data <- list(
-    baseline_value = baseline_value,
-    current_value = current_value
-  )
-  pick_text(templates, data = data, budget = budget)
-}
-
-
-# ---------------------------------------------------------------------------
-# Direction modifier (Slice 4 INCLUDE)
-# ---------------------------------------------------------------------------
-
-# Resolverer features$direction til prose-clause (favorable/unfavorable).
-# Returnerer "" naar direction in (neutral, unknown) eller texts mangler.
-.render_direction_modifier <- function(analysis, texts, language, budget = 200L) {
-  dir <- analysis$features$direction
-  if (!dir %in% c("favorable", "unfavorable")) {
-    return("")
+  dir_clause <- if (has_dir) {
+    templates <- texts$modifier$direction[[features$direction]]
+    if (is.null(templates)) "" else pick_text(templates, budget = budget)
+  } else {
+    ""
   }
-  templates <- texts$modifier$direction[[dir]]
-  if (is.null(templates)) {
-    return("")
+
+  baseline_data <- if (has_baseline) {
+    y_axis_unit <- analysis$render_context$y_axis_unit
+    list(
+      baseline_value = format_target_value(aux$baseline_centerline,
+        y_axis_unit = y_axis_unit, language = language
+      ),
+      current_value = format_target_value(aux$centerline,
+        y_axis_unit = y_axis_unit, language = language
+      )
+    )
+  } else {
+    list()
   }
-  # Budget-aware variant-valg via pick_text (H5 fix cycle 04).
-  pick_text(templates, data = list(), budget = budget)
+
+  # Compose final sentence.
+  if (has_baseline && (nzchar(mag_clause) || nzchar(dir_clause))) {
+    lead_templates <- texts$modifier$baseline_delta$lead
+    if (is.null(lead_templates)) {
+      return("")
+    }
+    lead <- pick_text(lead_templates, data = baseline_data, budget = budget)
+    tail_clauses <- c(mag_clause, dir_clause)
+    tail_clauses <- tail_clauses[nzchar(tail_clauses)]
+    tail <- paste(tail_clauses, collapse = " ")
+    paste0(lead, ", ", tail, ".")
+  } else if (has_baseline) {
+    standalone_templates <- texts$modifier$baseline_delta$standalone
+    if (is.null(standalone_templates)) "" else pick_text(standalone_templates, data = baseline_data, budget = budget)
+  } else if (nzchar(mag_clause)) {
+    # Magnitude (+/- direction). Frame "Niveauet viser {clauses}.".
+    frame_templates <- texts$modifier$compose$mod_only
+    if (is.null(frame_templates)) {
+      return("")
+    }
+    clauses <- if (nzchar(dir_clause)) {
+      paste(mag_clause, dir_clause)
+    } else {
+      mag_clause
+    }
+    pick_text(frame_templates, data = list(clauses = clauses), budget = budget)
+  } else if (nzchar(dir_clause)) {
+    # Direction kun. Frame "Niveauet bevaeger sig {clauses}.".
+    frame_templates <- texts$modifier$compose$dir_only
+    if (is.null(frame_templates)) {
+      return("")
+    }
+    pick_text(frame_templates, data = list(clauses = dir_clause), budget = budget)
+  } else {
+    ""
+  }
 }
 
 
@@ -376,8 +380,15 @@ bfh_render_analysis <- function(analysis,
   # state (.resolve_stability_pattern returnerer noeglen). Render-lag matcher
   # key, ej confidence-tier separat -- feature-state og rendered output er
   # konsistente.
+  #
+  # Cycle 05 finding #5: dispatch paa low_confidence_reason saa prose
+  # matcher faktisk aarsag (few_obs vs no_centerline vs no_spread).
   if (identical(key, "not_evaluable")) {
-    templates <- texts$base$not_evaluable %||% NULL
+    reason <- analysis$features$low_confidence_reason %||% "few_obs"
+    if (!reason %in% c("few_obs", "no_centerline", "no_spread")) {
+      reason <- "few_obs" # safety-fallback
+    }
+    templates <- texts$base$not_evaluable[[reason]] %||% NULL
     if (!is.null(templates)) {
       data <- list(
         n_points = analysis$aux$n_points %||% 0L,

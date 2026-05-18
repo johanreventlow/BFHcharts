@@ -577,10 +577,27 @@ bfh_generate_analysis <- function(x,
     # som anker for BFHllm. Struktureret objekt sendes IKKE til AI i
     # denne change (separat fremtidig change kan introducere det).
 
-    # signals_detected: stability_pattern != "no_signals" og ikke en
-    # override-state (no_variation har implicit ingen signaler).
-    has_signals <- !spc_analysis$features$stability_pattern %in%
-      c("no_signals", "no_variation")
+    # signals_detected: TRUE kun naar Anhoej-flags (runs/crossings/outliers)
+    # rent faktisk er aktive -- data-quality states (not_evaluable,
+    # majority_at_centerline, no_variation) er IKKE SPC-signaler men
+    # evaluerbarhed/data-form-issues og maa ikke sendes som "signal" til
+    # BFHllm (cycle 05 finding #4 fix).
+    #
+    # Anhoej-runs check: runs_actual > runs_expected.
+    # Anhoej-crossings check: crossings_actual < crossings_expected.
+    # Outliers: brug recent_count (seneste 6 obs) som primaer kilde,
+    # fald tilbage til outliers_actual.
+    aux <- spc_analysis$aux
+    has_runs <- is_valid_scalar(aux$runs_actual) &&
+      is_valid_scalar(aux$runs_expected) &&
+      aux$runs_actual > aux$runs_expected
+    has_crossings <- is_valid_scalar(aux$crossings_actual) &&
+      is_valid_scalar(aux$crossings_expected) &&
+      aux$crossings_actual < aux$crossings_expected
+    outliers_for_check <- aux$outliers_recent_count %||% aux$outliers_actual
+    has_outliers <- is_valid_scalar(outliers_for_check) &&
+      is.finite(outliers_for_check) && outliers_for_check > 0
+    has_signals <- isTRUE(has_runs) || isTRUE(has_crossings) || isTRUE(has_outliers)
 
     # Byg SPC metadata til BFHllm
     spc_result <- list(

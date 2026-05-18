@@ -15,6 +15,7 @@ make_test_analysis <- function(overrides = list()) {
       direction = "neutral",
       target_relation = "none",
       confidence_tier = "high",
+      low_confidence_reason = NA_character_,
       phase_context = "single",
       freshness = NA_character_,
       chart_class = "individuals",

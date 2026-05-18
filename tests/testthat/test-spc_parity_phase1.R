@@ -6,11 +6,22 @@
 # trim tolerance er trivielt 0 her (samme budget-allokering bruges af
 # begge paths).
 #
-# Modifier-slices i Phase 3+ vil tilfoeje yderligere caveats/clauses som
-# afviger fra legacy-output -- parity-test her er **lukket scope** for
-# baseline-equivalens.
+# ##############################################################################
+# # Cycle 05 finding (2026-05-18): TESTEN ER TAUTOLOGISK POST CUT-OVER         #
+# #                                                                            #
+# # Phase 2 cut-over (commit 4a01fef) lod bfh_generate_analysis() delegere    #
+# # internt til bfh_analyse() + bfh_render_analysis(). De to "paths" der      #
+# # her sammenlignes returnerer derfor identisk output by construction --     #
+# # legacy_text er literalt new_text gennem samme code-path.                  #
+# #                                                                           #
+# # Tests skipperes med rationale-besked indtil snapshot-tests mod gemt       #
+# # baseline-corpus er implementeret (Phase 99.1.2 follow-up). Determinism-   #
+# # testen nederst bevares som SMALL-meaningful regression-gate (verificerer  #
+# # idempotens af pipelinen).                                                 #
+# ##############################################################################
 #
 # Refs: openspec change restructure-spc-analysis-architecture, Phase 1.4
+#       docs/reviews/04-structured-spc-analysis-branch-2026-05-18.md (user finding)
 
 # ==========================================================================
 # Helper: semantic match efter whitespace-normalisering
@@ -108,13 +119,17 @@ TEST_SHIFT_DATA <- data.frame(
 # Sub-corpus 1: stabile data, ingen target, dansk
 # ==========================================================================
 
+SKIP_TAUTOLOGICAL <- "Tautological post-cut-over (cycle 05). See file-header for rationale + follow-up plan (snapshot-tests mod gemt baseline)."
+
 test_that("parity: stable data, no target, da, max_chars=375", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_STABLE_DATA, x = date, y = value, chart_type = "i")
   texts <- parity_round(res)
   expect_semantic_text_equal(texts$new, texts$legacy)
 })
 
 test_that("parity: stable data, no target, da, max_chars=200", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_STABLE_DATA, x = date, y = value, chart_type = "i")
   texts <- parity_round(res, max_chars = 200L)
   expect_semantic_text_equal(texts$new, texts$legacy)
@@ -126,6 +141,7 @@ test_that("parity: stable data, no target, da, max_chars=200", {
 # ==========================================================================
 
 test_that("parity: constant data, no_variation override", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_CONSTANT_DATA, x = date, y = value, chart_type = "i")
   texts <- parity_round(res)
   expect_semantic_text_equal(texts$new, texts$legacy)
@@ -137,12 +153,14 @@ test_that("parity: constant data, no_variation override", {
 # ==========================================================================
 
 test_that("parity: stable data, target = '<= 100' (direction-aware lower)", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_STABLE_DATA, x = date, y = value, chart_type = "i", target_text = "<= 100")
   texts <- parity_round(res)
   expect_semantic_text_equal(texts$new, texts$legacy)
 })
 
 test_that("parity: stable data, target = '>= 40' (direction-aware higher)", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_STABLE_DATA, x = date, y = value, chart_type = "i", target_text = ">= 40")
   texts <- parity_round(res)
   expect_semantic_text_equal(texts$new, texts$legacy)
@@ -154,6 +172,7 @@ test_that("parity: stable data, target = '>= 40' (direction-aware higher)", {
 # ==========================================================================
 
 test_that("parity: stable data, target = 50 (value-neutral)", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_STABLE_DATA, x = date, y = value, chart_type = "i")
   texts <- parity_round(res, metadata = list(target = 50))
   expect_semantic_text_equal(texts$new, texts$legacy)
@@ -165,6 +184,7 @@ test_that("parity: stable data, target = 50 (value-neutral)", {
 # ==========================================================================
 
 test_that("parity: short data n=8 (legacy: ingen low-tier override endnu)", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_SHORT_DATA, x = date, y = value, chart_type = "i")
   # NB: Phase 1 har confidence_tier-akse men aktiverer IKKE override-
   # dispatch i renderer endnu (Slice 8 INCLUDE faktisk implementeret i
@@ -180,6 +200,7 @@ test_that("parity: short data n=8 (legacy: ingen low-tier override endnu)", {
 # ==========================================================================
 
 test_that("parity: run-chart, no target", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_STABLE_DATA, x = date, y = value, chart_type = "run")
   texts <- parity_round(res)
   expect_semantic_text_equal(texts$new, texts$legacy)
@@ -191,6 +212,7 @@ test_that("parity: run-chart, no target", {
 # ==========================================================================
 
 test_that("parity: stable data, cl = 50 (cl_user_supplied) -- Slice 9 caveat aktiv begge veje", {
+  skip(SKIP_TAUTOLOGICAL)
   suppressWarnings({
     res <- bfh_qic(TEST_STABLE_DATA,
       x = date, y = value, chart_type = "i", cl = 50
@@ -212,12 +234,14 @@ test_that("parity: stable data, cl = 50 (cl_user_supplied) -- Slice 9 caveat akt
 # ==========================================================================
 
 test_that("parity: stable data, no target, en, max_chars=375", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_STABLE_DATA, x = date, y = value, chart_type = "i")
   texts <- parity_round(res, language = "en")
   expect_semantic_text_equal(texts$new, texts$legacy)
 })
 
 test_that("parity: stable data, target = '>= 40', en", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_STABLE_DATA, x = date, y = value, chart_type = "i", target_text = ">= 40")
   texts <- parity_round(res, language = "en")
   expect_semantic_text_equal(texts$new, texts$legacy)
@@ -229,6 +253,7 @@ test_that("parity: stable data, target = '>= 40', en", {
 # ==========================================================================
 
 test_that("parity: shifted data (runs_only / signal-baseret dispatch)", {
+  skip(SKIP_TAUTOLOGICAL)
   res <- bfh_qic(TEST_SHIFT_DATA, x = date, y = value, chart_type = "i")
   texts <- parity_round(res)
   expect_semantic_text_equal(texts$new, texts$legacy)

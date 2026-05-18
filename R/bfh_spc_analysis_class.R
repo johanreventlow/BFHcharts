@@ -131,7 +131,11 @@ validate_bfh_spc_analysis <- function(x) {
     "stability_pattern", "trend_form", "magnitude", "direction",
     "target_relation", "confidence_tier", "phase_context",
     "freshness", "chart_class", "data_quality", "cl_source",
-    "outlier_history"
+    "outlier_history",
+    # Cycle 05 finding #5: low_confidence_reason driver template-dispatch
+    # ved confidence_tier=="low". Schema-required for konsumenter der
+    # bygger UI-badges/AI-prompts paa low-confidence-aarsag.
+    "low_confidence_reason"
   )
   missing_features <- setdiff(required_features, names(x$features))
   if (length(missing_features) > 0) {

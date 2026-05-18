@@ -238,10 +238,24 @@ test_that("Phase 99.3: Slice 5 baseline_delta-keys i begge sprog", {
   da <- .load_yaml("da")
   en <- .load_yaml("en")
 
-  for (variant in c("short", "standard", "detailed")) {
-    path <- paste0("analysis.modifier.baseline_delta.", variant)
-    expect_false(is.null(.path_get(da, path)), info = paste("da missing:", path))
-    expect_false(is.null(.path_get(en, path)), info = paste("en missing:", path))
+  # Cycle 05 finding #2 restructure: baseline_delta har 'lead' + 'standalone'
+  # sub-sections, hver med short/standard/detailed varianter. .compose_
+  # modifier_sentence vaelger lead naar magnitude/direction kombineres,
+  # standalone naar baseline_delta er sole-active modifier.
+  for (frame in c("lead", "standalone")) {
+    for (variant in c("short", "standard", "detailed")) {
+      path <- paste0("analysis.modifier.baseline_delta.", frame, ".", variant)
+      expect_false(is.null(.path_get(da, path)), info = paste("da missing:", path))
+      expect_false(is.null(.path_get(en, path)), info = paste("en missing:", path))
+    }
+  }
+  # Compose-frames (mod_only + dir_only) for non-baseline-delta-sentences.
+  for (frame in c("mod_only", "dir_only")) {
+    for (variant in c("short", "standard", "detailed")) {
+      path <- paste0("analysis.modifier.compose.", frame, ".", variant)
+      expect_false(is.null(.path_get(da, path)), info = paste("da missing:", path))
+      expect_false(is.null(.path_get(en, path)), info = paste("en missing:", path))
+    }
   }
 })
 
@@ -267,9 +281,14 @@ test_that("Phase 99.3: Slice 8 not_evaluable-keys i begge sprog", {
   da <- .load_yaml("da")
   en <- .load_yaml("en")
 
-  for (variant in c("short", "standard", "detailed")) {
-    path <- paste0("analysis.base.not_evaluable.", variant)
-    expect_false(is.null(.path_get(da, path)), info = paste("da missing:", path))
-    expect_false(is.null(.path_get(en, path)), info = paste("en missing:", path))
+  # Cycle 05 finding #5 restructure: not_evaluable splittes paa
+  # low_confidence_reason (few_obs/no_centerline/no_spread), hver
+  # med short/standard/detailed.
+  for (reason in c("few_obs", "no_centerline", "no_spread")) {
+    for (variant in c("short", "standard", "detailed")) {
+      path <- paste0("analysis.base.not_evaluable.", reason, ".", variant)
+      expect_false(is.null(.path_get(da, path)), info = paste("da missing:", path))
+      expect_false(is.null(.path_get(en, path)), info = paste("en missing:", path))
+    }
   }
 })

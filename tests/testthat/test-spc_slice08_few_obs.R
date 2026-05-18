@@ -119,3 +119,34 @@ test_that("Slice 8: en.yaml mirror existerer for not_evaluable", {
     ignore.case = TRUE
   )
 })
+
+
+# ==========================================================================
+# Cycle 05 finding #5: low_confidence_reason dispatcher
+# ==========================================================================
+
+test_that("Cycle 05 finding #5: few_obs reason -> nr-obs-prose", {
+  res <- bfh_qic(TEST_DATA_SHORT, x = date, y = value, chart_type = "i")
+  analysis <- bfh_analyse(res,
+    metadata = list(analysis_date = as.Date("2026-05-18"))
+  )
+
+  expect_equal(analysis$features$low_confidence_reason, "few_obs")
+  text <- bfh_render_analysis(analysis, max_chars = 800L)
+  expect_match(text, "kun.*observationer|for kort serie", ignore.case = TRUE)
+})
+
+
+test_that("Cycle 05 finding #5: NA reason naar confidence-tier ej low", {
+  set.seed(805L)
+  data_24 <- data.frame(
+    date = seq(as.Date("2024-01-01"), by = "month", length.out = 24L),
+    value = round(rnorm(24L, 50, 5), 1)
+  )
+  res <- bfh_qic(data_24, x = date, y = value, chart_type = "i")
+  analysis <- bfh_analyse(res,
+    metadata = list(analysis_date = as.Date("2026-05-18"))
+  )
+
+  expect_true(is.na(analysis$features$low_confidence_reason))
+})
