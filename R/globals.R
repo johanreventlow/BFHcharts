@@ -189,6 +189,20 @@ BFHCHARTS_OPT_ANALYSIS_DATE <- "BFHcharts.analysis_date"
 #' care processes. PLoS One. 9(11):e113825.
 N_MIN <- 12L
 
+#' Magnitude-modifier ratio-cap
+#'
+#' Safety-cap for `.compute_magnitude()` baseline-delta-sigma-ratio.
+#' Microscopic sigma (~1e-12) fra near-constant data combineret med
+#' float-noise baseline-delta kan producere astronomical ratios and
+#' falsk "large"-klassifikation. Ratio > cap returnerer NA i stedet
+#' for magnitude-bucket. Default `100` svarer til 100 sigma-shifts --
+#' empirisk usandsynligt klinisk-meaningful + klart-ufysisk for
+#' kontrolgraense-baseret SPC.
+#'
+#' Cycle 04 H2 fix (2026-05-18). Foreloebigt safety-net; permanent
+#' loesning kraever sigma-floor med scale/unit-awareness.
+MAGNITUDE_RATIO_CAP <- 100
+
 #' Option name: suppress unit auto-detection message
 #'
 #' When `TRUE`, `bfh_export_pdf()` and friends do not emit the informational

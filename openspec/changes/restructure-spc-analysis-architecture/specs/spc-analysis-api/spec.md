@@ -38,7 +38,8 @@ The returned object SHALL contain at minimum:
 - `aux` (named list) — beregnede hjælpe-værdier inkl. `sigma_hat`,
   `sigma_data`, `n_points`, `centerline`, `baseline_centerline`,
   `baseline_delta`, `latest_obs_date`, `analysis_date` (resolveret via
-  3-vejs præcedens), `data_age_days`
+  3-vejs præcedens). `data_age_days` udeladt: Slice 10 (Freshness)
+  SKIP-besluttet 2026-05-17 -> ingen detection-use-case -> spec-konsistens.
 - `render_context` (named list) — preserved render-state SHALL inkludere
   `target_display` (uændret user-input), `centerline_formatted`,
   `y_axis_unit`, `operator_unicode`, `outliers_word_key`

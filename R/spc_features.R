@@ -592,6 +592,14 @@ DISCRETE_SCALE_TIERS <- c("none", "mild", "moderate", "extreme")
 # Sigma-prioritet: sigma_hat (control-limits-based) > sigma_data (sd(y)).
 # Returnerer NA naar baseline_delta mangler eller alle sigma-estimater
 # er NA/zero.
+#
+# Cycle 04 H2 fix: ratio-cap. Microscopic sigma (~1e-12) fra near-constant
+# data combineret med float-noise baseline-delta kan producere
+# astronomical ratios. ratio > MAGNITUDE_RATIO_CAP returnerer NA som
+# safety-net (saa magnitude-modifier ej rapporterer falsk "large"
+# klassifikation paa support af noisy sigma-estimat). Cap = 100 svarer
+# til 100 sigma-shifts -- empirisk usandsynligt klinisk-meaningful,
+# klart-ufysisk for kontrolgraense-baseret SPC.
 .compute_magnitude <- function(baseline_delta, sigma_hat, sigma_data) {
   if (is.null(baseline_delta) || is.na(baseline_delta) ||
     abs(baseline_delta) < 1e-9) {
@@ -605,6 +613,9 @@ DISCRETE_SCALE_TIERS <- c("none", "mild", "moderate", "extreme")
     return(NA_character_)
   }
   ratio <- abs(baseline_delta) / sigma
+  if (!is.finite(ratio) || ratio > MAGNITUDE_RATIO_CAP) {
+    return(NA_character_)
+  }
   if (ratio < 1.0) {
     "small"
   } else if (ratio < 2.0) {

@@ -35,6 +35,38 @@ test_that("Slice 3: magnitude=NA naar baade sigma_hat og sigma_data er NA", {
 
 
 # ==========================================================================
+# Cycle 04 H2 fix: ratio-cap mod microscopic-sigma falsk-large
+# ==========================================================================
+
+test_that("Cycle 04 H2: ratio > MAGNITUDE_RATIO_CAP -> NA (microscopic sigma)", {
+  # Near-constant data kan give sigma_hat ~ 1e-12 + float-noise delta
+  # -> ratio = 1e6+. Uden cap ville dette falsk-klassificere som large.
+  cap <- BFHcharts:::MAGNITUDE_RATIO_CAP
+
+  # Ratio = 1e8 (microscopic sigma)
+  expect_true(is.na(BFHcharts:::.compute_magnitude(1.0, 1e-8, 1e-8)))
+
+  # Ratio = cap exactly -> NA (over-the-cap = NA, at-cap-tolerance: > cap)
+  # Ratio just under cap -> "large"
+  expect_equal(
+    BFHcharts:::.compute_magnitude(cap - 1, 1, 1), "large"
+  )
+
+  # Ratio just over cap -> NA
+  expect_true(is.na(
+    BFHcharts:::.compute_magnitude(cap + 1, 1, 1)
+  ))
+})
+
+
+test_that("Cycle 04 H2: zero-sigma_hat falls through to sigma_data unchanged", {
+  # H2-fix maa ej braekke existing sigma-prioritet:
+  # sigma_hat = 0 -> use sigma_data
+  expect_equal(BFHcharts:::.compute_magnitude(0.5, 0, 1.0), "small")
+})
+
+
+# ==========================================================================
 # Integration: multi-phase data udloeser magnitude-bucket
 # ==========================================================================
 
