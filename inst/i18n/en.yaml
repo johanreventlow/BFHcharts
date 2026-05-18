@@ -64,6 +64,15 @@ analysis:
 
   anhoej_not_evaluable: "not evaluable (series too short)"
 
+  # Slice 8 INCLUDE: Few-obs / not-evaluable. When confidence_tier=="low"
+  # replaces the entire stability-base section. Triggered when
+  # n_points < N_MIN (=12) or missing centerline/sigma estimate.
+  base:
+    not_evaluable:
+      short: "Series too short for assessment."
+      standard: "With only {n_points} observations the process cannot yet be reliably assessed with statistical process control."
+      detailed: "With only {n_points} observations the data is too sparse for reliable assessment with statistical process control. Anhoej rules typically require at least 12 observations for detection power."
+
   target:
     at_target:
       short: "The level is close to the target ({target})."

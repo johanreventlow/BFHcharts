@@ -190,18 +190,20 @@ test_that("parity: run-chart, no target", {
 # Sub-corpus 7: cl= specified (cl_user_supplied)
 # ==========================================================================
 
-test_that("parity: stable data, cl = 50 (cl_user_supplied)", {
+test_that("parity: stable data, cl = 50 (cl_user_supplied) -- Slice 9 caveat aktiv begge veje", {
   suppressWarnings({
     res <- bfh_qic(TEST_STABLE_DATA,
       x = date, y = value, chart_type = "i", cl = 50
     )
   })
   texts <- parity_round(res)
-  # NB: Phase 1 emitter ej cl-caveat i prose (Slice 9 INCLUDE flow er
-  # implementeret som key-lagring; prose-rendering kommer i Phase 3+).
-  # Parity holder med eksisterende build_fallback_analysis (som ej
-  # heller bruger caveats i prose).
+  # Post-Phase-2 cut-over: bfh_generate_analysis() er nu identisk med
+  # bfh_render_analysis(bfh_analyse()). Slice 9 INCLUDE betyder begge
+  # output indeholder cl_user_supplied-caveat som tail-clause.
   expect_semantic_text_equal(texts$new, texts$legacy)
+  expect_match(texts$new, "midtlinje fastsat manuelt",
+    ignore.case = TRUE
+  )
 })
 
 

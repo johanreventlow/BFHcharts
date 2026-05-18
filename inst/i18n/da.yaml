@@ -84,6 +84,15 @@ analysis:
 
   anhoej_not_evaluable: "ikke evaluerbar (for kort serie)"
 
+  # Slice 8 INCLUDE: Few-obs / not-evaluable. Naar confidence_tier=="low"
+  # erstattes hele stability-base-sektionen af disse templates. Aktiveres
+  # naar n_points < N_MIN (=12) eller manglende centerline/sigma-estimat.
+  base:
+    not_evaluable:
+      short: "For kort serie til vurdering."
+      standard: "Med kun {n_points} observationer kan processen endnu ikke vurderes pålideligt med statistisk proceskontrol."
+      detailed: "Med kun {n_points} observationer er datagrundlaget for spinkelt til pålidelig vurdering med statistisk proceskontrol. Anhøj-reglerne kræver typisk mindst 12 observationer for at have detektions-styrke."
+
   target:
     at_target:
       short: "Niveauet ligger tæt på udviklingsmålet ({target})."

@@ -78,25 +78,68 @@ bfh_render_analysis <- function(analysis,
   )
 
   # --- 2. Maalvurdering ---
-  target_text <- .render_target(
-    analysis, texts, budgets$target_budget, placeholder_data, language
-  )
+  # Slice 8: low-confidence skipper target+action helt. Med under N_MIN
+  # observationer er konkrete maal-/handlings-anbefalinger ej forsvarlige.
+  # Override-paths (no_variation, majority_at_centerline) bevarer
+  # target+action selv ved low confidence -- de er specifikke data-
+  # egenskaber, ej "for kort serie".
+  is_override <- analysis$conclusions$stability_key %in%
+    c("no_variation", "majority_at_centerline")
+  is_low_confidence <- identical(analysis$confidence, "low") && !is_override
+  target_text <- if (is_low_confidence) {
+    ""
+  } else {
+    .render_target(analysis, texts, budgets$target_budget, placeholder_data, language)
+  }
 
   # --- 3. Handlingsforslag ---
-  action_text <- .render_action(
-    analysis, texts, budgets$action_budget, placeholder_data
-  )
+  action_text <- if (is_low_confidence) {
+    ""
+  } else {
+    .render_action(analysis, texts, budgets$action_budget, placeholder_data)
+  }
 
-  # --- 4. Tail-caveats (Phase 1: cl_disclosure naar aktiv) ---
-  # Phase 3+ udvider med modifier-pool og freshness/variable_cl-caveats.
-  # For Phase 1 holder vi parity med eksisterende output (ingen caveats
-  # i prose -- de er i PDF-sidebar).
+  # --- 4. Tail-caveats ---
+  # Slice 9 INCLUDE: CL-disclosure (cl_user_supplied / cl_auto_mean).
+  # Future slices appender til samme pool (freshness, variable_cl, ...).
+  tail_caveats <- .render_tail_caveats(analysis, texts, language)
 
-  parts <- c(stability_text, target_text, action_text)
+  parts <- c(stability_text, target_text, action_text, tail_caveats)
   parts <- parts[nchar(parts) > 0]
   text <- paste(parts, collapse = " ")
 
   ensure_within_max(text, max_chars)
+}
+
+
+# ---------------------------------------------------------------------------
+# Tail-caveats (Slice 9 + fremtidige slices)
+# ---------------------------------------------------------------------------
+
+# Returnerer concatenated character (eller "" hvis ingen aktive caveats).
+# Caveats appendes i fast prioritets-raekkefoelge: cl_source > freshness
+# > variable_cl > historic_outliers > seasonality. Future slices kan
+# tilfoeje uden at aendre allerede-aktive caveats.
+.render_tail_caveats <- function(analysis, texts, language) {
+  parts <- character(0L)
+
+  # Slice 9: CL-disclosure (cl_user_supplied / cl_auto_mean)
+  cl_key <- analysis$caveats$cl_source
+  if (!is.null(cl_key) && nzchar(cl_key)) {
+    cl_text <- i18n_lookup(paste0("labels.caveats.", cl_key), language)
+    if (!is.null(cl_text) && nzchar(cl_text)) {
+      parts <- c(parts, cl_text)
+    }
+  }
+
+  # Phase 3+ tilfoejer: freshness, variable_cl, historic_outliers,
+  # seasonality. Hver tjekker analysis$caveats[[slot]] og resolverer
+  # via i18n.
+
+  if (length(parts) == 0L) {
+    return("")
+  }
+  paste(parts, collapse = " ")
 }
 
 
@@ -173,24 +216,49 @@ bfh_render_analysis <- function(analysis,
 # Stability arm
 # ---------------------------------------------------------------------------
 
-# Vaelger template fra texts$stability[[key]] eller texts$stability[[override]].
-# Matcher build_fallback_analysis() prioritet:
-# no_variation > majority_at_centerline > 8 signal-keys.
+# Vaelger template fra texts$stability[[key]] eller texts$base[[override]].
+# Prioritet:
+#   1. no_variation / majority_at_centerline -> texts$stability[[key]]
+#      (override-state har forrang over low-confidence; konstant data
+#      med n>>N_MIN er specifikt no_variation, ej "for kort serie")
+#   2. Slice 8 INCLUDE: confidence_tier == "low" -> texts$base$not_evaluable
+#      (erstatter stability-base helt; specialiseret kort-serie-tekst)
+#   3. 8 signal-baserede keys -> texts$stability[[key]]
 .render_stability <- function(analysis, texts, budget, placeholder_data, language) {
   key <- analysis$conclusions$stability_key
 
-  # Specialiserede placeholders for no_variation / majority_at_centerline
-  data <- if (key %in% c("no_variation", "majority_at_centerline")) {
-    list(centerline = placeholder_data$centerline)
-  } else {
-    placeholder_data
+  # Override-state-paths: no_variation + majority_at_centerline
+  # har forrang over low-confidence (specifikke meddelelser for
+  # specifikke data-egenskaber).
+  is_override <- key %in% c("no_variation", "majority_at_centerline")
+
+  if (is_override) {
+    data <- list(centerline = placeholder_data$centerline)
+    templates <- texts$stability[[key]]
+    if (is.null(templates)) {
+      return("")
+    }
+    return(pick_text(templates, data = data, budget = budget))
+  }
+
+  # Slice 8: low-confidence override (ej for override-paths ovenfor)
+  if (identical(analysis$confidence, "low")) {
+    templates <- texts$base$not_evaluable %||% NULL
+    if (!is.null(templates)) {
+      data <- list(
+        n_points = analysis$aux$n_points %||% 0L,
+        centerline = placeholder_data$centerline
+      )
+      return(pick_text(templates, data = data, budget = budget))
+    }
+    # Fallback til legacy-label hvis ny base.not_evaluable mangler i loader
   }
 
   templates <- texts$stability[[key]]
   if (is.null(templates)) {
     return("")
   }
-  pick_text(templates, data = data, budget = budget)
+  pick_text(templates, data = placeholder_data, budget = budget)
 }
 
 
