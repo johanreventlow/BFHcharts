@@ -75,15 +75,15 @@ analysis:
       small:
         short: "~{pct_abs}% change"
         standard: "a minor change of ~{pct_abs}%"
-        detailed: "a minor change of ~{pct_abs}% in the level"
+        detailed: "a minor level change of ~{pct_abs}%"
       medium:
         short: "~{pct_abs}% change"
         standard: "a change of ~{pct_abs}%"
-        detailed: "a moderate change of ~{pct_abs}% in the level"
+        detailed: "a moderate level change of ~{pct_abs}%"
       large:
         short: "~{pct_abs}% change"
         standard: "a substantial change of ~{pct_abs}%"
-        detailed: "a substantial change of ~{pct_abs}% in the level"
+        detailed: "a substantial level change of ~{pct_abs}%"
 
     # Direction-clause. Composer joins without comma (flows naturally
     # after preceding magnitude or baseline_delta).
@@ -286,4 +286,4 @@ labels:
     # Slice 7 INCLUDE: variable control limits due to changing sample size
     # in p/u/xbar charts.
     variable_cl: >-
-      The control limits vary because the sample size changes over time — interpret deviations with n in each period in mind.
+      The control limits vary, typically because the denominator/sample size changes over time — interpret deviations with n in each period in mind.

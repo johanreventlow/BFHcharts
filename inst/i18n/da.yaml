@@ -95,15 +95,15 @@ analysis:
       small:
         short: "~{pct_abs}% forandring"
         standard: "en mindre forandring på ~{pct_abs}%"
-        detailed: "en mindre forandring på ~{pct_abs}% i niveauet"
+        detailed: "en mindre niveauforandring på ~{pct_abs}%"
       medium:
         short: "~{pct_abs}% forandring"
         standard: "en forandring på ~{pct_abs}%"
-        detailed: "en moderat forandring på ~{pct_abs}% i niveauet"
+        detailed: "en moderat niveauforandring på ~{pct_abs}%"
       large:
         short: "~{pct_abs}% forandring"
         standard: "en betydelig forandring på ~{pct_abs}%"
-        detailed: "en betydelig forandring på ~{pct_abs}% i niveauet"
+        detailed: "en betydelig niveauforandring på ~{pct_abs}%"
 
     # Direction-clause. Composeren joiner uden komma (clause flowes
     # naturligt med foregaaende magnitude eller baseline_delta).
@@ -311,7 +311,7 @@ labels:
     cl_user_supplied: >-
       Midtlinje fastsat manuelt — Anhøj-signal beregnet mod denne, ikke data-estimeret middelværdi.
     cl_auto_mean: >-
-      Niveaulinjen er skiftet til gennemsnit, fordi mindst halvdelen af observationerne i seneste fase lå præcis på medianen. 
+      Niveaulinjen er skiftet til gennemsnit, fordi mindst halvdelen af observationerne i seneste fase lå præcis på medianen — Anhøj-analysen er beregnet mod gennemsnittet for at undgå falske signaler.
     # Slice 14 INCLUDE: discrete-scale mild/moderate tail-caveats.
     # extreme tier haandteres via stability.majority_at_centerline-template.
     discrete_scale_mild: >-
@@ -321,4 +321,4 @@ labels:
     # Slice 7 INCLUDE: variable kontrolgraenser pga svingende
     # stikproevestoerrelse i p/u/xbar-charts.
     variable_cl: >-
-      Kontrolgrænserne varierer fordi stikprøvestørrelsen ændrer sig over tid — fortolk afvigelser med blik for n i hver periode.
+      Kontrolgrænserne varierer, typisk fordi nævner/stikprøvestørrelse ændrer sig over tid — fortolk afvigelser med blik for n i hver periode.
