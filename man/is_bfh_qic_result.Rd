@@ -22,8 +22,8 @@ data <- data.frame(
   infections = rpois(12, lambda = 15)
 )
 result <- bfh_qic(data, x = month, y = infections, chart_type = "run")
-is_bfh_qic_result(result)         # TRUE
-is_bfh_qic_result(result$plot)    # FALSE
+is_bfh_qic_result(result) # TRUE
+is_bfh_qic_result(result$plot) # FALSE
 }
 
 }

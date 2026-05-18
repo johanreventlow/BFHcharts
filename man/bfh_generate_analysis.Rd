@@ -70,9 +70,13 @@ vector-store usage. The value is always recorded in the audit event.}
 
 \item{max_chars}{Maximum characters in AI-generated output. Default 375.}
 
-\item{target_tolerance}{Fractional tolerance for \code{at_target} classification
-when \code{target_direction} is unknown (default 0.05 = 5\%). Ignored when the
-user provides \code{metadata$target} with an operator (retning er da kendt).}
+\item{target_tolerance}{Deprecated. Argument is preserved in the signature
+for backward compatibility but is no longer used. The \code{at_target}
+classification now uses process variation (\code{mean((UCL - LCL) / 6)} over
+the last phase, with \code{sd(y)} as fallback for run charts) instead of a
+relative-to-target tolerance. Passing a non-default value emits a
+deprecation warning. The parameter will be removed in the next major
+release.}
 
 \item{language}{Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Default \code{"da"} preserves backward compatibility.}
 
