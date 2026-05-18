@@ -66,10 +66,28 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
   flags <- .detect_signal_flags(context)
   target_eval <- .evaluate_target_relation(context, flags)
 
+  # Memoize baseline + delta her saa Phase 3+ slices (3, 4, 5) genbruger
+  # samme vaerdier istedet for at re-scanne x$summary 3x per bfh_analyse.
+  # Tidligere /simplify-fix-1 (efficiency).
+  baseline_centerline <- .extract_baseline_centerline(x)
+  baseline_delta <- if (!is.na(baseline_centerline) &&
+    !is.null(x$summary) && "centerlinje" %in% names(x$summary) &&
+    nrow(x$summary) >= 2L) {
+    x$summary$centerlinje[nrow(x$summary)] - baseline_centerline
+  } else {
+    NA_real_
+  }
+  baseline_delta_pct <- if (!is.na(baseline_delta) && !is.na(baseline_centerline) &&
+    abs(baseline_centerline) > 1e-9) {
+    100 * baseline_delta / baseline_centerline
+  } else {
+    NA_real_
+  }
+
   # Injicer baseline_centerline som context-attribut saa .resolve_direction()
   # kan udfoere delta-baseret favorable/unfavorable-vurdering uden ekstra
   # arg-threading.
-  attr(context, "baseline_centerline") <- .extract_baseline_centerline(x)
+  attr(context, "baseline_centerline") <- baseline_centerline
 
   # --- features ---
   features <- list(
@@ -79,11 +97,11 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     confidence_tier = .compute_confidence_tier(context, x),
 
     # AKTIV AKSE (kan udfyldes af Slice 5 baseline-delta):
-    phase_context = .resolve_phase_context(x),
+    phase_context = .resolve_phase_context(x, baseline_centerline),
 
     # AKTIV AKSE (Slice 3 magnitude):
     magnitude = .compute_magnitude(
-      baseline_delta = .compute_baseline_delta(x),
+      baseline_delta = baseline_delta,
       sigma_hat = context$sigma_hat,
       sigma_data = context$sigma_data
     ),
@@ -118,9 +136,9 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     n_on_cl_ratio = context$n_on_cl_ratio,
     analysis_date = analysis_date,
     latest_obs_date = .extract_latest_obs_date(x),
-    baseline_centerline = .extract_baseline_centerline(x),
-    baseline_delta = .compute_baseline_delta(x),
-    baseline_delta_pct = .compute_baseline_delta_pct(x),
+    baseline_centerline = baseline_centerline,
+    baseline_delta = baseline_delta,
+    baseline_delta_pct = baseline_delta_pct,
     outliers_actual = context$spc_stats$outliers_actual %||% NA_integer_,
     outliers_recent_count = context$spc_stats$outliers_recent_count %||% NA_integer_,
     runs_actual = context$spc_stats$runs_actual,
@@ -312,7 +330,7 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 # Returnerer "single" hvis kun 1 part i x$summary, ellers "multi".
 # "post_intervention" reserveres til Slice 5 (baseline-delta) hvor
 # semantik er rigere end blot "multi".
-.resolve_phase_context <- function(x) {
+.resolve_phase_context <- function(x, baseline_centerline = NULL) {
   if (is.null(x$summary) || !"fase" %in% names(x$summary)) {
     return("single")
   }
@@ -322,8 +340,10 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
   if (n_phases <= 1L) {
     return("single")
   }
-  baseline <- .extract_baseline_centerline(x)
-  if (!is.null(baseline) && !is.na(baseline)) {
+  if (is.null(baseline_centerline)) {
+    baseline_centerline <- .extract_baseline_centerline(x)
+  }
+  if (!is.null(baseline_centerline) && !is.na(baseline_centerline)) {
     return("post_intervention")
   }
   "multi"
@@ -476,20 +496,15 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 # Tier "extreme" matcher eksisterende majority_at_cl-detektion -- den
 # stability_pattern-override haandterer prose-rendering. mild/moderate
 # bidrager via tail-caveat. "none" producerer ingen caveat.
+DISCRETE_SCALE_THRESHOLDS <- c(0.20, 0.35, 0.50)
+DISCRETE_SCALE_TIERS <- c("none", "mild", "moderate", "extreme")
+
 .resolve_discrete_scale_tier <- function(n_on_cl_ratio) {
   if (!is_valid_scalar(n_on_cl_ratio) || !is.finite(n_on_cl_ratio)) {
     return("none")
   }
-  if (n_on_cl_ratio >= 0.50) {
-    return("extreme")
-  }
-  if (n_on_cl_ratio >= 0.35) {
-    return("moderate")
-  }
-  if (n_on_cl_ratio >= 0.20) {
-    return("mild")
-  }
-  "none"
+  # findInterval(x, [t1, t2, t3]) -> 0 (x<t1), 1 (t1<=x<t2), 2, 3 (x>=t3)
+  DISCRETE_SCALE_TIERS[[findInterval(n_on_cl_ratio, DISCRETE_SCALE_THRESHOLDS) + 1L]]
 }
 
 
@@ -551,31 +566,6 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     return(NA_real_)
   }
   x$summary$centerlinje[nrow(x$summary) - 1L]
-}
-
-
-# Baseline-delta = current_centerline - baseline_centerline. NA hvis
-# baseline mangler. Bruges af Slice 5.
-.compute_baseline_delta <- function(x) {
-  if (is.null(x$summary) || !"centerlinje" %in% names(x$summary) ||
-    nrow(x$summary) < 2L) {
-    return(NA_real_)
-  }
-  current <- x$summary$centerlinje[nrow(x$summary)]
-  baseline <- x$summary$centerlinje[nrow(x$summary) - 1L]
-  current - baseline
-}
-
-
-# Baseline-delta som procent af baseline_centerline. NA naar baseline=0
-# eller mangler. Bruges af Slice 3 magnitude-modifier.
-.compute_baseline_delta_pct <- function(x) {
-  delta <- .compute_baseline_delta(x)
-  baseline <- .extract_baseline_centerline(x)
-  if (is.na(delta) || is.na(baseline) || abs(baseline) < 1e-9) {
-    return(NA_real_)
-  }
-  100 * delta / baseline
 }
 
 

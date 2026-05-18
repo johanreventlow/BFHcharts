@@ -237,38 +237,21 @@ bfh_render_analysis <- function(analysis,
 # > variable_cl > historic_outliers > seasonality. Future slices kan
 # tilfoeje uden at aendre allerede-aktive caveats.
 .render_tail_caveats <- function(analysis, texts, language) {
+  # Fast prioritets-raekkefoelge: Slice 9 (cl_source), Slice 14
+  # (discrete_scale mild/moderate -- extreme rendres via stability-base),
+  # Slice 7 (variable_cl). Future slices (freshness, historic_outliers,
+  # seasonality) tilfoejes ved at appende slot-navn til denne vektor.
+  caveat_slots <- c("cl_source", "discrete_scale", "variable_cl")
+
   parts <- character(0L)
-
-  # Slice 9: CL-disclosure (cl_user_supplied / cl_auto_mean)
-  cl_key <- analysis$caveats$cl_source
-  if (!is.null(cl_key) && nzchar(cl_key)) {
-    cl_text <- i18n_lookup(paste0("labels.caveats.", cl_key), language)
-    if (!is.null(cl_text) && nzchar(cl_text)) {
-      parts <- c(parts, cl_text)
+  for (slot in caveat_slots) {
+    key <- analysis$caveats[[slot]]
+    if (is.null(key) || !nzchar(key)) next
+    text <- i18n_lookup(paste0("labels.caveats.", key), language)
+    if (!is.null(text) && nzchar(text)) {
+      parts <- c(parts, text)
     }
   }
-
-  # Slice 14: discrete-scale mild/moderate. extreme tier rendres som
-  # stability-base via majority_at_centerline (ej tail).
-  ds_key <- analysis$caveats$discrete_scale
-  if (!is.null(ds_key) && nzchar(ds_key)) {
-    ds_text <- i18n_lookup(paste0("labels.caveats.", ds_key), language)
-    if (!is.null(ds_text) && nzchar(ds_text)) {
-      parts <- c(parts, ds_text)
-    }
-  }
-
-  # Slice 7: variable kontrolgraenser (p/u/xbar med svingende n)
-  vc_key <- analysis$caveats$variable_cl
-  if (!is.null(vc_key) && nzchar(vc_key)) {
-    vc_text <- i18n_lookup(paste0("labels.caveats.", vc_key), language)
-    if (!is.null(vc_text) && nzchar(vc_text)) {
-      parts <- c(parts, vc_text)
-    }
-  }
-
-  # Phase 3+ tilfoejer: freshness, historic_outliers, seasonality. Hver
-  # tjekker analysis$caveats[[slot]] og resolverer via i18n.
 
   if (length(parts) == 0L) {
     return("")

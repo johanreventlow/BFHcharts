@@ -183,31 +183,28 @@ bfh_analyse <- function(x, metadata = list(), language = c("da", "en")) {
   cl_source <- features$cl_source
   ds_tier <- features$data_quality$discrete_scale
 
+  # cl_source mapper: enum-vaerdi -> i18n-noegle (eller NULL for inaktiv).
+  cl_caveat <- switch(cl_source,
+    "user_supplied" = "cl_user_supplied",
+    "auto_mean"     = "cl_auto_mean",
+    NULL
+  )
+
+  # Slice 14: mild/moderate som tail-caveat. extreme haandteres via
+  # stability_pattern="majority_at_centerline" (full base-override).
+  ds_caveat <- switch(ds_tier,
+    "mild"     = "discrete_scale_mild",
+    "moderate" = "discrete_scale_moderate",
+    NULL
+  )
+
   list(
-    cl_source = if (cl_source == "user_supplied") {
-      "cl_user_supplied"
-    } else if (cl_source == "auto_mean") {
-      "cl_auto_mean"
-    } else {
-      NULL
-    },
+    cl_source = cl_caveat,
     freshness = NULL, # Slice 10 SKIP
     few_obs = if (isTRUE(features$data_quality$few_obs)) "few_obs" else NULL,
     # Slice 7: variable kontrolgraenser pga svingende n.
-    variable_cl = if (isTRUE(features$data_quality$variable_cl)) {
-      "variable_cl"
-    } else {
-      NULL
-    },
-    # Slice 14: mild/moderate som tail-caveat. extreme haandteres via
-    # stability_pattern="majority_at_centerline" (full base-override).
-    discrete_scale = if (identical(ds_tier, "mild")) {
-      "discrete_scale_mild"
-    } else if (identical(ds_tier, "moderate")) {
-      "discrete_scale_moderate"
-    } else {
-      NULL
-    },
+    variable_cl = if (isTRUE(features$data_quality$variable_cl)) "variable_cl" else NULL,
+    discrete_scale = ds_caveat,
     historic_outliers = NULL, # Slice 11 DEFER
     seasonality = NULL # Slice 13 SKIP
   )
