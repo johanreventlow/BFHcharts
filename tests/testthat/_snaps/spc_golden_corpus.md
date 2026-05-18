@@ -52,14 +52,14 @@
     Code
       cat(text)
     Output
-      Processen varierer naturligt omkring midten i data og vurderes derfor som stabil og forudsigelig, uden tegn på systematiske ændringer. Sammenlignet med tidligere fase er niveauet flyttet fra 49,75 til 54,87, en betydelig forandring på ~10% i niveauet i den ønskede retning. Overvej, om et udviklingsmål kan fastsættes, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres.
+      Processen varierer naturligt omkring midten i data og vurderes derfor som stabil og forudsigelig, uden tegn på systematiske ændringer. Sammenlignet med tidligere fase er niveauet flyttet fra 49,75 til 54,87, en betydelig niveauforandring på ~10% i den ønskede retning. Overvej, om et udviklingsmål kan fastsættes, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres.
 
 # golden: phased data + lower_better direction (unfavorable cascade)
 
     Code
       cat(text)
     Output
-      Processen varierer naturligt omkring midten i data og vurderes derfor som stabil og forudsigelig, uden tegn på systematiske ændringer. Sammenlignet med tidligere fase er niveauet flyttet fra 49,75 til 54,87, en betydelig forandring på ~10% i niveauet væk fra den ønskede retning. Overvej, om et udviklingsmål kan fastsættes, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres.
+      Processen varierer naturligt omkring midten i data og vurderes derfor som stabil og forudsigelig, uden tegn på systematiske ændringer. Sammenlignet med tidligere fase er niveauet flyttet fra 49,75 til 54,87, en betydelig niveauforandring på ~10% væk fra den ønskede retning. Overvej, om et udviklingsmål kan fastsættes, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres.
 
 # golden: cl=specified (cl_user_supplied caveat)
 
