@@ -124,8 +124,7 @@ bfh_render_analysis <- function(analysis,
     language
   )
 
-  level_dir <- .compute_level_direction(analysis, language)
-  level_vs <- .compute_level_vs_target(analysis, language)
+  level <- .resolve_level_placeholders(analysis, language)
 
   list(
     # Anhoej-stats fra aux
@@ -138,60 +137,35 @@ bfh_render_analysis <- function(analysis,
     effective_window = aux$effective_window %||% RECENT_OBS_WINDOW,
     centerline = rc$centerline_formatted,
     target = rc$target_display,
-    level_direction = level_dir,
-    level_vs_target = level_vs
+    level_direction = level$direction,
+    level_vs_target = level$vs_target
   )
 }
 
 
-# Compute {level_direction}-placeholder: target-relativ position af CL.
-# Matcher build_fallback_analysis() linje 990-1001.
-.compute_level_direction <- function(analysis, language) {
+# Resolverer {level_direction}-/{level_vs_target}-placeholders til
+# sprog-specifikke i18n-strings via shared .compute_level_keys()-helper
+# i spc_analysis.R (key-triplet "at"/"over"/"under"). Returnerer
+# named list (direction, vs_target) eller list("","") naar target
+# ej sat.
+.resolve_level_placeholders <- function(analysis, language) {
   has_target <- isTRUE(analysis$features$target_relation != "none")
-  if (!has_target) {
-    return("")
+  level_keys <- .compute_level_keys(
+    analysis$aux$centerline,
+    analysis$aux$target_value,
+    has_target
+  )
+  if (is.null(level_keys)) {
+    return(list(direction = "", vs_target = ""))
   }
-
-  cl <- analysis$aux$centerline
-  tv <- analysis$aux$target_value %||% NA_real_
-
-  if (is.na(cl) || is.na(tv)) {
-    return("")
-  }
-
-  delta <- abs(cl - tv)
-  if (delta < 1e-9) {
-    return(i18n_lookup("labels.level_direction.at", language))
-  }
-  if (cl > tv) {
-    return(i18n_lookup("labels.level_direction.over", language))
-  }
-  i18n_lookup("labels.level_direction.under", language)
-}
-
-
-# Compute {level_vs_target}-placeholder. Matcher build_fallback_analysis()
-# linje 1002-1013.
-.compute_level_vs_target <- function(analysis, language) {
-  has_target <- isTRUE(analysis$features$target_relation != "none")
-  if (!has_target) {
-    return("")
-  }
-
-  cl <- analysis$aux$centerline
-  tv <- analysis$aux$target_value %||% NA_real_
-
-  if (is.na(cl) || is.na(tv)) {
-    return("")
-  }
-
-  if (abs(cl - tv) < 1e-9) {
-    return(i18n_lookup("labels.level_vs_target.at", language))
-  }
-  if (cl > tv) {
-    return(i18n_lookup("labels.level_vs_target.over", language))
-  }
-  i18n_lookup("labels.level_vs_target.under", language)
+  list(
+    direction = i18n_lookup(
+      paste0("labels.level_direction.", level_keys$direction_key), language
+    ),
+    vs_target = i18n_lookup(
+      paste0("labels.level_vs_target.", level_keys$vs_target_key), language
+    )
+  )
 }
 
 
@@ -249,12 +223,8 @@ bfh_render_analysis <- function(analysis,
     )
   }
 
-  # Operator-Unicode-konvertering for target_display.
-  # Matcher build_fallback_analysis() linje 848-849.
-  if (nzchar(display)) {
-    display <- gsub(">=", "\U2265", display, fixed = TRUE)
-    display <- gsub("<=", "\U2264", display, fixed = TRUE)
-  }
+  # Operator-Unicode-konvertering via shared helper i spc_analysis.R.
+  display <- .normalize_target_operators(display)
 
   data <- list(
     target = display,

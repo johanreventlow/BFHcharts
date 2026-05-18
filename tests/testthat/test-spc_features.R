@@ -79,8 +79,7 @@ test_that("render_context indeholder alle obligatoriske felter", {
 
   required_fields <- c(
     "target_display", "centerline_formatted", "y_axis_unit",
-    "operator_unicode", "outliers_word_key", "effective_window",
-    "chart_type"
+    "operator_unicode", "outliers_word_key", "chart_type"
   )
   expect_true(all(required_fields %in% names(out$render_context)))
 })
@@ -264,7 +263,8 @@ test_that("_intermediate indeholder pass-through state til bfh_analyse", {
 
   expect_true("_intermediate" %in% names(out))
   expect_true(all(c(
-    "target_direction", "target_value", "has_target",
-    "goal_met", "at_target", "near_target", "flags"
+    "target_direction", "has_target",
+    "goal_met", "at_target", "near_target", "flags",
+    "cl_above_target"
   ) %in% names(out$`_intermediate`)))
 })

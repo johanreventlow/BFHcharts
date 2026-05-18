@@ -41,7 +41,6 @@ make_test_analysis <- function(overrides = list()) {
       y_axis_unit = "count",
       operator_unicode = "",
       outliers_word_key = "plural",
-      effective_window = 6L,
       chart_type = "i"
     ),
     conclusions = list(

@@ -133,7 +133,6 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
       aux$outliers_actual,
       aux$outliers_recent_count
     ),
-    effective_window = aux$effective_window,
     chart_type = context$chart_type %||% "i"
   )
 
@@ -150,7 +149,6 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
   }
   intermediate <- list(
     target_direction = context$target_direction,
-    target_value = context$target_value,
     has_target = flags$has_target,
     goal_met = target_eval$goal_met,
     at_target = target_eval$at_target,
@@ -336,15 +334,9 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 # "unknown" som default; metadata$direction-override respekteres dog
 # allerede her saa Phase 1 caller kan teste mekanismen.
 .resolve_direction <- function(context, metadata) {
-  meta_dir <- metadata$direction %||% NULL
-  if (!is.null(meta_dir)) {
-    if (meta_dir %in% c("higher_better", "lower_better")) {
-      # Phase 3 mapper context-aktuel retning til favorable/unfavorable.
-      # For Phase 1 returnerer vi raw meta-direction som "unknown" indtil
-      # composition-lag opdateres.
-      return("unknown")
-    }
-  }
+  # Phase 1 placeholder: returnerer altid "unknown". Slice 4 INCLUDE
+  # mapper context-aktuel retning til favorable/unfavorable og bruger
+  # metadata$direction-override (Phase 3+).
   "unknown"
 }
 
@@ -471,10 +463,11 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 
 
 # Traekker operator-Unicode-tegn ud af target_display hvis stede.
-# Returnerer "" hvis ingen operator. Eksisterende cascade i
-# .evaluate_target_arm() konverterer ASCII >= / <= til Unicode tegn
-# inden render; vi gentager logikken her saa render_context har den
-# konverterede form for direkte template-substitution.
+# Returnerer "" hvis ingen operator.
+#
+# CASCADE-RAEKKEFOELGE ER LOAD-BEARING: ">=" og "<=" SKAL tjekkes foer
+# ">" og "<" -- en streng som ">= 90" matcher baade ">" og ">=" via
+# grepl(fixed=TRUE), saa skal-tjek-tilstand. Reorder ikke uden test-cover.
 .extract_operator_unicode <- function(target_display) {
   if (is.null(target_display) || !nzchar(target_display)) {
     return("")

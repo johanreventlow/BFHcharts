@@ -8,6 +8,43 @@
 # Interne helpers (resolve_target, pluralize_da, ensure_within_max)
 # ---------------------------------------------------------------------------
 
+# Konverter ASCII-operatorer (>=, <=) til Unicode-sammentrukne tegn
+# (\U2265, \U2264) i target-display-strenge til klinisk prose-rendering.
+# Bruges af baade .evaluate_target_arm() (legacy) og spc_render.R
+# (struktureret pipeline). Holder operator-mappingen i en enkelt
+# autoritativ kilde.
+.normalize_target_operators <- function(x) {
+  if (is.null(x) || !nzchar(x)) {
+    return(x)
+  }
+  x <- gsub(">=", "\U2265", x, fixed = TRUE)
+  gsub("<=", "\U2264", x, fixed = TRUE)
+}
+
+# Compute target-relativ position af centerlinje som i18n-key-triplet.
+# Returnerer list(direction_key, vs_target_key) hvor begge er strenge
+# "at" | "over" | "under" -- eller NULL hvis target ej sat. Caller
+# resolverer keys via i18n_lookup(paste0("labels.level_*.", key)).
+#
+# Erstatter dual-computation i build_fallback_analysis() (linje 990-1013)
+# og struktureret spc_render.R (.compute_level_direction +
+# .compute_level_vs_target).
+.compute_level_keys <- function(centerline, target_value, has_target) {
+  if (!isTRUE(has_target) || !is_valid_scalar(centerline) ||
+    !is_valid_scalar(target_value)) {
+    return(NULL)
+  }
+  delta <- abs(centerline - target_value)
+  pos <- if (delta < 1e-9) {
+    "at"
+  } else if (centerline > target_value) {
+    "over"
+  } else {
+    "under"
+  }
+  list(direction_key = pos, vs_target_key = pos)
+}
+
 # Resolve target for analysis context via fallback chain.
 #
 # Order of precedence:
@@ -842,11 +879,9 @@ bfh_generate_analysis <- function(x,
     )
   }
 
-  # Erstat ASCII-operatorer med Unicode-sammentrukne tegn i analyseteksten,
-  # saa ">= 90%" rendres som "\U2265 90%" og "<= 2,5" som "\U2264 2,5".
+  # Erstat ASCII-operatorer med Unicode-sammentrukne tegn i analyseteksten.
   # context$target_display selv bevares uaendret (invariant fra resolve_target()).
-  display_target <- gsub(">=", "\U2265", display_target, fixed = TRUE)
-  display_target <- gsub("<=", "\U2264", display_target, fixed = TRUE)
+  display_target <- .normalize_target_operators(display_target)
 
   # Merge target-display med globale placeholders (level_direction, level_vs_target).
   # Target tager precedence saa specifik target-display ikke kan overskrives.
@@ -987,27 +1022,14 @@ build_fallback_analysis <- function(context,
   # Tomme strenge naar target ikke er sat, saa placeholderne kan staa i
   # templates uden at generere fejl, men bor kun bruges i target-/goal-
   # specifikke varianter for at give meningsfuld tekst.
-  level_direction <- if (flags$has_target) {
-    delta <- abs(centerline - target_value)
-    if (delta < 1e-9) {
-      i18n_lookup("labels.level_direction.at", language)
-    } else if (centerline > target_value) {
-      i18n_lookup("labels.level_direction.over", language)
-    } else {
-      i18n_lookup("labels.level_direction.under", language)
-    }
+  level_keys <- .compute_level_keys(centerline, target_value, flags$has_target)
+  level_direction <- if (!is.null(level_keys)) {
+    i18n_lookup(paste0("labels.level_direction.", level_keys$direction_key), language)
   } else {
     ""
   }
-  level_vs_target <- if (flags$has_target) {
-    key <- if (abs(centerline - target_value) < 1e-9) {
-      "labels.level_vs_target.at"
-    } else if (centerline > target_value) {
-      "labels.level_vs_target.over"
-    } else {
-      "labels.level_vs_target.under"
-    }
-    i18n_lookup(key, language)
+  level_vs_target <- if (!is.null(level_keys)) {
+    i18n_lookup(paste0("labels.level_vs_target.", level_keys$vs_target_key), language)
   } else {
     ""
   }
