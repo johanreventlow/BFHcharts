@@ -24,7 +24,7 @@
     Code
       cat(text)
     Output
-      Med kun 8 observationer er datagrundlaget for spinkelt til pålidelig vurdering med statistisk proceskontrol. Anhøj-reglerne kræver typisk mindst 12 observationer for at have detektions-styrke.
+      Med kun 8 observationer er datagrundlaget for spinkelt til pålidelig vurdering med statistisk proceskontrol. Anhøj-reglerne kræver typisk mindst 12 observationer for at have detektionsstyrke.
 
 # golden: shifted data (runs_only signal)
 
@@ -52,14 +52,14 @@
     Code
       cat(text)
     Output
-      Processen varierer naturligt omkring midten i data og vurderes derfor som stabil og forudsigelig, uden tegn på systematiske ændringer. (en betydelig forandring på ~10% i niveauet siden tidligere fase). i den ønskede retning. Niveauet er flyttet fra 49,75 til 54,87 siden tidligere fase. Overvej, om et udviklingsmål kan fastsættes, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres. Kontrolgrænserne varierer fordi stikprøvestørrelsen ændrer sig over tid — fortolk afvigelser med blik for n i hver periode.
+      Processen varierer naturligt omkring midten i data og vurderes derfor som stabil og forudsigelig, uden tegn på systematiske ændringer. Sammenlignet med tidligere fase er niveauet flyttet fra 49,75 til 54,87, en betydelig forandring på ~10% i niveauet i den ønskede retning. Overvej, om et udviklingsmål kan fastsættes, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres.
 
 # golden: phased data + lower_better direction (unfavorable cascade)
 
     Code
       cat(text)
     Output
-      Processen varierer naturligt omkring midten i data og vurderes derfor som stabil og forudsigelig, uden tegn på systematiske ændringer. (en betydelig forandring på ~10% i niveauet siden tidligere fase). i den modsatte af den ønskede retning. Niveauet er flyttet fra 49,75 til 54,87 siden tidligere fase. Overvej, om et udviklingsmål kan fastsættes, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres. Kontrolgrænserne varierer fordi stikprøvestørrelsen ændrer sig over tid — fortolk afvigelser med blik for n i hver periode.
+      Processen varierer naturligt omkring midten i data og vurderes derfor som stabil og forudsigelig, uden tegn på systematiske ændringer. Sammenlignet med tidligere fase er niveauet flyttet fra 49,75 til 54,87, en betydelig forandring på ~10% i niveauet væk fra den ønskede retning. Overvej, om et udviklingsmål kan fastsættes, så det aktuelle niveau kan vurderes, og behovet for forbedring kan prioriteres.
 
 # golden: cl=specified (cl_user_supplied caveat)
 
