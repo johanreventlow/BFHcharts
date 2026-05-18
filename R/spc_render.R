@@ -385,7 +385,7 @@ bfh_render_analysis <- function(analysis,
   # matcher faktisk aarsag (few_obs vs no_centerline vs no_spread).
   if (identical(key, "not_evaluable")) {
     reason <- analysis$features$low_confidence_reason %||% "few_obs"
-    if (!reason %in% c("few_obs", "no_centerline", "no_spread")) {
+    if (!reason %in% LOW_CONFIDENCE_REASONS) {
       reason <- "few_obs" # safety-fallback
     }
     templates <- texts$base$not_evaluable[[reason]] %||% NULL

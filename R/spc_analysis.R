@@ -581,23 +581,14 @@ bfh_generate_analysis <- function(x,
     # rent faktisk er aktive -- data-quality states (not_evaluable,
     # majority_at_centerline, no_variation) er IKKE SPC-signaler men
     # evaluerbarhed/data-form-issues og maa ikke sendes som "signal" til
-    # BFHllm (cycle 05 finding #4 fix).
-    #
-    # Anhoej-runs check: runs_actual > runs_expected.
-    # Anhoej-crossings check: crossings_actual < crossings_expected.
-    # Outliers: brug recent_count (seneste 6 obs) som primaer kilde,
-    # fald tilbage til outliers_actual.
+    # BFHllm (cycle 05 finding #4 fix). Delegerer til samme atomare
+    # detectors som .detect_signal_flags() -- forhindrer drift mellem
+    # feature-extraction og AI-egress-gate.
     aux <- spc_analysis$aux
-    has_runs <- is_valid_scalar(aux$runs_actual) &&
-      is_valid_scalar(aux$runs_expected) &&
-      aux$runs_actual > aux$runs_expected
-    has_crossings <- is_valid_scalar(aux$crossings_actual) &&
-      is_valid_scalar(aux$crossings_expected) &&
-      aux$crossings_actual < aux$crossings_expected
-    outliers_for_check <- aux$outliers_recent_count %||% aux$outliers_actual
-    has_outliers <- is_valid_scalar(outliers_for_check) &&
-      is.finite(outliers_for_check) && outliers_for_check > 0
-    has_signals <- isTRUE(has_runs) || isTRUE(has_crossings) || isTRUE(has_outliers)
+    has_signals <-
+      .has_runs_signal(aux$runs_actual, aux$runs_expected) ||
+        .has_crossings_signal(aux$crossings_actual, aux$crossings_expected) ||
+        .has_outliers_signal(aux$outliers_recent_count, aux$outliers_actual)
 
     # Byg SPC metadata til BFHllm
     spc_result <- list(
@@ -685,24 +676,43 @@ bfh_generate_analysis <- function(x,
 # Pure: samme input -> samme output. Bruges af build_fallback_analysis() til
 # at drive cascade-dispatch og budget-allokering uden at flade detection-
 # logikken sammen med i18n-opslag.
+# Atomic Anhoej-signal-detectors. Shared mellem .detect_signal_flags()
+# (feature-extraction) og AI-path has_signals (LLM-egress gate). Holder
+# semantik konsistent paa tvaers af call-sites -- ej re-implement risiko
+# (cycle 05 finding #4: tidligere drift mellem stability_pattern og
+# AI-signal-set).
+.has_runs_signal <- function(runs_actual, runs_expected) {
+  is_valid_scalar(runs_actual) && is_valid_scalar(runs_expected) &&
+    runs_actual > runs_expected
+}
+
+.has_crossings_signal <- function(crossings_actual, crossings_expected) {
+  is_valid_scalar(crossings_actual) && is_valid_scalar(crossings_expected) &&
+    crossings_actual < crossings_expected
+}
+
+.has_outliers_signal <- function(outliers_recent_count, outliers_actual) {
+  # Brug recent_count (seneste 6 obs) saa analyseteksten kun beskriver AKTUELLE
+  # outliers. Fald tilbage til outliers_actual naar kun summary-baserede stats
+  # er tilgaengelige.
+  outliers_for_text <- outliers_recent_count %||% outliers_actual
+  is_valid_scalar(outliers_for_text) && outliers_for_text > 0
+}
+
+
 .detect_signal_flags <- function(context) {
   spc_stats <- context$spc_stats
   target_value <- context$target_value
   centerline <- context$centerline
 
-  has_runs <- is_valid_scalar(spc_stats$runs_actual) &&
-    is_valid_scalar(spc_stats$runs_expected) &&
-    spc_stats$runs_actual > spc_stats$runs_expected
-
-  has_crossings <- is_valid_scalar(spc_stats$crossings_actual) &&
-    is_valid_scalar(spc_stats$crossings_expected) &&
-    spc_stats$crossings_actual < spc_stats$crossings_expected
-
-  # Brug recent_count (seneste 6 obs) saa analyseteksten kun beskriver AKTUELLE
-  # outliers. Fald tilbage til outliers_actual naar kun summary-baserede stats
-  # er tilgaengelige.
+  has_runs <- .has_runs_signal(spc_stats$runs_actual, spc_stats$runs_expected)
+  has_crossings <- .has_crossings_signal(
+    spc_stats$crossings_actual, spc_stats$crossings_expected
+  )
   outliers_for_text <- spc_stats$outliers_recent_count %||% spc_stats$outliers_actual
-  has_outliers <- is_valid_scalar(outliers_for_text) && outliers_for_text > 0
+  has_outliers <- .has_outliers_signal(
+    spc_stats$outliers_recent_count, spc_stats$outliers_actual
+  )
 
   is_stable <- !has_runs && !has_crossings && !has_outliers
 

@@ -95,6 +95,8 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
   # contract matcher rendered output).
   confidence_tier <- .compute_confidence_tier(context, x)
 
+  chart_class <- .resolve_chart_class(context$chart_type)
+
   features <- list(
     # AKTIV AKSE (Phase 1 detection):
     stability_pattern = .resolve_stability_pattern(flags, confidence_tier),
@@ -126,7 +128,7 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     # Data-quality sub-akser:
     data_quality = list(
       few_obs = isTRUE(context$n_points < N_MIN),
-      variable_cl = .detect_variable_cl(x, chart_class = .resolve_chart_class(context$chart_type)),
+      variable_cl = .detect_variable_cl(x, chart_class = chart_class),
       discrete_scale = .resolve_discrete_scale_tier(context$n_on_cl_ratio),
       missing_denominators = NA # Slice 6 (SKIP)
     ),
@@ -135,7 +137,7 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     trend_form = NA_character_, # Slice 12 DEFER
     direction = .resolve_direction(context, metadata),
     freshness = NA_character_, # Slice 10 SKIP
-    chart_class = .resolve_chart_class(context$chart_type),
+    chart_class = chart_class,
     outlier_history = .resolve_outlier_history(context$spc_stats) # Slice 11 DEFER (akse bevares)
   )
 
@@ -319,6 +321,19 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 # Confidence-tier (chart-type-aware, spec ADDED requirement)
 # ---------------------------------------------------------------------------
 
+# Shared guards used by .compute_confidence_tier + .compute_low_confidence_reason.
+# Kept here so a future change to "what counts as evaluable" updates both
+# paths atomically (cycle 05 DRY-fix).
+.has_centerline <- function(centerline) {
+  is_valid_scalar(centerline) && is.finite(centerline)
+}
+
+.has_finite_spread <- function(sigma_hat, sigma_data) {
+  (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) && sigma_hat > 0) ||
+    (is_valid_scalar(sigma_data) && is.finite(sigma_data) && sigma_data > 0)
+}
+
+
 # Returnerer "low" | "medium" | "high".
 #
 # Run-charts har sigma_hat = NA by design (ingen kontrolgraenser).
@@ -327,17 +342,11 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 # (sigma_hat eller sigma_data finite + > 0).
 .compute_confidence_tier <- function(context, x) {
   n_points <- context$n_points
-  centerline <- context$centerline
-  sigma_hat <- context$sigma_hat
-  sigma_data <- context$sigma_data
-
-  has_centerline <- is_valid_scalar(centerline) && is.finite(centerline)
-  has_spread <- (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) && sigma_hat > 0) ||
-    (is_valid_scalar(sigma_data) && is.finite(sigma_data) && sigma_data > 0)
 
   # "low" hvis n < N_MIN OR ingen centerline OR ingen spread-estimat.
   if (is.null(n_points) || is.na(n_points) || n_points < N_MIN ||
-    !has_centerline || !has_spread) {
+    !.has_centerline(context$centerline) ||
+    !.has_finite_spread(context$sigma_hat, context$sigma_data)) {
     return("low")
   }
   if (n_points >= 20L) {
@@ -360,20 +369,13 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 # reason saa not_evaluable-prose matcher faktisk aarsag.
 .compute_low_confidence_reason <- function(context) {
   n_points <- context$n_points
-  centerline <- context$centerline
-  sigma_hat <- context$sigma_hat
-  sigma_data <- context$sigma_data
-
   if (is.null(n_points) || is.na(n_points) || n_points < N_MIN) {
     return("few_obs")
   }
-  has_centerline <- is_valid_scalar(centerline) && is.finite(centerline)
-  if (!has_centerline) {
+  if (!.has_centerline(context$centerline)) {
     return("no_centerline")
   }
-  has_spread <- (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) && sigma_hat > 0) ||
-    (is_valid_scalar(sigma_data) && is.finite(sigma_data) && sigma_data > 0)
-  if (!has_spread) {
+  if (!.has_finite_spread(context$sigma_hat, context$sigma_data)) {
     return("no_spread")
   }
   NA_character_

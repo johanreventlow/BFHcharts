@@ -189,6 +189,15 @@ BFHCHARTS_OPT_ANALYSIS_DATE <- "BFHcharts.analysis_date"
 #' care processes. PLoS One. 9(11):e113825.
 N_MIN <- 12L
 
+#' Low-confidence reason enum
+#'
+#' Set af gyldige `low_confidence_reason`-vaerdier ved
+#' `confidence_tier == "low"`. Bruges af feature-extraction
+#' (`.compute_low_confidence_reason`), render-dispatch
+#' (`.render_stability` -> `texts$base$not_evaluable[[reason]]`) og
+#' schema-validator. NA_character_ er gyldig vaerdi naar tier != "low".
+LOW_CONFIDENCE_REASONS <- c("few_obs", "no_centerline", "no_spread")
+
 #' Magnitude-modifier ratio-cap
 #'
 #' Safety-cap for `.compute_magnitude()` baseline-delta-sigma-ratio.
