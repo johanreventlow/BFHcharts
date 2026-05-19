@@ -1,4 +1,4 @@
-# BFHcharts 0.20.0 (development)
+# BFHcharts 0.20.0
 
 ## Nye features
 
@@ -131,6 +131,30 @@ audit efter cycle 04 fixes) identificerede 14 fund. Fixes:
   test bevares som idempotens-gate. Snapshot-tests mod frozen baseline
   er planlagt follow-up.
 
+## Bug fixes (cycle 07 dual-review)
+
+Cycle 07 (post-merge audit via BFHddl-integration, 2026-05-18)
+identificerede 4 fund:
+
+* **MEDIUM (priority-aware trim)**: `bfh_render_analysis()` brugte
+  blind `ensure_within_max()`-trim fra slutningen. Ved tight budget
+  med aktiv modifier-saetning kunne klinisk vigtig action-tekst
+  klippes vaek mens optional modifier + tail-caveats bevares. Fix:
+  priority-drop af modifier > tail > target FOR blind clip.
+  stability + action er klinisk must-keep.
+
+* **LOW (prose-niveauforandring)**: `magnitude.detailed` brugte
+  dobbeltkonstruktion "i niveauet i den oenskede retning". Fix:
+  "niveauforandring" substantiv (begge locales).
+
+* **LOW (variable_cl hedge)**: "varierer fordi stikproevestoerrelse
+  aendrer sig" -> "varierer, typisk fordi naevner/stikproevestoerrelse
+  aendrer sig". Koden infererer fra UCL/LCL-spaend, ej direkte fra n.
+
+* **LOW (cl_auto_mean revert)**: Reviewer #3 anbefalede genindfoersel
+  af Anhoej-rationale. Bruger-override efter klinisk test via BFHddl:
+  kort variant tilstraekkelig (matcher PR #379-fix paa develop).
+
 ## Internal changes
 
 * `bfh_spc_analysis` S3-class (`R/bfh_spc_analysis_class.R`):
@@ -169,7 +193,7 @@ audit efter cycle 04 fixes) identificerede 14 fund. Fixes:
 
 ## Test-suite
 
-* 5446 PASS, 0 FAIL, 57 SKIP (+283 nye tests siden 0.19.0).
+* 5481 PASS, 0 FAIL, 69 SKIP (+318 nye tests siden 0.19.0).
 
 ## Refs
 

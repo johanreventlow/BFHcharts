@@ -48,6 +48,7 @@ Suggests:
     withr,
     bench,
     BFHllm,
+    jsonlite,
     knitr,
     rmarkdown
 VignetteBuilder: knitr
