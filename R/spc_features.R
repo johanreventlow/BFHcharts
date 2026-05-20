@@ -221,17 +221,25 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 
 # Returnerer i18n-noegle for stability-arm baseret paa eksisterende
 # flag-detection. Prioritet matcher build_fallback_analysis():
-# no_variation > majority_at_centerline > signal-baseret dispatch.
+# no_variation > majority_at_centerline > auto_mean_unstable >
+# not_evaluable > signal-baseret dispatch.
 .resolve_stability_pattern <- function(flags, confidence_tier = NULL) {
   # H4 fix: low-confidence (kort serie / manglende spread-estimat) returnerer
   # "not_evaluable" som feature-value -- downstream UI badges baseret paa
   # stability_pattern matcher saa rendered prose. Override-paths
-  # (no_variation, majority_at_centerline) bevarer deres egen overlay.
+  # (no_variation, majority_at_centerline, auto_mean_unstable) bevarer
+  # deres egen overlay.
   if (isTRUE(flags$no_variation)) {
     return("no_variation")
   }
   if (isTRUE(flags$majority_at_cl)) {
     return("majority_at_centerline")
+  }
+  # auto_mean_unstable: CL auto-skiftet til gennemsnit pga majoritets-
+  # paa-median, men signaler stadig til stede. SPC-tolkningen er
+  # forringet -- warning-tekst erstatter standard signal-dispatch.
+  if (isTRUE(flags$auto_mean_unstable)) {
+    return("auto_mean_unstable")
   }
   if (identical(confidence_tier, "low")) {
     return("not_evaluable")

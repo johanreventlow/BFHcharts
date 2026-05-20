@@ -787,6 +787,21 @@ bfh_generate_analysis <- function(x,
     is_valid_scalar(n_on_cl_ratio) && is.finite(n_on_cl_ratio) &&
     n_on_cl_ratio >= 0.5
 
+  # auto_mean_unstable: bfh_qic() auto-skiftede CL fra median til
+  # gennemsnit (>= 50% af punkterne laa paa medianen), men processen
+  # viser stadig signaler efter skiftet. SPC-tolkningen er forringet:
+  # signalerne kan vaere artefakter af skiftet eller af den diskrete
+  # maaleskala der udloeste skiftet. Render-lag erstatter stability-base
+  # med en warning-tekst i samme toneleje som majority_at_centerline.
+  #
+  # Prioritet: no_variation > majority_at_cl > auto_mean_unstable.
+  # no_variation og majority_at_cl er mere specifikke beskrivelser af
+  # det underliggende data-problem; auto_mean_unstable er en bredere
+  # "SPC fungerer ikke godt her"-warning.
+  cl_auto_mean <- isTRUE(spc_stats$cl_auto_mean)
+  auto_mean_unstable <- cl_auto_mean && !is_stable &&
+    !no_variation && !majority_at_cl
+
   has_target <- !is.null(target_value) && !is.na(target_value) &&
     is.numeric(target_value) &&
     !is.null(centerline) && !is.na(centerline)
@@ -798,6 +813,7 @@ bfh_generate_analysis <- function(x,
     is_stable = is_stable,
     no_variation = no_variation,
     majority_at_cl = majority_at_cl,
+    auto_mean_unstable = auto_mean_unstable,
     has_target = has_target,
     outliers_for_text = outliers_for_text
   )
@@ -1167,9 +1183,12 @@ build_fallback_analysis <- function(context,
   )
 
   # --- 1. Stabilitetstekst ---
-  # Prioritet: no_variation > majority_at_centerline > signal-baseret dispatch.
+  # Prioritet: no_variation > majority_at_centerline > auto_mean_unstable >
+  # signal-baseret dispatch.
   # no_variation kraever Anhoej-stats er NA (alle identiske); majority_at_cl
-  # tillader normal variation men flagger >= 50% punkter eksakt paa CL.
+  # tillader normal variation men flagger >= 50% punkter eksakt paa CL;
+  # auto_mean_unstable fyrer naar CL er auto-skiftet til gennemsnit pga
+  # majoritets-paa-median, men signaler stadig er til stede.
   if (no_variation) {
     stability <- pick_text(
       texts$stability$no_variation,
@@ -1179,6 +1198,12 @@ build_fallback_analysis <- function(context,
   } else if (isTRUE(flags$majority_at_cl)) {
     stability <- pick_text(
       texts$stability$majority_at_centerline,
+      data = list(centerline = cl_fmt),
+      budget = stability_budget
+    )
+  } else if (isTRUE(flags$auto_mean_unstable)) {
+    stability <- pick_text(
+      texts$stability$auto_mean_unstable,
       data = list(centerline = cl_fmt),
       budget = stability_budget
     )

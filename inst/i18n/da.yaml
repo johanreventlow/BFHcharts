@@ -38,6 +38,17 @@ analysis:
       standard: "En stor del af datapunkterne ligger præcis på niveaulinjen ({centerline}), hvilket kan tyde på begrænset opløsning i målingerne."
       detailed: "En stor del af datapunkterne ligger præcis på niveaulinjen ({centerline}). Analysen ser på variation i data og er derfor ikke velegnet til at vurdere denne proces."
 
+    auto_mean_unstable:
+      # Aktiveres naar bfh_qic() auto-skiftede CL fra median til gennemsnit
+      # (>= 50% af punkterne laa paa medianen), men processen viser stadig
+      # signaler efter skiftet. SPC-tolkningen er forringet -- signalerne
+      # kan vaere artefakter af skiftet eller af den diskrete maaleskala
+      # der udloeste skiftet. Suppressor cl_auto_mean tail-caveat (samme
+      # information forklares her).
+      short: "Niveaulinjen er skiftet til gennemsnit, og signalerne er upålidelige."
+      standard: "Mange datapunkter lå præcis på medianen, så niveaulinjen er skiftet til gennemsnittet. Eventuelle signaler bør tolkes med forsigtighed."
+      detailed: "Mange datapunkter lå præcis på medianen, så niveaulinjen er skiftet til gennemsnittet. Analysen er ikke velegnet til at vurdere processen, og signalerne bør tolkes med stor forsigtighed."
+
     no_signals:
       short: "Processen er stabil og forudsigelig."
       # standard: "Processen er stabil og forudsigelig. Variationen er naturlig og uden systematiske ændringer."
@@ -264,7 +275,7 @@ analysis:
       # SPC-faglig terminologi (Anhoej/Shewhart-litteratur), ej
       # 'naturlige variation' der konnoterer common-cause.
       standard: "Målet er næsten nået, men processen er ustabil. Undersøg, hvilke særlige årsager der påvirker variationen."
-      detailed: "Undersøg, hvilke særlige årsager der påvirker processen, og arbejd for at stabilisere den. Vurdér så, om niveauet er tilfredsstillende."
+      detailed: "Undersøg de årsager der påvirker processen, og arbejd for at stabilisere den. Vurdér om niveauet er tilfredsstillende."
     unstable_goal_not_met:
       short: "Stabilisér processen først, og arbejd derefter mod målet."
       standard: "Identificér først årsager til variationen i data, og stabilisér processen - derefter kan målrettede forbedringstiltag iværksættes."

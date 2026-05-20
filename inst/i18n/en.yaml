@@ -22,6 +22,17 @@ analysis:
       standard: "A large share of the data points lie exactly on the centerline ({centerline}), which may indicate limited measurement resolution."
       detailed: "A large share of the data points lie exactly on the centerline ({centerline}). This may be due to coarse measurement scale or discrete reporting, which weakens SPC interpretation."
 
+    auto_mean_unstable:
+      # Triggered when bfh_qic() auto-switched CL from median to mean
+      # (>= 50% of points fell on the median), but signals are still
+      # present after the switch. SPC interpretation is weakened --
+      # signals may be artefacts of the switch or of the discrete
+      # measurement scale that triggered it. Suppresses the cl_auto_mean
+      # tail caveat (same information is conveyed here).
+      short: "The centerline has been switched to the mean, and signals are unreliable."
+      standard: "Many data points fell exactly on the median, so the centerline has been switched to the mean. Any signals should be interpreted with caution."
+      detailed: "Many data points fell exactly on the median, so the centerline has been switched to the mean. The analysis is not well suited to assess the process, and signals should be interpreted with great caution."
+
     no_signals:
       short: "The process is stable and predictable."
       standard: "The process is stable and predictable. Variation is natural with no systematic changes."

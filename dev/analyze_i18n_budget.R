@@ -338,13 +338,16 @@ compose_modifier_sentence <- function(magnitude, direction, has_baseline,
 # hvor target_pos er "at"/"over"/"under" (kun naar has_target=TRUE).
 # Action key udledes via samme regler som .select_action_key().
 
-stability_keys <- c("no_variation", "majority_at_centerline", "no_signals",
+stability_keys <- c("no_variation", "majority_at_centerline",
+                    "auto_mean_unstable", "no_signals",
                     "runs_only", "crossings_only", "outliers_only",
                     "runs_crossings", "runs_outliers", "crossings_outliers",
                     "all_signals")
 # Stable keys: no_signals + no_variation. majority_at_centerline kan teknisk
 # bestaa eller udvise signaler men i simulator-grid'et flagger vi den som
 # stable (diskret maaleskala -> typisk ingen tilfaeldige run/crossing-signaler).
+# auto_mean_unstable er per definition ustabil (signaler tilstede efter
+# auto-skift til mean) -> is_stable = FALSE.
 is_stable_from_key <- function(k) {
   k %in% c("no_signals", "no_variation", "majority_at_centerline")
 }
@@ -453,7 +456,7 @@ for (sk in stability_keys) {
   }
 }
 
-cat(sprintf("== 2) Scenarie-simulering: %d kombinationer (10 stability x 8 target-states x 1-2 outlier-niveauer x 2 placeholder-skala) ==\n\n",
+cat(sprintf("== 2) Scenarie-simulering: %d kombinationer (11 stability x 8 target-states x 1-2 outlier-niveauer x 2 placeholder-skala) ==\n\n",
   length(scenarios)))
 
 # Simuler hvert scenarie og opsaml resultater

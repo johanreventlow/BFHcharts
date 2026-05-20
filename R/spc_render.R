@@ -72,11 +72,11 @@ bfh_render_analysis <- function(analysis,
   # Byg placeholder-data fra render_context + aux + features
   placeholder_data <- .build_placeholder_data(analysis, texts, language)
 
-  # Override-paths (no_variation, majority_at_centerline) + low-confidence
-  # (key=="not_evaluable" per H4 fix) gating beregnes foran modifier-pool
-  # og target+action-arms.
+  # Override-paths (no_variation, majority_at_centerline, auto_mean_unstable) +
+  # low-confidence (key=="not_evaluable" per H4 fix) gating beregnes foran
+  # modifier-pool og target+action-arms.
   is_override <- analysis$conclusions$stability_key %in%
-    c("no_variation", "majority_at_centerline")
+    c("no_variation", "majority_at_centerline", "auto_mean_unstable")
   is_low_confidence <- identical(analysis$conclusions$stability_key, "not_evaluable")
 
   # --- 1. Stabilitetstekst ---
@@ -99,8 +99,8 @@ bfh_render_analysis <- function(analysis,
   # --- 2. Maalvurdering ---
   # Slice 8: low-confidence skipper target+action helt. Med under N_MIN
   # observationer er konkrete maal-/handlings-anbefalinger ej forsvarlige.
-  # Override-paths (no_variation, majority_at_centerline) bevarer
-  # target+action selv ved low confidence.
+  # Override-paths (no_variation, majority_at_centerline, auto_mean_unstable)
+  # bevarer target+action selv ved low confidence.
   target_text <- if (is_low_confidence) {
     ""
   } else {
@@ -270,10 +270,19 @@ bfh_render_analysis <- function(analysis,
   # seasonality) tilfoejes ved at appende slot-navn til denne vektor.
   caveat_slots <- c("cl_source", "discrete_scale", "variable_cl")
 
+  # Naar stability-base er auto_mean_unstable er CL-skiftet allerede
+  # forklaret i stability-teksten -- undgaa duplikering ved at suppressere
+  # cl_auto_mean-caveat'en. cl_user_supplied (anden cl_source-variant)
+  # bevares; den vedrorer en separat user-supplied CL-mekanisme.
+  is_auto_mean_unstable <- identical(
+    analysis$conclusions$stability_key, "auto_mean_unstable"
+  )
+
   parts <- character(0L)
   for (slot in caveat_slots) {
     key <- analysis$caveats[[slot]]
     if (is.null(key) || !nzchar(key)) next
+    if (is_auto_mean_unstable && identical(key, "cl_auto_mean")) next
     text <- i18n_lookup(paste0("labels.caveats.", key), language)
     if (!is.null(text) && nzchar(text)) {
       parts <- c(parts, text)
@@ -386,10 +395,11 @@ bfh_render_analysis <- function(analysis,
 .render_stability <- function(analysis, texts, budget, placeholder_data, language) {
   key <- analysis$conclusions$stability_key
 
-  # Override-state-paths: no_variation + majority_at_centerline
-  # har forrang over low-confidence (specifikke meddelelser for
-  # specifikke data-egenskaber).
-  is_override <- key %in% c("no_variation", "majority_at_centerline")
+  # Override-state-paths: no_variation + majority_at_centerline +
+  # auto_mean_unstable har forrang over low-confidence (specifikke
+  # meddelelser for specifikke data-egenskaber).
+  is_override <- key %in% c("no_variation", "majority_at_centerline",
+    "auto_mean_unstable")
 
   if (is_override) {
     data <- list(centerline = placeholder_data$centerline)
