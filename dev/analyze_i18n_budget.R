@@ -338,23 +338,36 @@ compose_modifier_sentence <- function(magnitude, direction, has_baseline,
 # hvor target_pos er "at"/"over"/"under" (kun naar has_target=TRUE).
 # Action key udledes via samme regler som .select_action_key().
 
-stability_keys <- c("no_variation", "no_signals", "runs_only", "crossings_only",
-                    "outliers_only", "runs_crossings", "runs_outliers",
-                    "crossings_outliers", "all_signals")
-is_stable_from_key <- function(k) k %in% c("no_signals", "no_variation")
+stability_keys <- c("no_variation", "majority_at_centerline", "no_signals",
+                    "runs_only", "crossings_only", "outliers_only",
+                    "runs_crossings", "runs_outliers", "crossings_outliers",
+                    "all_signals")
+# Stable keys: no_signals + no_variation. majority_at_centerline kan teknisk
+# bestaa eller udvise signaler men i simulator-grid'et flagger vi den som
+# stable (diskret maaleskala -> typisk ingen tilfaeldige run/crossing-signaler).
+is_stable_from_key <- function(k) {
+  k %in% c("no_signals", "no_variation", "majority_at_centerline")
+}
 # all_signals indeholder semantisk outliers selvom keyword ikke matcher.
 has_outliers_from_key <- function(k) {
   k %in% c("outliers_only", "runs_outliers", "crossings_outliers", "all_signals")
 }
 
-# Target-state matrix
+# Target-state matrix.
+#   - vn_*  : value-neutral (target_direction = NULL)
+#   - dir_* : direction-aware (target_direction = "lower" / "higher")
+#   - near  : CL paa forkert side af direction-target men inden for tolerance.
+#             Kraever direction-aware path (target_direction != NULL); fanges
+#             af near_target/stable_near_target/unstable_near_target-templates.
 target_states <- list(
-  no_target            = list(has_target = FALSE, direction = NULL,    pos = NA),
-  vn_at_target         = list(has_target = TRUE,  direction = NULL,    pos = "at"),
-  vn_over_target       = list(has_target = TRUE,  direction = NULL,    pos = "over"),
-  vn_under_target      = list(has_target = TRUE,  direction = NULL,    pos = "under"),
-  dir_goal_met         = list(has_target = TRUE,  direction = "lower", pos = "under"),  # CL under en lower-target = goal met
-  dir_goal_not_met     = list(has_target = TRUE,  direction = "lower", pos = "over")    # CL over en lower-target = ikke met
+  no_target            = list(has_target = FALSE, direction = NULL,    pos = NA,      near = FALSE),
+  vn_at_target         = list(has_target = TRUE,  direction = NULL,    pos = "at",    near = FALSE),
+  vn_over_target       = list(has_target = TRUE,  direction = NULL,    pos = "over",  near = FALSE),
+  vn_under_target      = list(has_target = TRUE,  direction = NULL,    pos = "under", near = FALSE),
+  dir_goal_met         = list(has_target = TRUE,  direction = "lower", pos = "under", near = FALSE),  # CL under lower-target = goal met
+  dir_goal_not_met     = list(has_target = TRUE,  direction = "lower", pos = "over",  near = FALSE),  # CL over lower-target = ikke met
+  dir_near_lower       = list(has_target = TRUE,  direction = "lower", pos = "over",  near = TRUE),   # CL lige over lower-target (tolerance-naer)
+  dir_near_higher      = list(has_target = TRUE,  direction = "higher",pos = "under", near = TRUE)    # CL lige under higher-target (tolerance-naer)
 )
 
 # Realistiske placeholder-vaerdier (typisk og worst case).
@@ -381,9 +394,17 @@ make_placeholders <- function(outliers_n, scale = "typical", pos = "over") {
   )
 }
 
-select_action_key <- function(is_stable, has_target, direction, target_pos) {
+select_action_key <- function(is_stable, has_target, direction, target_pos,
+                              near = FALSE) {
   if (has_target && !is.null(direction)) {
-    goal_met <- target_pos == "under" && direction == "lower"  # match simulation-konvention
+    if (isTRUE(near)) {
+      return(if (is_stable) "stable_near_target" else "unstable_near_target")
+    }
+    # Direction-aware goal_met: CL paa "rigtig" side af target.
+    #   lower-target  -> goal_met naar CL <= target (pos == "under" eller "at")
+    #   higher-target -> goal_met naar CL >= target (pos == "over"  eller "at")
+    goal_met <- (direction == "lower"  && target_pos %in% c("under", "at")) ||
+                (direction == "higher" && target_pos %in% c("over",  "at"))
     if (is_stable && goal_met) "stable_goal_met"
     else if (is_stable && !goal_met) "stable_goal_not_met"
     else if (!is_stable && goal_met) "unstable_goal_met"
@@ -401,8 +422,10 @@ select_action_key <- function(is_stable, has_target, direction, target_pos) {
 
 target_key_from_state <- function(state) {
   if (!state$has_target) return(NULL)
+  if (isTRUE(state$near)) return("near_target")
   if (!is.null(state$direction)) {
-    goal_met <- state$pos == "under" && state$direction == "lower"
+    goal_met <- (state$direction == "lower"  && state$pos %in% c("under", "at")) ||
+                (state$direction == "higher" && state$pos %in% c("over",  "at"))
     if (goal_met) "goal_met" else "goal_not_met"
   } else {
     paste0(state$pos, "_target")
@@ -430,7 +453,7 @@ for (sk in stability_keys) {
   }
 }
 
-cat(sprintf("== 2) Scenarie-simulering: %d kombinationer (9 stability x 6 target-states x 1-2 outlier-niveauer x 2 placeholder-skala) ==\n\n",
+cat(sprintf("== 2) Scenarie-simulering: %d kombinationer (10 stability x 8 target-states x 1-2 outlier-niveauer x 2 placeholder-skala) ==\n\n",
   length(scenarios)))
 
 # Simuler hvert scenarie og opsaml resultater
@@ -464,7 +487,8 @@ results <- lapply(scenarios, function(sc) {
 
   # Action arm
   act_key <- select_action_key(is_stable, has_target,
-    sc$target_meta$direction, sc$target_meta$pos)
+    sc$target_meta$direction, sc$target_meta$pos,
+    near = isTRUE(sc$target_meta$near))
   act <- pick_variant(analysis$action[[act_key]],
     data = ph,
     budget = budget$action)
