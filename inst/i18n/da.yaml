@@ -46,8 +46,10 @@ analysis:
       # der udloeste skiftet. Suppressor cl_auto_mean tail-caveat (samme
       # information forklares her).
       short: "Niveaulinjen er skiftet til gennemsnit, og signalerne er upålidelige."
-      standard: "Mange datapunkter lå præcis på medianen, så niveaulinjen er skiftet til gennemsnittet. Eventuelle signaler bør tolkes med forsigtighed."
-      detailed: "Mange datapunkter lå præcis på medianen, så niveaulinjen er skiftet til gennemsnittet. Analysen er ikke velegnet til at vurdere processen, og signalerne bør tolkes med stor forsigtighed."
+      # standard: "Mange datapunkter lå præcis på medianen, så niveaulinjen er skiftet til gennemsnittet. Eventuelle signaler bør tolkes med forsigtighed."
+      # standard: "Mange datapunkter lå præcis på medianen, så niveaulinjen er skiftet til gennemsnittet. Statistisk proceskontrol er ikke velegnet til at vurdere processen."
+      standard: "Statistisk proceskontrol analyserer variationen i data og er derfor ikke velegnet til at vurdere denne proces, hvor over halvdelen af observationerne er ens."
+      detailed: "Mange datapunkter lå præcis på medianen, så niveaulinjen er skiftet til gennemsnittet. Statistisk proceskontrol ser på variation i data og er derfor ikke velegnet til at vurdere denne proces."
 
     no_signals:
       short: "Processen er stabil og forudsigelig."
@@ -259,7 +261,7 @@ analysis:
       short: "Stabilisér processen for at fastholde målopfyldelsen."
       standard: "Undersøg årsagerne til variationen i data, så målopfyldelsen kan fastholdes."
       # detailed: "Målet er opfyldt, men processen er ustabil. Undersøg årsagerne til variationen i data, så det nuværende niveau kan fastholdes, og målopfyldelsen ikke går tabt."
-      detailed: "Find årsagerne til variationen, så niveauet fastholdes og målopfyldelsen ikke går tabt."
+      detailed: "Find årsagerne til variationen og stabilisér processen, så niveauet fastholdes og målopfyldelsen ikke går tabt."
     stable_near_target:
       # Statistisk taet paa target men paa forkert side ({level_direction}).
       # Tekst formuleres som om maalet i praksis er naaet.
@@ -278,9 +280,19 @@ analysis:
       detailed: "Undersøg de årsager der påvirker processen, og arbejd for at stabilisere den. Vurdér om niveauet er tilfredsstillende."
     unstable_goal_not_met:
       short: "Stabilisér processen først, og arbejd derefter mod målet."
-      standard: "Identificér først årsager til variationen i data, og stabilisér processen - derefter kan målrettede forbedringstiltag iværksættes."
+      standard: "Identificér årsager til variationen i data, og stabilisér processen - derefter kan målrettede forbedringstiltag iværksættes."
       # detailed: "Identificér først årsager til variationen i data, og stabilisér processen — først når processen er stabil, kan effekten af nye forbedringstiltag mod målet vurderes pålideligt."
-      detailed: "Identificér årsager til variation og stabilisér processen — først derefter kan effekten af nye tiltag mod målet vurderes pålideligt."
+      detailed: "Identificér årsager til variation og stabilisér processen — først derefter kan effekten af nye forbedringstiltag vurderes ordentligt."
+
+    auto_mean_unstable:
+      # Aktiveres parallelt til stability.auto_mean_unstable. Erstatter
+      # standard is_stable x has_target x direction-cascade saa action-armen
+      # tilbyder maaleskalas-forbedring i stedet for "stabilisér processen"
+      # (sidstnaevnte modsiger stability-tekstens "SPC ej velegnet"-konklusion).
+      # Target-armen kommunikerer fortsat hvorvidt maalet er naaet.
+      short: "Overvej finere måleskala før beslutninger træffes."
+      standard: "Overvej om måleskalaen kan gøres finere, da den nuværende analyse ikke kan skelne reel variation fra artefakter."
+      detailed: "Overvej om måleskalaen kan gøres finere, da den nuværende analyse ikke kan skelne reel variation fra artefakter. Brug data deskriptivt indtil videre."
 
 # ==============================================================================
 # ETIKETTER

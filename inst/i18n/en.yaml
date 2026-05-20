@@ -237,6 +237,17 @@ analysis:
       standard: "The process is unstable and does not meet the target. First identify the special causes of variation before implementing targeted measures."
       detailed: "The process is unstable and does not meet the target. First identify the special causes of variation — only once the process is stable can the effect of new improvement measures towards the target be reliably assessed."
 
+    auto_mean_unstable:
+      # Parallel to stability.auto_mean_unstable. Overrides the standard
+      # is_stable x has_target x direction cascade so the action arm offers
+      # measurement-resolution improvement instead of "stabilise the process"
+      # (the latter contradicts the stability text's "SPC not well suited"
+      # conclusion). The target arm still communicates whether the target
+      # is met.
+      short: "Consider a finer measurement scale before making decisions."
+      standard: "Consider refining the measurement scale, as the current analysis cannot reliably separate real variation from artefacts."
+      detailed: "Consider refining the measurement scale, as the current analysis cannot reliably separate real variation from artefacts. Use the data descriptively in the meantime."
+
 # ==============================================================================
 # LABELS
 # ==============================================================================

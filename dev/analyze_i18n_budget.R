@@ -398,7 +398,12 @@ make_placeholders <- function(outliers_n, scale = "typical", pos = "over") {
 }
 
 select_action_key <- function(is_stable, has_target, direction, target_pos,
-                              near = FALSE) {
+                              near = FALSE, stability_key = NULL) {
+  # auto_mean_unstable overrider standard action-cascade (matcher
+  # .select_action_key() i R/spc_analysis.R).
+  if (identical(stability_key, "auto_mean_unstable")) {
+    return("auto_mean_unstable")
+  }
   if (has_target && !is.null(direction)) {
     if (isTRUE(near)) {
       return(if (is_stable) "stable_near_target" else "unstable_near_target")
@@ -491,7 +496,8 @@ results <- lapply(scenarios, function(sc) {
   # Action arm
   act_key <- select_action_key(is_stable, has_target,
     sc$target_meta$direction, sc$target_meta$pos,
-    near = isTRUE(sc$target_meta$near))
+    near = isTRUE(sc$target_meta$near),
+    stability_key = sc$stability_key)
   act <- pick_variant(analysis$action[[act_key]],
     data = ph,
     budget = budget$action)

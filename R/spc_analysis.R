@@ -906,6 +906,15 @@ bfh_generate_analysis <- function(x,
   is_stable <- flags$is_stable
   has_target <- flags$has_target
 
+  # auto_mean_unstable overrider standard cascade: action-armen skal
+  # tale om at forbedre maaleskalaen i stedet for "stabiliser processen"
+  # (sidstnaevnte modsiger stability-tekstens "SPC ikke velegnet"-
+  # konklusion). Target-armen kommunikerer fortsat target-relation,
+  # saa action-keyen behoever ikke at differentiere paa target-state.
+  if (isTRUE(flags$auto_mean_unstable)) {
+    return("auto_mean_unstable")
+  }
+
   if (has_target && !is.null(target_direction)) {
     if (is_stable && goal_met) {
       "stable_goal_met"
