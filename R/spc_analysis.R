@@ -29,13 +29,21 @@
 # Erstatter dual-computation i build_fallback_analysis() (linje 990-1013)
 # og struktureret spc_render.R (.compute_level_direction +
 # .compute_level_vs_target).
-.compute_level_keys <- function(centerline, target_value, has_target) {
+.compute_level_keys <- function(centerline, target_value, has_target,
+                                y_axis_unit = NULL) {
   if (!isTRUE(has_target) || !is_valid_scalar(centerline) ||
     !is_valid_scalar(target_value)) {
     return(NULL)
   }
-  delta <- abs(centerline - target_value)
-  pos <- if (delta < 1e-9) {
+  # Percent-units: "at" naar CL og target afrunder til samme chart-display
+  # vaerdi (fx CL=0.0103 og target=0.01 begge vises som "1%"/"1,0%").
+  # Matcher hvad laeseren ser, ikke ren numerisk lighed.
+  is_at <- if (identical(y_axis_unit, "percent")) {
+    .cl_displays_at_target_pct(centerline, target_value)
+  } else {
+    abs(centerline - target_value) < 1e-9
+  }
+  pos <- if (isTRUE(is_at)) {
     "at"
   } else if (centerline > target_value) {
     "over"
@@ -43,6 +51,58 @@
     "under"
   }
   list(direction_key = pos, vs_target_key = pos)
+}
+
+# Tjek om CL og target afrunder til samme chart-display-vaerdi paa
+# procent-skala. Matcher format_percent_contextual() i utils_label_formatting.R:
+#   - CL vises med 1 decimal hvis |CL - target| <= NEAR_TARGET_DISPLAY_THRESHOLD,
+#     ellers hele procent.
+#   - Target vises altid med hele procent (target alene har ikke et "target"-
+#     reference for kontekstuel praecision).
+# Returnerer TRUE naar de to display-strenge repraesenterer samme tal.
+#
+# Brugt af .compute_level_keys() + .evaluate_target_arm() til at flippe
+# "lige over" -> "paa maalet"/"goal_met" naar visuel lighed gaelder.
+.cl_displays_at_target_pct <- function(centerline, target_value) {
+  if (!is_valid_scalar(centerline) || !is_valid_scalar(target_value)) {
+    return(FALSE)
+  }
+  delta <- abs(centerline - target_value)
+  target_pct_whole <- round(target_value * 100)
+  if (delta <= NEAR_TARGET_DISPLAY_THRESHOLD) {
+    # CL vises med 1 decimal; sammenlign mod target's hele procent.
+    cl_pct_show <- round(centerline * 100, 1)
+    return(isTRUE(cl_pct_show == target_pct_whole))
+  }
+  cl_pct_whole <- round(centerline * 100)
+  isTRUE(cl_pct_whole == target_pct_whole)
+}
+
+# Beregn near_target / at_target tolerance via sigma-cascade.
+#
+# Cascade (uaendret fra original logik):
+#   1. sigma_hat tilgaengelig     -> 3*sigma_hat (kontrolgraense-bredde / 2)
+#   2. sigma_data tilgaengelig    -> sd(y)
+#   3. ingen sigma                -> 1e-9 (kraever eksakt match)
+#
+# Percent-units (is_percent=TRUE): tolerance capes ved NEAR_TARGET_PCT_CAP
+# (0.05 = 5pp). Forhindrer at en stoejende proces (fx 0-30% spread) giver
+# tolerance > 5pp, hvilket vil klassificere CL=11% mod target=5% som
+# "lige over"/at_target - statistisk korrekt, men klinisk absurd.
+.near_target_tolerance <- function(sigma_hat, sigma_data, is_percent) {
+  sigma_tol <- if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) &&
+    sigma_hat > 0) {
+    3 * sigma_hat
+  } else if (is_valid_scalar(sigma_data) && is.finite(sigma_data) &&
+    sigma_data > 0) {
+    sigma_data
+  } else {
+    1e-9
+  }
+  if (isTRUE(is_percent)) {
+    return(min(sigma_tol, NEAR_TARGET_PCT_CAP))
+  }
+  sigma_tol
 }
 
 # Resolve target for analysis context via fallback chain.
@@ -911,12 +971,22 @@ bfh_generate_analysis <- function(x,
   # Target tager precedence saa specifik target-display ikke kan overskrives.
   data <- modifyList(extra_placeholders, list(target = display_target))
 
+  y_axis_unit <- context$y_axis_unit
+  is_percent <- identical(y_axis_unit, "percent")
+
   if (!is.null(target_direction)) {
     # Retningsbevidst: prioritet er strikt goal_met > near_target >
     # goal_not_met. CL paa korrekt side af target laeses altid som
     # "opfyldt" uanset afstand; near_target reserveres for "forkert side
     # men inden for proces-stoej" (sigma-cascade matcher path A).
-    result$goal_met <- switch(target_direction,
+    #
+    # Percent-units: display-precision-equality check foer strikt-numeric.
+    # CL og target der afrunder til samme chart-display-vaerdi (fx 1,0%
+    # vs 1%) klassificeres som goal_met. Forhindrer "lige over"-tekst
+    # naar laeseren visuelt ser CL paa maalstregen.
+    display_equal <- is_percent &&
+      .cl_displays_at_target_pct(centerline, target_value)
+    result$goal_met <- display_equal || switch(target_direction,
       "higher" = centerline >= target_value,
       "lower"  = centerline <= target_value,
       FALSE
@@ -927,17 +997,10 @@ bfh_generate_analysis <- function(x,
       # sigma_data -> eksakt). Tolerance-faldet for higher/lower er
       # symmetrisk om target; retningen kodes via {level_direction}.
       delta <- abs(centerline - target_value)
-      sigma_hat <- context$sigma_hat
-      sigma_data <- context$sigma_data
-      result$near_target <- if (is_valid_scalar(sigma_hat) &&
-        is.finite(sigma_hat) && sigma_hat > 0) {
-        delta <= 3 * sigma_hat
-      } else if (is_valid_scalar(sigma_data) &&
-        is.finite(sigma_data) && sigma_data > 0) {
-        delta <= sigma_data
-      } else {
-        delta < 1e-9
-      }
+      tolerance <- .near_target_tolerance(
+        context$sigma_hat, context$sigma_data, is_percent
+      )
+      result$near_target <- delta <= tolerance
     }
     key <- if (result$goal_met) {
       "goal_met"
@@ -959,18 +1022,15 @@ bfh_generate_analysis <- function(x,
     #      (run charts og no_variation hvor kontrolgraenser mangler)
     #   3. Eksakt-match:           |CL - target| < 1e-9
     #      (degenereret: konstant y, n=1, eller begge sigma er 0)
+    # Percent-units: capped ved NEAR_TARGET_PCT_CAP saa stoejende processer
+    # ej ratiionaliserer fjern-CL som "tæt på" (parity med direction-aware).
     delta <- abs(centerline - target_value)
-    sigma_hat <- context$sigma_hat
-    sigma_data <- context$sigma_data
-    is_at_target <- if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) &&
-      sigma_hat > 0) {
-      delta <= 3 * sigma_hat
-    } else if (is_valid_scalar(sigma_data) && is.finite(sigma_data) &&
-      sigma_data > 0) {
-      delta <= sigma_data
-    } else {
-      delta < 1e-9
-    }
+    display_equal <- is_percent &&
+      .cl_displays_at_target_pct(centerline, target_value)
+    is_at_target <- display_equal ||
+      delta <= .near_target_tolerance(
+        context$sigma_hat, context$sigma_data, is_percent
+      )
     if (is_at_target) {
       result$target_text <- pick_text(texts$target$at_target,
         data = data,
@@ -1053,12 +1113,14 @@ build_fallback_analysis <- function(context,
   # level_direction / level_vs_target: target-relative position af centerlinje.
   # Bruges som placeholders til at sammensaette saetninger som
   # "Niveauet {level_vs_target} ({target})" -> "Niveauet ligger under maalet (90%)".
-  # Strikt lighedstest (delta < 1e-9) for "paa" -- ikke sigma-tolerance, saa
-  # "ligger paa maalet" kun matcher praecis lighed mellem centerlinje og target.
-  # Tomme strenge naar target ikke er sat, saa placeholderne kan staa i
-  # templates uden at generere fejl, men bor kun bruges i target-/goal-
-  # specifikke varianter for at give meningsfuld tekst.
-  level_keys <- .compute_level_keys(centerline, target_value, flags$has_target)
+  # For percent-units: "paa" rendres naar CL og target afrunder til samme
+  # chart-display-vaerdi (display-precision-equality). For andre units:
+  # strikt lighedstest (delta < 1e-9). Tomme strenge naar target ikke er
+  # sat, saa placeholderne kan staa i templates uden at generere fejl,
+  # men bor kun bruges i target-/goal-specifikke varianter for at give
+  # meningsfuld tekst.
+  level_keys <- .compute_level_keys(centerline, target_value, flags$has_target,
+    y_axis_unit = context$y_axis_unit)
   level_direction <- if (!is.null(level_keys)) {
     i18n_lookup(paste0("labels.level_direction.", level_keys$direction_key), language)
   } else {
@@ -1072,12 +1134,16 @@ build_fallback_analysis <- function(context,
 
   # Formateret centerline-vaerdi til {centerline}-placeholder. Bruger
   # format_target_value() saa centerline rendres pa samme skala som y-aksen
-  # (fx 85% paa percent-charts, 3.2 paa numeric-charts). Tom-fallback til
-  # "ukendt"-label naar centerline er NULL/NA (degenereret data-tilfaelde).
+  # (fx 85% paa percent-charts, 3.2 paa numeric-charts). target threades
+  # gennem saa percent-CL bevarer en decimal naar |CL - target| <= 2pp --
+  # matcher chart-label-praecision (format_y_value via
+  # format_percent_contextual). Tom-fallback til "ukendt"-label naar
+  # centerline er NULL/NA (degenereret data-tilfaelde).
   cl_fmt <- if (!is.null(centerline) && !is.na(centerline)) {
     format_target_value(centerline,
       y_axis_unit = context$y_axis_unit,
-      language = language
+      language = language,
+      target = target_value
     )
   } else {
     i18n_lookup("labels.misc.ukendt", language)
@@ -1177,7 +1243,15 @@ build_fallback_analysis <- function(context,
 # language styrer decimal-separator: "da" -> "," (default), "en" -> "."
 # (cycle 01 finding E4: previously hardcoded "," produced danish decimals
 # in english analysis-text, eg. "1,5" instead of "1.5").
-format_target_value <- function(x, y_axis_unit = NULL, language = "da") {
+#
+# target: optional 0-1-skala maal-vaerdi. Naar sat OG x er i [0,1] med
+# y_axis_unit="percent", delegeres formatering til format_percent_contextual()
+# saa praecision matcher chart-labels: en decimal vises naar |x - target|
+# <= 2 procentpoint, ellers afrundes til hele procent. Sikrer at
+# {centerline}/{target}-placeholders i analyse-tekst rendres med samme
+# antal decimaler som CL-label paa selve grafen.
+format_target_value <- function(x, y_axis_unit = NULL, language = "da",
+                                target = NULL) {
   if (is.null(x) || is.na(x)) {
     return("")
   }
@@ -1186,7 +1260,7 @@ format_target_value <- function(x, y_axis_unit = NULL, language = "da") {
   # x i [0, 1] -> proportion, multiplicer med 100. x > 1 -> allerede procent.
   if (!is.null(y_axis_unit) && y_axis_unit == "percent") {
     if (x >= 0 && x <= 1) {
-      return(paste0(round(x * 100), "%"))
+      return(format_percent_contextual(x, target = target, language = language))
     } else if (x > 1) {
       return(paste0(round(x), "%"))
     }

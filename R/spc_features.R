@@ -270,16 +270,26 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
   sigma_hat <- context$sigma_hat
   sigma_data <- context$sigma_data
   delta <- abs(centerline - target_value)
+  is_percent <- identical(context$y_axis_unit, "percent")
+
+  # Percent-units: display-precision-equality. CL og target der afrunder
+  # til samme chart-display-vaerdi (fx 1,0% vs 1%) klassificeres som
+  # goal_met/at_target. Spejler hvad laeseren ser i chart-label og
+  # forhindrer "lige over"-tekst paa visuelt sammenfaldende vaerdier.
+  display_equal <- is_percent &&
+    .cl_displays_at_target_pct(centerline, target_value)
 
   if (!is.null(target_direction)) {
     # Direction-aware: strict goal_met > near_target > goal_not_met.
-    result$goal_met <- switch(target_direction,
+    result$goal_met <- display_equal || switch(target_direction,
       "higher" = centerline >= target_value,
       "lower"  = centerline <= target_value,
       FALSE
     )
     if (!result$goal_met) {
-      result$near_target <- .within_sigma_tolerance(delta, sigma_hat, sigma_data)
+      result$near_target <- .within_sigma_tolerance(delta, sigma_hat, sigma_data,
+        is_percent = is_percent
+      )
     }
     result$target_relation <- if (result$goal_met) {
       "met"
@@ -290,9 +300,10 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     }
   } else {
     # Value-neutral: at_target/over/under med sigma-cascade.
-    result$at_target <- .within_sigma_tolerance(delta, sigma_hat, sigma_data,
-      sigma_multiplier_hat = 3
-    )
+    result$at_target <- display_equal ||
+      .within_sigma_tolerance(delta, sigma_hat, sigma_data,
+        sigma_multiplier_hat = 3, is_percent = is_percent
+      )
     result$target_relation <- if (result$at_target) "met" else "not_met"
     # ej near_target i value-neutral gren (eksisterende semantik)
   }
@@ -305,15 +316,26 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 #   1. sigma_hat > 0 finite: delta <= sigma_multiplier_hat * sigma_hat
 #   2. sigma_data > 0 finite: delta <= sigma_data
 #   3. ellers: delta < 1e-9 (eksakt match)
+#
+# Percent-units (is_percent=TRUE): tolerance capes ved NEAR_TARGET_PCT_CAP
+# (5pp) saa stoejende processer ej ratiionaliserer fjern-CL som "lige over"/
+# at_target. Parity med .near_target_tolerance() i spc_analysis.R.
 .within_sigma_tolerance <- function(delta, sigma_hat, sigma_data,
-                                    sigma_multiplier_hat = 3) {
-  if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) && sigma_hat > 0) {
-    return(delta <= sigma_multiplier_hat * sigma_hat)
+                                    sigma_multiplier_hat = 3,
+                                    is_percent = FALSE) {
+  sigma_tol <- if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) &&
+    sigma_hat > 0) {
+    sigma_multiplier_hat * sigma_hat
+  } else if (is_valid_scalar(sigma_data) && is.finite(sigma_data) &&
+    sigma_data > 0) {
+    sigma_data
+  } else {
+    1e-9
   }
-  if (is_valid_scalar(sigma_data) && is.finite(sigma_data) && sigma_data > 0) {
-    return(delta <= sigma_data)
+  if (isTRUE(is_percent)) {
+    sigma_tol <- min(sigma_tol, NEAR_TARGET_PCT_CAP)
   }
-  delta < 1e-9
+  delta <= sigma_tol
 }
 
 

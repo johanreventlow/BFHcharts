@@ -201,12 +201,15 @@ bfh_render_analysis <- function(analysis,
 
   baseline_data <- if (has_baseline) {
     y_axis_unit <- analysis$render_context$y_axis_unit
+    # target threades gennem saa baseline/current CL bevarer en decimal
+    # naar |CL - target| <= 2pp -- matcher chart-label-praecision.
+    target_val <- aux$target_value
     list(
       baseline_value = format_target_value(aux$baseline_centerline,
-        y_axis_unit = y_axis_unit, language = language
+        y_axis_unit = y_axis_unit, language = language, target = target_val
       ),
       current_value = format_target_value(aux$centerline,
-        y_axis_unit = y_axis_unit, language = language
+        y_axis_unit = y_axis_unit, language = language, target = target_val
       )
     )
   } else {
@@ -313,9 +316,13 @@ bfh_render_analysis <- function(analysis,
   # H1 fix: format centerline ved render-time med caller-language. Tidligere
   # cached render_context$centerline_formatted hardcoded 'da' -> mixed
   # decimals for language='en'.
+  # target threades gennem saa percent-CL bevarer en decimal naar
+  # |CL - target| <= 2pp -- matcher chart-label-praecision
+  # (format_y_value via format_percent_contextual).
   centerline_str <- if (!is.null(aux$centerline) && !is.na(aux$centerline)) {
     format_target_value(aux$centerline,
-      y_axis_unit = rc$y_axis_unit, language = language
+      y_axis_unit = rc$y_axis_unit, language = language,
+      target = aux$target_value
     )
   } else {
     i18n_lookup("labels.misc.ukendt", language) %||% ""
@@ -347,7 +354,8 @@ bfh_render_analysis <- function(analysis,
   level_keys <- .compute_level_keys(
     analysis$aux$centerline,
     analysis$aux$target_value,
-    has_target
+    has_target,
+    y_axis_unit = analysis$render_context$y_axis_unit
   )
   if (is.null(level_keys)) {
     return(list(direction = "", vs_target = ""))
