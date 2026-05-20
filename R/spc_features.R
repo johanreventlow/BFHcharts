@@ -296,7 +296,7 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     )
     if (!result$goal_met) {
       result$near_target <- .within_sigma_tolerance(delta, sigma_hat, sigma_data,
-        is_percent = is_percent
+        is_percent = is_percent, target_value = target_value
       )
     }
     result$target_relation <- if (result$goal_met) {
@@ -310,7 +310,8 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     # Value-neutral: at_target/over/under med sigma-cascade.
     result$at_target <- display_equal ||
       .within_sigma_tolerance(delta, sigma_hat, sigma_data,
-        sigma_multiplier_hat = 3, is_percent = is_percent
+        sigma_multiplier_hat = 3, is_percent = is_percent,
+        target_value = target_value
       )
     result$target_relation <- if (result$at_target) "met" else "not_met"
     # ej near_target i value-neutral gren (eksisterende semantik)
@@ -325,12 +326,15 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 #   2. sigma_data > 0 finite: delta <= sigma_data
 #   3. ellers: delta < 1e-9 (eksakt match)
 #
-# Percent-units (is_percent=TRUE): tolerance capes ved NEAR_TARGET_PCT_CAP
-# (5pp) saa stoejende processer ej ratiionaliserer fjern-CL som "lige over"/
-# at_target. Parity med .near_target_tolerance() i spc_analysis.R.
+# Percent-units (is_percent=TRUE): tolerance capes ved
+#   min(sigma_tol, NEAR_TARGET_PCT_CAP, NEAR_TARGET_PCT_RELATIVE * target).
+# Absolut cap (3pp) haandterer noisy processes; relativ cap (25% af target)
+# haandterer smaa-target-cases hvor 3pp stadig er klinisk for stor.
+# Parity med .near_target_tolerance() i spc_analysis.R.
 .within_sigma_tolerance <- function(delta, sigma_hat, sigma_data,
                                     sigma_multiplier_hat = 3,
-                                    is_percent = FALSE) {
+                                    is_percent = FALSE,
+                                    target_value = NULL) {
   sigma_tol <- if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) &&
     sigma_hat > 0) {
     sigma_multiplier_hat * sigma_hat
@@ -341,7 +345,12 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     1e-9
   }
   if (isTRUE(is_percent)) {
-    sigma_tol <- min(sigma_tol, NEAR_TARGET_PCT_CAP)
+    caps <- c(sigma_tol, NEAR_TARGET_PCT_CAP)
+    if (is_valid_scalar(target_value) && is.finite(target_value) &&
+      target_value > 0) {
+      caps <- c(caps, NEAR_TARGET_PCT_RELATIVE * target_value)
+    }
+    sigma_tol <- min(caps)
   }
   delta <= sigma_tol
 }

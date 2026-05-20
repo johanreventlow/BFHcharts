@@ -100,13 +100,24 @@ RECENT_OBS_WINDOW <- 6L
 # klassificeres som at_target/goal_met (matcher hvad laeseren ser i chart).
 NEAR_TARGET_DISPLAY_THRESHOLD <- 0.02
 
-# NEAR_TARGET_PCT_CAP (0.05 = 5pp): absolut cap paa near_target-tolerance.
+# NEAR_TARGET_PCT_CAP (0.03 = 3pp): absolut cap paa near_target-tolerance.
 # Klinisk "lige over"-betydning: tolerance skal vaere baade statistisk
-# (3*sigma_hat) OG absolut <= 5pp. Forhindrer at stoejende processer
-# (fx 0-30% spread) ratiionaliserer en CL paa 11% mod target=5% som
-# "lige over". 5pp valgt empirisk som maksimum hvor klinikere stadig
-# laeser CL og target som "naer hinanden" paa procent-skala.
-NEAR_TARGET_PCT_CAP <- 0.05
+# (3*sigma_hat) OG absolut <= 3pp OG relativt <= NEAR_TARGET_PCT_RELATIVE.
+# Forhindrer at stoejende processer (fx 0-30% spread) ratiionaliserer en
+# CL paa 11% mod target=5% som "lige over". 3pp valgt empirisk efter
+# empirisk review (PDF 13: 19% mod 15% = 4pp, PDF 15: 7% mod 3% = 4pp --
+# begge skal NU klassificeres som goal_not_met, ej near_target).
+NEAR_TARGET_PCT_CAP <- 0.03
+
+# NEAR_TARGET_PCT_RELATIVE (0.25 = 25% af target): relativ cap paa
+# near_target-tolerance. Haandterer smaa-target-cases hvor 3pp absolut
+# stadig ville vaere klinisk for stor afvigelse. Eksempel: target=3%,
+# CL=5% har delta=2pp (under abs-cap) men 67% relativt -- ikke "lige over".
+# Med relative-cap = 0.25 * 0.03 = 0.0075 (0.75pp) klassificeres 5%-vs-3%
+# korrekt som goal_not_met. Anvendes kun som loft (min med abs-cap),
+# saa store-target-cases (target=90%) ej rammer urealistiske
+# relative-tolerancer (0.25 * 0.90 = 22.5pp).
+NEAR_TARGET_PCT_RELATIVE <- 0.25
 
 #' Minimum recommended baseline observations for stable SPC control limits
 #'

@@ -85,11 +85,16 @@
 #   2. sigma_data tilgaengelig    -> sd(y)
 #   3. ingen sigma                -> 1e-9 (kraever eksakt match)
 #
-# Percent-units (is_percent=TRUE): tolerance capes ved NEAR_TARGET_PCT_CAP
-# (0.05 = 5pp). Forhindrer at en stoejende proces (fx 0-30% spread) giver
-# tolerance > 5pp, hvilket vil klassificere CL=11% mod target=5% som
-# "lige over"/at_target - statistisk korrekt, men klinisk absurd.
-.near_target_tolerance <- function(sigma_hat, sigma_data, is_percent) {
+# Percent-units (is_percent=TRUE): tolerance capes ved
+#   min(3*sigma_hat, NEAR_TARGET_PCT_CAP, NEAR_TARGET_PCT_RELATIVE * target).
+# Absolut cap (3pp) haandterer noisy processes; relativ cap (25% af target)
+# haandterer smaa-target-cases hvor 3pp stadig er klinisk for stor.
+# Eksempler:
+#   target=15%, CL=19%, delta=4pp: cap=min(sigma,3pp,3.75pp)=3pp; 4pp>3pp -> NOT near
+#   target=3%,  CL=7%,  delta=4pp: cap=min(sigma,3pp,0.75pp)=0.75pp; 4pp>0.75pp -> NOT near
+#   target=90%, CL=87%, delta=3pp: cap=min(sigma,3pp,22.5pp)=3pp; 3pp<=3pp -> NEAR
+.near_target_tolerance <- function(sigma_hat, sigma_data, is_percent,
+                                   target_value = NULL) {
   sigma_tol <- if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) &&
     sigma_hat > 0) {
     3 * sigma_hat
@@ -100,7 +105,12 @@
     1e-9
   }
   if (isTRUE(is_percent)) {
-    return(min(sigma_tol, NEAR_TARGET_PCT_CAP))
+    caps <- c(sigma_tol, NEAR_TARGET_PCT_CAP)
+    if (is_valid_scalar(target_value) && is.finite(target_value) &&
+      target_value > 0) {
+      caps <- c(caps, NEAR_TARGET_PCT_RELATIVE * target_value)
+    }
+    return(min(caps))
   }
   sigma_tol
 }
@@ -1029,7 +1039,8 @@ bfh_generate_analysis <- function(x,
       # symmetrisk om target; retningen kodes via {level_direction}.
       delta <- abs(centerline - target_value)
       tolerance <- .near_target_tolerance(
-        context$sigma_hat, context$sigma_data, is_percent
+        context$sigma_hat, context$sigma_data, is_percent,
+        target_value = target_value
       )
       result$near_target <- delta <= tolerance
     }
@@ -1060,7 +1071,8 @@ bfh_generate_analysis <- function(x,
       .cl_displays_at_target_pct(centerline, target_value)
     is_at_target <- display_equal ||
       delta <= .near_target_tolerance(
-        context$sigma_hat, context$sigma_data, is_percent
+        context$sigma_hat, context$sigma_data, is_percent,
+        target_value = target_value
       )
     if (is_at_target) {
       result$target_text <- pick_text(texts$target$at_target,
