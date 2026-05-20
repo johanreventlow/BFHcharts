@@ -1065,7 +1065,7 @@ bfh_generate_analysis <- function(x,
     #   3. Eksakt-match:           |CL - target| < 1e-9
     #      (degenereret: konstant y, n=1, eller begge sigma er 0)
     # Percent-units: capped ved NEAR_TARGET_PCT_CAP saa stoejende processer
-    # ej ratiionaliserer fjern-CL som "tæt på" (parity med direction-aware).
+    # ej ratiionaliserer fjern-CL som "taet paa" (parity med direction-aware).
     delta <- abs(centerline - target_value)
     display_equal <- is_percent &&
       .cl_displays_at_target_pct(centerline, target_value)
