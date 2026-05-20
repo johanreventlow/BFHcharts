@@ -290,17 +290,21 @@ analysis:
       # bevar nuvaerende praksis men forbedr maaleskalaen saa fremtidige
       # SPC-analyser bliver paalidelige.
       short: "Bevar praksis, men overvej finere måleskala."
-      standard: "Bevar nuværende praksis, og overvej om måleskalaen kan gøres finere, så fremtidige analyser bliver mere pålidelige."
-      detailed: "Bevar nuværende praksis. Overvej om måleskalaen kan gøres finere, så analysen pålideligt kan skelne reel variation fra artefakter."
+      # standard: "Bevar nuværende praksis, og overvej om måleskalaen kan gøres finere, så fremtidige analyser bliver mere pålidelige."
+      standard: "Bevar nuværende praksis, men overvej om datagrundlaget reelt afspejler processen, da målingerne ikke varierer naturligt"
+      # detailed: "Bevar nuværende praksis. Overvej om måleskalaen kan gøres finere, så analysen pålideligt kan skelne reel variation fra artefakter."
+      detailed: "Bevar nuværende praksis, men overvej om datagrundlaget reelt afspejler processen, da målingerne ikke varierer naturligt."
 
     auto_mean_unstable_goal_not_met:
       # Aktiveres parallelt til stability.auto_mean_unstable naar maalet
       # ikke er naaet (eller intet target). Frame: foer indsats besluttes
       # skal maaleskalaen forbedres saa beslutningen kan stoettes paa
       # paalidelig analyse.
-      short: "Forbedr måleskalaen før indsats besluttes."
-      standard: "Før en målrettet indsats besluttes, overvej om måleskalaen kan gøres finere, så beslutningen kan støttes pålideligt."
-      detailed: "Før en målrettet indsats besluttes, overvej om måleskalaen kan gøres finere. Den nuværende analyse kan ikke skelne reel variation fra artefakter."
+      short: "Vurdér datagrundlagets kvalitet før indsats besluttes."
+      # standard: "Før en målrettet indsats besluttes, overvej om måleskalaen kan gøres finere, så beslutningen kan støttes pålideligt."
+      # standard: "Før en målrettet indsats besluttes, vurder om datagrundlaget er tilstrækkeligt til at understøtte beslutningen."
+      standard: "Før en forbedringsindsats, vurdér om datagrundlaget kan bruges, da målingerne ikke varierer naturligt."
+      detailed: "Før en forbedringsindsats besluttes, overvej om datagrundlaget kan understøtte arbejdet, da målingerne ikke varierer naturligt."
 
 # ==============================================================================
 # ETIKETTER
