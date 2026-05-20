@@ -41,9 +41,9 @@ analysis:
     no_signals:
       short: "Processen er stabil og forudsigelig."
       # standard: "Processen er stabil og forudsigelig. Variationen er naturlig og uden systematiske ændringer."
-      standard: "Processen varierer naturligt omkring midten i data og vurderes derfor som stabil og forudsigelig."
+      standard: "Processen varierer naturligt og niveauet vurderes derfor som stabilt og forudsigeligt."
       # detailed: "Processen er stabil og forudsigelig. Data varierer naturligt og viser ikke tegn på systematiske ændringer."
-      detailed: "Processen varierer naturligt omkring midten i data og vurderes derfor som stabil og forudsigelig, uden tegn på systematiske ændringer."
+      detailed: "Processen varierer naturligt og niveauet vurderes derfor som stabilt og forudsigeligt, uden tegn på systematiske ændringer."
 
     runs_only:
       short: "Der er tegn på et skift i processen."
@@ -52,8 +52,8 @@ analysis:
 
     crossings_only:
       short: "Datapunkterne grupperer sig omkring midten."
-      standard: "Datapunkterne har tendens til at gruppere sig, og antal kryds ({crossings_actual}) er under det forventede minimum ({crossings_expected})."
-      detailed: "Datapunkterne har tendens til at gruppere sig, frem for at variere så hyppigt omkring midten af data, som man normalt ville forvente. Antal kryds ({crossings_actual}) er under det forventede minimum ({crossings_expected})."
+      standard: "Datapunkterne samler sig i grupper, og antal kryds ({crossings_actual}) er under det forventede minimum ({crossings_expected})."
+      detailed: "Datapunkterne grupperer sig i perioder, frem for at variere så hyppigt omkring midten af data, som man normalt ville forvente. Antal kryds ({crossings_actual}) er under det forventede minimum ({crossings_expected})."
 
     outliers_only:
       short: "{outliers_actual} {outliers_word} ligger uden for kontrolgrænserne."
@@ -64,23 +64,30 @@ analysis:
 
     runs_crossings:
       short: "Processen udviser ustabilitet, der ikke er tilfældig."
-      standard: "Processen udviser ustabilitet, der ikke er tilfældig. Både længste serie ({runs_actual} > {runs_expected}) og antal kryds ({crossings_actual} < {crossings_expected}) afviger fra det forventede."
-      detailed: "Processen udviser ustabilitet, der ikke er tilfældig. Både længste serie ({runs_actual} > {runs_expected}) og antal kryds ({crossings_actual} < {crossings_expected}) afviger fra det forventede og er tegn på en grundlæggende procesændring."
+      # standard: "Processen udviser ustabilitet, der ikke er tilfældig. Både længste serie ({runs_actual} > {runs_expected}) og antal kryds ({crossings_actual} < {crossings_expected}) afviger fra det forventede."
+      standard: "Processen udviser ustabilitet, der ikke er tilfældig. Både længste serie og antal kryds afviger fra det forventede."
+      # detailed: "Processen udviser ustabilitet, der ikke er tilfældig. Både længste serie ({runs_actual} > {runs_expected}) og antal kryds ({crossings_actual} < {crossings_expected}) afviger fra det forventede og er tegn på en grundlæggende procesændring."
+      detailed: "Processen udviser ustabilitet, der ikke er tilfældig. Både længste serie og antal kryds afviger fra det forventede og er tegn på en grundlæggende procesændring."
 
     runs_outliers:
       short: "Processen viser en ændring i niveau og {outliers_actual} {outliers_word} uden for kontrolgrænserne."
-      standard: "Processen viser en ændring i niveau (serielængde {runs_actual} > {runs_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne."
-      detailed: "Processen viser en ændring i niveau (serielængde {runs_actual} > {runs_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne. Undersøg, om ændring i niveau og de afvigende målinger har samme underliggende årsag."
+      # standard: "Processen viser en ændring i niveau (serielængde {runs_actual} > {runs_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne."
+      standard: "Processen viser en ændring i niveau, og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne."
+      # detailed: "Processen viser en ændring i niveau (serielængde {runs_actual} > {runs_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne. Undersøg, om ændring i niveau og de afvigende målinger har samme underliggende årsag."
+      detailed: "Processen viser en ændring i niveau, og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne. Undersøg de underliggende årsager."
 
     crossings_outliers:
-      short: "Datapunkterne har tendens til at gruppere sig, og der er {outliers_actual} {outliers_word} uden for kontrolgrænserne."
-      standard: "Datapunkterne har tendens til at gruppere sig (kryds {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne."
-      detailed: "Datapunkterne har tendens til at gruppere sig (kryds {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne. Dette kan skyldes ændringer i den underliggende proces, som bør undersøges nærmere."
+      short: "Datapunkterne grupperer sig i perioder, og der er {outliers_actual} {outliers_word} uden for kontrolgrænserne."
+      # standard: "Datapunkterne grupperer sig i perioder (kryds {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne."
+      standard: "Datapunkterne grupperer sig i perioder, og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne."
+      # detailed: "Datapunkterne grupperer sig i perioder (kryds {crossings_actual} < {crossings_expected}), og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne. Dette kan skyldes ændringer i den underliggende proces, som bør undersøges nærmere."
+      detailed: "Datapunkterne grupperer sig i perioder, og {outliers_actual} af de seneste {effective_window} observationer ligger uden for kontrolgrænserne. Dette kan skyldes ændringer, som bør undersøges nærmere."
 
     all_signals:
       short: "Processen er ustabil med flere samtidige signaler."
-      standard: "Processen er ustabil med flere samtidige signaler: niveauskift og gruppering samt {outliers_actual} af de seneste {effective_window} observationer uden for kontrolgrænserne."
-      detailed: "Processen er ustabil med flere samtidige signaler: niveauskift (serielængde {runs_actual} > {runs_expected}), grupperinger i data (kryds {crossings_actual} < {crossings_expected}) samt {outliers_actual} af de seneste {effective_window} observationer uden for kontrolgrænserne. Undersøg disse signaler for særlig variation systematisk."
+      standard: "Processen er ustabil med flere samtidige signaler: niveauskift, gruppering og {outliers_actual} af de seneste {effective_window} observationer uden for kontrolgrænserne."
+      # detailed: "Processen er ustabil med flere samtidige signaler: niveauskift (serielængde {runs_actual} > {runs_expected}), grupperinger i data (kryds {crossings_actual} < {crossings_expected}) samt {outliers_actual} af de seneste {effective_window} observationer uden for kontrolgrænserne. Undersøg disse signaler for særlig variation systematisk."
+      detailed: "Processen er ustabil med flere samtidige signaler: niveauskift, grupperinger i data og {outliers_actual} af de seneste {effective_window} observationer uden for kontrolgrænserne. Undersøg alle disse signaler systematisk."
 
   anhoej_not_evaluable: "ikke evaluerbar (for kort serie)"
 
@@ -157,40 +164,43 @@ analysis:
     not_evaluable:
       few_obs:
         short: "For kort serie til vurdering."
-        standard: "Med kun {n_points} observationer kan processen endnu ikke vurderes pålideligt med statistisk proceskontrol."
-        detailed: "Med kun {n_points} observationer er datagrundlaget for spinkelt til pålidelig vurdering med statistisk proceskontrol. Anhøj-reglerne kræver typisk mindst 12 observationer for at have detektionsstyrke."
+        standard: "Med kun {n_points} observationer kan processen ikke vurderes pålideligt med statistisk proceskontrol."
+        detailed: "Med kun {n_points} observationer kan processen ikke vurderes pålideligt med statistisk proceskontrol. Det anbefales at have mindst 12, helst 20 observationer."
       no_centerline:
         short: "Mangler beregnet kontrolgrundlag."
         standard: "Serien kan ikke vurderes pålideligt med statistisk proceskontrol, fordi der ikke kan beregnes en centerlinje."
-        detailed: "Med {n_points} observationer foreligger der ikke et beregneligt kontrolgrundlag (manglende centerlinje), så Anhøj-reglerne kan ikke anvendes på serien."
+        # detailed: "Med {n_points} observationer foreligger der ikke et beregneligt kontrolgrundlag (manglende centerlinje), så Anhøj-reglerne kan ikke anvendes på serien."
+        detailed: "Med {n_points} observationer kan serien ikke vurderes pålideligt med statistisk proceskontrol, fordi der ikke kan beregnes en centerlinje."
       no_spread:
         short: "Mangler beregnet variation."
         standard: "Serien kan ikke vurderes pålideligt med statistisk proceskontrol, fordi variationen i data ikke kan estimeres."
-        detailed: "Med {n_points} observationer kan spredning i data ikke estimeres pålideligt, så kontrolgrænser og Anhøj-regler er ikke meningsfulde for serien."
+        # detailed: "Med {n_points} observationer kan spredning i data ikke estimeres pålideligt, så kontrolgrænser og Anhøj-regler er ikke meningsfulde for serien."
+        detailed: "Med {n_points} observationer kan serien ikke vurderes pålideligt med statistisk proceskontrol, fordi variationen i data ikke kan estimeres."
 
   target:
     at_target:
-      short: "Niveauet ligger tæt på udviklingsmålet ({target})."
-      standard: "Det nuværende niveau ligger tæt på udviklingsmålet ({target})."
+      short: "Niveauet ligger tæt på udviklingsmålet."
+      standard: "Det nuværende niveau ligger tæt på udviklingsmålet."
       detailed: "Det nuværende niveau på {centerline} ligger tæt på udviklingsmålet ({target})."
     over_target:
-      short: "Niveauet ligger over målet ({target})."
-      standard: "Det nuværende niveau ligger over udviklingsmålet ({target})."
+      short: "Niveauet ligger over målet."
+      standard: "Det nuværende niveau ligger over udviklingsmålet."
       detailed: "Det nuværende niveau på {centerline} ligger over udviklingsmålet ({target})."
     under_target:
       short: "Niveauet ligger under målet ({target})."
-      standard: "Det nuværende niveau ligger under udviklingsmålet ({target})."
+      standard: "Det nuværende niveau ligger under udviklingsmålet."
       detailed: "Det nuværende niveau på {centerline} ligger under udviklingsmålet ({target})."
     goal_met:
       short: "Målet ({target}) er nået."
-      standard: "Det nuværende niveau opfylder udviklingsmålet ({target})."
+      standard: "Det nuværende niveau opfylder udviklingsmålet."
       # detailed: "Niveauet opfylder målet ({target}) og ligger på den ønskede side af målværdien."
       detailed: "Det nuværende niveau på {centerline} opfylder udviklingsmålet ({target})."
     goal_not_met:
       short: "Målet ({target}) er ikke nået."
-      standard: "Det nuværende niveau når ikke udviklingsmålet på {target}."
+      standard: "Det nuværende niveau når ikke udviklingsmålet."
       # detailed: "Niveauet opfylder ikke målet, og det vil sandsynligvis ikke ske fremover med nuværende praksis."
-      detailed: "Det nuværende niveau på {centerline} når ikke udviklingsmålet på {target}, og med nuværende praksis vil dette ikke ændre sig."
+      # detailed: "Det nuværende niveau på {centerline} når ikke udviklingsmålet på {target}, og med nuværende praksis vil dette ikke ændre sig."
+      detailed: "Niveauet når ikke målet, og med nuværende praksis vil dette ikke ændre sig."
     near_target:
       # Bruges naar CL ligger paa forkert side af target men inden for
       # 3*sigma_hat (eller sd(y)) -- statistisk ej til at skelne fra
@@ -246,7 +256,7 @@ analysis:
       standard: "Niveauet ligger meget tæt på målet. Overvåg processen løbende."
       # Cycle 05 tekst-stramning: 'Vurdér om forskellen er praktisk
       # betydende' er mindre normativt end 'acceptér den lille difference'.
-      detailed: "Vurdér, om forskellen er praktisk betydende, og overvåg ellers blot processen fremover."
+      detailed: "Overvej, om forbedring er nødvendig, eller acceptér differencen og overvåg blot processen fremover."
     unstable_near_target:
       # Som stable_near_target men ustabil proces -- stabiliseringsfokus.
       short: "Niveauet er tæt på målet. Stabilisér processen."
