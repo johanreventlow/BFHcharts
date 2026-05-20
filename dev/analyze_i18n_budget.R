@@ -400,9 +400,17 @@ make_placeholders <- function(outliers_n, scale = "typical", pos = "over") {
 select_action_key <- function(is_stable, has_target, direction, target_pos,
                               near = FALSE, stability_key = NULL) {
   # auto_mean_unstable overrider standard action-cascade (matcher
-  # .select_action_key() i R/spc_analysis.R).
+  # .select_action_key() i R/spc_analysis.R). To varianter afhaengigt af
+  # om maalet er naaet:
+  #   - goal_met / at_target / near_target -> _goal_met
+  #   - alle andre (inkl. no_target) -> _goal_not_met
   if (identical(stability_key, "auto_mean_unstable")) {
-    return("auto_mean_unstable")
+    is_met <- isTRUE(near) ||
+      (has_target && !is.null(direction) &&
+        ((direction == "lower"  && target_pos %in% c("under", "at")) ||
+         (direction == "higher" && target_pos %in% c("over",  "at")))) ||
+      (has_target && is.null(direction) && identical(target_pos, "at"))
+    return(if (is_met) "auto_mean_unstable_goal_met" else "auto_mean_unstable_goal_not_met")
   }
   if (has_target && !is.null(direction)) {
     if (isTRUE(near)) {

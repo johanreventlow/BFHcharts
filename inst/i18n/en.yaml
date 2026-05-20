@@ -237,16 +237,22 @@ analysis:
       standard: "The process is unstable and does not meet the target. First identify the special causes of variation before implementing targeted measures."
       detailed: "The process is unstable and does not meet the target. First identify the special causes of variation — only once the process is stable can the effect of new improvement measures towards the target be reliably assessed."
 
-    auto_mean_unstable:
-      # Parallel to stability.auto_mean_unstable. Overrides the standard
-      # is_stable x has_target x direction cascade so the action arm offers
-      # measurement-resolution improvement instead of "stabilise the process"
-      # (the latter contradicts the stability text's "SPC not well suited"
-      # conclusion). The target arm still communicates whether the target
-      # is met.
-      short: "Consider a finer measurement scale before making decisions."
-      standard: "Consider refining the measurement scale, as the current analysis cannot reliably separate real variation from artefacts."
-      detailed: "Consider refining the measurement scale, as the current analysis cannot reliably separate real variation from artefacts. Use the data descriptively in the meantime."
+    auto_mean_unstable_goal_met:
+      # Parallel to stability.auto_mean_unstable when the target (or
+      # value-neutral at_target / near_target) is met. Frame: maintain
+      # current practice but refine the measurement scale so future SPC
+      # analyses become reliable.
+      short: "Maintain practice, but consider a finer measurement scale."
+      standard: "Maintain current practice and consider refining the measurement scale so future analyses become more reliable."
+      detailed: "Maintain current practice. Consider refining the measurement scale so the analysis can reliably separate real variation from artefacts."
+
+    auto_mean_unstable_goal_not_met:
+      # Parallel to stability.auto_mean_unstable when the target is not
+      # met (or no target). Frame: before deciding on action, refine the
+      # measurement scale so the decision can be based on reliable analysis.
+      short: "Refine the measurement scale before deciding on action."
+      standard: "Before deciding on targeted action, consider refining the measurement scale so the decision can be supported reliably."
+      detailed: "Before deciding on targeted action, consider refining the measurement scale. The current analysis cannot separate real variation from artefacts."
 
 # ==============================================================================
 # LABELS

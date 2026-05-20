@@ -284,15 +284,23 @@ analysis:
       # detailed: "Identificér først årsager til variationen i data, og stabilisér processen — først når processen er stabil, kan effekten af nye forbedringstiltag mod målet vurderes pålideligt."
       detailed: "Identificér årsager til variation og stabilisér processen — først derefter kan effekten af nye forbedringstiltag vurderes ordentligt."
 
-    auto_mean_unstable:
-      # Aktiveres parallelt til stability.auto_mean_unstable. Erstatter
-      # standard is_stable x has_target x direction-cascade saa action-armen
-      # tilbyder maaleskalas-forbedring i stedet for "stabilisér processen"
-      # (sidstnaevnte modsiger stability-tekstens "SPC ej velegnet"-konklusion).
-      # Target-armen kommunikerer fortsat hvorvidt maalet er naaet.
-      short: "Overvej finere måleskala før beslutninger træffes."
-      standard: "Overvej om måleskalaen kan gøres finere, da den nuværende analyse ikke kan skelne reel variation fra artefakter."
-      detailed: "Overvej om måleskalaen kan gøres finere, da den nuværende analyse ikke kan skelne reel variation fra artefakter. Brug data deskriptivt indtil videre."
+    auto_mean_unstable_goal_met:
+      # Aktiveres parallelt til stability.auto_mean_unstable naar maalet
+      # (eller value-neutral at_target / near_target) er naaet. Frame:
+      # bevar nuvaerende praksis men forbedr maaleskalaen saa fremtidige
+      # SPC-analyser bliver paalidelige.
+      short: "Bevar praksis, men overvej finere måleskala."
+      standard: "Bevar nuværende praksis, og overvej om måleskalaen kan gøres finere, så fremtidige analyser bliver mere pålidelige."
+      detailed: "Bevar nuværende praksis. Overvej om måleskalaen kan gøres finere, så analysen pålideligt kan skelne reel variation fra artefakter."
+
+    auto_mean_unstable_goal_not_met:
+      # Aktiveres parallelt til stability.auto_mean_unstable naar maalet
+      # ikke er naaet (eller intet target). Frame: foer indsats besluttes
+      # skal maaleskalaen forbedres saa beslutningen kan stoettes paa
+      # paalidelig analyse.
+      short: "Forbedr måleskalaen før indsats besluttes."
+      standard: "Før en målrettet indsats besluttes, overvej om måleskalaen kan gøres finere, så beslutningen kan støttes pålideligt."
+      detailed: "Før en målrettet indsats besluttes, overvej om måleskalaen kan gøres finere. Den nuværende analyse kan ikke skelne reel variation fra artefakter."
 
 # ==============================================================================
 # ETIKETTER
