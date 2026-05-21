@@ -90,6 +90,35 @@ PDF_LABEL_SIZE <- 6
 # Window of most-recent observations used by the outlier counter (6 is standard in SPC literature)
 RECENT_OBS_WINDOW <- 6L
 
+# Percent-unit "near target" classification caps (proportion scale, ej procentpoint).
+# Bruges af .evaluate_target_arm() / .compute_level_keys() i spc_analysis.R.
+#
+# NEAR_TARGET_DISPLAY_THRESHOLD (0.02 = 2pp): max delta hvor chart-label viser
+# en decimal istedet for hele procent. Matcher format_percent_contextual()
+# default threshold i utils_label_formatting.R. Bruges som "display-precision-
+# equality" cutoff: hvis CL og target afrunder til samme display-vaerdi
+# klassificeres som at_target/goal_met (matcher hvad laeseren ser i chart).
+NEAR_TARGET_DISPLAY_THRESHOLD <- 0.02
+
+# NEAR_TARGET_PCT_CAP (0.03 = 3pp): absolut cap paa near_target-tolerance.
+# Klinisk "lige over"-betydning: tolerance skal vaere baade statistisk
+# (3*sigma_hat) OG absolut <= 3pp OG relativt <= NEAR_TARGET_PCT_RELATIVE.
+# Forhindrer at stoejende processer (fx 0-30% spread) ratiionaliserer en
+# CL paa 11% mod target=5% som "lige over". 3pp valgt empirisk efter
+# empirisk review (PDF 13: 19% mod 15% = 4pp, PDF 15: 7% mod 3% = 4pp --
+# begge skal NU klassificeres som goal_not_met, ej near_target).
+NEAR_TARGET_PCT_CAP <- 0.03
+
+# NEAR_TARGET_PCT_RELATIVE (0.25 = 25% af target): relativ cap paa
+# near_target-tolerance. Haandterer smaa-target-cases hvor 3pp absolut
+# stadig ville vaere klinisk for stor afvigelse. Eksempel: target=3%,
+# CL=5% har delta=2pp (under abs-cap) men 67% relativt -- ikke "lige over".
+# Med relative-cap = 0.25 * 0.03 = 0.0075 (0.75pp) klassificeres 5%-vs-3%
+# korrekt som goal_not_met. Anvendes kun som loft (min med abs-cap),
+# saa store-target-cases (target=90%) ej rammer urealistiske
+# relative-tolerancer (0.25 * 0.90 = 22.5pp).
+NEAR_TARGET_PCT_RELATIVE <- 0.25
+
 #' Minimum recommended baseline observations for stable SPC control limits
 #'
 #' The Anhoej rules and SPC literature (Anhoej & Olesen 2014) require approximately

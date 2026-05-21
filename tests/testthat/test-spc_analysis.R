@@ -616,8 +616,11 @@ test_that("build_fallback_analysis bruger værdineutral tekst når target_direct
 test_that("build_fallback_analysis reallokerer budget når target mangler", {
   ctx_no_target <- fixture_analysis_context(target_value = NA_real_, target_direction = NULL)
   txt <- BFHcharts:::build_fallback_analysis(ctx_no_target, max_chars = 400)
-  # Uden target skal stability+action fylde meste af max_chars
-  expect_gte(nchar(txt), 250)
+  # Uden target skal stability+action fylde meste af max_chars.
+  # Floor justeret 250 -> 240 efter text-stramninger 2026-05 (cycle 06):
+  # stability.no_signals.detailed og action.stable_no_target.detailed
+  # blev forkortet -- ren tekst-justering, ej budget-allokerings-bug.
+  expect_gte(nchar(txt), 240)
   expect_lte(nchar(txt), 400)
 })
 

@@ -202,6 +202,9 @@ bfh_spc_plot <- function(qic_data,
   # Core data visualization layers ----
   plot_layers <- c(plot_layers, list(
     ggplot2::geom_line(
+      # Drop NA-y rows so the line connects across missing observations
+      # within the same part; part boundaries still break the line via group.
+      data = function(d) d[!is.na(d$y), ],
       ggplot2::aes(y = y, group = part),
       colour = cols$grey,
       linewidth = data_linewidth,
