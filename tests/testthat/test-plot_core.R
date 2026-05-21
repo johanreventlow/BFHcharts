@@ -322,6 +322,62 @@ test_that("bfh_spc_plot() renders 3 phases correctly", {
   expect_equal(length(unique(result$data$part)), 3)
 })
 
+# Helper: locate the grey data-line layer (mapping y = y, not cl/ucl/lcl/target)
+locate_data_line_layer <- function(plot_obj) {
+  is_data_line <- vapply(plot_obj$layers, function(l) {
+    if (!inherits(l$geom, "GeomLine")) {
+      return(FALSE)
+    }
+    y_mapping <- l$mapping$y
+    if (is.null(y_mapping)) {
+      return(FALSE)
+    }
+    identical(rlang::as_label(y_mapping), "y")
+  }, logical(1))
+  idx <- which(is_data_line)
+  if (length(idx) == 0) NA_integer_ else idx[1]
+}
+
+test_that("bfh_spc_plot() connects data line across NA-y within same part", {
+  qic_data <- fixture_plot_qic_data(n = 6)
+  qic_data$y[3] <- NA_real_
+
+  config <- spc_plot_config(chart_type = "i", y_axis_unit = "count")
+  viewport <- viewport_dims(base_size = 14)
+
+  result <- bfh_spc_plot(qic_data, config, viewport)
+  built <- ggplot2::ggplot_build(result)
+
+  layer_idx <- locate_data_line_layer(result)
+  expect_false(is.na(layer_idx))
+
+  # The data-line layer must drop the NA-y row so the line connects across
+  # the gap. Otherwise ggplot2 splits the line at every NA.
+  layer_built <- built$data[[layer_idx]]
+  expect_true(all(!is.na(layer_built$y)))
+  expect_equal(nrow(layer_built), 5L)
+})
+
+test_that("bfh_spc_plot() preserves part-boundary break in data line", {
+  parts <- c(rep(1L, 3), rep(2L, 3))
+  qic_data <- fixture_plot_qic_data(n = 6, parts = parts)
+
+  config <- spc_plot_config(chart_type = "i", y_axis_unit = "count")
+  viewport <- viewport_dims(base_size = 14)
+
+  result <- bfh_spc_plot(qic_data, config, viewport)
+  built <- ggplot2::ggplot_build(result)
+
+  layer_idx <- locate_data_line_layer(result)
+  expect_false(is.na(layer_idx))
+
+  # group = part keeps each phase as its own line segment; ggplot2 renders
+  # a visual break between groups.
+  layer_built <- built$data[[layer_idx]]
+  expect_true("group" %in% names(layer_built))
+  expect_equal(length(unique(layer_built$group)), 2L)
+})
+
 # ============================================================================
 # 9. CHART TITLE AND LABELS
 # ============================================================================
