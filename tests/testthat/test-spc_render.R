@@ -96,11 +96,17 @@ test_that("bfh_render_analysis(): texts_loader-override respekteres", {
 # ==========================================================================
 
 test_that("bfh_render_analysis(): target_display bevares som operator-Unicode", {
-  analysis <- make_render_fixture(target_text = ">= 90")
+  # Brug "<= 60" saa CL (~50) er goal_met -- goal_met.detailed bevarer
+  # {target}-placeholder (target.goal_not_met-stramninger 2026-05 fjernede
+  # {target} fra goal_not_met.detailed/standard, saa ">= 90"-fixturen
+  # ej laengere ville rendre operatoren).
+  analysis <- make_render_fixture(target_text = "<= 60")
   text <- bfh_render_analysis(analysis)
 
-  # Output indeholder Unicode-version ">= 90" -> "\U2265 90"
-  expect_true(grepl("\U2265", text, fixed = TRUE) || grepl(">=", text, fixed = TRUE))
+  # Output indeholder Unicode-version "<= 60" -> "\U2264 60"
+  expect_true(grepl("\U2264", text, fixed = TRUE) || grepl("<=", text, fixed = TRUE),
+    info = paste("Forventede target-operator i tekst, fik:", text)
+  )
 })
 
 

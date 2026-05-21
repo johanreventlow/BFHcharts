@@ -221,17 +221,25 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 
 # Returnerer i18n-noegle for stability-arm baseret paa eksisterende
 # flag-detection. Prioritet matcher build_fallback_analysis():
-# no_variation > majority_at_centerline > signal-baseret dispatch.
+# no_variation > majority_at_centerline > auto_mean_unstable >
+# not_evaluable > signal-baseret dispatch.
 .resolve_stability_pattern <- function(flags, confidence_tier = NULL) {
   # H4 fix: low-confidence (kort serie / manglende spread-estimat) returnerer
   # "not_evaluable" som feature-value -- downstream UI badges baseret paa
   # stability_pattern matcher saa rendered prose. Override-paths
-  # (no_variation, majority_at_centerline) bevarer deres egen overlay.
+  # (no_variation, majority_at_centerline, auto_mean_unstable) bevarer
+  # deres egen overlay.
   if (isTRUE(flags$no_variation)) {
     return("no_variation")
   }
   if (isTRUE(flags$majority_at_cl)) {
     return("majority_at_centerline")
+  }
+  # auto_mean_unstable: CL auto-skiftet til gennemsnit pga majoritets-
+  # paa-median, men signaler stadig til stede. SPC-tolkningen er
+  # forringet -- warning-tekst erstatter standard signal-dispatch.
+  if (isTRUE(flags$auto_mean_unstable)) {
+    return("auto_mean_unstable")
   }
   if (identical(confidence_tier, "low")) {
     return("not_evaluable")
@@ -270,16 +278,26 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
   sigma_hat <- context$sigma_hat
   sigma_data <- context$sigma_data
   delta <- abs(centerline - target_value)
+  is_percent <- identical(context$y_axis_unit, "percent")
+
+  # Percent-units: display-precision-equality. CL og target der afrunder
+  # til samme chart-display-vaerdi (fx 1,0% vs 1%) klassificeres som
+  # goal_met/at_target. Spejler hvad laeseren ser i chart-label og
+  # forhindrer "lige over"-tekst paa visuelt sammenfaldende vaerdier.
+  display_equal <- is_percent &&
+    .cl_displays_at_target_pct(centerline, target_value)
 
   if (!is.null(target_direction)) {
     # Direction-aware: strict goal_met > near_target > goal_not_met.
-    result$goal_met <- switch(target_direction,
+    result$goal_met <- display_equal || switch(target_direction,
       "higher" = centerline >= target_value,
       "lower"  = centerline <= target_value,
       FALSE
     )
     if (!result$goal_met) {
-      result$near_target <- .within_sigma_tolerance(delta, sigma_hat, sigma_data)
+      result$near_target <- .within_sigma_tolerance(delta, sigma_hat, sigma_data,
+        is_percent = is_percent, target_value = target_value
+      )
     }
     result$target_relation <- if (result$goal_met) {
       "met"
@@ -290,9 +308,11 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
     }
   } else {
     # Value-neutral: at_target/over/under med sigma-cascade.
-    result$at_target <- .within_sigma_tolerance(delta, sigma_hat, sigma_data,
-      sigma_multiplier_hat = 3
-    )
+    result$at_target <- display_equal ||
+      .within_sigma_tolerance(delta, sigma_hat, sigma_data,
+        sigma_multiplier_hat = 3, is_percent = is_percent,
+        target_value = target_value
+      )
     result$target_relation <- if (result$at_target) "met" else "not_met"
     # ej near_target i value-neutral gren (eksisterende semantik)
   }
@@ -305,15 +325,34 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 #   1. sigma_hat > 0 finite: delta <= sigma_multiplier_hat * sigma_hat
 #   2. sigma_data > 0 finite: delta <= sigma_data
 #   3. ellers: delta < 1e-9 (eksakt match)
+#
+# Percent-units (is_percent=TRUE): tolerance capes ved
+#   min(sigma_tol, NEAR_TARGET_PCT_CAP, NEAR_TARGET_PCT_RELATIVE * target).
+# Absolut cap (3pp) haandterer noisy processes; relativ cap (25% af target)
+# haandterer smaa-target-cases hvor 3pp stadig er klinisk for stor.
+# Parity med .near_target_tolerance() i spc_analysis.R.
 .within_sigma_tolerance <- function(delta, sigma_hat, sigma_data,
-                                    sigma_multiplier_hat = 3) {
-  if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) && sigma_hat > 0) {
-    return(delta <= sigma_multiplier_hat * sigma_hat)
+                                    sigma_multiplier_hat = 3,
+                                    is_percent = FALSE,
+                                    target_value = NULL) {
+  sigma_tol <- if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) &&
+    sigma_hat > 0) {
+    sigma_multiplier_hat * sigma_hat
+  } else if (is_valid_scalar(sigma_data) && is.finite(sigma_data) &&
+    sigma_data > 0) {
+    sigma_data
+  } else {
+    1e-9
   }
-  if (is_valid_scalar(sigma_data) && is.finite(sigma_data) && sigma_data > 0) {
-    return(delta <= sigma_data)
+  if (isTRUE(is_percent)) {
+    caps <- c(sigma_tol, NEAR_TARGET_PCT_CAP)
+    if (is_valid_scalar(target_value) && is.finite(target_value) &&
+      target_value > 0) {
+      caps <- c(caps, NEAR_TARGET_PCT_RELATIVE * target_value)
+    }
+    sigma_tol <- min(caps)
   }
-  delta < 1e-9
+  delta <= sigma_tol
 }
 
 

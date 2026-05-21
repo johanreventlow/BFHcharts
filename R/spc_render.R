@@ -72,11 +72,11 @@ bfh_render_analysis <- function(analysis,
   # Byg placeholder-data fra render_context + aux + features
   placeholder_data <- .build_placeholder_data(analysis, texts, language)
 
-  # Override-paths (no_variation, majority_at_centerline) + low-confidence
-  # (key=="not_evaluable" per H4 fix) gating beregnes foran modifier-pool
-  # og target+action-arms.
+  # Override-paths (no_variation, majority_at_centerline, auto_mean_unstable) +
+  # low-confidence (key=="not_evaluable" per H4 fix) gating beregnes foran
+  # modifier-pool og target+action-arms.
   is_override <- analysis$conclusions$stability_key %in%
-    c("no_variation", "majority_at_centerline")
+    c("no_variation", "majority_at_centerline", "auto_mean_unstable")
   is_low_confidence <- identical(analysis$conclusions$stability_key, "not_evaluable")
 
   # --- 1. Stabilitetstekst ---
@@ -99,8 +99,8 @@ bfh_render_analysis <- function(analysis,
   # --- 2. Maalvurdering ---
   # Slice 8: low-confidence skipper target+action helt. Med under N_MIN
   # observationer er konkrete maal-/handlings-anbefalinger ej forsvarlige.
-  # Override-paths (no_variation, majority_at_centerline) bevarer
-  # target+action selv ved low confidence.
+  # Override-paths (no_variation, majority_at_centerline, auto_mean_unstable)
+  # bevarer target+action selv ved low confidence.
   target_text <- if (is_low_confidence) {
     ""
   } else {
@@ -201,12 +201,15 @@ bfh_render_analysis <- function(analysis,
 
   baseline_data <- if (has_baseline) {
     y_axis_unit <- analysis$render_context$y_axis_unit
+    # target threades gennem saa baseline/current CL bevarer en decimal
+    # naar |CL - target| <= 2pp -- matcher chart-label-praecision.
+    target_val <- aux$target_value
     list(
       baseline_value = format_target_value(aux$baseline_centerline,
-        y_axis_unit = y_axis_unit, language = language
+        y_axis_unit = y_axis_unit, language = language, target = target_val
       ),
       current_value = format_target_value(aux$centerline,
-        y_axis_unit = y_axis_unit, language = language
+        y_axis_unit = y_axis_unit, language = language, target = target_val
       )
     )
   } else {
@@ -267,10 +270,19 @@ bfh_render_analysis <- function(analysis,
   # seasonality) tilfoejes ved at appende slot-navn til denne vektor.
   caveat_slots <- c("cl_source", "discrete_scale", "variable_cl")
 
+  # Naar stability-base er auto_mean_unstable er CL-skiftet allerede
+  # forklaret i stability-teksten -- undgaa duplikering ved at suppressere
+  # cl_auto_mean-caveat'en. cl_user_supplied (anden cl_source-variant)
+  # bevares; den vedrorer en separat user-supplied CL-mekanisme.
+  is_auto_mean_unstable <- identical(
+    analysis$conclusions$stability_key, "auto_mean_unstable"
+  )
+
   parts <- character(0L)
   for (slot in caveat_slots) {
     key <- analysis$caveats[[slot]]
     if (is.null(key) || !nzchar(key)) next
+    if (is_auto_mean_unstable && identical(key, "cl_auto_mean")) next
     text <- i18n_lookup(paste0("labels.caveats.", key), language)
     if (!is.null(text) && nzchar(text)) {
       parts <- c(parts, text)
@@ -313,9 +325,13 @@ bfh_render_analysis <- function(analysis,
   # H1 fix: format centerline ved render-time med caller-language. Tidligere
   # cached render_context$centerline_formatted hardcoded 'da' -> mixed
   # decimals for language='en'.
+  # target threades gennem saa percent-CL bevarer en decimal naar
+  # |CL - target| <= 2pp -- matcher chart-label-praecision
+  # (format_y_value via format_percent_contextual).
   centerline_str <- if (!is.null(aux$centerline) && !is.na(aux$centerline)) {
     format_target_value(aux$centerline,
-      y_axis_unit = rc$y_axis_unit, language = language
+      y_axis_unit = rc$y_axis_unit, language = language,
+      target = aux$target_value
     )
   } else {
     i18n_lookup("labels.misc.ukendt", language) %||% ""
@@ -347,7 +363,8 @@ bfh_render_analysis <- function(analysis,
   level_keys <- .compute_level_keys(
     analysis$aux$centerline,
     analysis$aux$target_value,
-    has_target
+    has_target,
+    y_axis_unit = analysis$render_context$y_axis_unit
   )
   if (is.null(level_keys)) {
     return(list(direction = "", vs_target = ""))
@@ -378,10 +395,11 @@ bfh_render_analysis <- function(analysis,
 .render_stability <- function(analysis, texts, budget, placeholder_data, language) {
   key <- analysis$conclusions$stability_key
 
-  # Override-state-paths: no_variation + majority_at_centerline
-  # har forrang over low-confidence (specifikke meddelelser for
-  # specifikke data-egenskaber).
-  is_override <- key %in% c("no_variation", "majority_at_centerline")
+  # Override-state-paths: no_variation + majority_at_centerline +
+  # auto_mean_unstable har forrang over low-confidence (specifikke
+  # meddelelser for specifikke data-egenskaber).
+  is_override <- key %in% c("no_variation", "majority_at_centerline",
+    "auto_mean_unstable")
 
   if (is_override) {
     data <- list(centerline = placeholder_data$centerline)

@@ -22,6 +22,17 @@ analysis:
       standard: "A large share of the data points lie exactly on the centerline ({centerline}), which may indicate limited measurement resolution."
       detailed: "A large share of the data points lie exactly on the centerline ({centerline}). This may be due to coarse measurement scale or discrete reporting, which weakens SPC interpretation."
 
+    auto_mean_unstable:
+      # Triggered when bfh_qic() auto-switched CL from median to mean
+      # (>= 50% of points fell on the median), but signals are still
+      # present after the switch. SPC interpretation is weakened --
+      # signals may be artefacts of the switch or of the discrete
+      # measurement scale that triggered it. Suppresses the cl_auto_mean
+      # tail caveat (same information is conveyed here).
+      short: "The centerline has been switched to the mean, and signals are unreliable."
+      standard: "Many data points fell exactly on the median, so the centerline has been switched to the mean. Any signals should be interpreted with caution."
+      detailed: "Many data points fell exactly on the median, so the centerline has been switched to the mean. The analysis is not well suited to assess the process, and signals should be interpreted with great caution."
+
     no_signals:
       short: "The process is stable and predictable."
       standard: "The process is stable and predictable. Variation is natural with no systematic changes."
@@ -44,23 +55,23 @@ analysis:
 
     runs_crossings:
       short: "The process shows systematic instability."
-      standard: "The process shows systematic instability. Both the run length ({runs_actual} > {runs_expected}) and the number of crossings ({crossings_actual} < {crossings_expected}) deviate from expected."
-      detailed: "The process shows systematic instability. Both the run length ({runs_actual} > {runs_expected}) and the number of crossings ({crossings_actual} < {crossings_expected}) deviate from expected, pointing to a fundamental process change."
+      standard: "The process shows systematic instability. Both the run length and the number of crossings deviate from expected."
+      detailed: "The process shows systematic instability. Both the run length and the number of crossings deviate from expected, pointing to a fundamental process change."
 
     runs_outliers:
       short: "The process shows a level shift and {outliers_actual} {outliers_word} outside the control limits."
-      standard: "The process shows a level shift (run length {runs_actual} > {runs_expected}), and {outliers_actual} of the most recent {effective_window} observations are outside the control limits."
-      detailed: "The process shows a level shift (run length {runs_actual} > {runs_expected}), and {outliers_actual} of the most recent {effective_window} observations are outside the control limits. Investigate whether the level shift and the outlying measurements share a common root cause."
+      standard: "The process shows a level shift, and {outliers_actual} of the most recent {effective_window} observations are outside the control limits."
+      detailed: "The process shows a level shift, and {outliers_actual} of the most recent {effective_window} observations are outside the control limits. Investigate the underlying causes."
 
     crossings_outliers:
       short: "The process shows clustering and {outliers_actual} {outliers_word} outside the control limits."
-      standard: "Data points cluster (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent {effective_window} observations are outside the control limits."
-      detailed: "Data points cluster around the centre line (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent {effective_window} observations are outside the control limits. This pattern may indicate shifting process conditions."
+      standard: "Data points cluster, and {outliers_actual} of the most recent {effective_window} observations are outside the control limits."
+      detailed: "Data points cluster, and {outliers_actual} of the most recent {effective_window} observations are outside the control limits. This pattern may indicate shifting process conditions."
 
     all_signals:
       short: "The process is unstable with multiple simultaneous signals."
-      standard: "The process is unstable with multiple simultaneous signals: level shift and clustering, plus {outliers_actual} of the most recent {effective_window} observations outside the control limits."
-      detailed: "The process is unstable with multiple simultaneous signals: level shift (run length {runs_actual} > {runs_expected}), clustering around the centre line (crossings {crossings_actual} < {crossings_expected}), and {outliers_actual} of the most recent {effective_window} observations outside the control limits. Investigate common and special causes systematically."
+      standard: "The process is unstable with multiple simultaneous signals: level shift, clustering, and {outliers_actual} of the most recent {effective_window} observations outside the control limits."
+      detailed: "The process is unstable with multiple simultaneous signals: level shift, clustering around the centre line, and {outliers_actual} of the most recent {effective_window} observations outside the control limits. Investigate common and special causes systematically."
 
   anhoej_not_evaluable: "not evaluable (series too short)"
 
@@ -146,24 +157,24 @@ analysis:
 
   target:
     at_target:
-      short: "The level is close to the target ({target})."
-      standard: "The level is close to the target ({target})."
+      short: "The level is close to the target."
+      standard: "The level is close to the target."
       detailed: "The level is close to the target ({target})."
     over_target:
-      short: "The level is above the target ({target})."
-      standard: "The level is above the target ({target})."
+      short: "The level is above the target."
+      standard: "The level is above the target."
       detailed: "The level is above the target ({target}); whether this is desirable depends on the indicator."
     under_target:
       short: "The level is below the target ({target})."
-      standard: "The level is below the target ({target})."
+      standard: "The level is below the target."
       detailed: "The level is below the target ({target}); whether this is desirable depends on the indicator."
     goal_met:
       short: "The target ({target}) has been met."
-      standard: "The level meets the target ({target})."
+      standard: "The level meets the target."
       detailed: "The level meets the target ({target}) and is on the desired side of the target value."
     goal_not_met:
       short: "The target ({target}) has not yet been met."
-      standard: "The level does not yet meet the target ({target})."
+      standard: "The level does not yet meet the target."
       detailed: "The level does not yet meet the target ({target}). Current practice does not achieve it."
     near_target:
       # Used when CL is on the wrong side of target but within 3*sigma_hat
@@ -225,6 +236,23 @@ analysis:
       short: "Stabilise the process first, then work towards the target."
       standard: "The process is unstable and does not meet the target. First identify the special causes of variation before implementing targeted measures."
       detailed: "The process is unstable and does not meet the target. First identify the special causes of variation — only once the process is stable can the effect of new improvement measures towards the target be reliably assessed."
+
+    auto_mean_unstable_goal_met:
+      # Parallel to stability.auto_mean_unstable when the target (or
+      # value-neutral at_target / near_target) is met. Frame: maintain
+      # current practice but refine the measurement scale so future SPC
+      # analyses become reliable.
+      short: "Maintain practice, but consider a finer measurement scale."
+      standard: "Maintain current practice and consider refining the measurement scale so future analyses become more reliable."
+      detailed: "Maintain current practice. Consider refining the measurement scale so the analysis can reliably separate real variation from artefacts."
+
+    auto_mean_unstable_goal_not_met:
+      # Parallel to stability.auto_mean_unstable when the target is not
+      # met (or no target). Frame: before deciding on action, refine the
+      # measurement scale so the decision can be based on reliable analysis.
+      short: "Refine the measurement scale before deciding on action."
+      standard: "Before deciding on targeted action, consider refining the measurement scale so the decision can be supported reliably."
+      detailed: "Before deciding on targeted action, consider refining the measurement scale. The current analysis cannot separate real variation from artefacts."
 
 # ==============================================================================
 # LABELS
