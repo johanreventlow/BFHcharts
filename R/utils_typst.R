@@ -610,10 +610,18 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   escaped_chart <- escape_typst_string(chart_image)
 
   # Standard escaped string fields: presence check only, no extra guards.
-  for (f in c("hospital", "department", "details", "author", "data_definition")) {
+  for (f in c("hospital", "department", "details", "author")) {
     if (!is.null(metadata[[f]])) {
       params[[f]] <- sprintf('"%s"', escape_typst_string(metadata[[f]]))
     }
+  }
+  # data_definition: bevarer newlines som Typst "\n"-escapes, saa templatet
+  # kan splitte paa newline og emittere parbreak() mellem afsnit.
+  if (!is.null(metadata[["data_definition"]])) {
+    params[["data_definition"]] <- sprintf(
+      '"%s"',
+      escape_typst_string(metadata[["data_definition"]], preserve_newlines = TRUE)
+    )
   }
 
   # Rich text fields: Typst content blocks [...] via markdown_to_typst().
@@ -728,28 +736,49 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
 #' Escape String for Typst
 #'
 #' @param s Character string to escape
+#' @param preserve_newlines If TRUE, newline characters survive as Typst
+#'   "\\n" escape sequences (rather than being collapsed to spaces). Used for
+#'   fields like data_definition where paragraph structure is meaningful.
 #' @return Escaped string safe for Typst
 #' @keywords internal
 #' @noRd
-escape_typst_string <- function(s) {
+escape_typst_string <- function(s, preserve_newlines = FALSE) {
   if (is.null(s) || length(s) == 0) {
     return("")
   }
 
-  # Fjern/erstat kontroltegn foer andre escapes:
-  # \n, \r, \t -> mellemrum (fx afdeling copy-pastet fra Windows med CRLF)
-  s <- gsub("[\n\r\t]", " ", s)
+  # Normaliser CRLF -> LF foer evt. newline-bevaring (Windows copy-paste)
+  s <- gsub("\r\n", "\n", s, fixed = TRUE)
+  # Tabs -> mellemrum (uafhaengigt af newline-behandling)
+  s <- gsub("\t", " ", s, fixed = TRUE)
   # NUL-byte -> fjern (udefineret adfaerd i Typst)
   # R character-strenge kan normalt ikke indeholde NUL, men defensivt guard:
   # perl-regex \\x00 matcher NUL uden at skulle indlejre literal NUL i kildefil.
   s <- gsub("\\x00", "", s, perl = TRUE)
 
+  if (!preserve_newlines) {
+    # Default: kollaps newline -> mellemrum
+    s <- gsub("[\n\r]", " ", s)
+  } else {
+    # Preserve-mode: strip CR (skal vaere normaliseret allerede, defensivt)
+    s <- gsub("\r", "", s, fixed = TRUE)
+  }
+
   # Escape backslashes and quotes (only valid escapes in Typst string literals
   # are \\, \", \n, \r, \t, \u{...}; control chars handled above).
   # Other characters - including < and > - pass through unchanged: they are
   # ordinary characters inside a string literal and cannot terminate it.
+  # Raekkefoelge: backslash-escape SKAL komme foer evt. newline -> "\n"-konvertering,
+  # ellers double-escapes vi vores egne escape-sequences.
   s <- gsub("\\\\", "\\\\\\\\", s)
   s <- gsub('"', '\\\\"', s)
+
+  if (preserve_newlines) {
+    # Konverter literal newline-char til Typst escape-sequence "\n"
+    # (2 tegn: backslash + n). Typst parser dette tilbage til newline-char,
+    # som efterfoelgende kan splittes paa template-niveau.
+    s <- gsub("\n", "\\\\n", s)
+  }
 
   return(s)
 }

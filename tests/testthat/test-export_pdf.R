@@ -344,6 +344,103 @@ test_that("escape_typst_string handles special characters", {
   expect_equal(BFHcharts:::escape_typst_string(""), "")
 })
 
+test_that("escape_typst_string default mode collapses newlines to space", {
+  # Default behavior (preserve_newlines = FALSE): newlines -> space
+  expect_equal(
+    BFHcharts:::escape_typst_string("line1\nline2"),
+    "line1 line2"
+  )
+  expect_equal(
+    BFHcharts:::escape_typst_string("a\tb"),
+    "a b"
+  )
+  expect_equal(
+    BFHcharts:::escape_typst_string("a\r\nb"),
+    "a b"
+  )
+})
+
+test_that("escape_typst_string preserve_newlines emits Typst \\n escape", {
+  # Newline char -> 2-char escape sequence (backslash + n)
+  expect_equal(
+    BFHcharts:::escape_typst_string("line1\nline2", preserve_newlines = TRUE),
+    "line1\\nline2"
+  )
+  # Multiple newlines preserved as-is
+  expect_equal(
+    BFHcharts:::escape_typst_string("a\nb\nc", preserve_newlines = TRUE),
+    "a\\nb\\nc"
+  )
+  # CRLF normalized to LF -> single escape
+  expect_equal(
+    BFHcharts:::escape_typst_string("a\r\nb", preserve_newlines = TRUE),
+    "a\\nb"
+  )
+  # Empty lines (double newline) preserved
+  expect_equal(
+    BFHcharts:::escape_typst_string("p1\n\np2", preserve_newlines = TRUE),
+    "p1\\n\\np2"
+  )
+  # Tabs still collapse to space
+  expect_equal(
+    BFHcharts:::escape_typst_string("a\tb\nc", preserve_newlines = TRUE),
+    "a b\\nc"
+  )
+})
+
+test_that("escape_typst_string preserve_newlines does NOT double-escape backslashes", {
+  # Backslash should be escaped once (\\\\), and newline should be escaped once (\\n).
+  # Regression guard: order of operations must escape backslashes BEFORE inserting
+  # the \n escape, otherwise the inserted backslash gets re-escaped.
+  out <- BFHcharts:::escape_typst_string("a\\b\nc", preserve_newlines = TRUE)
+  # Expected: "a\\\\b\\nc" (a, 2 backslashes, b, backslash, n, c)
+  expect_equal(out, "a\\\\b\\nc")
+  # Sanity: nchar = 1 + 2 + 1 + 2 + 1 = 7
+  expect_equal(nchar(out), 7L)
+})
+
+test_that("escape_typst_string emits parseable Typst that round-trips newlines", {
+  # End-to-end: an input with newlines, run through preserve_newlines, then
+  # wrapped as a Typst string literal, should be a valid Typst string whose
+  # parsed value matches the original newline structure. We can't invoke
+  # Typst here, but we can verify the literal Typst source.
+  input <- "para1\npara2"
+  escaped <- BFHcharts:::escape_typst_string(input, preserve_newlines = TRUE)
+  typst_literal <- sprintf('"%s"', escaped)
+  # The Typst source must contain the literal 2-char sequence backslash+n
+  expect_true(grepl("para1\\\\npara2", typst_literal))
+  # And must NOT contain a raw newline char (which Typst would treat as line continuation error)
+  expect_false(grepl("\n", typst_literal, fixed = TRUE))
+})
+
+test_that("build_typst_content passes data_definition with preserved newlines", {
+  # Integration test: the orchestrator must route data_definition through
+  # the preserve-newlines branch, not the default collapse branch.
+  spc_stats <- list()
+  multi_para <- "First paragraph.\nSecond paragraph."
+  content <- BFHcharts:::build_typst_content(
+    template_file = "bfh-template.typ",
+    template = "bfh-diagram",
+    chart_image = "chart.svg",
+    metadata = list(data_definition = multi_para),
+    spc_stats = spc_stats
+  )
+  full <- paste(content, collapse = "\n")
+  # The Typst parameter should contain the literal \n escape sequence
+  # (single backslash + n -- Typst parser converts back to newline char).
+  expect_true(grepl('data_definition: "First paragraph.\\nSecond paragraph."', full, fixed = TRUE))
+  # Sanity: hospital field still collapses newlines (regression guard)
+  content2 <- BFHcharts:::build_typst_content(
+    template_file = "bfh-template.typ",
+    template = "bfh-diagram",
+    chart_image = "chart.svg",
+    metadata = list(hospital = "BFH\nExtra"),
+    spc_stats = spc_stats
+  )
+  full2 <- paste(content2, collapse = "\n")
+  expect_true(grepl('hospital: "BFH Extra"', full2, fixed = TRUE))
+})
+
 # ============================================================================
 # PUBLIC API TESTS - bfh_extract_spc_stats() and bfh_merge_metadata()
 # ============================================================================
