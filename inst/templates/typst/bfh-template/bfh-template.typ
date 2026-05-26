@@ -335,27 +335,52 @@ grid.cell(
              )
            )
          }
-         // Data definition - clip til max højde, "..." ved overflow
+         // Data definition - cascade-rendering:
+         //   1) Forsøg 9pt -> 8.5pt -> 8pt med tæt leading + hyphenation
+         //   2) Vælg største font hvor indholdet passer i 52.8mm
+         //   3) Hvis selv 8pt overflower, render ved 8pt + clip + ellipsis
+         // Newlines i input splittes til separate paragraffer.
          #if data_definition != none {
            text(fill: rgb("888888"),
                     weight: "bold",
                     size: 9pt,
                     upper([Datadefinition]))
            linebreak()
-           block(
-             height: 52.8mm,
-             width: 100%,
-             clip: true,
-             {
-               par(justify: true,
-                 text(fill: rgb("888888"), size: 9pt, data_definition)
-               )
-               place(bottom + left,
-                 block(width: 100%, fill: white,
-                   text(fill: rgb("888888"), size: 9pt, "..."))
-               )
+           set text(hyphenate: true)
+           let paragraphs = data_definition
+             .split("\n")
+             .map(p => p.trim())
+             .filter(p => p != "")
+           let render-at(size) = {
+             for (i, p) in paragraphs.enumerate() {
+               if i > 0 { parbreak() }
+               par(justify: true, leading: 0.55em,
+                 text(fill: rgb("888888"), size: size, p))
              }
-           )
+           }
+           let target-height = 52.8mm
+           let candidate-sizes = (9pt, 8.5pt, 8pt)
+           layout(size => context {
+             let fits(sz) = measure(
+               block(width: size.width, render-at(sz))
+             ).height <= target-height
+             let chosen = candidate-sizes.find(fits)
+             let final-size = if chosen != none { chosen } else { 8pt }
+             let overflows = chosen == none
+             block(
+               height: target-height,
+               width: 100%,
+               clip: true,
+               {
+                 render-at(final-size)
+                 if overflows {
+                   place(bottom + left,
+                     block(width: 100%, fill: white,
+                       text(fill: rgb("888888"), size: final-size, "...")))
+                 }
+               }
+             )
+           })
          }
        ]
 

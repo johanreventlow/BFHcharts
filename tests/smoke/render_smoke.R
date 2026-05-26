@@ -266,5 +266,47 @@ bfh_export_pdf(
 )
 check_pdf(tmp3, "Smoke 3 (run-chart med target)")
 
+# ---- Smoke test 4: lang multi-paragraf data_definition (cascade-rendering) --
+# Verificerer at lange tekster med flere afsnit:
+#   - bevarer paragraf-brud (\n -> parbreak() i Typst)
+#   - shrinker font 9pt -> 8.5pt -> 8pt efter behov
+#   - kun viser "..." ved reel overflow
+cat("\n--- Smoke 4: lang multi-paragraf data_definition ---\n")
+tmp4 <- tempfile(pattern = "bfhcharts_smoke_longdef_", fileext = ".pdf")
+smoke_files <- c(smoke_files, tmp4)
+
+long_definition <- paste(
+  "Andelen af patienter med hospital-erhvervet infektion per kalendermaaned.",
+  "Taeller: patienter med positiv mikrobiologisk dyrkning >= 48 timer efter indlaeggelse.",
+  "Naevner: alle indlagte patienter i samme periode med liggetid >= 48 timer.",
+  "Datakilde: Landspatientregistret + lokal mikrobiologi-database.",
+  "Eksklusionskriterier: patienter overflyttet fra anden afdeling, patienter med",
+  "kendt infektion ved indlaeggelse, og patienter under 18 aar.",
+  sep = "\n"
+)
+
+result4 <- bfh_qic(
+  data2,
+  x = maaned,
+  y = vaerdi,
+  chart_type = "i",
+  y_axis_unit = "count",
+  chart_title = "Smoke: Lang datadefinition"
+)
+bfh_export_pdf(
+  result4,
+  output = tmp4,
+  metadata = list(
+    hospital = "Smoke Hospital",
+    department = "Kvalitet",
+    data_definition = long_definition
+  ),
+  template_path = template_path_arg,
+  restrict_template = smoke_restrict_template,
+  font_path = font_path_override,
+  ignore_system_fonts = ignore_system_fonts_arg
+)
+check_pdf(tmp4, "Smoke 4 (lang multi-paragraf data_definition)")
+
 # ---- Afslutning -------------------------------------------------------------
-cat("\n=== PDF Smoke render OK: 3/3 tests bestod ===\n\n")
+cat("\n=== PDF Smoke render OK: 4/4 tests bestod ===\n\n")

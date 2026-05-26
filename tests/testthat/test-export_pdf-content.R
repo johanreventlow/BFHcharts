@@ -149,6 +149,41 @@ test_that("PDF indeholder data_definition-metadata", {
   expect_pdf_contains(temp_file, "landspatientregistret")
 })
 
+test_that("PDF bevarer paragraf-struktur i multi-linje data_definition", {
+  # Verificerer at \n i data_definition rendres som adskilte paragraffer
+  # i PDF (cascade-rendering + parbreak-loop i Typst-templatet).
+  skip_if_not_render_test()
+  skip_if_no_quarto()
+  skip_if_not_installed("pdftools")
+  skip_on_cran()
+
+  result <- bfh_qic(
+    data = fixture_deterministic_chart_data(),
+    x = month,
+    y = infections,
+    chart_type = "i",
+    chart_title = "Test multi-paragraf"
+  )
+
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+  multi_para <- paste(
+    "Foerste afsnit beskriver taeller-definitionen.",
+    "Andet afsnit beskriver naevner-definitionen.",
+    "Tredje afsnit lister eksklusionskriterier.",
+    sep = "\n"
+  )
+  bfh_export_pdf(
+    result,
+    temp_file,
+    metadata = list(data_definition = multi_para)
+  )
+
+  # Alle tre paragraffer skal vaere synlige i PDF-tekst
+  expect_pdf_contains(temp_file, "Foerste afsnit")
+  expect_pdf_contains(temp_file, "Andet afsnit")
+  expect_pdf_contains(temp_file, "Tredje afsnit")
+})
+
 # ============================================================================
 # TESTS — SPC summary-tabel i output
 # ============================================================================
