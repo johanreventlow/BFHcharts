@@ -288,6 +288,25 @@ devtools::build_vignettes() # Build vignettes
 
 **See:** `openspec/AGENTS.md` for detailed workflow instructions
 
+### /end-Skill R-Package Adaptation
+
+Generisk `/end`-skill (`~/.claude/skills/end/`) antager web/app-konventioner.
+For dette R-package gælder følgende override-mapping:
+
+| Generisk skill-punkt | R-package-ækvivalent |
+|----------------------|----------------------|
+| `docs/changelog.md` | `NEWS.md` (CRAN-standard) |
+| `docs/decisions.md` | `inst/adr/ADR-NNN-*.md` (canonical ADR-location) |
+| CLAUDE.md Phase status | Ej anvendt — R-package er semver-driven |
+
+**Konsekvens for `/end`-run:** skip ovenstående tre punkter uden yderligere
+diskussion. Opdatér kun `NEWS.md` ved adfærdsændrende code-merge; ADR
+oprettes per arkitektur-beslutning (ikke per session).
+
+**Canonical ADR-location:** `inst/adr/` (ships med installed package; ADR'er
+tilgængelige via `system.file("adr", ..., package = "BFHcharts")`). `docs/adr/`
+deprecated efter consolidation 2026-05-26.
+
 ---
 
 ## 6) Domain-Specific Guidance

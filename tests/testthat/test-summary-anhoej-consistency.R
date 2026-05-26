@@ -3,7 +3,7 @@
 # ============================================================================
 #
 # Spec: openspec/changes/2026-05-01-verify-anhoej-summary-vs-qic-data-consistency
-# ADR:  docs/adr/ADR-002-anhoej-summary-source.md
+# ADR:  inst/adr/ADR-002-anhoej-summary-source.md
 #
 # Kerne-krav (spec.md):
 #   summary$laengste_loeb[i] == max(qic_data$longest.run[part == i], na.rm = TRUE)

@@ -7,7 +7,7 @@
 Eksisterende kald fortsætter med at virke. Migration er opt-in når
 struktureret analyse-objekt giver mervaerdi.
 
-**Refs:** ADR-003, openspec change `restructure-spc-analysis-architecture`.
+**Refs:** ADR-004, openspec change `restructure-spc-analysis-architecture`.
 
 ---
 
@@ -276,7 +276,7 @@ Følgende er **markeret deprecated**:
 
 ## Reference
 
-- ADR-003: `docs/adr/ADR-003-structured-spc-analysis-architecture.md`
+- ADR-004: `inst/adr/ADR-004-structured-spc-analysis-architecture.md`
 - NEWS.md 0.20.0: full slice-liste + breaking-detaljer
 - Tests:
   - `tests/testthat/test-spc_compose.R` — bfh_analyse-API
