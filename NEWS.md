@@ -3,7 +3,7 @@
 ## Nye features
 
 * **Struktureret SPC-analyse via `bfh_analyse()` + `bfh_render_analysis()`**
-  (ADR-003). Tre-lags arkitektur erstatter monolitisk
+  (ADR-004). Tre-lags arkitektur erstatter monolitisk
   `build_fallback_analysis()`-cascade:
 
   - `bfh_extract_spc_features(x, metadata)` — pure deterministisk
@@ -197,7 +197,7 @@ identificerede 4 fund:
 
 ## Refs
 
-* ADR-003: `docs/adr/ADR-003-structured-spc-analysis-architecture.md`
+* ADR-004: `inst/adr/ADR-004-structured-spc-analysis-architecture.md`
 * Openspec change (archived): `openspec/changes/archive/2026-05-18-
   restructure-spc-analysis-architecture/`
 * Dual-review-cycle 03: `docs/reviews/03-structured-spc-analysis-
