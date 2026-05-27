@@ -1,4 +1,4 @@
-# ADR-003: Structured SPC Analysis Architecture
+# ADR-004: Structured SPC Analysis Architecture
 
 Status: Accepted (per openspec change `restructure-spc-analysis-architecture`, archived 2026-05-18)
 
