@@ -1,3 +1,14 @@
+# BFHcharts (development)
+
+## Dependency bumps
+
+* `BFHtheme (>= 0.5.1)` — kraever font-detection-fix hvor
+  `BFHtheme::font_available()` konsulterer baade `system_fonts()` og
+  `registry_fonts()`. Uden bumpet ville downstream konsumenter (fx
+  biSPCharts) der registrerer Mari via `systemfonts::register_font()` i
+  runtime fortsat se "Mari ikke fundet" og fallback til Roboto/sans paa
+  deploy-targets uden OS-installeret Mari (Posit Connect Cloud).
+
 # BFHcharts 0.20.0
 
 ## Nye features
