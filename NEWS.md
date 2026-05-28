@@ -1,3 +1,37 @@
+# BFHcharts 0.22.0
+
+## Breaking changes
+
+* **`bfh_subsample_label_indices()` returnerer faerre indices for moderate n.**
+  Algoritmen skifter fra `round(seq(1, n, length.out = max_visible))` til
+  deterministisk step-baseret thinning med force-last anchor. Konsekvens:
+
+  | n   | foer (0.21.0)                            | nu (0.22.0)                              |
+  |-----|------------------------------------------|------------------------------------------|
+  |  24 | 12 indices, gap 11->14 (skjulte 12+13)   |  9 indices, konstant step=3              |
+  |  36 | 12 indices                               | 10 indices, konstant step=4              |
+  |  52 | 12 indices                               | 12 indices, konstant step=5              |
+  | 100 | 12 indices                               | 12 indices, konstant step=9              |
+
+  Downstream consumers (biSPCharts) der renderer x-akse-labels via helperen
+  faar sparser men deterministisk label-distribution uden gap-of-3 anti-
+  pattern. API-signatur uaendret.
+
+## Bug fixes
+
+* **(#396) Strukturel gap-bug i `bfh_subsample_label_indices()` for n=24.**
+  `round(seq.int(1L, n, length.out = max_visible))` producerede ikke-heltals
+  positioner som snappede asymmetrisk via R's banker's rounding. For
+  n=24/max=12 gav det indices `1 3 5 7 9 11 14 16 18 20 22 24` -- gap 11->14
+  skjulte to konsekutive labels (12+13) midt i serien. I biSPCharts SPC-
+  eksport ramte dette aarsskifte-labels (dec 25 + jan 26) ved 2-aars
+  maaneds-serier.
+
+  Fix: deterministisk integer step
+  `ceiling((n_labels - 1) / (max_visible - 1))` + force-last anchor
+  garanterer konstant interval i "showing" pattern -- aldrig to konsekutive
+  skjulte labels.
+
 # BFHcharts 0.21.0
 
 ## Nye features
