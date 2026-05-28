@@ -351,12 +351,76 @@ test_that("bfh_subsample_label_indices: custom max_visible respekteres", {
   expect_equal(res[length(res)], 24L)
 })
 
-test_that("bfh_subsample_label_indices: progressive thinning bevarer near-konstant density", {
-  # Density-test: foerste 12 indices skal danne en jaevn fordeling
+test_that("bfh_subsample_label_indices: step-based thinning er konstant intervallet (n=100)", {
+  # n=100, max=12 -> step=9, alle diffs = 9 (force-last anchor 91 -> 100 ogsaa 9)
   res_100 <- bfh_subsample_label_indices(100)
   diffs <- diff(res_100)
-  # Skal vaere approx jaevn (max diff - min diff <= 1 ved round-jitter)
-  expect_lte(max(diffs) - min(diffs), 1L)
+  expect_equal(max(diffs) - min(diffs), 0L)
+  expect_true(all(diffs >= 1L))
+})
+
+test_that("bfh_subsample_label_indices: exact indices for n=24 fjerner gap-of-3 (#396)", {
+  # Bug-repro: round(seq(1, 24, length.out=12)) producerede gap 11->14 (skjulte
+  # 12+13). Step-baseret approach giver konstant step=3 + force-last anchor.
+  res <- bfh_subsample_label_indices(24)
+  expect_equal(res, c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 24L))
+})
+
+test_that("bfh_subsample_label_indices: exact indices for n=36/52/100 (regression)", {
+  expect_equal(
+    bfh_subsample_label_indices(36),
+    c(1L, 5L, 9L, 13L, 17L, 21L, 25L, 29L, 33L, 36L)
+  )
+  expect_equal(
+    bfh_subsample_label_indices(52),
+    c(1L, 6L, 11L, 16L, 21L, 26L, 31L, 36L, 41L, 46L, 51L, 52L)
+  )
+  expect_equal(
+    bfh_subsample_label_indices(100),
+    c(1L, 10L, 19L, 28L, 37L, 46L, 55L, 64L, 73L, 82L, 91L, 100L)
+  )
+})
+
+test_that("bfh_subsample_label_indices: ingen 2-konsekutive-skjulte i 'showing' pattern", {
+  # Invariant for issue #396: maks gap mellem on-hinanden foelgende synlige
+  # indices <= step+1 (force-last anchor kan tilfoeje en kortere gap, aldrig
+  # laengere). Det udelukker scenariet hvor to nabo-labels begge skjules midt
+  # i serien.
+  for (n in c(13L, 15L, 20L, 24L, 30L, 36L, 48L, 52L, 75L, 100L, 250L)) {
+    res <- bfh_subsample_label_indices(n)
+    diffs <- diff(res)
+    step <- as.integer(ceiling((n - 1L) / 11L))
+    expect_lte(max(diffs), step,
+      label = paste0("max gap for n=", n)
+    )
+  }
+})
+
+test_that("bfh_subsample_label_indices: max_visible=1 returnerer kun foerste anchor", {
+  expect_equal(bfh_subsample_label_indices(10, max_visible = 1L), 1L)
+  expect_equal(bfh_subsample_label_indices(100, max_visible = 1L), 1L)
+})
+
+test_that("bfh_subsample_label_indices: max_visible=2 returnerer kun anchors", {
+  expect_equal(bfh_subsample_label_indices(24, max_visible = 2L), c(1L, 24L))
+  expect_equal(bfh_subsample_label_indices(100, max_visible = 2L), c(1L, 100L))
+})
+
+test_that("bfh_subsample_label_indices: custom max_visible=6 for n=24", {
+  expect_equal(
+    bfh_subsample_label_indices(24, max_visible = 6L),
+    c(1L, 6L, 11L, 16L, 21L, 24L)
+  )
+})
+
+test_that("bfh_subsample_label_indices: length aldrig overstiger max_visible", {
+  # Force-last anchor maa ej overskride cap. Verificer for raekke n-vaerdier.
+  for (n in c(13L, 24L, 36L, 52L, 100L, 200L, 365L)) {
+    res <- bfh_subsample_label_indices(n)
+    expect_lte(length(res), 12L,
+      label = paste0("length cap for n=", n)
+    )
+  }
 })
 
 test_that("bfh_subsample_label_indices: invalid input kaster fejl", {
