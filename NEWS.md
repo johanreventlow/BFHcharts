@@ -1,3 +1,22 @@
+# BFHcharts 0.22.0
+
+## Breaking changes
+
+* **`bfh_subsample_label_indices()` skifter til deterministisk step-baseret
+  algoritme** (#396). Erstatter tidligere
+  `round(seq.int(1L, n_labels, length.out = max_visible))` med
+  `seq.int(1L, n_labels, by = step)` hvor `step = ceiling((n - 1) / (max_visible - 1))`.
+  Eliminerer asymmetrisk round()-artefakt der gav konsekutive skjulte labels
+  midt i serien (eksempel: n=24 gav gap mellem index 11 og 14, dvs.
+  index 12+13 begge skjult). Density-target for n=24 ændres fra 12 til 9
+  visible labels (\"vis 1, skjul 2\"-rytme). Eksisterende `max_visible`-kontrakt
+  løsnes fra hard cap til soft cap (result-length kan overstige `max_visible`
+  med 1 når last-anchor falder af step-grid).
+
+  Migration: callers der hardcodede forventning om nøjagtigt `max_visible`
+  indices skal forvente ±1. Visual layout bliver glattere; ingen mid-series
+  gap-of-`step+1`.
+
 # BFHcharts 0.21.0
 
 ## Nye features

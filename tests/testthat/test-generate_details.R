@@ -355,8 +355,47 @@ test_that("bfh_subsample_label_indices: progressive thinning bevarer near-konsta
   # Density-test: foerste 12 indices skal danne en jaevn fordeling
   res_100 <- bfh_subsample_label_indices(100)
   diffs <- diff(res_100)
-  # Skal vaere approx jaevn (max diff - min diff <= 1 ved round-jitter)
+  # Skal vaere approx jaevn (max diff - min diff <= 1 ved last-anchor justering)
   expect_lte(max(diffs) - min(diffs), 1L)
+})
+
+test_that("bfh_subsample_label_indices: ingen konsekutive skjulte midt i serien (issue #396)", {
+  # Regression-test: round(seq.int)-implementation gav gap-of-3 ved n=24
+  # mellem indices 11 og 14 (positions 11.45 + 13.55 rundede asymmetrisk).
+  # Step-based implementation skal have ensartet step gennem hele serien
+  # eller alene tail-justering ved last-anchor.
+  res_24 <- bfh_subsample_label_indices(24)
+  diffs <- diff(res_24)
+
+  # Alle mid-series diffs skal vaere identiske (tail kan vaere mindre pga.
+  # last-anchor force-append).
+  mid_diffs <- diffs[-length(diffs)]
+  expect_true(length(unique(mid_diffs)) == 1L,
+    info = paste("mid-series diffs:", paste(mid_diffs, collapse = ", "))
+  )
+
+  # Step skal vaere >= 2 for n > max_visible (ellers ingen thinning).
+  expect_gte(mid_diffs[1L], 2L)
+
+  # Tail-diff <= mid-diff (last-anchor closer to penultimate).
+  expect_lte(diffs[length(diffs)], mid_diffs[1L])
+})
+
+test_that("bfh_subsample_label_indices: step-3 for n=24 matcher spec", {
+  # Issue #396 acceptance criteria: n=24, max=12 => step=3 (vis 1, skjul 2-rytme)
+  expect_equal(
+    bfh_subsample_label_indices(24L, max_visible = 12L),
+    c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 24L)
+  )
+})
+
+test_that("bfh_subsample_label_indices: foerste + sidste altid inkluderet", {
+  # Anchor-invariant: foerste og sidste index skal ALTID med, uanset step
+  for (n in c(13L, 24L, 25L, 36L, 47L, 52L, 100L)) {
+    res <- bfh_subsample_label_indices(n)
+    expect_equal(res[1L], 1L, info = paste("n =", n))
+    expect_equal(res[length(res)], n, info = paste("n =", n))
+  }
 })
 
 test_that("bfh_subsample_label_indices: invalid input kaster fejl", {

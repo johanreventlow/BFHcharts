@@ -290,19 +290,27 @@ BFH_MAX_X_LABELS_TEXT <- 12L
 #'
 #' Returns evenly-spaced indices for selecting which categorical x-axis labels
 #' to display on a chart. First and last indices are always included as anchors;
-#' intermediate indices are chosen via `round(seq(1, n, length.out = max_visible))`.
-#' Designed for tekst-x-data (month names, weekdays, observation IDs) where
-#' showing all labels would overlap or require rotation.
+#' intermediate indices follow a deterministic integer step computed as
+#' `ceiling((n_labels - 1) / (max_visible - 1))`. Designed for tekst-x-data
+#' (month names, weekdays, observation IDs) where showing all labels would
+#' overlap or require rotation.
 #'
-#' Algorithm scales smoothly: for n <= max_visible all indices returned;
-#' otherwise progressively thinning preserves a near-constant label-density.
+#' Algorithm:
+#' - `n_labels <= max_visible`: all indices returned.
+#' - `n_labels > max_visible`: step = ceil((n - 1) / (max_visible - 1));
+#'   indices = seq(1, n, by = step); last index force-appended if not present.
+#'
+#' Step ceiling guarantees no two consecutive indices missing in the same
+#' visible/hidden cycle (previous `round(seq.int)` implementation produced
+#' asymmetric rounding artefacts; see issue #396).
 #'
 #' @param n_labels Integer. Total number of labels available.
-#' @param max_visible Integer. Maximum number of labels to display.
-#'   Default [BFH_MAX_X_LABELS_TEXT] (currently 12).
+#' @param max_visible Integer. Soft cap on number of labels to display.
+#'   Default [BFH_MAX_X_LABELS_TEXT] (currently 12). Result length may exceed
+#'   `max_visible` by 1 when the last anchor falls off the step-grid.
 #'
 #' @return Integer vector of indices into the label sequence. Always includes
-#'   1 and `n_labels` (anchors). Length <= `max_visible`.
+#'   1 and `n_labels` (anchors).
 #'
 #' @export
 #'
@@ -311,13 +319,17 @@ BFH_MAX_X_LABELS_TEXT <- 12L
 #' bfh_subsample_label_indices(12)
 #' # [1] 1 2 3 4 5 6 7 8 9 10 11 12
 #'
-#' # 52 weeks thinned to ~12 evenly-spaced
+#' # 24 months thinned with step=3 (vis 1, skjul 2-rytme)
+#' bfh_subsample_label_indices(24)
+#' # [1]  1  4  7 10 13 16 19 22 24
+#'
+#' # 52 weeks thinned with step=5
 #' bfh_subsample_label_indices(52)
-#' # [1]  1  5 10 15 20 25 30 36 41 46 51 52
+#' # [1]  1  6 11 16 21 26 31 36 41 46 51 52
 #'
 #' # Custom max
 #' bfh_subsample_label_indices(24, max_visible = 6)
-#' # [1]  1  6 11 15 20 24
+#' # [1]  1  6 11 16 21 24
 bfh_subsample_label_indices <- function(n_labels, max_visible = BFH_MAX_X_LABELS_TEXT) {
   if (!is.numeric(n_labels) || length(n_labels) != 1L || is.na(n_labels) ||
     n_labels < 1) {
@@ -332,5 +344,12 @@ bfh_subsample_label_indices <- function(n_labels, max_visible = BFH_MAX_X_LABELS
   if (n_labels <= max_visible) {
     return(seq_len(n_labels))
   }
-  unique(as.integer(round(seq.int(1L, n_labels, length.out = max_visible))))
+  # Deterministisk step via ceil() forhindrer round(seq.int) asymmetri-artefakt
+  # hvor consecutive labels midt i serien skjules samtidig (issue #396).
+  step <- max(1L, as.integer(ceiling((n_labels - 1L) / (max_visible - 1L))))
+  idx <- seq.int(1L, n_labels, by = step)
+  if (idx[length(idx)] != n_labels) {
+    idx <- c(idx, n_labels)
+  }
+  as.integer(idx)
 }

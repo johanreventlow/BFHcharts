@@ -9,34 +9,48 @@ bfh_subsample_label_indices(n_labels, max_visible = BFH_MAX_X_LABELS_TEXT)
 \arguments{
 \item{n_labels}{Integer. Total number of labels available.}
 
-\item{max_visible}{Integer. Maximum number of labels to display.
-Default \link{BFH_MAX_X_LABELS_TEXT} (currently 12).}
+\item{max_visible}{Integer. Soft cap on number of labels to display.
+Default \link{BFH_MAX_X_LABELS_TEXT} (currently 12). Result length may exceed
+\code{max_visible} by 1 when the last anchor falls off the step-grid.}
 }
 \value{
 Integer vector of indices into the label sequence. Always includes
-1 and \code{n_labels} (anchors). Length <= \code{max_visible}.
+1 and \code{n_labels} (anchors).
 }
 \description{
 Returns evenly-spaced indices for selecting which categorical x-axis labels
 to display on a chart. First and last indices are always included as anchors;
-intermediate indices are chosen via \code{round(seq(1, n, length.out = max_visible))}.
-Designed for tekst-x-data (month names, weekdays, observation IDs) where
-showing all labels would overlap or require rotation.
+intermediate indices follow a deterministic integer step computed as
+\code{ceiling((n_labels - 1) / (max_visible - 1))}. Designed for tekst-x-data
+(month names, weekdays, observation IDs) where showing all labels would
+overlap or require rotation.
 }
 \details{
-Algorithm scales smoothly: for n <= max_visible all indices returned;
-otherwise progressively thinning preserves a near-constant label-density.
+Algorithm:
+\itemize{
+\item \code{n_labels <= max_visible}: all indices returned.
+\item \code{n_labels > max_visible}: step = ceil((n - 1) / (max_visible - 1));
+indices = seq(1, n, by = step); last index force-appended if not present.
+}
+
+Step ceiling guarantees no two consecutive indices missing in the same
+visible/hidden cycle (previous \code{round(seq.int)} implementation produced
+asymmetric rounding artefacts; see issue #396).
 }
 \examples{
 # All 12 months visible when n <= max
 bfh_subsample_label_indices(12)
 # [1] 1 2 3 4 5 6 7 8 9 10 11 12
 
-# 52 weeks thinned to ~12 evenly-spaced
+# 24 months thinned with step=3 (vis 1, skjul 2-rytme)
+bfh_subsample_label_indices(24)
+# [1]  1  4  7 10 13 16 19 22 24
+
+# 52 weeks thinned with step=5
 bfh_subsample_label_indices(52)
-# [1]  1  5 10 15 20 25 30 36 41 46 51 52
+# [1]  1  6 11 16 21 26 31 36 41 46 51 52
 
 # Custom max
 bfh_subsample_label_indices(24, max_visible = 6)
-# [1]  1  6 11 15 20 24
+# [1]  1  6 11 16 21 24
 }
