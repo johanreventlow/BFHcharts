@@ -343,6 +343,9 @@ labels:
     seneste: "Seneste"
     niveau_label: "Nuværende niveau"
     niveau_unknown: "Nuværende niveau: -"
+    # Bruges som interval-label naar x_labels-vector overrider auto-detect
+    # date-interval (tekst-x: maanedsnavne, ugedage, observation-id, etc.).
+    interval_kategori: "kategori"
 
   chart:
     current_level: "NUV. NIVEAU"

@@ -37,10 +37,17 @@
 #' # "Periode: jan. 2024 - dec. 2024 * Gns. maaned: 50 * ..."
 #' }
 #'
+#' @param x_labels Optional character vector of original categorical x-axis
+#'   labels (month names, weekdays, etc.). When supplied, the period range
+#'   uses the first and last labels (e.g. "januar \u2013 december") rather than
+#'   the numeric sequence stored in `qic_data$x`. Use this when text-x has
+#'   been converted to a numeric sequence by upstream pipelines. Length must
+#'   match `nrow(qic_data)`. Default `NULL` uses date-based formatting.
+#'
 #' @family utility-functions
 #' @seealso [bfh_export_pdf()] for PDF export functionality
 #' @export
-bfh_generate_details <- function(x, language = "da") {
+bfh_generate_details <- function(x, language = "da", x_labels = NULL) {
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()", call. = FALSE)
   }
@@ -64,11 +71,25 @@ bfh_generate_details <- function(x, language = "da") {
     ))
   }
 
-  interval_info <- detect_date_interval(qic_data$x)
-  interval_label <- get_danish_interval_label(interval_info$type, language)
+  # x_labels-branch: tekst-x konverteret til numerisk sekvens af upstream
+  # pipeline. Brug first/last fra original-labels til Periode-felt. interval-
+  # label fortolkes som "kategori" hvis intet bedre forslag fra config.
+  use_text_labels <- !is.null(x_labels) &&
+    is.character(x_labels) &&
+    length(x_labels) == nrow(qic_data) &&
+    any(nzchar(x_labels))
 
-  start_date <- format_danish_date_short(min(qic_data$x, na.rm = TRUE))
-  end_date <- format_danish_date_short(max(qic_data$x, na.rm = TRUE))
+  if (use_text_labels) {
+    interval_label <- i18n_lookup("labels.details.interval_kategori", language)
+    start_date <- x_labels[[1L]]
+    end_date <- x_labels[[length(x_labels)]]
+  } else {
+    interval_info <- detect_date_interval(qic_data$x)
+    interval_label <- get_danish_interval_label(interval_info$type, language)
+    start_date <- format_danish_date_short(min(qic_data$x, na.rm = TRUE))
+    end_date <- format_danish_date_short(max(qic_data$x, na.rm = TRUE))
+  }
+
   periode <- sprintf(
     "%s: %s \u2013 %s",
     i18n_lookup("labels.details.periode", language), start_date, end_date
