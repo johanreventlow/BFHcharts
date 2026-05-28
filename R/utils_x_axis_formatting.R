@@ -275,3 +275,62 @@ apply_numeric_x_axis <- function(plot) {
     breaks = scales::pretty_breaks(n = 8)
   )
 }
+
+#' Maximum Visible Text X-Axis Labels
+#'
+#' Default cap on number of categorical x-axis labels rendered horizontally
+#' without rotation. Drives [bfh_subsample_label_indices()] when caller does
+#' not override `max_visible`. Threshold chosen to fit standard A4 PDF export
+#' width (200mm @ 300dpi) with horizontal Roboto Medium labels.
+#'
+#' @export
+BFH_MAX_X_LABELS_TEXT <- 12L
+
+#' Subsample Text X-Axis Label Indices
+#'
+#' Returns evenly-spaced indices for selecting which categorical x-axis labels
+#' to display on a chart. First and last indices are always included as anchors;
+#' intermediate indices are chosen via `round(seq(1, n, length.out = max_visible))`.
+#' Designed for tekst-x-data (month names, weekdays, observation IDs) where
+#' showing all labels would overlap or require rotation.
+#'
+#' Algorithm scales smoothly: for n <= max_visible all indices returned;
+#' otherwise progressively thinning preserves a near-constant label-density.
+#'
+#' @param n_labels Integer. Total number of labels available.
+#' @param max_visible Integer. Maximum number of labels to display.
+#'   Default [BFH_MAX_X_LABELS_TEXT] (currently 12).
+#'
+#' @return Integer vector of indices into the label sequence. Always includes
+#'   1 and `n_labels` (anchors). Length <= `max_visible`.
+#'
+#' @export
+#'
+#' @examples
+#' # All 12 months visible when n <= max
+#' bfh_subsample_label_indices(12)
+#' # [1] 1 2 3 4 5 6 7 8 9 10 11 12
+#'
+#' # 52 weeks thinned to ~12 evenly-spaced
+#' bfh_subsample_label_indices(52)
+#' # [1]  1  5 10 15 20 25 30 36 41 46 51 52
+#'
+#' # Custom max
+#' bfh_subsample_label_indices(24, max_visible = 6)
+#' # [1]  1  6 11 15 20 24
+bfh_subsample_label_indices <- function(n_labels, max_visible = BFH_MAX_X_LABELS_TEXT) {
+  if (!is.numeric(n_labels) || length(n_labels) != 1L || is.na(n_labels) ||
+    n_labels < 1) {
+    stop("n_labels must be a positive integer scalar", call. = FALSE)
+  }
+  if (!is.numeric(max_visible) || length(max_visible) != 1L || is.na(max_visible) ||
+    max_visible < 1) {
+    stop("max_visible must be a positive integer scalar", call. = FALSE)
+  }
+  n_labels <- as.integer(n_labels)
+  max_visible <- as.integer(max_visible)
+  if (n_labels <= max_visible) {
+    return(seq_len(n_labels))
+  }
+  unique(as.integer(round(seq.int(1L, n_labels, length.out = max_visible))))
+}

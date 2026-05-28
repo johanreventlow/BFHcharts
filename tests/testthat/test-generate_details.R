@@ -255,3 +255,118 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) håndterer NULL summary", {
   expect_null(stats$runs_expected)
   expect_false(is.null(stats$outliers_actual))
 })
+
+# ==============================================================================
+# x_labels-parameter: tekst-x periode-formatering
+# ==============================================================================
+
+test_that("bfh_generate_details: x_labels overrider numerisk x med foerste/sidste kategori", {
+  set.seed(42)
+
+  # Simulér konverteret tekst-x (numerisk sekvens, original labels separat)
+  months_da <- c(
+    "januar", "februar", "marts", "april", "maj", "juni",
+    "juli", "august", "september", "oktober", "november", "december"
+  )
+  data <- data.frame(
+    x_num = seq_along(months_da),
+    value = rpois(length(months_da), lambda = 50)
+  )
+
+  result <- bfh_qic(data, x = x_num, y = value, chart_type = "i", y_axis_unit = "count")
+
+  details <- bfh_generate_details(result, x_labels = months_da)
+
+  expect_type(details, "character")
+  expect_true(grepl("Periode: januar . december", details, fixed = FALSE),
+    info = paste0("Forventer 'Periode: januar – december', faktisk: ", details)
+  )
+  # kategori-label brugt i stedet for "maaned"/"dag" etc.
+  expect_true(grepl("kategori", details))
+})
+
+test_that("bfh_generate_details: x_labels = NULL bevarer eksisterende dato-formatering", {
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  result <- bfh_qic(data, x = date, y = value, chart_type = "i", y_axis_unit = "count")
+
+  details_null <- bfh_generate_details(result, x_labels = NULL)
+  details_default <- bfh_generate_details(result)
+
+  expect_identical(details_null, details_default)
+  expect_false(grepl("kategori", details_null))
+})
+
+test_that("bfh_generate_details: x_labels med forkert length ignoreres (fallback til dato)", {
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rpois(12, lambda = 50)
+  )
+
+  result <- bfh_qic(data, x = date, y = value, chart_type = "i", y_axis_unit = "count")
+
+  # length mismatch -> guard rejecter x_labels, fallback til dato
+  details <- bfh_generate_details(result, x_labels = c("a", "b", "c"))
+
+  expect_false(grepl("kategori", details))
+  expect_true(grepl("Periode:", details))
+})
+
+# ==============================================================================
+# bfh_subsample_label_indices: progressive subsample
+# ==============================================================================
+
+test_that("bfh_subsample_label_indices: n <= max returnerer alle indices", {
+  expect_equal(bfh_subsample_label_indices(1), 1L)
+  expect_equal(bfh_subsample_label_indices(5), 1:5)
+  expect_equal(bfh_subsample_label_indices(12), 1:12)
+})
+
+test_that("bfh_subsample_label_indices: n > max thinner til max_visible med foerste+sidste anker", {
+  res_24 <- bfh_subsample_label_indices(24)
+  expect_lte(length(res_24), 12L)
+  expect_equal(res_24[1], 1L)
+  expect_equal(res_24[length(res_24)], 24L)
+
+  res_52 <- bfh_subsample_label_indices(52)
+  expect_lte(length(res_52), 12L)
+  expect_equal(res_52[1], 1L)
+  expect_equal(res_52[length(res_52)], 52L)
+
+  res_100 <- bfh_subsample_label_indices(100)
+  expect_lte(length(res_100), 12L)
+  expect_equal(res_100[1], 1L)
+  expect_equal(res_100[length(res_100)], 100L)
+})
+
+test_that("bfh_subsample_label_indices: custom max_visible respekteres", {
+  res <- bfh_subsample_label_indices(24, max_visible = 6L)
+  expect_lte(length(res), 6L)
+  expect_equal(res[1], 1L)
+  expect_equal(res[length(res)], 24L)
+})
+
+test_that("bfh_subsample_label_indices: progressive thinning bevarer near-konstant density", {
+  # Density-test: foerste 12 indices skal danne en jaevn fordeling
+  res_100 <- bfh_subsample_label_indices(100)
+  diffs <- diff(res_100)
+  # Skal vaere approx jaevn (max diff - min diff <= 1 ved round-jitter)
+  expect_lte(max(diffs) - min(diffs), 1L)
+})
+
+test_that("bfh_subsample_label_indices: invalid input kaster fejl", {
+  expect_error(bfh_subsample_label_indices(0), "positive integer")
+  expect_error(bfh_subsample_label_indices(-1), "positive integer")
+  expect_error(bfh_subsample_label_indices(NA), "positive integer")
+  expect_error(bfh_subsample_label_indices(10, max_visible = 0), "positive integer")
+})
+
+test_that("BFH_MAX_X_LABELS_TEXT er eksporteret og har default 12", {
+  expect_equal(BFH_MAX_X_LABELS_TEXT, 12L)
+  expect_true(is.integer(BFH_MAX_X_LABELS_TEXT))
+})
