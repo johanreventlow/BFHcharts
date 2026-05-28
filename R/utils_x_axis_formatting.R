@@ -288,21 +288,26 @@ BFH_MAX_X_LABELS_TEXT <- 12L
 
 #' Subsample Text X-Axis Label Indices
 #'
-#' Returns evenly-spaced indices for selecting which categorical x-axis labels
-#' to display on a chart. First and last indices are always included as anchors;
-#' intermediate indices are chosen via `round(seq(1, n, length.out = max_visible))`.
-#' Designed for tekst-x-data (month names, weekdays, observation IDs) where
-#' showing all labels would overlap or require rotation.
+#' Returns deterministic, evenly-spaced indices for selecting which categorical
+#' x-axis labels to display on a chart. First index is always 1; last index is
+#' always `n_labels` (force-last anchor). Intermediate indices follow integer
+#' step `ceiling((n_labels - 1) / (max_visible - 1))`, which guarantees no two
+#' consecutive label positions are skipped in the "showing" pattern. Designed
+#' for tekst-x-data (month names, weekdays, observation IDs) where showing all
+#' labels would overlap or require rotation.
 #'
 #' Algorithm scales smoothly: for n <= max_visible all indices returned;
-#' otherwise progressively thinning preserves a near-constant label-density.
+#' otherwise step-based thinning preserves a near-constant label-density and
+#' avoids the asymmetric-rounding gap-bug that
+#' `round(seq(..., length.out))` produces for moderate n (issue #396).
 #'
 #' @param n_labels Integer. Total number of labels available.
 #' @param max_visible Integer. Maximum number of labels to display.
 #'   Default [BFH_MAX_X_LABELS_TEXT] (currently 12).
 #'
 #' @return Integer vector of indices into the label sequence. Always includes
-#'   1 and `n_labels` (anchors). Length <= `max_visible`.
+#'   1 and `n_labels` (anchors). Length <= `max_visible` (may be lower when
+#'   step-thinning produces fewer evenly-spaced anchors).
 #'
 #' @export
 #'
@@ -311,13 +316,17 @@ BFH_MAX_X_LABELS_TEXT <- 12L
 #' bfh_subsample_label_indices(12)
 #' # [1] 1 2 3 4 5 6 7 8 9 10 11 12
 #'
-#' # 52 weeks thinned to ~12 evenly-spaced
+#' # 24 months: step=3, force-last anchor -> 9 labels (no gap-of-3)
+#' bfh_subsample_label_indices(24)
+#' # [1]  1  4  7 10 13 16 19 22 24
+#'
+#' # 52 weeks thinned to <=12 evenly-spaced
 #' bfh_subsample_label_indices(52)
-#' # [1]  1  5 10 15 20 25 30 36 41 46 51 52
+#' # [1]  1  6 11 16 21 26 31 36 41 46 51 52
 #'
 #' # Custom max
 #' bfh_subsample_label_indices(24, max_visible = 6)
-#' # [1]  1  6 11 15 20 24
+#' # [1]  1  6 11 16 21 24
 bfh_subsample_label_indices <- function(n_labels, max_visible = BFH_MAX_X_LABELS_TEXT) {
   if (!is.numeric(n_labels) || length(n_labels) != 1L || is.na(n_labels) ||
     n_labels < 1) {
@@ -332,5 +341,15 @@ bfh_subsample_label_indices <- function(n_labels, max_visible = BFH_MAX_X_LABELS
   if (n_labels <= max_visible) {
     return(seq_len(n_labels))
   }
-  unique(as.integer(round(seq.int(1L, n_labels, length.out = max_visible))))
+  if (max_visible == 1L) {
+    return(1L)
+  }
+  # Deterministic step: ceiling((n - 1) / (max - 1)) >= 1 keeps idx count
+  # within max_visible slots when force-last anchor is appended.
+  step <- as.integer(ceiling((n_labels - 1L) / (max_visible - 1L)))
+  idx <- seq.int(1L, n_labels, by = step)
+  if (idx[length(idx)] != n_labels) {
+    idx <- c(idx, n_labels)
+  }
+  idx
 }
