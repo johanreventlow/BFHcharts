@@ -291,6 +291,9 @@ labels:
     seneste: "Latest"
     niveau_label: "Current level"
     niveau_unknown: "Current level: -"
+    # Used as interval-label when x_labels vector overrides auto-detected
+    # date-interval (text-x: month names, weekdays, observation-id, etc.).
+    interval_kategori: "category"
 
   chart:
     current_level: "CUR. LEVEL"

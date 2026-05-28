@@ -1,4 +1,33 @@
-# BFHcharts (development)
+# BFHcharts 0.21.0
+
+## Nye features
+
+* **`bfh_subsample_label_indices(n_labels, max_visible = BFH_MAX_X_LABELS_TEXT)`**
+  — eksporteret helper der returnerer evenly-spaced indices til
+  subsample af kategoriske x-akse-labels. Foerste og sidste indices
+  anchored som anker-points, intermediate via
+  `round(seq(1, n, length.out = max_visible))`. Skalerer smoothly:
+  n <= max_visible giver alle indices, n > max_visible thinner
+  progressivt. Designet til tekst-x-data (maanedsnavne, ugedage,
+  observation-id) hvor visning af alle labels ville overlappe.
+
+* **`BFH_MAX_X_LABELS_TEXT` konstant** (default 12L) — eksporteret
+  styling-default for [bfh_subsample_label_indices()]. Threshold valgt
+  til at passe standard A4 PDF eksport-bredde (200mm @ 300dpi) med
+  horisontale Roboto Medium labels.
+
+* **`bfh_generate_details(x, language, x_labels = NULL)`** udvidet med
+  valgfri `x_labels`-parameter. Naar sat (character vector, length =
+  nrow(qic_data)), bruges foerste og sidste label til Periode-felt
+  (fx "Periode: januar . december") i stedet for dato-baseret
+  formatering paa `qic_data\$x`. Interval-label bliver "kategori".
+  Bagudkompatibel: `x_labels = NULL` bevarer eksisterende dato-flow.
+
+  Use case: downstream pipelines (biSPCharts) konverterer tekst-x til
+  numerisk sekvens FOER `bfh_qic()`-kald for at stoette ggplot-rendering.
+  Tidligere reflekterede Periode-feltet i PDF-eksport den numeriske
+  sekvens (fx "Periode: 1970-01-01 . 1970-01-12") frem for original-
+  labels.
 
 ## Dependency bumps
 
