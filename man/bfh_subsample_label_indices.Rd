@@ -13,39 +13,47 @@ bfh_subsample_label_indices(n_labels, max_visible = BFH_MAX_X_LABELS_TEXT)
 Default \link{BFH_MAX_X_LABELS_TEXT} (currently 12).}
 }
 \value{
-Integer vector of indices into the label sequence. Always includes
-1 and \code{n_labels} (anchors). Length <= \code{max_visible} (may be lower when
-step-thinning produces fewer evenly-spaced anchors).
+Integer vector of indices into the label sequence. First index is
+always 1; last index is \code{n_labels} only when it falls on the step grid,
+otherwise the highest step-aligned position <= \code{n_labels}.
+Length <= \code{max_visible}.
 }
 \description{
 Returns deterministic, evenly-spaced indices for selecting which categorical
-x-axis labels to display on a chart. First index is always 1; last index is
-always \code{n_labels} (force-last anchor). Intermediate indices follow integer
-step \code{ceiling((n_labels - 1) / (max_visible - 1))}, which guarantees no two
-consecutive label positions are skipped in the "showing" pattern. Designed
-for tekst-x-data (month names, weekdays, observation IDs) where showing all
-labels would overlap or require rotation.
+x-axis labels to display on a chart. First index is always 1. Intermediate
+indices follow integer step \code{ceiling((n_labels - 1) / (max_visible - 1))}.
+The last index \code{n_labels} is included only when it lands naturally on the
+step grid (i.e. when \code{(n_labels - 1)} is divisible by \code{step}); otherwise
+the sequence ends at the highest step-aligned position <= \code{n_labels}.
+Designed for tekst-x-data (month names, weekdays, observation IDs) where
+showing all labels would overlap or require rotation.
 }
 \details{
 Algorithm scales smoothly: for n <= max_visible all indices returned;
-otherwise step-based thinning preserves a near-constant label-density and
+otherwise step-based thinning preserves a constant label-density and
 avoids the asymmetric-rounding gap-bug that
 \code{round(seq(..., length.out))} produces for moderate n (issue #396).
+
+Note: prior versions (0.22.0) appended \code{n_labels} as a force-last anchor,
+producing a shorter tail-gap mid-rhythm. This was removed because the
+rhythm-break was visually jarring (e.g. n=24 jumped from a constant step=3
+to a step=2 tail). Callers requiring the last label as anchor must append
+it explicitly.
 }
 \examples{
 # All 12 months visible when n <= max
 bfh_subsample_label_indices(12)
 # [1] 1 2 3 4 5 6 7 8 9 10 11 12
 
-# 24 months: step=3, force-last anchor -> 9 labels (no gap-of-3)
+# 24 months: step=3, no force-last (sidste = 22, ej 24)
 bfh_subsample_label_indices(24)
-# [1]  1  4  7 10 13 16 19 22 24
+# [1]  1  4  7 10 13 16 19 22
 
-# 52 weeks thinned to <=12 evenly-spaced
-bfh_subsample_label_indices(52)
-# [1]  1  6 11 16 21 26 31 36 41 46 51 52
+# 100 obs: step=9, n=100 lands naturally on grid -> included
+bfh_subsample_label_indices(100)
+# [1]   1  10  19  28  37  46  55  64  73  82  91 100
 
 # Custom max
 bfh_subsample_label_indices(24, max_visible = 6)
-# [1]  1  6 11 16 21 24
+# [1]  1  6 11 16 21
 }
