@@ -145,3 +145,30 @@ test_that("bfh_qic() warns and ignores ylim when min >= max", {
   )
   expect_null(res$plot$coordinates$limits$y)
 })
+
+test_that("ylim placerer kommentarer inden for zoom-vinduet (ej fuld data-range)", {
+  skip_if_fonts_unavailable()
+  notes_vec <- rep(NA_character_, 12)
+  notes_vec[3] <- "Intervention"
+  notes_vec[8] <- "Ny protokol"
+  df <- make_ylim_test_data()
+
+  res <- bfh_qic(df,
+    x = maaned, y = vaerdi, chart_type = "i",
+    notes = notes_vec, ylim = c(0, 20)
+  )
+  b <- ggplot2::ggplot_build(res$plot)
+
+  # Find kommentar-tekst-laget og bekraeft at dets y-positioner ligger inden
+  # for zoom-vinduet [0, 20] -- uden ylim-bevidsthed ville placeringen score
+  # mod data-range (~10-18) og kunne havne uden for det synlige vindue.
+  comment_ys <- numeric(0)
+  for (d in b$data) {
+    if (all(c("label", "y") %in% names(d)) && nrow(d) > 0) {
+      hit <- d$label %in% c("Intervention", "Ny protokol")
+      if (any(hit)) comment_ys <- c(comment_ys, d$y[hit])
+    }
+  }
+  expect_true(length(comment_ys) > 0)
+  expect_true(all(comment_ys >= 0 & comment_ys <= 20))
+})

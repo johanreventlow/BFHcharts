@@ -292,7 +292,10 @@ bfh_spc_plot <- function(qic_data,
     target_linewidth = target_linewidth,
     comment_size = comment_size,
     suppress_targetline = suppress_targetline,
-    line_positions = line_positions
+    line_positions = line_positions,
+    # ylim videreføres så kommentar-placering scorer mod det synlige
+    # (zoomede) y-vindue i stedet for den fulde data-range.
+    ylim = plot_config$ylim
   )
 
   # Apply theme ----
