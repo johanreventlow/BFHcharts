@@ -327,54 +327,71 @@ test_that("bfh_subsample_label_indices: n <= max returnerer alle indices", {
   expect_equal(bfh_subsample_label_indices(12), 1:12)
 })
 
-test_that("bfh_subsample_label_indices: n > max thinner til max_visible med foerste+sidste anker", {
+test_that("bfh_subsample_label_indices: n > max har foerste anker, sidste kun naar grid-aligned", {
+  # Sidste = n_labels KUN naar (n - 1) %% step == 0, ellers det hoejeste
+  # step-aligned position <= n. Forhindrer ujaevn tail-gap mid-rhythm.
   res_24 <- bfh_subsample_label_indices(24)
   expect_lte(length(res_24), 12L)
   expect_equal(res_24[1], 1L)
-  expect_equal(res_24[length(res_24)], 24L)
+  expect_equal(res_24[length(res_24)], 22L) # 24 ej grid-aligned (step=3, 23%%3 != 0)
 
   res_52 <- bfh_subsample_label_indices(52)
   expect_lte(length(res_52), 12L)
   expect_equal(res_52[1], 1L)
-  expect_equal(res_52[length(res_52)], 52L)
+  expect_equal(res_52[length(res_52)], 51L) # 52 ej grid-aligned (step=5, 51%%5 != 0)
 
   res_100 <- bfh_subsample_label_indices(100)
   expect_lte(length(res_100), 12L)
   expect_equal(res_100[1], 1L)
-  expect_equal(res_100[length(res_100)], 100L)
+  expect_equal(res_100[length(res_100)], 100L) # 100 grid-aligned (step=9, 99%%9 == 0)
 })
 
 test_that("bfh_subsample_label_indices: custom max_visible respekteres", {
   res <- bfh_subsample_label_indices(24, max_visible = 6L)
   expect_lte(length(res), 6L)
   expect_equal(res[1], 1L)
-  expect_equal(res[length(res)], 24L)
+  # max=6, step=ceil(23/5)=5 -> sidste = 21 (24 ej grid-aligned)
+  expect_equal(res[length(res)], 21L)
 })
 
 test_that("bfh_subsample_label_indices: step-based thinning er konstant intervallet (n=100)", {
-  # n=100, max=12 -> step=9, alle diffs = 9 (force-last anchor 91 -> 100 ogsaa 9)
+  # n=100, max=12 -> step=9, alle diffs = 9 (uden force-last forbliver konstant)
   res_100 <- bfh_subsample_label_indices(100)
   diffs <- diff(res_100)
   expect_equal(max(diffs) - min(diffs), 0L)
-  expect_true(all(diffs >= 1L))
+  expect_true(all(diffs == 9L))
 })
 
-test_that("bfh_subsample_label_indices: exact indices for n=24 fjerner gap-of-3 (#396)", {
-  # Bug-repro: round(seq(1, 24, length.out=12)) producerede gap 11->14 (skjulte
-  # 12+13). Step-baseret approach giver konstant step=3 + force-last anchor.
+test_that("bfh_subsample_label_indices: konstant rhythm uden tail-break for n=24 (#396 follow-up)", {
+  # Issue #396 follow-up: drop force-last anchor saa tail-gap aldrig bryder
+  # rhythmen. Alle diffs i n=24 sekvensen skal vaere identiske med step.
+  res_24 <- bfh_subsample_label_indices(24)
+  diffs <- diff(res_24)
+  expect_true(length(unique(diffs)) == 1L,
+    info = paste("diffs:", paste(diffs, collapse = ", "))
+  )
+  expect_equal(diffs[1L], 3L) # step = ceil(23/11) = 3
+})
+
+test_that("bfh_subsample_label_indices: exact indices for n=24 (#396 + follow-up)", {
+  # Bug-repro: round(seq(1, 24, length.out=12)) producerede gap 11->14.
+  # Step-baseret approach giver konstant step=3 uden tail-break.
   res <- bfh_subsample_label_indices(24)
-  expect_equal(res, c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 24L))
+  expect_equal(res, c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L))
 })
 
 test_that("bfh_subsample_label_indices: exact indices for n=36/52/100 (regression)", {
+  # n=36 step=4: ender ved 33 (35%%4 != 0)
   expect_equal(
     bfh_subsample_label_indices(36),
-    c(1L, 5L, 9L, 13L, 17L, 21L, 25L, 29L, 33L, 36L)
+    c(1L, 5L, 9L, 13L, 17L, 21L, 25L, 29L, 33L)
   )
+  # n=52 step=5: ender ved 51 (51%%5 != 0)
   expect_equal(
     bfh_subsample_label_indices(52),
-    c(1L, 6L, 11L, 16L, 21L, 26L, 31L, 36L, 41L, 46L, 51L, 52L)
+    c(1L, 6L, 11L, 16L, 21L, 26L, 31L, 36L, 41L, 46L, 51L)
   )
+  # n=100 step=9: ender ved 100 (99%%9 == 0, grid-aligned)
   expect_equal(
     bfh_subsample_label_indices(100),
     c(1L, 10L, 19L, 28L, 37L, 46L, 55L, 64L, 73L, 82L, 91L, 100L)
@@ -383,9 +400,7 @@ test_that("bfh_subsample_label_indices: exact indices for n=36/52/100 (regressio
 
 test_that("bfh_subsample_label_indices: ingen 2-konsekutive-skjulte i 'showing' pattern", {
   # Invariant for issue #396: maks gap mellem on-hinanden foelgende synlige
-  # indices <= step+1 (force-last anchor kan tilfoeje en kortere gap, aldrig
-  # laengere). Det udelukker scenariet hvor to nabo-labels begge skjules midt
-  # i serien.
+  # indices = step (uden force-last anchor er gap-vektoren konstant).
   for (n in c(13L, 15L, 20L, 24L, 30L, 36L, 48L, 52L, 75L, 100L, 250L)) {
     res <- bfh_subsample_label_indices(n)
     diffs <- diff(res)
@@ -401,7 +416,8 @@ test_that("bfh_subsample_label_indices: max_visible=1 returnerer kun foerste anc
   expect_equal(bfh_subsample_label_indices(100, max_visible = 1L), 1L)
 })
 
-test_that("bfh_subsample_label_indices: max_visible=2 returnerer kun anchors", {
+test_that("bfh_subsample_label_indices: max_visible=2 inkluderer last naturligt", {
+  # max=2 -> step = n - 1 -> sidste position = 1 + (n-1) = n (alid grid-aligned)
   expect_equal(bfh_subsample_label_indices(24, max_visible = 2L), c(1L, 24L))
   expect_equal(bfh_subsample_label_indices(100, max_visible = 2L), c(1L, 100L))
 })
@@ -409,12 +425,11 @@ test_that("bfh_subsample_label_indices: max_visible=2 returnerer kun anchors", {
 test_that("bfh_subsample_label_indices: custom max_visible=6 for n=24", {
   expect_equal(
     bfh_subsample_label_indices(24, max_visible = 6L),
-    c(1L, 6L, 11L, 16L, 21L, 24L)
+    c(1L, 6L, 11L, 16L, 21L)
   )
 })
 
 test_that("bfh_subsample_label_indices: length aldrig overstiger max_visible", {
-  # Force-last anchor maa ej overskride cap. Verificer for raekke n-vaerdier.
   for (n in c(13L, 24L, 36L, 52L, 100L, 200L, 365L)) {
     res <- bfh_subsample_label_indices(n)
     expect_lte(length(res), 12L,

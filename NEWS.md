@@ -1,3 +1,25 @@
+# BFHcharts 0.22.1
+
+## Behavior change
+
+* **`bfh_subsample_label_indices()` dropper force-last anchor.** I 0.22.0 blev
+  `n_labels` altid appendet som sidste anchor selv naar det braed step-rhythmen
+  (fx n=24/step=3 endte med diffs `c(3,3,3,3,3,3,3,2)` -- sidste gap=2 stak ud
+  visuelt). Nu inkluderes sidste index `n_labels` KUN naar `(n_labels - 1)`
+  er delelig med step; ellers slutter sekvensen ved den hoejeste step-alignede
+  position <= `n_labels`. Resultat: konstant rhythm hele vejen igennem.
+
+  | n   | step | sidste index | 0.22.0 (force-last)     | 0.22.1 (kun grid)        |
+  |-----|------|--------------|-------------------------|--------------------------|
+  |  24 | 3    | 22 (ej 24)   | length=9, gap-tail=2    | length=8, alle diffs=3   |
+  |  36 | 4    | 33 (ej 36)   | length=10, gap-tail=3   | length=9, alle diffs=4   |
+  |  52 | 5    | 51 (ej 52)   | length=12, gap-tail=1   | length=11, alle diffs=5  |
+  | 100 | 9    | 100 (grid)   | length=12, alle diffs=9 | uaendret                 |
+
+  Callers der har brug for sidste label som anker skal appende det eksplicit.
+  Downstream consumers (biSPCharts) der renderer subsampled labels via helperen
+  vil se sidste label droppet for n hvor `(n - 1)` ej er delelig med step.
+
 # BFHcharts 0.22.0
 
 ## Breaking changes
