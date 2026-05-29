@@ -296,7 +296,12 @@ bfh_spc_plot <- function(qic_data,
   )
 
   # Apply theme ----
-  plot <- apply_spc_theme(plot, viewport$base_size, plot_margin)
+  # ylim videreføres til apply_spc_theme, som sætter den PÅ det eksisterende
+  # lemon::coord_capped_cart (ikke en separat coord_cartesian -- ellers
+  # erstattes BFH-akse-caps). coord zoomer (dropper IKKE data, modsat scale_y).
+  plot <- apply_spc_theme(plot, viewport$base_size, plot_margin,
+    ylim = plot_config$ylim
+  )
 
   return(plot)
 }

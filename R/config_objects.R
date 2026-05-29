@@ -73,6 +73,8 @@ assert_positive_scalar <- function(x, name) {
 #' @param xlab X-axis label (default: "" for blank)
 #' @param subtitle Plot subtitle text (optional)
 #' @param caption Plot caption text (optional)
+#' @param ylim Y-axis display limits `c(min, max)` for coord_cartesian, NA
+#'   allowed per end (optional). Pre-validated by `validate_ylim()` upstream.
 #'
 #' @return List with class "spc_plot_config"
 #'
@@ -109,6 +111,7 @@ spc_plot_config <- function(
   xlab = "",
   subtitle = NULL,
   caption = NULL,
+  ylim = NULL,
   language = "da"
 ) {
   # Validation
@@ -155,6 +158,7 @@ spc_plot_config <- function(
       xlab = xlab,
       subtitle = subtitle,
       caption = caption,
+      ylim = ylim,
       language = language
     ),
     class = "spc_plot_config"

@@ -16,6 +16,48 @@
 #   part:    require_sorted = TRUE, require_unique = TRUE, min = 2, max = nrow
 #   freeze:  require_scalar = TRUE, require_unique = TRUE, min = 1, max = nrow-1
 #   exclude: require_unique = TRUE, min = 1, max = nrow
+# Valider + normalisér ylim-input til coord_cartesian.
+# Returnerer NULL (no-op: ingen coord) eller en gyldig c(min, max) hvor NA
+# er tilladt per ende (fri grænse). coord_cartesian zoomer (dropper IKKE data),
+# så vi behøver ikke validere mod data-range.
+#' @keywords internal
+#' @noRd
+validate_ylim <- function(ylim) {
+  if (is.null(ylim)) {
+    return(NULL)
+  }
+  if (length(ylim) != 2L) {
+    stop(
+      "ylim must be NULL or a numeric vector of length 2, c(min, max) ",
+      "(NA allowed per end for a free limit).",
+      call. = FALSE
+    )
+  }
+  # Begge ender fri => ingen grænse at sætte (accepteres uanset type,
+  # fx logical c(NA, NA)).
+  if (all(is.na(ylim))) {
+    return(NULL)
+  }
+  if (!is.numeric(ylim)) {
+    stop(
+      "ylim must be a numeric vector (length 2, c(min, max), ",
+      "NA allowed per end).",
+      call. = FALSE
+    )
+  }
+  if (!is.na(ylim[1]) && !is.na(ylim[2]) && ylim[1] >= ylim[2]) {
+    warning(
+      sprintf(
+        "ylim min (%s) >= max (%s); ignoring ylim.",
+        ylim[1], ylim[2]
+      ),
+      call. = FALSE
+    )
+    return(NULL)
+  }
+  ylim
+}
+
 #' @keywords internal
 #' @noRd
 validate_position_indices <- function(x,
@@ -873,6 +915,7 @@ render_bfh_plot <- function(qic_data,
                             caption,
                             base_size,
                             plot_margin,
+                            ylim = NULL,
                             language = "da") {
   plot_config <- spc_plot_config(
     chart_type = chart_type,
@@ -884,6 +927,7 @@ render_bfh_plot <- function(qic_data,
     xlab = xlab,
     subtitle = subtitle,
     caption = caption,
+    ylim = ylim,
     language = language
   )
 

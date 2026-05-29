@@ -27,17 +27,23 @@ NULL
 #' @param base_size Base font size
 #' @param plot_margin Numeric vector of length 4 (top, right, bottom, left) in mm,
 #'   or a margin object from ggplot2::margin(), or NULL for default (5mm all sides)
+#' @param ylim Y-axis display limits `c(min, max)` (NA allowed per end), eller
+#'   NULL for datadrevet (default). Sættes på coord_capped_cart, som zoomer uden
+#'   at droppe datapunkter -- modsat scale_y limits. Pre-valideret upstream.
 #'
 #' @return Modified ggplot2 object with theme applied
 #'
 #' @keywords internal
 #' @noRd
-apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL) {
+apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL, ylim = NULL) {
   .ensure_bfhtheme()
-  # Use BFHtheme's theme_bfh as base
+  # Use BFHtheme's theme_bfh as base.
+  # ylim sættes PÅ coord_capped_cart (lemon arver coord_cartesian) i stedet for
+  # en separat coord_cartesian -- ellers ville BFH-akse-caps blive erstattet.
+  # ylim = NULL er coord_cartesian-default => ingen zoom (uændret adfærd).
   plot <- plot +
     BFHtheme::theme_bfh(base_size = base_size) +
-    lemon::coord_capped_cart(bottom = "right", gap = 0)
+    lemon::coord_capped_cart(bottom = "right", gap = 0, ylim = ylim)
 
   # Apply margins: use custom if provided, otherwise default 5mm
   if (!is.null(plot_margin)) {
