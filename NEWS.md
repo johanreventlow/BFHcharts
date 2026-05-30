@@ -1,3 +1,19 @@
+# BFHcharts 0.23.0
+
+## Nye features
+
+* **`bfh_qic(ylim = ...)` -- y-akse-visningsgrænser.** Ny valgfri parameter
+  `ylim = c(min, max)` der zoomer y-aksen analogt med
+  `ggplot2::coord_cartesian(ylim = ...)`. Værdier er i plottets data-skala
+  (proportion-charts `p`/`pp` bruger 0-1-skalaen, fx `c(0, 1)` viser 0%-100%;
+  øvrige charts bruger absolut skala). `NA` per ende giver fri grænse
+  (`c(0, NA)` = fast bund, datadrevet top). Grænsen sættes på det eksisterende
+  `lemon::coord_capped_cart`, så BFH-akse-caps bevares. Da coord *zoomer* og
+  ikke *clipper*, droppes datapunkter og kontrolgrænse-segmenter uden for
+  range IKKE (modsat `scale_y`-limits) -- charten zoomer blot til vinduet.
+  Ugyldig `min >= max` ignoreres med en advarsel. Default `NULL` bevarer
+  uændret, datadrevet adfærd.
+
 # BFHcharts 0.22.1
 
 ## Behavior change

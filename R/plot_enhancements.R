@@ -34,7 +34,8 @@ add_plot_enhancements <- function(plot,
                                   target_linewidth = 1,
                                   comment_size = 6,
                                   suppress_targetline = FALSE,
-                                  line_positions = NULL) {
+                                  line_positions = NULL,
+                                  ylim = NULL) {
   .ensure_bfhtheme()
   # Cache BFHtheme farver (undgaar gentagne opslag)
   color_keys <- c("hospital_blue", "regionh_grey", "regionh_dark")
@@ -154,6 +155,17 @@ add_plot_enhancements <- function(plot,
     y_data_range <- range(all_y)
     y_expand <- diff(y_data_range) * Y_AXIS_EXPANSION_MULT
     y_range <- c(y_data_range[1] - y_expand, y_data_range[2] + y_expand)
+
+    # Naar brugeren har sat ylim (coord_cartesian-zoom), skal kommentar-
+    # placeringen score mod det SYNLIGE vindue, ikke den fulde data-range.
+    # Ellers maser labels sig sammen i en del af aksen (eller havner uden for
+    # zoom). NA per ende = behold data-afledt graense. CL/target-labels er
+    # allerede zoom-aware via NPC-mapper (add_spc_labels), saa kun kommentarer
+    # behoever denne korrektion.
+    if (!is.null(ylim)) {
+      if (length(ylim) >= 1 && !is.na(ylim[1])) y_range[1] <- ylim[1]
+      if (length(ylim) >= 2 && !is.na(ylim[2])) y_range[2] <- ylim[2]
+    }
 
     x_range <- range(qic_data$x, na.rm = TRUE)
 

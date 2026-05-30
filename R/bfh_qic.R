@@ -46,6 +46,16 @@ NULL
 #'   `bfh_export_pdf()` PDF surfaces a caveat note below the SPC table when
 #'   this flag is set. See `bfh_extract_spc_stats()` for the discoverable
 #'   surface.
+#' @param ylim Y-axis display limits as a numeric vector of length 2,
+#'   `c(min, max)`, applied via [ggplot2::coord_cartesian()] (default: NULL =
+#'   data-driven). Values are in the plot's data scale: proportion charts
+#'   (`p`, `pp`) use the 0-1 proportion scale (e.g. `c(0, 1)` shows 0%-100%),
+#'   all other charts use the absolute data scale. Use `NA` for a free end:
+#'   `c(0, NA)` fixes the bottom at 0 with a data-driven top. Because
+#'   `coord_cartesian` zooms rather than clips, data points and control-limit
+#'   segments outside the range are NOT dropped (unlike `scale_y` limits) -- the
+#'   chart simply zooms to the requested window. If `min >= max` (both
+#'   non-`NA`) the limit is ignored with a warning.
 #' @param multiply Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)
 #' @param agg.fun Aggregation function for run/I charts with multiple observations per subgroup: "mean" (default), "median", "sum", "sd"
 #' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)
@@ -609,6 +619,7 @@ bfh_qic <- function(data,
                     freeze = NULL,
                     exclude = NULL,
                     cl = NULL,
+                    ylim = NULL,
                     multiply = 1,
                     agg.fun = c("mean", "median", "sum", "sd"),
                     base_size = 14,
@@ -640,6 +651,8 @@ bfh_qic <- function(data,
 
   # ---- Valider alle inputs (inkl. language) ----
   validate_language(language)
+  # ylim normaliseres til enten NULL (no-op) eller gyldig c(min, max) m. NA.
+  ylim <- validate_ylim(ylim)
   agg.fun <- validate_bfh_qic_inputs(
     data = data,
     chart_type = chart_type,
@@ -758,6 +771,7 @@ bfh_qic <- function(data,
     caption = caption,
     base_size = vp$base_size,
     plot_margin = plot_margin,
+    ylim = ylim,
     language = language
   )
 

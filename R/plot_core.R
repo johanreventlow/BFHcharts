@@ -292,11 +292,19 @@ bfh_spc_plot <- function(qic_data,
     target_linewidth = target_linewidth,
     comment_size = comment_size,
     suppress_targetline = suppress_targetline,
-    line_positions = line_positions
+    line_positions = line_positions,
+    # ylim viderefoeres saa kommentar-placering scorer mod det synlige
+    # (zoomede) y-vindue i stedet for den fulde data-range.
+    ylim = plot_config$ylim
   )
 
   # Apply theme ----
-  plot <- apply_spc_theme(plot, viewport$base_size, plot_margin)
+  # ylim viderefoeres til apply_spc_theme, som saetter den PAA det eksisterende
+  # lemon::coord_capped_cart (ikke en separat coord_cartesian -- ellers
+  # erstattes BFH-akse-caps). coord zoomer (dropper IKKE data, modsat scale_y).
+  plot <- apply_spc_theme(plot, viewport$base_size, plot_margin,
+    ylim = plot_config$ylim
+  )
 
   return(plot)
 }

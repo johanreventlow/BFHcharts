@@ -19,6 +19,7 @@ bfh_qic(
   freeze = NULL,
   exclude = NULL,
   cl = NULL,
+  ylim = NULL,
   multiply = 1,
   agg.fun = c("mean", "median", "sum", "sd"),
   base_size = 14,
@@ -79,6 +80,17 @@ attribute via \code{isTRUE(attr(result$summary, "cl_user_supplied"))}. The
 \code{bfh_export_pdf()} PDF surfaces a caveat note below the SPC table when
 this flag is set. See \code{bfh_extract_spc_stats()} for the discoverable
 surface.}
+
+\item{ylim}{Y-axis display limits as a numeric vector of length 2,
+\code{c(min, max)}, applied via \code{\link[ggplot2:coord_cartesian]{ggplot2::coord_cartesian()}} (default: NULL =
+data-driven). Values are in the plot's data scale: proportion charts
+(\code{p}, \code{pp}) use the 0-1 proportion scale (e.g. \code{c(0, 1)} shows 0\%-100\%),
+all other charts use the absolute data scale. Use \code{NA} for a free end:
+\code{c(0, NA)} fixes the bottom at 0 with a data-driven top. Because
+\code{coord_cartesian} zooms rather than clips, data points and control-limit
+segments outside the range are NOT dropped (unlike \code{scale_y} limits) -- the
+chart simply zooms to the requested window. If \code{min >= max} (both
+non-\code{NA}) the limit is ignored with a warning.}
 
 \item{multiply}{Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)}
 
