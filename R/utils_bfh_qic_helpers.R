@@ -16,10 +16,10 @@
 #   part:    require_sorted = TRUE, require_unique = TRUE, min = 2, max = nrow
 #   freeze:  require_scalar = TRUE, require_unique = TRUE, min = 1, max = nrow-1
 #   exclude: require_unique = TRUE, min = 1, max = nrow
-# Valider + normalisér ylim-input til coord_cartesian.
+# Valider + normaliser ylim-input til coord_cartesian.
 # Returnerer NULL (no-op: ingen coord) eller en gyldig c(min, max) hvor NA
-# er tilladt per ende (fri grænse). coord_cartesian zoomer (dropper IKKE data),
-# så vi behøver ikke validere mod data-range.
+# er tilladt per ende (fri graense). coord_cartesian zoomer (dropper IKKE data),
+# saa vi behoever ikke validere mod data-range.
 #' @keywords internal
 #' @noRd
 validate_ylim <- function(ylim) {
@@ -33,7 +33,7 @@ validate_ylim <- function(ylim) {
       call. = FALSE
     )
   }
-  # Begge ender fri => ingen grænse at sætte (accepteres uanset type,
+  # Begge ender fri => ingen graense at saette (accepteres uanset type,
   # fx logical c(NA, NA)).
   if (all(is.na(ylim))) {
     return(NULL)
