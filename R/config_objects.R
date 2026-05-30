@@ -75,6 +75,12 @@ assert_positive_scalar <- function(x, name) {
 #' @param caption Plot caption text (optional)
 #' @param ylim Y-axis display limits `c(min, max)` for coord_cartesian, NA
 #'   allowed per end (optional). Pre-validated by `validate_ylim()` upstream.
+#'   Zoomer det synlige vindue uden at droppe datapunkter. Target-/CL-labels
+#'   er ylim-aware: de placeres relativt til det zoomede vindue (inkl.
+#'   gen-anvendt scale-expansion/headroom), saa de foelger korrekt med ved
+#'   aendret ylim -- ogsaa ved ekstremer (target i top, CL i bund). NB: saetter
+#'   man ylim der udelukker target- eller centerline-vaerdien, falder den linje
+#'   + dens label uden for vinduet og vises ikke (bevidst zoom-adfaerd).
 #'
 #' @return List with class "spc_plot_config"
 #'
