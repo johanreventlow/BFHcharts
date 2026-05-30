@@ -259,6 +259,18 @@ add_spc_labels <- function(
   }
 
   # Build plot og mapper en gang - genbrug til arrow-placering + labels
+  #
+  # ylim-awareness: add_spc_labels() kaldes EFTER coord_capped_cart(ylim)
+  # er sat paa plottet (se bfh_qic.R: render_bfh_plot foer
+  # apply_spc_labels_to_export). Derfor afspejler ggplot_build()'s
+  # panel-range (pp$y.range, brugt af npc_mapper_from_built) det zoomede
+  # ylim-vindue -- og ggplot2 gen-anvender scale-expansion oven paa
+  # coord-ylim, saa der er proportional headroom i baade top og bund.
+  # Konsekvens: target-/CL-labels placeres relativt til det SYNLIGE
+  # vindue (inkl. headroom), ikke raa data-range. En aendring i ylim
+  # flytter saaledes labels korrekt med. (Edge case: saetter man ylim
+  # der UDELUKKER target/CL-vaerdien, forsvinder den linje + dens label
+  # fra vinduet -- bevidst zoom-adfaerd, ikke en placeringsfejl.)
   built_plot <- ggplot2::ggplot_build(plot)
   shared_mapper <- npc_mapper_from_built(built_plot, original_plot = plot)
 
