@@ -2,364 +2,434 @@
 
 [![codecov](https://codecov.io/gh/johanreventlow/BFHcharts/branch/main/graph/badge.svg)](https://codecov.io/gh/johanreventlow/BFHcharts) [![PDF smoke](https://github.com/johanreventlow/BFHcharts/actions/workflows/pdf-smoke.yaml/badge.svg)](https://github.com/johanreventlow/BFHcharts/actions/workflows/pdf-smoke.yaml)
 
-> Modern SPC Visualization for Healthcare Quality Improvement
+> Moderne SPC-visualisering til kvalitetsforbedring i sundhedsvæsenet
 
-**BFHcharts** is an R package for creating beautiful, publication-ready Statistical Process Control (SPC) charts tailored for healthcare settings. Built on `ggplot2` and `qicharts2`, it provides a consistent visual style inspired by BBC's data journalism approach.
+**BFHcharts** er en R-pakke til at lave publikationsklare SPC-diagrammer (Statistical Process Control) skræddersyet til klinisk kvalitetsarbejde. Pakken bygger på `ggplot2` og `qicharts2` og giver et konsistent visuelt udtryk med hospitalsbranding, dansk standardsprog og automatisk PDF/PNG-eksport.
 
-## Features
+Pakken er udviklet til Bispebjerg og Frederiksberg Hospital og fungerer som visualiseringsmotor for Shiny-applikationen **biSPCharts**.
 
-- 🎨 **Beautiful themes** - Hospital branding with configurable multi-organizational support
-- 📊 **SPC chart types** - Run charts, I-charts, P-charts, U-charts, and more
-- 🔧 **Flexible API** - Simple one-function interface returning composable ggplot2 objects
-- 📖 **Well documented** - Comprehensive vignettes and examples
-- ✅ **Production ready** - Test-driven development with extensive coverage
+## Indhold
+
+- [Funktioner](#funktioner)
+- [Installation](#installation)
+- [Hurtig start](#hurtig-start)
+- [Funktionsoversigt](#funktionsoversigt)
+- [Diagramtyper](#diagramtyper)
+- [Resultatobjektet og arbejdsgangen](#resultatobjektet-og-arbejdsgangen)
+- [PDF- og PNG-eksport](#pdf--og-png-eksport)
+- [Automatisk analysetekst](#automatisk-analysetekst)
+- [Sprog](#sprog)
+- [Avanceret brug](#avanceret-brug)
+- [Begrænsninger](#begrænsninger)
+- [Dokumentation](#dokumentation)
+- [Licens](#licens)
+
+## Funktioner
+
+- 🎯 **Enkelt primært API** – `bfh_qic()` dækker hele diagramdannelsen; sekundære funktioner er kun nødvendige til eksport og analysetekst.
+- 📊 **Mange diagramtyper** – run-, I-, MR-, P-, U-, C-, G-, Xbar-, S- og T-charts med Anhøj-regler.
+- 🎨 **Hospitalsbranding** – BFHtheme-integration med konfigurerbar multi-organisatorisk understøttelse.
+- 📄 **PDF/PNG-eksport** – Typst-baserede PDF-skabeloner (via Quarto) og direkte PNG-eksport i millimeter-dimensioner.
+- 🧠 **Automatisk analysetekst** – dansk standardtekst med valgfri AI-generering via BFHllm.
+- 🌍 **Flersproget** – diagramlabels og analysetekst på dansk (standard) og engelsk.
+- ✅ **Produktionsklar** – testdrevet udvikling med omfattende dækning.
 
 ## Installation
 
-### Using pak (recommended)
+### Med pak (anbefalet)
 
 ```r
-# Install pak if you don't have it
+# Installér pak hvis du ikke har det
 install.packages("pak")
 
-# For most users: Install stable release from r-universe (fastest)
+# De fleste brugere: stabil release fra r-universe (hurtigst, prækompileret)
 pak::pkg_install("BFHcharts", repos = "https://johanreventlow.r-universe.dev")
 
-# For developers: Install latest development version from GitHub
+# Udviklere: seneste kode fra GitHub (kræver build-tools)
 pak::pkg_install("johanreventlow/BFHcharts")
 ```
 
-**r-universe vs GitHub:**
-- **r-universe**: Pre-built binaries, ingen compilation, baseret på releases (anbefalet)
-- **GitHub**: Seneste kode, kræver build tools, langsom (til udvikling)
+**r-universe vs. GitHub:**
+- **r-universe**: prækompilerede binaries, ingen kompilering, baseret på releases (anbefalet).
+- **GitHub**: seneste kode, kræver build-tools, langsommere (til udvikling).
 
-### Using install.packages
+### Med install.packages
 
 ```r
-# From r-universe
+# Fra r-universe
 install.packages("BFHcharts", repos = "https://johanreventlow.r-universe.dev")
 
-# From GitHub (requires devtools)
+# Fra GitHub (kræver devtools)
 devtools::install_github("johanreventlow/BFHcharts")
 ```
 
-### BFHtheme dependency
+### BFHtheme-afhængighed
 
-BFHcharts depends on `BFHtheme (>= 0.5.0)` for theming and color palettes.
-`BFHtheme` lives in the `Remotes:` field (not on CRAN), so it installs
-automatically when you use `pak::pkg_install()` or
-`remotes::install_github()` -- but **not** with the bare `install.packages()`
-form. If you see a startup message
-`BFHcharts requires BFHtheme >= 0.5.0`, install it explicitly:
+BFHcharts afhænger af `BFHtheme (>= 0.5.1)` til temaer og farvepaletter.
+`BFHtheme` ligger i `Remotes:`-feltet (ikke på CRAN) og installeres derfor
+automatisk med `pak::pkg_install()` eller `remotes::install_github()` – men
+**ikke** med den rene `install.packages()`-form. Hvis du ser en
+opstartsbesked om at `BFHcharts kræver BFHtheme >= 0.5.1`, installér den
+eksplicit:
 
 ```r
-remotes::install_github("johanreventlow/BFHtheme@v0.5.0")
+remotes::install_github("johanreventlow/BFHtheme")
 ```
 
-### Locked-down / offline environments
+### Lukkede / offline-miljøer
 
-Some hospital networks (Posit Connect / RStudio Workbench behind a
-corporate firewall, air-gapped clinical infrastructure) block public
-GitHub access and cannot reach `r-universe.dev` or `github.com`
-directly. BFHcharts can still be deployed in these environments via
-one of three patterns:
+Nogle hospitalsnetværk (Posit Connect / RStudio Workbench bag firewall,
+luftgappede kliniske miljøer) blokerer for offentlig GitHub-adgang og kan
+ikke nå `r-universe.dev` eller `github.com` direkte. BFHcharts kan stadig
+deployes via et af tre mønstre:
 
-**1. Internal Posit Package Manager (recommended)**
+**1. Intern Posit Package Manager (anbefalet)**
 
-If your organisation hosts a Posit Package Manager instance, mirror
-the `johanreventlow.r-universe.dev` repository or publish BFHcharts +
-BFHtheme + BFHllm as internal source packages. Configure
-`options(repos = ...)` to point at the internal endpoint, then:
+Hvis din organisation hoster en Posit Package Manager-instans, så spejl
+`johanreventlow.r-universe.dev` eller udgiv BFHcharts + BFHtheme + BFHllm som
+interne kildepakker. Peg `options(repos = ...)` mod det interne endpoint og:
 
 ```r
 install.packages("BFHcharts")
 ```
 
-**2. Local tarball install**
+**2. Lokal tarball-installation**
 
-For one-off deployments or restricted-network environments without an
-internal mirror, download release tarballs from the GitHub Releases
-page on a connected workstation and transfer them:
+Til engangsdeployments uden internt spejl: hent release-tarballs fra GitHub
+Releases på en netværksforbundet maskine og overfør dem:
 
 ```r
-# On a connected machine: download release assets
+# På forbundet maskine: hent release-assets
 # https://github.com/johanreventlow/BFHcharts/releases
 # https://github.com/johanreventlow/BFHtheme/releases
 
-# On the deployment target: install in dependency order
-install.packages("BFHtheme_0.5.0.tar.gz",  repos = NULL, type = "source")
-install.packages("BFHcharts_0.15.0.tar.gz", repos = NULL, type = "source")
+# På deployment-target: installér i afhængighedsrækkefølge
+install.packages("BFHtheme_0.5.1.tar.gz",  repos = NULL, type = "source")
+install.packages("BFHcharts_0.23.0.tar.gz", repos = NULL, type = "source")
 ```
 
-CRAN-mirrored runtime dependencies (`ggplot2`, `qicharts2`, `dplyr`,
-`scales`, `lubridate`, `purrr`, `stringr`, `tibble`, `yaml`,
-`commonmark`, `xml2`, `systemfonts`, `rlang`, `svglite`, `marquee`,
-`grid`, `lemon`) must be available from a CRAN mirror reachable by
-the target environment.
+CRAN-spejlede runtime-afhængigheder (`ggplot2`, `qicharts2`, `dplyr`,
+`scales`, `lubridate`, `purrr`, `stringr`, `tibble`, `yaml`, `commonmark`,
+`xml2`, `systemfonts`, `rlang`, `svglite`, `marquee`, `grid`, `lemon`) skal
+være tilgængelige fra et CRAN-spejl som target-miljøet kan nå.
 
-**3. Posit Connect manifest deployment**
+**3. Posit Connect manifest-deployment**
 
-For Shiny apps deploying via `rsconnect::writeManifest()` to Posit
-Connect (Cloud or self-hosted), the manifest pinpoints package
-versions including `Remotes:` references. Connect resolves these via
-its configured upstream repositories. If Connect cannot resolve
-`johanreventlow/BFHtheme` directly, configure an internal Package
-Manager and pin the manifest's `Remotes:` field to the internal URL.
+For Shiny-apps der deployer via `rsconnect::writeManifest()` til Posit
+Connect (Cloud eller selv-hostet) pinpointer manifestet pakkeversioner
+inklusive `Remotes:`-referencer. Connect løser disse via sine konfigurerede
+upstream-repositories. Kan Connect ikke løse `johanreventlow/BFHtheme`
+direkte, så konfigurér en intern Package Manager og pin manifestets
+`Remotes:`-felt til den interne URL.
 
-See [#270 in biSPCharts](https://github.com/johanreventlow/biSPCharts)
-for an example Posit Connect Cloud deployment configuration.
+Se [#270 i biSPCharts](https://github.com/johanreventlow/biSPCharts) for et
+eksempel på en Posit Connect Cloud-deployment-konfiguration.
 
-## Font Requirements
-
-BFHcharts PDF export uses the **Mari font** for hospital branding when available.
-
-### Internal Users (Region Hovedstaden)
-Mari font is installed automatically on hospital computers. **No action needed** - PDFs will display full hospital branding.
-
-### External Users
-The package uses font fallback: **Mari → Roboto → Arial → Helvetica → sans-serif**.
-
-PDFs will be fully functional and readable, but without Region Hovedstaden specific branding. This is by design - Mari font is copyrighted and cannot be redistributed with the package.
-
-### Branding for Organizational Deployments
-
-Healthcare organizations that need consistent proprietary branding (custom fonts, hospital logos) across their BFHcharts deployments should distribute those assets via a **private companion R package** rather than bundling them in their consumer application or hardcoding paths.
-
-> **Security warning:** `inject_assets` is **full code execution**. The supplied
-> function runs with the same privileges as the calling R session, with full
-> file-system and network access. It **must not** come from user input (Shiny
-> inputs, REST API parameters, configuration files of unknown provenance).
-> **Never** forward user-supplied values to `inject_assets` — doing so creates a
-> remote code execution (RCE) vector. Only pass functions from version-controlled
-> application code or a controlled companion package.
-> See `?bfh_export_pdf` (Security section) for acceptable/unacceptable sources.
-
-**Pattern:**
-
-1. Create a private R package (e.g. `MyOrgAssets`) hosting fonts and images in `inst/assets/`
-2. Export a single function `inject_my_assets(template_dir)` that copies bundled assets into the staged Typst template directory
-3. In your consumer application (e.g. a Shiny dashboard), depend on the companion package and pass its inject function to BFHcharts:
-
-```r
-BFHcharts::bfh_export_pdf(
-  result, "report.pdf",
-  inject_assets = MyOrgAssets::inject_my_assets   # safe: from companion package
-)
-```
-
-This keeps proprietary assets out of public BFHcharts and out of your consumer app's git history, while supporting full branding in production deployments (including Posit Connect Cloud, RStudio Connect, and Docker).
-
-For the BFH/Region Hovedstaden reference deployment, the `BFHchartsAssets` private companion package (separate repository, hospital-internal access) implements this pattern. See its repository documentation for setup details.
-
-## PDF Asset Policy
-
-This section documents exactly what the public `BFHcharts` package bundles, what requires
-a companion package, and how to verify your setup.
-
-### What the public package guarantees
-
-- **Typst template:** `inst/templates/typst/bfh-template/bfh-template.typ` is bundled
-  and used by default for all `bfh_export_pdf()` calls.
-- **Font fallback chain:** The template specifies `("Mari", "Roboto", "Arial", "Helvetica", "sans-serif")`.
-  If Mari is absent, Typst falls through to the next available font automatically. Roboto,
-  Arial, and Helvetica are widely available on Ubuntu, macOS, and Windows.
-- **No proprietary assets in package:** Mari fonts and hospital logos are gitignored and
-  never committed to the public repository. A clean `pak::pkg_install()` from GitHub
-  produces a package that renders PDFs with system-available fonts.
-- **Auto-detect staged fonts:** `bfh_compile_typst()` automatically detects a `fonts/`
-  subdirectory placed by `inject_assets` callbacks and passes it as `--font-path` to the
-  Typst compiler — no extra configuration needed.
-
-### What companion packages supply
-
-- **Mari font files** (proprietary, Region Hovedstaden): `BFHchartsAssets::inject_bfh_assets`
-  copies Mari `.otf`/`.ttf` files into the staged template directory before compile.
-- **Hospital logo** (`images/Hospital_Maerke_RGB_A1_str.png`): supplied by the companion
-  package alongside fonts.
-
-Without a companion package, PDFs render correctly using system fonts but without the
-hospital logo and Mari branding.
-
-### Verifying your setup
-
-```r
-# Check which fonts Typst will find on your system
-systemfonts::system_fonts()[grepl("Mari|Roboto", systemfonts::system_fonts()$family), "family"]
-
-# Smoke-render a PDF to verify the full pipeline works
-result <- bfh_qic(
-  data.frame(x = 1:20, y = runif(20, 0.05, 0.15), n = rep(100, 20)),
-  x = "x", y = "y", n = "n", chart_type = "p"
-)
-bfh_export_pdf(result, tempfile(fileext = ".pdf"))
-message("PDF rendered successfully")
-```
-
-### Known limitation (images/)
-
-The `images/` directory containing the hospital logo is currently untracked in the public
-repository. A `git archive HEAD` tarball will produce a package where the default template
-references an absent image. Rendering will succeed only when companion assets are injected
-via `inject_assets`. A future release will add a conditional image reference or placeholder
-asset to close this gap (see `inst/adr/ADR-001-pdf-asset-policy.md`).
-
-## Quick Start
+## Hurtig start
 
 ```r
 library(BFHcharts)
 
-# Example data: Monthly hospital-acquired infections
+# Eksempeldata: månedlige hospitalserhvervede infektioner
 data <- data.frame(
-  month = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
+  month      = seq(as.Date("2024-01-01"), by = "month", length.out = 24),
   infections = rpois(24, lambda = 15),
-  surgeries = rpois(24, lambda = 100)
+  surgeries  = rpois(24, lambda = 100)
 )
 
-# Example 1: Simple run chart
+# Eksempel 1: simpelt run-chart
 bfh_qic(
-  data = data,
-  x = month,
-  y = infections,
-  chart_type = "run",
+  data        = data,
+  x           = month,
+  y           = infections,
+  chart_type  = "run",
   y_axis_unit = "count",
-  chart_title = "Monthly Hospital-Acquired Infections"
+  chart_title = "Månedlige hospitalserhvervede infektioner"
 )
 
-# Example 2: P-chart with target line
+# Eksempel 2: P-chart med mållinje
 bfh_qic(
-  data = data,
-  x = month,
-  y = infections,
-  n = surgeries,
-  chart_type = "p",
-  y_axis_unit = "percent",
-  chart_title = "Infection Rate per 100 Surgeries",
-  target_value = 0.02,
-  target_text = "↓ Target: 2%"
+  data         = data,
+  x            = month,
+  y            = infections,
+  n            = surgeries,
+  chart_type   = "p",
+  y_axis_unit  = "percent",
+  chart_title  = "Infektionsrate pr. operation",
+  target_value = 0.10,
+  target_text  = "Mål: 10 %"
 )
 
-# Example 3: I-chart with intervention (phase split)
+# Eksempel 3: I-chart med intervention (fase-opdeling)
 bfh_qic(
-  data = data,
-  x = month,
-  y = infections,
-  chart_type = "i",
+  data        = data,
+  x           = month,
+  y           = infections,
+  chart_type  = "i",
   y_axis_unit = "count",
-  chart_title = "Infections Before/After Intervention",
-  part = c(12),  # Intervention after 12 months
-  freeze = 12    # Freeze baseline at month 12
+  chart_title = "Infektioner før/efter intervention",
+  part        = 12,   # intervention efter 12 måneder
+  freeze      = 12    # frys baseline ved måned 12
 )
 ```
 
-## Advanced Usage
+`bfh_qic()` returnerer et `bfh_qic_result`-objekt. Når det printes, vises
+diagrammet automatisk; objektet kan også sendes direkte videre til eksport-
+og analysefunktionerne (se [arbejdsgangen](#resultatobjektet-og-arbejdsgangen)).
 
-### Hospital Branding with BFHtheme
+## Funktionsoversigt
 
-BFHcharts integrates with the **BFHtheme** package for consistent hospital branding:
+Pakken er bygget op om ét primært API – `bfh_qic()`. De øvrige eksporterede
+funktioner bruges kun til eksport, analysetekst og introspektion af resultatet.
+
+### Primært API
+
+| Funktion | Formål |
+|----------|--------|
+| `bfh_qic()` | Laver et komplet SPC-diagram fra data og returnerer et `bfh_qic_result`. **Den eneste funktion de fleste brugere har brug for.** |
+
+### PDF- og PNG-eksport
+
+| Funktion | Formål |
+|----------|--------|
+| `bfh_export_pdf()` | Eksporterer et resultat til PDF via Typst-skabeloner med hospitalsbranding (kræver Quarto CLI). Returnerer resultatet usynligt (pipe-venlig). |
+| `bfh_export_png()` | Eksporterer til PNG i millimeter-dimensioner med konfigurerbar opløsning. Pipe-venlig. |
+| `bfh_create_export_session()` | Opretter en genbrugelig batch-session der deler Typst-skabelonens assets på tværs af mange eksporter (IO-optimering ved loops). |
+
+### Analysetekst
+
+| Funktion | Formål |
+|----------|--------|
+| `bfh_generate_analysis()` | Genererer fortolkende analysetekst (dansk standardtekst, valgfri AI via BFHllm). |
+| `bfh_generate_details()` | Genererer en kort detaljestreng: periode, gennemsnit og seneste niveau. |
+| `bfh_analyse()` | Samler et struktureret analyseobjekt (`bfh_spc_analysis`) med features, konklusioner og forbehold. |
+| `bfh_render_analysis()` | Renderer et `bfh_spc_analysis`-objekt til tekst med i18n og tegnbudget. |
+| `bfh_build_analysis_context()` | Samler relevant kontekst fra et resultat til analyse-generering. |
+
+### Introspektion og hjælpere
+
+| Funktion | Formål |
+|----------|--------|
+| `bfh_get_plot()` | Udtrækker `ggplot`-objektet fra et resultat til videre tilpasning. |
+| `bfh_extract_spc_stats()` | Udtrækker SPC-statistik (runs, crossings, outliers) fra et resultat. |
+| `bfh_merge_metadata()` | Fletter brugerens metadata med pakkens defaults til PDF-generering. |
+| `is_bfh_qic_result()`, `is_bfh_spc_analysis()` | Prædikater til klassetjek. |
+| `bfh_create_typst_document()`, `bfh_subsample_label_indices()`, `new_bfh_qic_result()` | Lavniveau-funktioner til power-brugere og downstream-konsumenter (fx biSPCharts). |
+
+## Diagramtyper
+
+`chart_type` accepterer følgende værdier (default `"run"`):
+
+| Type | Beskrivelse |
+|------|-------------|
+| `run` | Run-chart (median som centerlinje) |
+| `i` | I-chart (individuelle målinger) |
+| `mr` | Moving range-chart |
+| `p` | P-chart (andele, kræver nævner `n`) |
+| `pp` | Prime P-chart (overdispersion-justeret) |
+| `u` | U-chart (rater, kræver nævner `n`) |
+| `up` | Prime U-chart |
+| `c` | C-chart (antal hændelser) |
+| `g` | G-chart (hændelser mellem sjældne tilfælde) |
+| `xbar` | Xbar-chart (delgruppe-gennemsnit) |
+| `s` | S-chart (delgruppe-standardafvigelse) |
+| `t` | T-chart (tid mellem hændelser) |
+
+`y_axis_unit` styrer akseformatering og accepterer `"count"`, `"percent"`,
+`"rate"` eller `"time"`.
+
+## Resultatobjektet og arbejdsgangen
+
+`bfh_qic()` returnerer et `bfh_qic_result`-objekt med fire komponenter:
+
+- `$plot` – `ggplot`-objektet med det renderede diagram
+- `$summary` – data.frame med SPC-statistik
+- `$qic_data` – rå qicharts2-beregningsdata (centerlinje, kontrolgrænser, signaler)
+- `$config` – de oprindelige funktionsparametre
+
+Objektet understøtter S3-metoderne `print()` og `plot()`. Den typiske
+arbejdsgang er:
 
 ```r
-library(BFHtheme)
+result <- bfh_qic(data, x = month, y = infections, chart_type = "i")
 
-# Example 1: Use default BFHtheme
-plot <- bfh_qic(
-  data = data,
-  x = month,
-  y = infections,
-  chart_type = "run",
-  y_axis_unit = "count",
-  chart_title = "Hospital Quality Improvement Chart"
-)
+# Tilpas diagrammet videre som et almindeligt ggplot
+library(ggplot2)
+bfh_get_plot(result) + labs(subtitle = "Tilføjet lag")
 
-# Example 2: Add hospital logo
-plot <- plot |> BFHtheme::add_bfh_logo()
-
-# Example 3: Apply alternative BFHtheme variants
-plot <- bfh_qic(
-  data = data,
-  x = month,
-  y = infections,
-  chart_type = "run",
-  y_axis_unit = "count",
-  chart_title = "Dark Theme Chart"
-) + BFHtheme::theme_bfh_dark()
-
-# Example 4: Use BFHtheme color palettes
-plot <- bfh_qic(
-  data = data,
-  x = month,
-  y = infections,
-  chart_type = "run",
-  y_axis_unit = "count",
-  chart_title = "Custom Colors"
-) +
-  BFHtheme::scale_color_bfh_continuous()
+# Eller eksportér direkte – eksportfunktionerne er pipe-venlige
+result |>
+  bfh_export_png("diagram.png", width_mm = 200, height_mm = 120) |>
+  bfh_export_pdf("rapport.pdf", metadata = list(department = "Medicinsk afd."))
 ```
 
-**Note:** Customization of hospital colors is handled by the [BFHtheme](https://github.com/your-org/BFHtheme) package. Refer to BFHtheme documentation for advanced theming options.
+## PDF- og PNG-eksport
 
-## Batch PDF Export
+PNG-eksport virker uden eksterne afhængigheder. PDF-eksport bruger Typst-
+skabeloner og kræver **Quarto CLI (>= 1.4.0)** installeret på systemet.
 
-When generating PDFs for multiple departments or indicators in a loop,
-use `bfh_create_export_session()` to copy the Typst template assets once
-and share them across all exports. This eliminates the recursive
-directory copy that otherwise happens on every `bfh_export_pdf()` call.
+### Batch-eksport
+
+Når du genererer PDF'er for flere afdelinger eller indikatorer i et loop, så
+brug `bfh_create_export_session()` til at kopiere skabelonens assets én gang
+og dele dem på tværs af alle eksporter:
 
 ```r
-library(BFHcharts)
-
-# Create a session — template assets copied once
 session <- bfh_create_export_session()
-on.exit(close(session))  # Cleanup when done
+on.exit(close(session))  # oprydning når du er færdig
 
-departments <- c("ICU", "Medicine", "Surgery")
+departments <- c("ITA", "Medicinsk", "Kirurgisk")
 for (dept in departments) {
   result <- bfh_qic(dept_data[[dept]], x = month, y = value,
-                    chart_type = "i", chart_title = paste("Quality —", dept))
+                    chart_type = "i", chart_title = paste("Kvalitet –", dept))
   bfh_export_pdf(result,
-                 output = paste0(dept, "_report.pdf"),
+                 output = paste0(dept, "_rapport.pdf"),
                  metadata = list(department = dept),
                  batch_session = session)
 }
-# close(session) called automatically via on.exit()
 ```
 
-**Notes:**
-- `batch_session` cannot be combined with `template_path` or `inject_assets`.
-- Pass `inject_assets` and `font_path` to `bfh_create_export_session()` instead.
-- Sessions are single-threaded; do not share across parallel workers.
+**Bemærk:**
+- `batch_session` kan ikke kombineres med `template_path` eller `inject_assets`.
+- Send i stedet `inject_assets` og `font_path` til `bfh_create_export_session()`.
+- Sessioner er enkelt-trådede; del dem ikke på tværs af parallelle workers.
 
-## Supported Languages
+### Skrifttyper og branding
 
-Chart labels, analysis text, and details output are available in Danish (`"da"`, default) and English (`"en"`).
+PDF-eksport bruger **Mari-fonten** til hospitalsbranding når den er
+tilgængelig, med fallback-kæden **Mari → Roboto → Arial → Helvetica → sans-serif**.
+
+- **Interne brugere (Region Hovedstaden):** Mari er installeret automatisk på
+  hospitalscomputere – ingen handling nødvendig, fuld branding.
+- **Eksterne brugere:** PDF'erne er fuldt funktionelle og læsbare, men uden
+  Region Hovedstaden-specifik branding. Mari er ophavsretsbeskyttet og kan
+  ikke distribueres med pakken.
+
+Den offentlige pakke bundter Typst-skabelonen
+(`inst/templates/typst/bfh-template/`) og fallback-fontkæden, men **ingen**
+proprietære fonte eller logoer. En ren installation renderer korrekt med
+systemets tilgængelige fonte.
+
+#### Organisatorisk branding via companion-pakke
+
+Organisationer der har brug for konsistent proprietær branding (egne fonte,
+hospitalslogoer) bør distribuere disse assets via en **privat companion-pakke**
+frem for at bundte dem i forbrugerapplikationen eller hardkode stier.
+
+> **Sikkerhedsadvarsel:** `inject_assets` er **fuld kodeeksekvering**. Den
+> angivne funktion kører med samme rettigheder som den kaldende R-session og
+> har fuld fil- og netværksadgang. Den må **aldrig** komme fra brugerinput
+> (Shiny-inputs, REST-parametre, konfigurationsfiler af ukendt oprindelse).
+> Videresend **aldrig** brugerangivne værdier til `inject_assets` – det skaber
+> en RCE-vektor (remote code execution). Send kun funktioner fra
+> versionsstyret applikationskode eller en kontrolleret companion-pakke.
+> Se `?bfh_export_pdf` (Security-sektionen) for acceptable/uacceptable kilder.
+
+**Mønster:**
+
+1. Lav en privat R-pakke (fx `MyOrgAssets`) der hoster fonte og billeder i `inst/assets/`.
+2. Eksportér en funktion `inject_my_assets(template_dir)` der kopierer de bundtede assets ind i den staged Typst-skabelonmappe.
+3. Lad din forbrugerapplikation afhænge af companion-pakken og send dens inject-funktion til BFHcharts:
 
 ```r
-# English output
-result <- bfh_qic(data, x = month, y = value, chart_type = "p",
+BFHcharts::bfh_export_pdf(
+  result, "rapport.pdf",
+  inject_assets = MyOrgAssets::inject_my_assets   # sikker: fra companion-pakke
+)
+```
+
+For BFH/Region Hovedstaden-referencedeploymentet implementerer den private
+`BFHchartsAssets`-pakke (separat, hospital-internt repository) dette mønster.
+
+#### Verificér din opsætning
+
+```r
+# Tjek hvilke fonte Typst finder på dit system
+sf <- systemfonts::system_fonts()
+sf[grepl("Mari|Roboto", sf$family), "family"]
+
+# Smoke-render en PDF for at verificere pipelinen
+result <- bfh_qic(
+  data.frame(x = 1:20, y = runif(20, 0.05, 0.15), n = rep(100, 20)),
+  x = x, y = y, n = n, chart_type = "p"
+)
+bfh_export_pdf(result, tempfile(fileext = ".pdf"))
+```
+
+Se `inst/adr/ADR-001-pdf-asset-policy.md` for den fulde asset-politik.
+
+## Automatisk analysetekst
+
+BFHcharts kan generere fortolkende analysetekst til et diagram. Som standard
+bruges danske, regelbaserede standardtekster; valgfrit kan teksten genereres
+med AI via `BFHllm`-pakken.
+
+```r
+result <- bfh_qic(data, x = month, y = infections, chart_type = "i")
+
+# Kort detaljestreng (periode, gennemsnit, seneste niveau)
+bfh_generate_details(result)
+
+# Fortolkende analysetekst (standardtekst uden AI)
+bfh_generate_analysis(result, use_ai = FALSE)
+```
+
+AI-generering kræver `BFHllm` og eksplicit samtykke til datadeling
+(`data_consent`). Se `?bfh_generate_analysis` for detaljer.
+
+## Sprog
+
+Diagramlabels, analysetekst og detaljeoutput findes på dansk (`"da"`,
+standard) og engelsk (`"en"`).
+
+```r
+result <- bfh_qic(data, x = month, y = infections, chart_type = "p",
                   language = "en")
 
 bfh_generate_analysis(result, language = "en")
 bfh_generate_details(result, language = "en")
 ```
 
-Default is `language = "da"` — existing code without the parameter is unaffected.
-See `TRANSLATORS.md` for instructions on adding a new language.
+Standard er `language = "da"` – eksisterende kode uden parameteren er upåvirket.
+Se `TRANSLATORS.md` for at tilføje et nyt sprog.
 
-## Limitations
+## Avanceret brug
 
-- Facettering (`facets`, `nrow`, `ncol`, `scales`) er endnu ikke understøttet i BFHcharts; multi-panel plots kræver manuel opbygning indtil issue #1 løses.
+### Hospitalsbranding med BFHtheme
 
-## Documentation
+```r
+library(BFHtheme)
 
-- Roxygen reference topics, e.g. `?bfh_qic` or `help(package = "BFHcharts")`
-- Architecture notes in [`docs/`](docs/DOCUMENTATION_OVERVIEW.md)
-- Vignettes are planned; links will be added once the articles ship
+plot <- bfh_qic(data, x = month, y = infections, chart_type = "run",
+                y_axis_unit = "count", chart_title = "Kvalitetsdiagram")
 
-## License
+# Tilføj hospitalslogo
+plot <- bfh_get_plot(plot) |> BFHtheme::add_bfh_logo()
+```
+
+Diagrammer returneres som komponérbare ggplot-objekter (via `bfh_get_plot()`),
+så du kan tilføje vilkårlige lag, skalaer og temaer. Tilpasning af
+hospitalsfarver håndteres af
+[BFHtheme](https://github.com/johanreventlow/BFHtheme)-pakken.
+
+## Begrænsninger
+
+- Facettering (`facets`, `nrow`, `ncol`, `scales`) understøttes endnu ikke;
+  multi-panel-plots kræver manuel opbygning indtil
+  [issue #1](https://github.com/johanreventlow/BFHcharts/issues/1) er løst.
+
+## Dokumentation
+
+- Roxygen-reference, fx `?bfh_qic` eller `help(package = "BFHcharts")`
+- Arkitekturnoter i [`docs/`](docs/DOCUMENTATION_OVERVIEW.md)
+- ADR'er i `inst/adr/`
+
+## Licens
 
 GPL-3 © Johan Reventlow
 
-## Acknowledgments
+## Tak til
 
-- Inspired by [BBC's bbplot](https://github.com/bbc/bbplot) design philosophy
-- Built on [qicharts2](https://github.com/anhoej/qicharts2) for SPC calculations
-- Developed for Bispebjerg og Frederiksberg Hospital quality improvement work
+- Inspireret af [BBC's bbplot](https://github.com/bbc/bbplot)-designfilosofi
+- Bygget på [qicharts2](https://github.com/anhoej/qicharts2) til SPC-beregninger
+- Udviklet til kvalitetsarbejdet på Bispebjerg og Frederiksberg Hospital
