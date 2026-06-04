@@ -188,7 +188,7 @@ funktioner bruges kun til eksport, analysetekst og introspektion af resultatet.
 |----------|--------|
 | `bfh_qic()` | Laver et komplet SPC-diagram fra data og returnerer et `bfh_qic_result`. **Den eneste funktion de fleste brugere har brug for.** |
 
-### PDF- og PNG-eksport
+### Eksport (PDF/PNG)
 
 | Funktion | Formål |
 |----------|--------|
