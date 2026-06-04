@@ -63,8 +63,25 @@ BFHcharts/
 
 ### Core Components
 
-**Public API (1 funktion):**
-- `bfh_qic()` ⭐ - **DEN ENESTE funktion brugere skal kende**
+**Primært API (1 funktion):**
+- `bfh_qic()` ⭐ - **Den eneste funktion de fleste brugere har brug for.** Returnerer et `bfh_qic_result`-objekt.
+
+**Dokumenterede sekundære exports (eksporteret, ikke `internal`):**
+Disse er rigtige public exports (se `NAMESPACE`) og bruges kun til eksport, analysetekst og introspektion af resultatet:
+
+*PDF/PNG-eksport:*
+- `bfh_export_pdf()`, `bfh_export_png()`, `bfh_create_export_session()`
+
+*Analysetekst:*
+- `bfh_generate_analysis()`, `bfh_generate_details()`, `bfh_analyse()`,
+  `bfh_render_analysis()`, `bfh_build_analysis_context()`
+
+*Introspektion/hjælpere:*
+- `bfh_get_plot()`, `bfh_extract_spc_stats()`, `bfh_merge_metadata()`,
+  `is_bfh_qic_result()`, `is_bfh_spc_analysis()`, `new_bfh_qic_result()`,
+  `bfh_subsample_label_indices()`, `bfh_create_typst_document()`
+
+*S3-metoder:* `print`/`plot` på `bfh_qic_result`; `as.list`/`format`/`print` på `bfh_spc_analysis`.
 
 **Internal API (Advanced/Power Users):**
 Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `:::`:
@@ -80,10 +97,10 @@ Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `
 - Kun brugt internt af `bfh_qic()`
 
 *Constants:*
-- `CHART_TYPES_EN` - Chart type identifiers
+- `CHART_TYPES_EN` - Chart type identifiers (`run`, `i`, `mr`, `p`, `pp`, `u`, `up`, `c`, `g`, `xbar`, `s`, `t`)
 - Brugere passer strings direkte: `chart_type = "p"`, ikke konstant-opslag
 
-**Rationale:** **Ultra-simpelt API** - brugere lærer kun 1 funktion. Alt kompleksitet er skjult under motorhjelmen. Advanced users kan tilgå internals med `BFHcharts:::function_name()`.
+**Rationale:** **Simpelt primært API** - brugere lærer reelt kun `bfh_qic()`; de sekundære exports er kun nødvendige ved eksport/analysetekst. Resten af kompleksiteten er skjult under motorhjelmen. Advanced users kan tilgå internals med `BFHcharts:::function_name()`.
 
 **Anhøj Rules:**
 - Serielængde detection
@@ -93,49 +110,45 @@ Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `
 
 ### Chart Generation Pattern
 
+Faktiske `bfh_qic()`-parametre (uddrag, se `R/bfh_qic.R` for fuld signatur):
+
 ```r
-bfh_qic <- function(data, x, y, chart_type = NULL,
-                    notes_column = NULL, target = NULL,
-                    freeze_period = NULL, ...) {
-  # 1. Input validation
-  validate_chart_inputs(data, x, y)
-
-  # 2. Auto-detect chart type hvis ikke angivet
-  chart_type <- chart_type %||% auto_detect_chart_type(data[[y]])
-
-  # 3. Calculate control limits
-  limits <- calculate_control_limits(data, y, chart_type)
-
-  # 4. Build ggplot
-  p <- ggplot(data, aes(x = .data[[x]], y = .data[[y]])) +
-    geom_line() + geom_point() +
-    add_control_limits(limits) +
-    BFHtheme::theme_bfh()
-
-  # 5. Add special annotations
-  if (!is.null(notes_column)) {
-    p <- add_notes(p, data, notes_column)
-  }
-
-  return(p)
+bfh_qic <- function(data, x, y,
+                    n = NULL,
+                    chart_type = "run",        # default "run", ikke NULL
+                    y_axis_unit = "count",     # "count" | "percent" | "rate" | "time"
+                    chart_title = NULL,
+                    target_value = NULL,       # numerisk maal
+                    target_text = NULL,        # m/ label-tekst
+                    notes = NULL,              # annotationer (ikke "notes_column")
+                    part = NULL,               # fase-split-indeks
+                    freeze = NULL,             # frys baseline (ikke "freeze_period")
+                    exclude = NULL, cl = NULL, ylim = NULL,
+                    ...,
+                    language = "da") {
+  # Konceptuelt flow (illustrativt - de interne helper-navne nedenfor er
+  # PSEUDO-KODE, ikke faktiske funktionsnavne):
+  #   1. valider input
+  #   2. byg qic-args + kald qicharts2
+  #   3. tilfoej Anhoej-signaler
+  #   4. render ggplot via BFHtheme + label-placement
+  #   5. returner new_bfh_qic_result(plot, summary, qic_data, config)
 }
 ```
 
 ### Anhøj Rules Implementation
 
-```r
-# Serielængde: Consecutive points på samme side af CL
-detect_runs <- function(y, cl) {
-  above <- y > cl
-  runs <- rle(above)
-  max(runs$lengths)
-}
+Centerlinje (median/mean), serielaengde og antal kryds beregnes via
+`qicharts2` + interne helpers (fx `add_anhoej_signal()` i
+`R/utils_bfh_qic_helpers.R`). Nedenstaaende er **illustrativ pseudo-kode**
+for konceptet - ikke eksporterede funktioner:
 
-# Antal kryds: Antal gange linjen krydser CL
-count_crossings <- function(y, cl) {
-  above <- y > cl
-  sum(diff(above) != 0)
-}
+```r
+# Serielængde: consecutive punkter paa samme side af CL (illustrativ)
+detect_runs <- function(y, cl) max(rle(y > cl)$lengths)
+
+# Antal kryds: antal gange linjen krydser CL (illustrativ)
+count_crossings <- function(y, cl) sum(diff(y > cl) != 0)
 ```
 
 ---
@@ -155,16 +168,16 @@ Kræver:
 - Major version bump (semver)
 - Deprecation warnings i minor version først
 - Migration guide
-- Update SPCify hvis påvirket
-- Notify maintainer af SPCify
+- Update biSPCharts hvis påvirket
+- Notify maintainer af biSPCharts
 
 ---
 
 ## 4) Cross-Repository Coordination
 
-### Integration with SPCify
+### Integration with biSPCharts
 
-**BFHcharts er visualization engine for SPCify Shiny app.**
+**BFHcharts er visualization engine for biSPCharts Shiny app.**
 
 **Responsibility Boundaries:**
 
@@ -175,7 +188,7 @@ Kræver:
 - Statistical accuracy
 - ggplot2 object generation
 
-**SPCify ansvar:**
+**biSPCharts ansvar:**
 - User interface
 - Data preprocessing
 - Reactive programming
@@ -184,10 +197,10 @@ Kræver:
 
 ### Communication Channel
 
-**For SPCify feature requests:**
+**For biSPCharts feature requests:**
 1. Opret issue i BFHcharts repo
 2. Use label: `enhancement` og `from-spcify`
-3. Reference SPCify use case i beskrivelsen
+3. Reference biSPCharts use case i beskrivelsen
 4. Diskutér API design før implementation
 
 ---
@@ -284,7 +297,7 @@ devtools::build_vignettes() # Build vignettes
 - Major feature additions that need design review
 - Breaking changes to public API
 - Architectural decisions that need documentation
-- Changes requiring cross-repository coordination (e.g., with SPCify)
+- Changes requiring cross-repository coordination (e.g., with biSPCharts)
 
 **See:** `openspec/AGENTS.md` for detailed workflow instructions
 
