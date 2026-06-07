@@ -53,7 +53,7 @@ Suggests:
     rmarkdown
 VignetteBuilder: knitr
 Remotes:
-    johanreventlow/BFHtheme@v0.5.4,
+    johanreventlow/BFHtheme@v0.5.2,
     johanreventlow/BFHllm@v0.2.0
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
