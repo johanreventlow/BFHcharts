@@ -1,3 +1,12 @@
+# BFHcharts 0.23.1
+
+## Interne ændringer
+
+* Pinnede sibling-pakker i `Remotes:` til eksakte release-tags
+  (`BFHtheme@v0.5.4`, `BFHllm@v0.2.0`). Upinnede Remotes i released tags
+  forårsager pak-dependency-konflikter i downstream-pakker der selv pinner
+  samme sibling til et tag (#80).
+
 # BFHcharts 0.23.0
 
 ## Nye features
