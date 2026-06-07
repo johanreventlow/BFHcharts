@@ -1,6 +1,6 @@
 Package: BFHcharts
 Title: SPC Visualization for Healthcare Quality Improvement
-Version: 0.23.0
+Version: 0.23.1
 Authors@R: c(
     person(
       "Johan", "Reventlow",
@@ -53,7 +53,7 @@ Suggests:
     rmarkdown
 VignetteBuilder: knitr
 Remotes:
-    johanreventlow/BFHtheme,
-    johanreventlow/BFHllm
+    johanreventlow/BFHtheme@v0.5.4,
+    johanreventlow/BFHllm@v0.2.0
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
