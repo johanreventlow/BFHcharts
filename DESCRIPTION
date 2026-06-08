@@ -50,10 +50,12 @@ Suggests:
     BFHllm,
     jsonlite,
     knitr,
+    pbcharts,
     rmarkdown
 VignetteBuilder: knitr
 Remotes:
     johanreventlow/BFHtheme@v0.5.2,
-    johanreventlow/BFHllm@v0.2.0
+    johanreventlow/BFHllm@v0.2.0,
+    anhoej/pbcharts@d37a8ec1864528ece1f5cd60ac152d06c013515f
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0

@@ -18,7 +18,7 @@ NULL
 #' @format Character vector of valid chart codes
 #' @keywords internal
 #' @noRd
-CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t")
+CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t", "i'")
 
 #' Y-Axis Unit Codes
 #'
