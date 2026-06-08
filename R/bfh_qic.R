@@ -736,6 +736,11 @@ bfh_qic <- function(data,
       )
     }
 
+    # input_x = user x-vector in input order, for the notes lookup (pbc sorts
+    # its output rows). x_expr is a validated simple column name, so read it
+    # straight from data -- no eval()/qic_envir dependency needed here.
+    input_x <- data[[as.character(x_expr)]]
+
     # ---- I-prime: compute via pbcharts adapter ----
     pbc_args <- build_pbc_args(
       data         = data,
@@ -751,8 +756,6 @@ bfh_qic <- function(data,
       y_axis_unit  = y_axis_unit
     )
     pbc_data <- invoke_pbcharts(pbc_args, envir = qic_envir)
-    # input_x = user x-vector in input order (notes lookup; pbc sorts rows)
-    input_x <- eval(x_expr, envir = data, enclos = qic_envir)
     qic_data <- map_pbc_to_qic_data(pbc_data, notes = notes, input_x = input_x)
     qic_data <- add_anhoej_signal(qic_data)
   } else {

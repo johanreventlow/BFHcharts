@@ -941,10 +941,28 @@ invoke_pbcharts <- function(pbc_args, envir, require_fn = requireNamespace) {
 #' @keywords internal
 #' @noRd
 map_pbc_to_qic_data <- function(pbc_data, notes, input_x) {
-  # 1. Add n as alias for den (qicharts2 contract: downstream reads $n)
+  # 1. Contract guard: verify pbc supplied every column we depend on, BEFORE
+  # we add our own. Checking pbc-sourced columns only (incl. den, the source
+  # of the n alias) is what actually catches pbc() upstream API drift --
+  # listing n/notes here would be self-vouching since we add them below.
+  required <- c(
+    "x", "y", "cl", "ucl", "lcl", "target", "part",
+    "sigma.signal", "runs.signal", "den"
+  )
+  missing_cols <- setdiff(required, names(pbc_data))
+  if (length(missing_cols) > 0L) {
+    stop(
+      "map_pbc_to_qic_data: pbc $data is missing required columns: ",
+      paste(missing_cols, collapse = ", "),
+      ". This indicates pbc() upstream API drift.",
+      call. = FALSE
+    )
+  }
+
+  # 2. Add n as alias for den (qicharts2 contract: downstream reads $n)
   pbc_data$n <- pbc_data$den
 
-  # 2. Attach notes via x-value lookup (pbc sorts rows; positional match wrong)
+  # 3. Attach notes via x-value lookup (pbc sorts rows; positional match wrong)
   if (is.null(notes)) {
     pbc_data$notes <- NA_character_
   } else {
@@ -957,21 +975,6 @@ map_pbc_to_qic_data <- function(pbc_data, notes, input_x) {
     # as.character() strips tapply()'s array class -- a 1D-array notes column
     # breaks downstream nchar()/if_else() in extract_comment_data().
     pbc_data$notes <- as.character(unname(lookup[as.character(pbc_data$x)]))
-  }
-
-  # 3. Contract guard: verify all required columns are present
-  required <- c(
-    "x", "y", "cl", "ucl", "lcl", "target", "part",
-    "sigma.signal", "runs.signal", "n", "notes"
-  )
-  missing_cols <- setdiff(required, names(pbc_data))
-  if (length(missing_cols) > 0L) {
-    stop(
-      "map_pbc_to_qic_data: pbc $data is missing required columns: ",
-      paste(missing_cols, collapse = ", "),
-      ". This indicates pbc() upstream API drift.",
-      call. = FALSE
-    )
   }
 
   pbc_data
