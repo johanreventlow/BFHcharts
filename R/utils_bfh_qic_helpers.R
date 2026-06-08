@@ -824,6 +824,163 @@ invoke_qicharts2 <- function(qic_args, envir) {
 }
 
 # ============================================================================
+# I-PRIME (I') ADAPTER: pbcharts::pbc() INTEGRATION
+# ============================================================================
+
+#' Build argument list for pbcharts::pbc() (i-prime chart)
+#'
+#' Constructs the named list passed to `do.call(pbcharts::pbc, ., envir = ...)`.
+#' Maps bfh_qic() parameters to pbc() parameter names. NSE symbols (x_expr,
+#' y_expr, n_expr) are passed through unevaluated -- capture them via
+#' `as.name()` in bfh_qic() before calling this function.
+#'
+#' Key mappings (bfh_qic -> pbc):
+#'   y_expr -> num (numerator)
+#'   n_expr -> den (denominator; omitted if NULL)
+#'   part   -> split (phase split index)
+#'   chart  = "i" always (hardcoded for i-prime)
+#'   plot   = FALSE always (data-only mode)
+#'
+#' NOTE: pbc has no `notes` or `agg.fun` parameter -- these are NOT forwarded.
+#'
+#' @param data Data frame
+#' @param x_expr Symbol for x column (NSE)
+#' @param y_expr Symbol for y column / numerator (NSE)
+#' @param n_expr Symbol for denominator column or NULL
+#' @param part Phase split positions or NULL
+#' @param freeze Freeze-baseline position or NULL
+#' @param target_value Numeric target value or NULL
+#' @param exclude Exclusion positions or NULL
+#' @param cl User-defined centre line or NULL
+#' @param multiply Multiplier (omitted when == 1)
+#' @param y_axis_unit Y-axis unit string (sets ypct = TRUE for "percent")
+#' @return Named list ready for do.call(pbcharts::pbc, .)
+#' @keywords internal
+#' @noRd
+build_pbc_args <- function(data,
+                           x_expr,
+                           y_expr,
+                           n_expr,
+                           part,
+                           freeze,
+                           target_value,
+                           exclude,
+                           cl,
+                           multiply,
+                           y_axis_unit) {
+  pbc_args <- list(
+    data  = data,
+    x     = x_expr,
+    num   = y_expr,
+    chart = "i",
+    plot  = FALSE
+  )
+
+  if (!is.null(n_expr)) pbc_args$den <- n_expr
+  if (!is.null(part)) pbc_args$split <- part
+  if (!is.null(freeze)) pbc_args$freeze <- freeze
+  if (!is.null(target_value) && is.numeric(target_value)) pbc_args$target <- target_value
+  if (!is.null(exclude)) pbc_args$exclude <- exclude
+  if (!is.null(cl)) pbc_args$cl <- cl
+  if (!is.null(multiply) && multiply != 1) pbc_args$multiply <- multiply
+  if (identical(y_axis_unit, "percent")) pbc_args$ypct <- TRUE
+
+  pbc_args
+}
+
+#' Call pbcharts::pbc() and return the data.frame payload
+#'
+#' Wrapper around `do.call(pbcharts::pbc, pbc_args, envir = envir)` that
+#' extracts `$data` from the returned pbc object. Does NOT call
+#' `add_anhoej_signal()` -- that is done in Group 3 (bfh_qic wiring).
+#'
+#' `envir` must be `parent.frame()` captured in bfh_qic() scope -- never
+#' evaluated inside this helper.
+#'
+#' @param pbc_args Named list of arguments for pbcharts::pbc()
+#' @param envir Environment for NSE symbol evaluation
+#' @param require_fn Function used for namespace presence check (injectable
+#'   for testing; defaults to base requireNamespace). Tests pass
+#'   `function(...) FALSE` to simulate pbcharts being absent.
+#' @return data.frame: the $data slot from the pbc() return object
+#' @keywords internal
+#' @noRd
+invoke_pbcharts <- function(pbc_args, envir, require_fn = requireNamespace) {
+  if (!require_fn("pbcharts", quietly = TRUE)) {
+    stop(
+      "pbcharts is required for the i-prime (i') chart type. ",
+      "Install with: remotes::install_github(\"anhoej/pbcharts\")",
+      call. = FALSE
+    )
+  }
+  pbc_obj <- do.call(pbcharts::pbc, pbc_args, envir = envir)
+  pbc_obj$data
+}
+
+#' Adapt pbcharts $data to qicharts2 column contract
+#'
+#' Adds two fields the downstream pipeline reads:
+#'   1. `n`     <- den  (denominator; export_details reads qic_data$n)
+#'   2. `notes` -- attached via x-value lookup (pbc stable-sorts rows,
+#'                so positional alignment with input_x is WRONG; use x-key
+#'                lookup instead)
+#'
+#' Also runs a contract guard: verifies that all columns the pipeline
+#' requires are present after mapping. Stops with an informative error
+#' listing missing columns if any are absent (catches pbc upstream drift).
+#'
+#' Required contract columns:
+#'   x, y, cl, ucl, lcl, target, part, sigma.signal,
+#'   runs.signal, n, notes
+#'
+#' @param pbc_data data.frame from invoke_pbcharts() (i.e., pbc_obj$data)
+#' @param notes Character vector (same length as original input rows) or NULL
+#' @param input_x Vector of x-values in original input order (same length
+#'   as notes; used as lookup key to attach notes to sorted pbc rows)
+#' @return Modified pbc_data with n and notes columns added
+#' @keywords internal
+#' @noRd
+map_pbc_to_qic_data <- function(pbc_data, notes, input_x) {
+  # 1. Contract guard: verify pbc supplied every column we depend on, BEFORE
+  # we add our own. Checking pbc-sourced columns only (incl. den, the source
+  # of the n alias) is what actually catches pbc() upstream API drift --
+  # listing n/notes here would be self-vouching since we add them below.
+  required <- c(
+    "x", "y", "cl", "ucl", "lcl", "target", "part",
+    "sigma.signal", "runs.signal", "den"
+  )
+  missing_cols <- setdiff(required, names(pbc_data))
+  if (length(missing_cols) > 0L) {
+    stop(
+      "map_pbc_to_qic_data: pbc $data is missing required columns: ",
+      paste(missing_cols, collapse = ", "),
+      ". This indicates pbc() upstream API drift.",
+      call. = FALSE
+    )
+  }
+
+  # 2. Add n as alias for den (qicharts2 contract: downstream reads $n)
+  pbc_data$n <- pbc_data$den
+
+  # 3. Attach notes via x-value lookup (pbc sorts rows; positional match wrong)
+  if (is.null(notes)) {
+    pbc_data$notes <- NA_character_
+  } else {
+    # input_x and notes are the user input vectors, same length, input order.
+    # Take first non-NA note per unique x value.
+    lookup <- tapply(notes, as.character(input_x), function(v) {
+      nn <- v[!is.na(v)]
+      if (length(nn)) nn[1] else NA_character_
+    })
+    # as.character() strips tapply()'s array class -- a 1D-array notes column
+    # breaks downstream nchar()/if_else() in extract_comment_data().
+    pbc_data$notes <- as.character(unname(lookup[as.character(pbc_data$x)]))
+  }
+
+  pbc_data
+}
+
+# ============================================================================
 # VIEWPORT OG BASE_SIZE BEREGNING
 # ============================================================================
 
