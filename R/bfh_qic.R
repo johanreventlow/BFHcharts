@@ -677,24 +677,63 @@ bfh_qic <- function(data,
     target_text = target_text
   )
 
-  # ---- Byg qic_args + kald qicharts2 ----
-  qic_args <- build_qic_args(
-    data = data,
-    x_expr = x_expr,
-    y_expr = y_expr,
-    n_expr = n_expr,
-    chart_type = chart_type,
-    part = part,
-    freeze = freeze,
-    target_value = target_value,
-    notes = notes,
-    exclude = exclude,
-    cl = cl,
-    multiply = multiply,
-    agg.fun = agg.fun,
-    y_axis_unit = y_axis_unit
-  )
-  qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
+  # ---- Byg qic_args + kald qicharts2 (eller pbcharts for i') ----
+  if (identical(chart_type, "i'")) {
+    # Guards: emit before compute so they fire regardless of pbc outcome.
+    if (is.null(n_expr)) {
+      message(
+        "chart_type = \"i'\": no denominator column supplied. ",
+        "Without a denominator, the I-prime chart degenerates to a standard ",
+        "individuals chart with constant control limits."
+      )
+    }
+    if (isTRUE(agg_fun_supplied)) {
+      warning(
+        "chart_type = \"i'\": pbc() auto-sums numerator and denominator ",
+        "within each time period, so the 'agg.fun' argument is ignored ",
+        "for I-prime charts.",
+        call. = FALSE
+      )
+    }
+
+    # ---- I-prime: compute via pbcharts adapter ----
+    pbc_args <- build_pbc_args(
+      data         = data,
+      x_expr       = x_expr,
+      y_expr       = y_expr,
+      n_expr       = n_expr,
+      part         = part,
+      freeze       = freeze,
+      target_value = target_value,
+      exclude      = exclude,
+      cl           = cl,
+      multiply     = multiply,
+      y_axis_unit  = y_axis_unit
+    )
+    pbc_data <- invoke_pbcharts(pbc_args, envir = qic_envir)
+    # input_x = user x-vector in input order (notes lookup; pbc sorts rows)
+    input_x <- eval(x_expr, envir = data, enclos = qic_envir)
+    qic_data <- map_pbc_to_qic_data(pbc_data, notes = notes, input_x = input_x)
+    qic_data <- add_anhoej_signal(qic_data)
+  } else {
+    qic_args <- build_qic_args(
+      data         = data,
+      x_expr       = x_expr,
+      y_expr       = y_expr,
+      n_expr       = n_expr,
+      chart_type   = chart_type,
+      part         = part,
+      freeze       = freeze,
+      target_value = target_value,
+      notes        = notes,
+      exclude      = exclude,
+      cl           = cl,
+      multiply     = multiply,
+      agg.fun      = agg.fun,
+      y_axis_unit  = y_axis_unit
+    )
+    qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
+  }
 
   # Auto-mean substitution for run charts: when >=50% of a phase's included
   # observations sit exactly on the qicharts2-computed median, switch that
