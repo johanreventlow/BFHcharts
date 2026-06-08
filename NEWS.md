@@ -1,3 +1,19 @@
+# BFHcharts 0.24.0
+
+## Nye features
+
+* **I'-kontrolkort (I-prime) via `chart_type = "i'"`.** Nyt kontrolkort der
+  justerer 3-sigma-kontrolgrænser for varierende nævner (subgruppe-størrelse)
+  -- nyttigt til måle- og tælledata hvor nævneren skifter mellem punkter.
+  Beregningen leveres af `pbcharts::pbc()` (Taylor-metoden) af Jacob Anhøj,
+  samme forfatter som `qicharts2`. For `"i'"` er `y` tælleren og `n` nævneren;
+  den plottede værdi er `y/n` med nævner-justerede grænser (samme model som
+  p/u-kort, modsat `"i"`-kortet hvor `y` plottes råt). Udelades `n`,
+  degenererer kortet til et klassisk individuals-kort med konstante grænser.
+  `pbcharts` er en valgfri afhængighed (`Suggests`); installeres med
+  `remotes::install_github("anhoej/pbcharts")`. Annotationer (`notes`)
+  understøttes fuldt. (closes biSPCharts-ønske om I'-kort)
+
 # BFHcharts 0.23.1
 
 ## Interne ændringer

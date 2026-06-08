@@ -191,8 +191,11 @@ test_that("bfh_qic Rd documents all validated chart types", {
   rd_content <- paste(readLines(rd_path, warn = FALSE), collapse = "\n")
 
   for (t in BFHcharts:::CHART_TYPES_EN) {
+    # Match the quoted chart-type token. Word-boundary (\\b) regex fails on
+    # types containing non-word chars (e.g. the apostrophe in "i'"); all
+    # types appear quoted in the Rd param list, so this is reliable.
     expect_true(
-      grepl(paste0("\\b", t, "\\b"), rd_content, perl = TRUE),
+      grepl(paste0("\"", t, "\""), rd_content, fixed = TRUE),
       info = paste("Chart type", t, "missing from bfh_qic.Rd")
     )
   }
