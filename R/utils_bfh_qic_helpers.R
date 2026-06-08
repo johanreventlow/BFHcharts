@@ -954,7 +954,9 @@ map_pbc_to_qic_data <- function(pbc_data, notes, input_x) {
       nn <- v[!is.na(v)]
       if (length(nn)) nn[1] else NA_character_
     })
-    pbc_data$notes <- unname(lookup[as.character(pbc_data$x)])
+    # as.character() strips tapply()'s array class -- a 1D-array notes column
+    # breaks downstream nchar()/if_else() in extract_comment_data().
+    pbc_data$notes <- as.character(unname(lookup[as.character(pbc_data$x)]))
   }
 
   # 3. Contract guard: verify all required columns are present
