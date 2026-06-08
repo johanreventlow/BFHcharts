@@ -20,7 +20,18 @@ NULL
 #' @param x Name of x-axis column (unquoted, NSE). Usually date/time column.
 #' @param y Name of y-axis column (unquoted, NSE). The measurement variable.
 #' @param n Name of denominator column for ratio charts (optional, unquoted, NSE)
-#' @param chart_type Chart type: "run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t"
+#' @param chart_type Chart type: "run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t", "i'"
+#'
+#'   **I-prime chart** (`"i'"`): An individuals control chart with
+#'   varying denominators, computed via the \pkg{pbcharts} package
+#'   (Taylor method). Unlike the standard `"i"` chart -- where `y` is
+#'   plotted directly -- the I-prime chart models a ratio: `y` is the
+#'   NUMERATOR and `n` is the DENOMINATOR; the plotted value is `y / n`
+#'   with control limits that adjust for the varying subgroup size. This
+#'   mirrors the P/U-chart denominator contract. If `n` is omitted, the
+#'   chart degenerates to a classic individuals chart with constant limits.
+#'   \pkg{pbcharts} is an optional dependency; install with
+#'   `remotes::install_github("anhoej/pbcharts")` if not present.
 #' @param y_axis_unit Unit type: "count", "percent", "rate", or "time"
 #' @param chart_title Plot title (optional)
 #' @param target_value Numeric target value (optional)
@@ -156,6 +167,7 @@ NULL
 #' - **xbar**: X-bar chart
 #' - **s**: S-chart
 #' - **t**: T-chart (time between events)
+#' - **i'**: I-prime chart (individuals with varying denominators, via pbcharts)
 #'
 #' **Y-Axis Units:**
 #' - **count**: Integer counts with K/M notation
@@ -604,6 +616,34 @@ NULL
 #'   y_axis_unit = "count",
 #'   chart_title = "Infections - Short-term Variation (MR-chart)"
 #' )
+#'
+#' # Example 25: I-prime chart with varying denominator (requires pbcharts)
+#' # y = numerator (event count), n = denominator (varying subgroup size).
+#' # The plotted value is y/n; control limits adjust for each n.
+#' if (requireNamespace("pbcharts", quietly = TRUE)) {
+#'   df_iprime <- data.frame(
+#'     month = seq.Date(as.Date("2023-01-01"), by = "month", length.out = 24),
+#'     events = c(
+#'       2L, 3L, 1L, 4L, 2L, 3L, 5L, 2L, 1L, 3L,
+#'       2L, 4L, 1L, 2L, 3L, 2L, 4L, 1L, 3L, 2L, 4L, 3L, 1L, 2L
+#'     ),
+#'     denom = c(
+#'       80L, 95L, 70L, 105L, 85L, 90L, 110L, 75L, 65L, 100L,
+#'       80L, 95L, 70L, 85L, 90L, 75L, 100L, 70L, 95L, 80L,
+#'       105L, 90L, 65L, 85L
+#'     )
+#'   )
+#'   plot_iprime <- bfh_qic(
+#'     data = df_iprime,
+#'     x = month,
+#'     y = events,
+#'     n = denom,
+#'     chart_type = "i'",
+#'     y_axis_unit = "percent",
+#'     chart_title = "I-prime Chart - Event Rate with Varying Denominator"
+#'   )
+#'   plot(plot_iprime)
+#' }
 #' }
 bfh_qic <- function(data,
                     x,

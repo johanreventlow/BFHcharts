@@ -45,7 +45,18 @@ bfh_qic(
 
 \item{n}{Name of denominator column for ratio charts (optional, unquoted, NSE)}
 
-\item{chart_type}{Chart type: "run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t"}
+\item{chart_type}{Chart type: "run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t", "i'"
+
+\strong{I-prime chart} (\code{"i'"}): An individuals control chart with
+varying denominators, computed via the \pkg{pbcharts} package
+(Taylor method). Unlike the standard \code{"i"} chart -- where \code{y} is
+plotted directly -- the I-prime chart models a ratio: \code{y} is the
+NUMERATOR and \code{n} is the DENOMINATOR; the plotted value is \code{y / n}
+with control limits that adjust for the varying subgroup size. This
+mirrors the P/U-chart denominator contract. If \code{n} is omitted, the
+chart degenerates to a classic individuals chart with constant limits.
+\pkg{pbcharts} is an optional dependency; install with
+\code{remotes::install_github("anhoej/pbcharts")} if not present.}
 
 \item{y_axis_unit}{Unit type: "count", "percent", "rate", or "time"}
 
@@ -220,6 +231,7 @@ applied to count rates. Requires n.
 \item \strong{xbar}: X-bar chart
 \item \strong{s}: S-chart
 \item \strong{t}: T-chart (time between events)
+\item \strong{i'}: I-prime chart (individuals with varying denominators, via pbcharts)
 }
 
 \strong{Y-Axis Units:}
@@ -683,5 +695,29 @@ plot_mr <- bfh_qic(
   y_axis_unit = "count",
   chart_title = "Infections - Short-term Variation (MR-chart)"
 )
+
+# Example 25: I-prime chart with varying denominator (requires pbcharts)
+# y = numerator (event count), n = denominator (varying subgroup size).
+# The plotted value is y/n; control limits adjust for each n.
+if (requireNamespace("pbcharts", quietly = TRUE)) {
+  df_iprime <- data.frame(
+    month = seq.Date(as.Date("2023-01-01"), by = "month", length.out = 24),
+    events = c(2L, 3L, 1L, 4L, 2L, 3L, 5L, 2L, 1L, 3L,
+               2L, 4L, 1L, 2L, 3L, 2L, 4L, 1L, 3L, 2L, 4L, 3L, 1L, 2L),
+    denom  = c(80L, 95L, 70L, 105L, 85L, 90L, 110L, 75L, 65L, 100L,
+               80L, 95L, 70L, 85L, 90L, 75L, 100L, 70L, 95L, 80L,
+               105L, 90L, 65L, 85L)
+  )
+  plot_iprime <- bfh_qic(
+    data = df_iprime,
+    x = month,
+    y = events,
+    n = denom,
+    chart_type = "i'",
+    y_axis_unit = "percent",
+    chart_title = "I-prime Chart - Event Rate with Varying Denominator"
+  )
+  plot(plot_iprime)
+}
 }
 }
