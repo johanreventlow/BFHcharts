@@ -1,3 +1,14 @@
+# BFHcharts 0.25.0
+
+## Breaking changes
+
+* **`chart_type`-værdien for I-prime-kortet er omdøbt fra `"i'"` til `"ip"`.**
+  Den nye værdi følger samme mønster som de øvrige prime-kort (`pp` for
+  P-prime, `up` for U-prime), og undgår apostroffen der gav unødig friktion
+  i string-håndtering. Migration: skift `chart_type = "i'"` til
+  `chart_type = "ip"` i alle kald. Det er en hård omdøbning -- `"i'"`
+  accepteres ikke længere. (Introduceret i 0.24.0; omdøbt før bred udbredelse.)
+
 # BFHcharts 0.24.0
 
 ## Nye features

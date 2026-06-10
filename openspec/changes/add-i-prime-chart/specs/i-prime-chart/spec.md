@@ -2,14 +2,14 @@
 
 ### Requirement: bfh_qic SHALL support I-prime chart type
 
-`bfh_qic()` SHALL accept `chart_type = "i'"` as a valid value and render an
+`bfh_qic()` SHALL accept `chart_type = "ip"` as a valid value and render an
 I'-control chart (I-prime, Taylor) with control limits adjusted for varying
-denominator (subgroup size). The value `"i'"` SHALL be a member of
+denominator (subgroup size). The value `"ip"` SHALL be a member of
 `CHART_TYPES_EN`.
 
 #### Scenario: I-prime chart accepted as valid chart type
 
-- **WHEN** `bfh_qic(data, x, y, n, chart_type = "i'")` is called with valid input
+- **WHEN** `bfh_qic(data, x, y, n, chart_type = "ip")` is called with valid input
 - **THEN** the call succeeds and returns a `bfh_qic_result` object
 - **AND** no "invalid chart_type" error is raised
 
@@ -27,7 +27,7 @@ duplicate Taylor's I-prime formula.
 
 #### Scenario: Control limits pass through unchanged
 
-- **WHEN** an I'-chart is computed via `bfh_qic(chart_type = "i'")`
+- **WHEN** an I'-chart is computed via `bfh_qic(chart_type = "ip")`
 - **THEN** the `cl`, `ucl`, and `lcl` values in the returned `qic_data` are
   `identical` to the values `pbcharts::pbc()` computes for the same input
 - **AND** no centerline substitution (e.g. auto-mean) alters them
@@ -42,7 +42,7 @@ duplicate Taylor's I-prime formula.
 
 ### Requirement: I-prime denominator semantics SHALL match ratio-chart model
 
-For `chart_type = "i'"`, `y` SHALL be treated as the numerator and `n` as the
+For `chart_type = "ip"`, `y` SHALL be treated as the numerator and `n` as the
 denominator; the plotted value SHALL be `y / n` with denominator-adjusted
 limits — the same mental model as p/u-charts, distinct from the `"i"` chart
 where `y` is plotted directly. When `n` is omitted, the chart SHALL degenerate
@@ -50,7 +50,7 @@ to a classic individuals chart (denominator = 1, constant limits).
 
 #### Scenario: Missing denominator degenerates to individuals
 
-- **WHEN** `bfh_qic(chart_type = "i'")` is called without `n`
+- **WHEN** `bfh_qic(chart_type = "ip")` is called without `n`
 - **THEN** the plotted `y` equals the raw numerator (denominator defaults to 1)
 - **AND** the control limits are constant
 - **AND** an informative `message()` notes the degeneration
@@ -59,11 +59,11 @@ to a classic individuals chart (denominator = 1, constant limits).
 
 pbcharts SHALL be declared in `Suggests:` (with a `Remotes:` GitHub pin), not
 `Imports:`. A runtime guard SHALL produce a clear error with an install hint
-when `chart_type = "i'"` is used but pbcharts is not installed.
+when `chart_type = "ip"` is used but pbcharts is not installed.
 
 #### Scenario: Missing pbcharts produces actionable error
 
-- **WHEN** `bfh_qic(chart_type = "i'")` is called and pbcharts is not installed
+- **WHEN** `bfh_qic(chart_type = "ip")` is called and pbcharts is not installed
 - **THEN** a `stop()` error is raised
 - **AND** the message instructs the user to run
   `remotes::install_github("anhoej/pbcharts")`
@@ -76,7 +76,7 @@ row sorting). The assumed cardinality is one note per unique x.
 
 #### Scenario: Annotation renders at correct point under reordered output
 
-- **WHEN** `bfh_qic(chart_type = "i'", notes = v)` is called with a note
+- **WHEN** `bfh_qic(chart_type = "ip", notes = v)` is called with a note
   attached to a specific x-value, and pbc sorts its output rows differently
   from input order
 - **THEN** the annotation appears at the x-value it was assigned to, not at a
@@ -84,6 +84,6 @@ row sorting). The assumed cardinality is one note per unique x.
 
 #### Scenario: Unsupported aggregation warns
 
-- **WHEN** a non-default `agg.fun` is supplied with `chart_type = "i'"`
+- **WHEN** a non-default `agg.fun` is supplied with `chart_type = "ip"`
 - **THEN** a `warning()` notes that pbc auto-sums numerator/denominator and
   `agg.fun` is ignored

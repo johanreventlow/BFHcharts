@@ -1,5 +1,5 @@
 # ============================================================================
-# ACCEPTANCE TESTS FOR I-PRIME (I') CHART -- STATISTICAL INTEGRITY
+# ACCEPTANCE TESTS FOR I-PRIME (ip) CHART -- STATISTICAL INTEGRITY
 # ============================================================================
 # Group 4: statistical acceptance gate for the pbcharts adapter.
 # Every test is wrapped with skip_if_not_installed("pbcharts").
@@ -43,7 +43,7 @@ test_that("4.1: CL-identity -- cl/ucl/lcl identical() to direct pbc()", {
 
   res <- bfh_qic(d,
     x = period, y = num, n = den,
-    chart_type = "i'", return.data = TRUE
+    chart_type = "ip", return.data = TRUE
   )
   direct <- pbcharts::pbc(period, num, den,
     data = d,
@@ -71,7 +71,7 @@ test_that("4.2a: varying den produces varying ucl (and lcl)", {
 
   res <- bfh_qic(d,
     x = period, y = num, n = den,
-    chart_type = "i'", return.data = TRUE
+    chart_type = "ip", return.data = TRUE
   )
 
   # At least two distinct rounded values means limits vary with den
@@ -91,7 +91,7 @@ test_that("4.2b: constant den produces constant ucl/lcl", {
 
   res <- bfh_qic(d,
     x = period, y = num, n = den,
-    chart_type = "i'", return.data = TRUE
+    chart_type = "ip", return.data = TRUE
   )
 
   expect_equal(length(unique(round(res$ucl, 9L))), 1L)
@@ -112,7 +112,7 @@ test_that("4.2c: missing n gives constant limits and y equals raw num", {
   res <- suppressMessages(
     bfh_qic(d,
       x = period, y = num,
-      chart_type = "i'", return.data = TRUE
+      chart_type = "ip", return.data = TRUE
     )
   )
 
@@ -147,7 +147,7 @@ test_that("4.3: anhoej.signal is logical and maps from pbc runs.signal", {
 
   res <- bfh_qic(d,
     x = period, y = num, n = den,
-    chart_type = "i'", return.data = TRUE
+    chart_type = "ip", return.data = TRUE
   )
   direct <- pbcharts::pbc(period, num, den,
     data = d,
@@ -192,7 +192,7 @@ test_that("4.4: notes attached by x-value not position after pbc sort", {
 
   res <- bfh_qic(d,
     x = period, y = num, n = den,
-    chart_type = "i'", notes = notes_vec,
+    chart_type = "ip", notes = notes_vec,
     return.data = TRUE
   )
 
@@ -217,7 +217,7 @@ test_that("4.5: qic_data contains all downstream-required columns", {
 
   res <- bfh_qic(d,
     x = period, y = num, n = den,
-    chart_type = "i'", return.data = TRUE
+    chart_type = "ip", return.data = TRUE
   )
 
   required_cols <- c(

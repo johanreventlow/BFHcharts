@@ -1,8 +1,8 @@
 # ============================================================================
-# SMOKE TESTS: i' (I-prime) chart via bfh_qic()
+# SMOKE TESTS: ip (I-prime) chart via bfh_qic()
 # ============================================================================
 # TDD: tests written before Group 3 implementation.
-# Verifies that bfh_qic() correctly routes chart_type = "i'" through the
+# Verifies that bfh_qic() correctly routes chart_type = "ip" through the
 # pbcharts adapter and produces a valid bfh_qic_result object.
 #
 # Heavy CL-identity / varying-limits / notes-alignment acceptance tests
@@ -29,8 +29,8 @@ df <- make_iprime_data()
 # Test 1: returns bfh_qic_result
 # ============================================================================
 
-test_that("bfh_qic with chart_type i' returns a bfh_qic_result object", {
-  result <- bfh_qic(df, x = date, y = num, n = den, chart_type = "i'")
+test_that("bfh_qic with chart_type ip returns a bfh_qic_result object", {
+  result <- bfh_qic(df, x = date, y = num, n = den, chart_type = "ip")
   expect_true(is_bfh_qic_result(result))
 })
 
@@ -38,10 +38,10 @@ test_that("bfh_qic with chart_type i' returns a bfh_qic_result object", {
 # Test 2: return.data = TRUE produces qic contract data.frame
 # ============================================================================
 
-test_that("bfh_qic with chart_type i' and return.data=TRUE returns a data.frame with contract columns", {
+test_that("bfh_qic with chart_type ip and return.data=TRUE returns a data.frame with contract columns", {
   result <- bfh_qic(df,
     x = date, y = num, n = den,
-    chart_type = "i'", return.data = TRUE
+    chart_type = "ip", return.data = TRUE
   )
   expect_s3_class(result, "data.frame")
   contract_cols <- c("x", "y", "cl", "ucl", "lcl", "n", "notes")
@@ -56,9 +56,9 @@ test_that("bfh_qic with chart_type i' and return.data=TRUE returns a data.frame 
 # Test 3: missing n emits degeneration message
 # ============================================================================
 
-test_that("bfh_qic with chart_type i' and no n emits degeneration message", {
+test_that("bfh_qic with chart_type ip and no n emits degeneration message", {
   expect_message(
-    bfh_qic(df, x = date, y = num, chart_type = "i'"),
+    bfh_qic(df, x = date, y = num, chart_type = "ip"),
     regexp = "denominator"
   )
 })

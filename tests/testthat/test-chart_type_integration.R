@@ -263,8 +263,8 @@ test_that("alle CHART_TYPES_EN har integration-test-coverage", {
   tested_types <- c("mr", "pp", "up", "g", "xbar", "s", "t")
 
   # Disse testes i andre testfiler (eksisterende coverage)
-  # "i'" (I-prime) dækkes i test-i-prime-acceptance.R + test-i-prime-bfh-qic.R
-  other_coverage <- c("run", "i", "p", "u", "c", "i'")
+  # "ip" (I-prime) dækkes i test-i-prime-acceptance.R + test-i-prime-bfh-qic.R
+  other_coverage <- c("run", "i", "p", "u", "c", "ip")
 
   all_tested <- union(tested_types, other_coverage)
 

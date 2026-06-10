@@ -8,7 +8,7 @@ naevner. Beregningen findes allerede i `pbcharts::pbc()` fra samme forfatter
 
 ## What Changes
 
-- Ny `chart_type = "i'"` i `bfh_qic()` der renderer I'-kort med
+- Ny `chart_type = "ip"` i `bfh_qic()` der renderer I'-kort med
   naevner-justerede 3-sigma-kontrolgraenser.
 - Beregning delegeres til `pbcharts::pbc(chart = "i")` via en intern adapter;
   output mappes til den eksisterende qicharts2-kolonnekontrakt saa hele
@@ -37,8 +37,8 @@ naevner. Beregningen findes allerede i `pbcharts::pbc()` fra samme forfatter
 ## Impact
 
 **Kode (BFHcharts):**
-- `R/chart_types.R`: `CHART_TYPES_EN` udvides med `"i'"`.
-- `R/bfh_qic.R`: branch paa `chart_type == "i'"` foer `build_qic_args()`.
+- `R/chart_types.R`: `CHART_TYPES_EN` udvides med `"ip"`.
+- `R/bfh_qic.R`: branch paa `chart_type == "ip"` foer `build_qic_args()`.
 - `R/utils_bfh_qic_helpers.R`: 3 nye interne funktioner
   (`build_pbc_args()`, `invoke_pbcharts()`, `map_pbc_to_qic_data()`).
 - Roxygen-doc for `chart_type` + nyt `@examples`-afsnit.
@@ -52,10 +52,10 @@ naevner. Beregningen findes allerede i `pbcharts::pbc()` fra samme forfatter
   `chart_type` udvides. Ikke-breaking → MINOR version bump.
 
 **biSPCharts (downstream):**
-- Ingen tvungen aendring. Kan efterfoelgende eksponere `"i'"` i
+- Ingen tvungen aendring. Kan efterfoelgende eksponere `"ip"` i
   UI-dropdown + bumpe `Imports: BFHcharts (>= NY_VERSION)` i separat PR.
 
 **Statistisk validering:**
-- Kraevet: acceptance-test der asserter at `bfh_qic(chart_type="i'")`
+- Kraevet: acceptance-test der asserter at `bfh_qic(chart_type="ip")`
   producerer `cl/ucl/lcl` der er `identical` til `pbcharts::pbc()`'s egne
   beregnede vaerdier (ingen silent transformation i pipelinen).
