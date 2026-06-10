@@ -908,7 +908,7 @@ build_pbc_args <- function(data,
 invoke_pbcharts <- function(pbc_args, envir, require_fn = requireNamespace) {
   if (!require_fn("pbcharts", quietly = TRUE)) {
     stop(
-      "pbcharts is required for the i-prime (i') chart type. ",
+      "pbcharts is required for the i-prime (ip) chart type. ",
       "Install with: remotes::install_github(\"anhoej/pbcharts\")",
       call. = FALSE
     )

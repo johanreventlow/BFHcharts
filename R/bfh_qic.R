@@ -20,9 +20,9 @@ NULL
 #' @param x Name of x-axis column (unquoted, NSE). Usually date/time column.
 #' @param y Name of y-axis column (unquoted, NSE). The measurement variable.
 #' @param n Name of denominator column for ratio charts (optional, unquoted, NSE)
-#' @param chart_type Chart type: "run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t", "i'"
+#' @param chart_type Chart type: "run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t", "ip"
 #'
-#'   **I-prime chart** (`"i'"`): An individuals control chart with
+#'   **I-prime chart** (`"ip"`): An individuals control chart with
 #'   varying denominators, computed via the \pkg{pbcharts} package
 #'   (Taylor method). Unlike the standard `"i"` chart -- where `y` is
 #'   plotted directly -- the I-prime chart models a ratio: `y` is the
@@ -167,7 +167,7 @@ NULL
 #' - **xbar**: X-bar chart
 #' - **s**: S-chart
 #' - **t**: T-chart (time between events)
-#' - **i'**: I-prime chart (individuals with varying denominators, via pbcharts)
+#' - **ip**: I-prime chart (individuals with varying denominators, via pbcharts)
 #'
 #' **Y-Axis Units:**
 #' - **count**: Integer counts with K/M notation
@@ -638,7 +638,7 @@ NULL
 #'     x = month,
 #'     y = events,
 #'     n = denom,
-#'     chart_type = "i'",
+#'     chart_type = "ip",
 #'     y_axis_unit = "percent",
 #'     chart_title = "I-prime Chart - Event Rate with Varying Denominator"
 #'   )
@@ -717,19 +717,19 @@ bfh_qic <- function(data,
     target_text = target_text
   )
 
-  # ---- Byg qic_args + kald qicharts2 (eller pbcharts for i') ----
-  if (identical(chart_type, "i'")) {
+  # ---- Byg qic_args + kald qicharts2 (eller pbcharts for ip) ----
+  if (identical(chart_type, "ip")) {
     # Guards: emit before compute so they fire regardless of pbc outcome.
     if (is.null(n_expr)) {
       message(
-        "chart_type = \"i'\": no denominator column supplied. ",
+        "chart_type = \"ip\": no denominator column supplied. ",
         "Without a denominator, the I-prime chart degenerates to a standard ",
         "individuals chart with constant control limits."
       )
     }
     if (isTRUE(agg_fun_supplied)) {
       warning(
-        "chart_type = \"i'\": pbc() auto-sums numerator and denominator ",
+        "chart_type = \"ip\": pbc() auto-sums numerator and denominator ",
         "within each time period, so the 'agg.fun' argument is ignored ",
         "for I-prime charts.",
         call. = FALSE
