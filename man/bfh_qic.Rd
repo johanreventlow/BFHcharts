@@ -45,9 +45,9 @@ bfh_qic(
 
 \item{n}{Name of denominator column for ratio charts (optional, unquoted, NSE)}
 
-\item{chart_type}{Chart type: "run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t", "i'"
+\item{chart_type}{Chart type: "run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s", "t", "ip"
 
-\strong{I-prime chart} (\code{"i'"}): An individuals control chart with
+\strong{I-prime chart} (\code{"ip"}): An individuals control chart with
 varying denominators, computed via the \pkg{pbcharts} package
 (Taylor method). Unlike the standard \code{"i"} chart -- where \code{y} is
 plotted directly -- the I-prime chart models a ratio: \code{y} is the
@@ -231,7 +231,7 @@ applied to count rates. Requires n.
 \item \strong{xbar}: X-bar chart
 \item \strong{s}: S-chart
 \item \strong{t}: T-chart (time between events)
-\item \strong{i'}: I-prime chart (individuals with varying denominators, via pbcharts)
+\item \strong{ip}: I-prime chart (individuals with varying denominators, via pbcharts)
 }
 
 \strong{Y-Axis Units:}
@@ -702,18 +702,22 @@ plot_mr <- bfh_qic(
 if (requireNamespace("pbcharts", quietly = TRUE)) {
   df_iprime <- data.frame(
     month = seq.Date(as.Date("2023-01-01"), by = "month", length.out = 24),
-    events = c(2L, 3L, 1L, 4L, 2L, 3L, 5L, 2L, 1L, 3L,
-               2L, 4L, 1L, 2L, 3L, 2L, 4L, 1L, 3L, 2L, 4L, 3L, 1L, 2L),
-    denom  = c(80L, 95L, 70L, 105L, 85L, 90L, 110L, 75L, 65L, 100L,
-               80L, 95L, 70L, 85L, 90L, 75L, 100L, 70L, 95L, 80L,
-               105L, 90L, 65L, 85L)
+    events = c(
+      2L, 3L, 1L, 4L, 2L, 3L, 5L, 2L, 1L, 3L,
+      2L, 4L, 1L, 2L, 3L, 2L, 4L, 1L, 3L, 2L, 4L, 3L, 1L, 2L
+    ),
+    denom = c(
+      80L, 95L, 70L, 105L, 85L, 90L, 110L, 75L, 65L, 100L,
+      80L, 95L, 70L, 85L, 90L, 75L, 100L, 70L, 95L, 80L,
+      105L, 90L, 65L, 85L
+    )
   )
   plot_iprime <- bfh_qic(
     data = df_iprime,
     x = month,
     y = events,
     n = denom,
-    chart_type = "i'",
+    chart_type = "ip",
     y_axis_unit = "percent",
     chart_title = "I-prime Chart - Event Rate with Varying Denominator"
   )

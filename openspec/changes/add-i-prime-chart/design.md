@@ -18,7 +18,7 @@ GitHub (ikke CRAN).
 ## Goals / Non-Goals
 
 **Goals:**
-- Tilfoej `chart_type = "i'"` rent additivt uden at roere eksisterende kort.
+- Tilfoej `chart_type = "ip"` rent additivt uden at roere eksisterende kort.
 - Genbrug hele den eksisterende pipeline ved at mappe pbc-output til
   qicharts2-kontrakten i stedet for at duplikere render-logik.
 - Hold pbcharts som optional afhaengighed (CRAN-clean release bevares).
@@ -35,7 +35,7 @@ GitHub (ikke CRAN).
 
 ### D1: Adapter-seam foer build-step (ikke inde i invoke)
 
-Branch paa `chart_type == "i'"` i `bfh_qic.R` **foer** `build_qic_args()`,
+Branch paa `chart_type == "ip"` i `bfh_qic.R` **foer** `build_qic_args()`,
 med en parallel `build_pbc_args()` + `invoke_pbcharts()` + `map_pbc_to_qic_data()`
 sti der konsumerer de samme captured NSE-symboler.
 
@@ -91,7 +91,7 @@ GitHub-dep paa alle brugere uanset om de bruger I'-kort.
   lookup tager foerste non-NA. Dokumenteret begraensning.
 - **pbcharts ikke paa CRAN** → Optional via Suggests; release forbliver
   CRAN-clean uden pbcharts installeret.
-- **Bruger-forvirring `"i"` vs `"i'"`** → Eksplicit roxygen-note om
+- **Bruger-forvirring `"i"` vs `"ip"`** → Eksplicit roxygen-note om
   ratio-semantik + `@examples`.
 
 ## Migration Plan
@@ -99,8 +99,8 @@ GitHub-dep paa alle brugere uanset om de bruger I'-kort.
 - Rent additivt; ingen migration for eksisterende kald.
 - MINOR version bump + NEWS-entry under `## Nye features`.
 - biSPCharts: separat downstream-PR der bumper `Imports: BFHcharts (>= NY)`
-  og eksponerer `"i'"` i UI (uden for denne change).
-- Rollback: fjern `"i'"` fra `CHART_TYPES_EN` + branch — ingen state/data-effekt.
+  og eksponerer `"ip"` i UI (uden for denne change).
+- Rollback: fjern `"ip"` fra `CHART_TYPES_EN` + branch — ingen state/data-effekt.
 
 ## Open Questions
 
