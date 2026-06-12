@@ -55,7 +55,10 @@ Denne vignette mapper kliniske spørgsmål til charttyper og giver beslutningsre
   │   │   → xbar-chart (mean) + s-chart (variation)
   │   │
   │   ├── Individuelle målinger (én måling per periode)?
-  │   │   → i-chart + mr-chart (moving range)
+  │   │   ├── Fast nævner (eller ingen nævner)?
+  │   │   │   → i-chart + mr-chart (moving range)
+  │   │   └── Varierende nævner (y/n ratio, fx tid per patient)?
+  │   │       → ip-chart (I-prime, individuelle målinger med varierende nævner)
   │   │
   │   └── For lille n eller ikke-normal fordeling?
   │       → run-chart (kun centerlinje, ingen kontrolgrænser)
@@ -119,6 +122,25 @@ Simpler end u-chart men kræver konstans-antagelsen.
 
 For målinger hvor du har én værdi per periode (fx daglig ventetid). Brug **altid**
 sammen med `mr`-chart for at se variation mellem konsekutive målinger.
+
+### `ip` — I-prime chart (individuelle målinger med varierende nævner)
+
+Bruges når din y-variabel er et **ratio** (y/n) og nævneren varierer fra periode
+til periode — fx tid per patient, ressourceforbrug per indlæggelse. I-prime
+justerer kontrolgrænserne for den varierende nævner på samme måde som Laney-korrektionen
+gør for `pp` og `up`.
+
+```{r ip-example, eval = FALSE}
+# Gennemsnitlig liggetid per indlæggelse (dage / indlæggelser)
+bfh_qic(data,
+  x = month, y = stay_days, n = admissions,
+  chart_type = "ip",
+  y_axis_unit = "rate",
+  chart_title = "Gennemsnitlig liggetid"
+)
+```
+
+**Krav**: `n` (nævner) skal angives. Kræver `pbcharts`-pakken under `Suggests`.
 
 ### `xbar` + `s` — subgrouped kontinuerte data
 
