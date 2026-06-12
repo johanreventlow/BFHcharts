@@ -508,13 +508,13 @@ validate_bfh_qic_inputs <- function(data,
                                     notes = NULL,
                                     target_text = NULL) {
   if (!is.data.frame(data)) {
-    stop("data must be a data frame", call. = FALSE)
+    bfh_abort("data must be a data frame", class = "bfhcharts_input_error")
   }
 
   if (nrow(data) == 0L) {
-    stop(
+    bfh_abort(
       "'data' is empty; bfh_qic() requires at least one row",
-      call. = FALSE
+      class = "bfhcharts_input_error"
     )
   }
 
@@ -522,20 +522,20 @@ validate_bfh_qic_inputs <- function(data,
   # error prevents cryptic qicharts2 failures on e.g. character input.
   if (!is.null(x_expr_char)) {
     if (!x_expr_char %in% names(data)) {
-      stop(
+      bfh_abort(
         sprintf("Column '%s' not found in data", x_expr_char),
-        call. = FALSE
+        class = "bfhcharts_input_error"
       )
     }
     x_data <- data[[x_expr_char]]
     if (!(is.numeric(x_data) || inherits(x_data, "Date") ||
       inherits(x_data, "POSIXct") || is.integer(x_data))) {
-      stop(
+      bfh_abort(
         sprintf(
           "Column '%s' has class '%s'. x must be numeric, Date, or POSIXct. Use as.Date() or as.POSIXct() to convert.",
           x_expr_char, class(x_data)[1]
         ),
-        call. = FALSE
+        class = "bfhcharts_input_error"
       )
     }
   }
@@ -555,12 +555,12 @@ validate_bfh_qic_inputs <- function(data,
   if (!is.null(y_expr_char) && y_expr_char %in% names(data)) {
     y_data <- data[[y_expr_char]]
     if (!is.numeric(y_data)) {
-      stop(
+      bfh_abort(
         sprintf(
           "column '%s' (y) must be numeric, got: %s",
           y_expr_char, paste(class(y_data), collapse = "/")
         ),
-        call. = FALSE
+        class = "bfhcharts_input_error"
       )
     }
 
@@ -573,7 +573,7 @@ validate_bfh_qic_inputs <- function(data,
     if (chart_type %in% count_chart_types) {
       neg_idx <- which(!is.na(y_data) & y_data < 0)
       if (length(neg_idx) > 0L) {
-        stop(
+        bfh_abort(
           sprintf(
             paste0(
               "column '%s' (y) contains negative values at row(s): %s. ",
@@ -583,7 +583,7 @@ validate_bfh_qic_inputs <- function(data,
             paste(utils::head(neg_idx, 5), collapse = ", "),
             chart_type
           ),
-          call. = FALSE
+          class = "bfhcharts_input_error"
         )
       }
     }
@@ -604,15 +604,17 @@ validate_bfh_qic_inputs <- function(data,
   # notes must be a character vector (or all-NA) with same length as data.
   if (!is.null(notes)) {
     if (!is.character(notes) && !all(is.na(notes))) {
-      stop("`notes` must be a character vector or NULL", call. = FALSE)
+      bfh_abort("`notes` must be a character vector or NULL",
+        class = "bfhcharts_input_error"
+      )
     }
     if (length(notes) != nrow(data)) {
-      stop(
+      bfh_abort(
         sprintf(
           "`notes` must have same length as data (got %d, expected %d)",
           length(notes), nrow(data)
         ),
-        call. = FALSE
+        class = "bfhcharts_input_error"
       )
     }
   }
@@ -620,26 +622,26 @@ validate_bfh_qic_inputs <- function(data,
   # target_text must be a single character string (scalar) when provided.
   if (!is.null(target_text)) {
     if (!is.character(target_text) || length(target_text) != 1L) {
-      stop(
+      bfh_abort(
         "`target_text` must be a single character string or NULL",
-        call. = FALSE
+        class = "bfhcharts_input_error"
       )
     }
   }
 
   if (!chart_type %in% CHART_TYPES_EN) {
-    stop(sprintf(
+    bfh_abort(sprintf(
       "chart_type must be one of: %s",
       paste(CHART_TYPES_EN, collapse = ", ")
-    ), call. = FALSE)
+    ), class = "bfhcharts_input_error")
   }
 
   valid_units <- Y_AXIS_UNITS
   if (!y_axis_unit %in% valid_units) {
-    stop(sprintf(
+    bfh_abort(sprintf(
       "y_axis_unit must be one of: %s",
       paste(valid_units, collapse = ", ")
-    ), call. = FALSE)
+    ), class = "bfhcharts_input_error")
   }
 
   validate_position_indices(part, "part", nrow(data),
@@ -712,7 +714,7 @@ validate_bfh_qic_inputs <- function(data,
   agg_fun_out <- if (agg_fun_supplied) match.arg(agg.fun, c("mean", "median", "sum", "sd")) else NULL
 
   if (!is.logical(return.data) || length(return.data) != 1 || is.na(return.data)) {
-    stop("return.data must be TRUE or FALSE", call. = FALSE)
+    bfh_abort("return.data must be TRUE or FALSE", class = "bfhcharts_input_error")
   }
 
   if (!is.null(plot_margin)) {
@@ -720,15 +722,19 @@ validate_bfh_qic_inputs <- function(data,
       # margin()-objekt -- trust brugerens input
     } else if (is.numeric(plot_margin)) {
       if (length(plot_margin) != 4) {
-        stop(
-          "plot_margin must be either:\n",
-          "  - A numeric vector of length 4: c(top, right, bottom, left) in mm\n",
-          "  - A margin object: margin(t, r, b, l, unit = '...')",
-          call. = FALSE
+        bfh_abort(
+          paste0(
+            "plot_margin must be either:\n",
+            "  - A numeric vector of length 4: c(top, right, bottom, left) in mm\n",
+            "  - A margin object: margin(t, r, b, l, unit = '...')"
+          ),
+          class = "bfhcharts_input_error"
         )
       }
       if (any(plot_margin < 0)) {
-        stop("plot_margin values must be non-negative", call. = FALSE)
+        bfh_abort("plot_margin values must be non-negative",
+          class = "bfhcharts_input_error"
+        )
       }
       if (any(plot_margin > 100)) {
         warning(
@@ -738,12 +744,14 @@ validate_bfh_qic_inputs <- function(data,
         )
       }
     } else {
-      stop(
-        "plot_margin must be either:\n",
-        "  - A numeric vector of length 4: c(top, right, bottom, left) in mm\n",
-        "  - A margin object: margin(t, r, b, l, unit = '...')\n",
-        "Got: ", class(plot_margin)[1],
-        call. = FALSE
+      bfh_abort(
+        paste0(
+          "plot_margin must be either:\n",
+          "  - A numeric vector of length 4: c(top, right, bottom, left) in mm\n",
+          "  - A margin object: margin(t, r, b, l, unit = '...')\n",
+          "Got: ", class(plot_margin)[1]
+        ),
+        class = "bfhcharts_input_error"
       )
     }
   }

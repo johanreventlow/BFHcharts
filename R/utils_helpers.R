@@ -8,6 +8,61 @@
 NULL
 
 # ============================================================================
+# CLASSED CONDITION HELPERS
+# ============================================================================
+
+# Internal helpers that emit classed conditions so callers (e.g. biSPCharts)
+# can catch by class instead of string-matching error messages.
+#
+# Error class hierarchy:
+#   bfhcharts_input_error  < bfhcharts_error  < error
+#   bfhcharts_export_error < bfhcharts_error  < error
+#
+# Warning class hierarchy:
+#   bfhcharts_warning < warning
+#
+# Usage:
+#   bfh_abort("msg", class = "bfhcharts_input_error")
+#   bfh_warn("msg",  class = "bfhcharts_warning")
+
+#' Emit a classed BFHcharts error
+#'
+#' @param msg Character scalar. Human-readable error message.
+#' @param class Character scalar. Sub-class for the condition, e.g.
+#'   "bfhcharts_input_error" or "bfhcharts_export_error".
+#' @param call The call to attach to the condition (default NULL).
+#' @param ... Additional fields passed to rlang::abort().
+#' @return Does not return; always signals an error.
+#' @keywords internal
+#' @noRd
+bfh_abort <- function(msg, class, call = NULL, ...) {
+  rlang::abort(
+    msg,
+    class = c(class, "bfhcharts_error"),
+    call = call,
+    ...
+  )
+}
+
+#' Emit a classed BFHcharts warning
+#'
+#' @param msg Character scalar. Human-readable warning message.
+#' @param class Character scalar. Sub-class for the condition.
+#' @param call The call to attach to the condition (default NULL).
+#' @param ... Additional fields passed to rlang::warn().
+#' @return Invisibly NULL; always signals a warning.
+#' @keywords internal
+#' @noRd
+bfh_warn <- function(msg, class, call = NULL, ...) {
+  rlang::warn(
+    msg,
+    class = c(class, "bfhcharts_warning"),
+    call = call,
+    ...
+  )
+}
+
+# ============================================================================
 # SAFE AGGREGATION
 # ============================================================================
 
