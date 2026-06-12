@@ -82,7 +82,7 @@ register_bfh_font_aliases <- function() {
 # Soft-check BFHtheme presence at attach time. Non-blocking: missing BFHtheme
 # does not prevent help/docs access, only triggers an error at first plot.
 .onAttach <- function(libname, pkgname) {
-  min_version <- "0.5.0"
+  min_version <- .BFHTHEME_MIN_VERSION
   has_dep <- requireNamespace("BFHtheme", quietly = TRUE)
   if (!has_dep) {
     packageStartupMessage(sprintf(
