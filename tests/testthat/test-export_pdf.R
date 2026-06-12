@@ -306,7 +306,7 @@ test_that("bfh_extract_spc_stats handles missing columns gracefully (public API)
 
   # Summary with some columns
   summary <- data.frame(
-    længste_løb = 8,
+    laengste_loeb = 8,
     antal_kryds = 5
   )
   stats <- bfh_extract_spc_stats(summary)
@@ -448,8 +448,8 @@ test_that("build_typst_content passes data_definition with preserved newlines", 
 test_that("bfh_extract_spc_stats extracts statistics from valid summary", {
   # Create valid summary data frame
   summary <- data.frame(
-    længste_løb_max = 8,
-    længste_løb = 6,
+    laengste_loeb_max = 8,
+    laengste_loeb = 6,
     antal_kryds_min = 10,
     antal_kryds = 12
   )
@@ -475,8 +475,8 @@ test_that("bfh_extract_spc_stats extracts statistics from valid summary", {
 
 test_that("bfh_extract_spc_stats extracts outliers from summary when present", {
   summary <- data.frame(
-    længste_løb_max = 8,
-    længste_løb = 6,
+    laengste_loeb_max = 8,
+    laengste_loeb = 6,
     antal_kryds_min = 10,
     antal_kryds = 12,
     forventede_outliers = 0,
@@ -516,7 +516,7 @@ test_that("bfh_extract_spc_stats handles empty data frame gracefully", {
 test_that("bfh_extract_spc_stats handles missing columns gracefully", {
   # Summary with only some columns
   summary <- data.frame(
-    længste_løb = 6,
+    laengste_loeb = 6,
     antal_kryds = 12
   )
 

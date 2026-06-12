@@ -101,11 +101,11 @@ bfh_extract_spc_stats.data.frame <- function(x) {
 
   row <- x[nrow(x), ]
 
-  if ("l\u00e6ngste_l\u00f8b_max" %in% names(row)) {
-    stats$runs_expected <- clean_spc_value(row[["l\u00e6ngste_l\u00f8b_max"]])
+  if ("laengste_loeb_max" %in% names(row)) {
+    stats$runs_expected <- clean_spc_value(row[["laengste_loeb_max"]])
   }
-  if ("l\u00e6ngste_l\u00f8b" %in% names(row)) {
-    stats$runs_actual <- clean_spc_value(row[["l\u00e6ngste_l\u00f8b"]])
+  if ("laengste_loeb" %in% names(row)) {
+    stats$runs_actual <- clean_spc_value(row[["laengste_loeb"]])
   }
   if ("antal_kryds_min" %in% names(row)) {
     stats$crossings_expected <- clean_spc_value(row$antal_kryds_min)

@@ -26,8 +26,8 @@ The package SHALL provide a public API function for extracting SPC statistics fr
 **Test Cases:**
 ```r
 summary <- data.frame(
-  længste_løb_max = 8,
-  længste_løb = 6,
+  laengste_loeb_max = 8,
+  laengste_loeb = 6,
   antal_kryds_min = 10,
   antal_kryds = 12
 )
@@ -69,7 +69,7 @@ bfh_extract_spc_stats(data.frame())
 
 **Test Cases:**
 ```r
-summary <- data.frame(længste_løb = 6)  # Missing other columns
+summary <- data.frame(laengste_loeb = 6)  # Missing other columns
 
 stats <- bfh_extract_spc_stats(summary)
 # Returns:
@@ -377,7 +377,7 @@ When control limits vary across observations within a part (typical for P-charts
 
 **Contract:**
 
-| Limit constancy in part | `kontrolgrænser_konstante` | `nedre_/øvre_kontrolgrænse` (scalar) | `*_min`/`*_max` columns |
+| Limit constancy in part | `kontrolgraenser_konstante` | `nedre_/oevre_kontrolgraense` (scalar) | `*_min`/`*_max` columns |
 |---|---|---|---|
 | Constant | `TRUE` | populated with single value | absent or NA |
 | Variable | `FALSE` | absent or NA | populated with min/max across part |
@@ -386,23 +386,23 @@ When control limits vary across observations within a part (typical for P-charts
 
 - **GIVEN** an i-chart with constant control limits within a single part
 - **WHEN** `format_qic_summary(...)` is called
-- **THEN** the summary SHALL contain `nedre_kontrolgrænse` and `øvre_kontrolgrænse` as scalar columns
-- **AND** `kontrolgrænser_konstante` SHALL be `TRUE`
+- **THEN** the summary SHALL contain `nedre_kontrolgraense` and `oevre_kontrolgraense` as scalar columns
+- **AND** `kontrolgraenser_konstante` SHALL be `TRUE`
 
 ```r
 data <- data.frame(period = 1:10, value = c(10, 11, 10, 11, 10, 11, 10, 11, 10, 11))
 result <- bfh_qic(data, x = period, y = value, chart_type = "i")
-expect_true(result$summary$kontrolgrænser_konstante[1])
-expect_true("nedre_kontrolgrænse" %in% names(result$summary))
-expect_false(is.na(result$summary$nedre_kontrolgrænse[1]))
+expect_true(result$summary$kontrolgraenser_konstante[1])
+expect_true("nedre_kontrolgraense" %in% names(result$summary))
+expect_false(is.na(result$summary$nedre_kontrolgraense[1]))
 ```
 
 #### Scenario: variable limits expose min/max columns and FALSE flag
 
 - **GIVEN** a P-chart with varying denominators within a part (e.g., `n = c(100, 200, 50)`)
 - **WHEN** `format_qic_summary(...)` is called
-- **THEN** the summary SHALL contain `nedre_kontrolgrænse_min`, `nedre_kontrolgrænse_max`, `øvre_kontrolgrænse_min`, `øvre_kontrolgrænse_max` columns
-- **AND** `kontrolgrænser_konstante` SHALL be `FALSE`
+- **THEN** the summary SHALL contain `nedre_kontrolgraense_min`, `nedre_kontrolgraense_max`, `oevre_kontrolgraense_min`, `oevre_kontrolgraense_max` columns
+- **AND** `kontrolgraenser_konstante` SHALL be `FALSE`
 - **AND** the min ≤ max relationship SHALL hold
 
 ```r
@@ -413,15 +413,15 @@ data <- data.frame(
 )
 result <- bfh_qic(data, x = period, y = events, n = total,
                   chart_type = "p", y_axis_unit = "percent")
-expect_false(result$summary$kontrolgrænser_konstante[1])
-expect_true("nedre_kontrolgrænse_min" %in% names(result$summary))
-expect_lte(result$summary$nedre_kontrolgrænse_min[1],
-           result$summary$nedre_kontrolgrænse_max[1])
+expect_false(result$summary$kontrolgraenser_konstante[1])
+expect_true("nedre_kontrolgraense_min" %in% names(result$summary))
+expect_lte(result$summary$nedre_kontrolgraense_min[1],
+           result$summary$nedre_kontrolgraense_max[1])
 ```
 
 #### Scenario: backward-compatible reads on constant-limit summaries
 
-- **GIVEN** existing downstream code that reads `summary$nedre_kontrolgrænse` for a constant-limit chart
+- **GIVEN** existing downstream code that reads `summary$nedre_kontrolgraense` for a constant-limit chart
 - **WHEN** `format_qic_summary(...)` is called
 - **THEN** the column SHALL be present and populated as before
 - **AND** existing tests SHALL pass without modification
@@ -430,7 +430,7 @@ expect_lte(result$summary$nedre_kontrolgrænse_min[1],
 
 - **GIVEN** a multi-part chart where part 1 has constant limits and part 2 has variable limits
 - **WHEN** `format_qic_summary(...)` is called
-- **THEN** `kontrolgrænser_konstante` SHALL be `TRUE` for part 1 and `FALSE` for part 2
+- **THEN** `kontrolgraenser_konstante` SHALL be `TRUE` for part 1 and `FALSE` for part 2
 - **AND** scalar columns SHALL be populated for part 1 (NA or absent for part 2)
 - **AND** min/max columns SHALL be populated for part 2 (NA for part 1)
 
@@ -813,7 +813,7 @@ Cross-references SHALL be expressed as prose ("See spc-analysis-api Requirement:
 The summary returned by `bfh_qic()$summary` SHALL expose three logical columns describing the Anhoej rule outcome per phase:
 
 - `anhoej_signal` — combined Anhoej signal, sourced directly from `qicharts2::runs.signal`. TRUE when EITHER the runs-rule OR the crossings-rule is violated for the phase. This matches `qicharts2`'s `crsignal()` model exactly.
-- `runs_signal` — runs-rule outcome alone. TRUE when `længste_løb > længste_løb_max` for the phase. Derived per-phase from existing summary columns.
+- `runs_signal` — runs-rule outcome alone. TRUE when `laengste_loeb > laengste_loeb_max` for the phase. Derived per-phase from existing summary columns.
 - `crossings_signal` — crossings-rule outcome alone. TRUE when `antal_kryds < antal_kryds_min` for the phase. Derived per-phase from existing summary columns.
 
 **Rationale:**
@@ -822,7 +822,7 @@ The summary returned by `bfh_qic()$summary` SHALL expose three logical columns d
 - Derivation is purely arithmetic from already-present summary columns — no new statistical computation.
 
 **NA semantics:**
-- When `længste_løb` or `antal_kryds` is NA for a phase (degenerate phase: all-equal values, single-observation phase), the derived `runs_signal` / `crossings_signal` SHALL also be NA. `anhoej_signal` follows `qicharts2::runs.signal`'s NA semantics (typically NA when the Anhoej rules cannot be evaluated).
+- When `laengste_loeb` or `antal_kryds` is NA for a phase (degenerate phase: all-equal values, single-observation phase), the derived `runs_signal` / `crossings_signal` SHALL also be NA. `anhoej_signal` follows `qicharts2::runs.signal`'s NA semantics (typically NA when the Anhoej rules cannot be evaluated).
 
 #### Scenario: Combined and decomposed signals present for all chart types
 
@@ -914,7 +914,7 @@ expect_false(result$summary$anhoej_signal[1])
 
 ### Requirement: Summary numeric columns SHALL preserve raw qicharts2 precision
 
-The summary returned by `bfh_qic()$summary` SHALL carry numeric values at the precision returned by `qicharts2::qic()`. Specifically, `centerlinje`, `nedre_kontrolgrænse`, `øvre_kontrolgrænse`, `nedre_kontrolgrænse_min`, `nedre_kontrolgrænse_max`, `øvre_kontrolgrænse_min`, `øvre_kontrolgrænse_max`, `nedre_kontrolgrænse_95`, and `øvre_kontrolgrænse_95` SHALL NOT be rounded by `format_qic_summary()`.
+The summary returned by `bfh_qic()$summary` SHALL carry numeric values at the precision returned by `qicharts2::qic()`. Specifically, `centerlinje`, `nedre_kontrolgraense`, `oevre_kontrolgraense`, `nedre_kontrolgraense_min`, `nedre_kontrolgraense_max`, `oevre_kontrolgraense_min`, `oevre_kontrolgraense_max`, `nedre_kontrolgraense_95`, and `oevre_kontrolgraense_95` SHALL NOT be rounded by `format_qic_summary()`.
 
 **Rationale:**
 - Downstream consumers performing logical comparisons (`target >= centerlinje`, statistical further-analysis) need full precision. Pre-change rounding to 1-2 decimals introduced clinically wrong answers near round-off boundaries (verified via biSPCharts #470).
@@ -922,7 +922,7 @@ The summary returned by `bfh_qic()$summary` SHALL carry numeric values at the pr
 - Single source of truth eliminates the previous `summary$centerlinje` (rounded) vs `qic_data$cl` (raw) split that confused downstream usage.
 
 **Internal logic preserved:**
-- The `kontrolgrænser_konstante` constancy flag continues to use `round_prec = decimal_places + 2` to absorb floating-point drift in qicharts2's per-row limit values. That logic operates on raw `qic_data$lcl/ucl` columns and is unchanged.
+- The `kontrolgraenser_konstante` constancy flag continues to use `round_prec = decimal_places + 2` to absorb floating-point drift in qicharts2's per-row limit values. That logic operates on raw `qic_data$lcl/ucl` columns and is unchanged.
 
 #### Scenario: centerlinje matches raw qic_data$cl
 
@@ -945,23 +945,23 @@ expect_identical(result$summary$centerlinje[1], result$qic_data$cl[1])
 
 - **GIVEN** any non-run chart with constant limits within a phase
 - **WHEN** `bfh_qic(..., return.data = TRUE)` is called
-- **THEN** `summary$nedre_kontrolgrænse[p]` SHALL equal `qic_data$lcl[part == p][1]` exactly
-- **AND** `summary$øvre_kontrolgrænse[p]` SHALL equal `qic_data$ucl[part == p][1]` exactly
+- **THEN** `summary$nedre_kontrolgraense[p]` SHALL equal `qic_data$lcl[part == p][1]` exactly
+- **AND** `summary$oevre_kontrolgraense[p]` SHALL equal `qic_data$ucl[part == p][1]` exactly
 
 #### Scenario: Variable limit min/max preserve raw precision
 
 - **GIVEN** a P-chart with varying denominators within a phase
 - **WHEN** `bfh_qic(..., return.data = TRUE)` is called
-- **THEN** `summary$nedre_kontrolgrænse_min[p]` SHALL equal `min(qic_data$lcl[part == p], na.rm = TRUE)` exactly
-- **AND** `summary$nedre_kontrolgrænse_max[p]` SHALL equal `max(qic_data$lcl[part == p], na.rm = TRUE)` exactly
-- **AND** the same SHALL hold for `øvre_kontrolgrænse_min/max` against `qic_data$ucl`
+- **THEN** `summary$nedre_kontrolgraense_min[p]` SHALL equal `min(qic_data$lcl[part == p], na.rm = TRUE)` exactly
+- **AND** `summary$nedre_kontrolgraense_max[p]` SHALL equal `max(qic_data$lcl[part == p], na.rm = TRUE)` exactly
+- **AND** the same SHALL hold for `oevre_kontrolgraense_min/max` against `qic_data$ucl`
 
-#### Scenario: kontrolgrænser_konstante still uses tolerance
+#### Scenario: kontrolgraenser_konstante still uses tolerance
 
 - **GIVEN** a phase where `qic_data$lcl` values vary only in the 4th decimal (typical qicharts2 floating-point drift for "constant" limits)
 - **WHEN** `format_qic_summary(..., y_axis_unit = "percent")` is called (`decimal_places + 2 = 4` precision)
-- **THEN** `summary$kontrolgrænser_konstante[p]` SHALL be `TRUE`
-- **AND** scalar columns `nedre_kontrolgrænse` / `øvre_kontrolgrænse` SHALL be populated with raw (unrounded) values
+- **THEN** `summary$kontrolgraenser_konstante[p]` SHALL be `TRUE`
+- **AND** scalar columns `nedre_kontrolgraense` / `oevre_kontrolgraense` SHALL be populated with raw (unrounded) values
 
 <!--
 REMOVED block dropped: legacy `loebelaengde_signal` requirement was never

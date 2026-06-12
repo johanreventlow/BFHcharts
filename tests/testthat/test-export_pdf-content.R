@@ -244,7 +244,7 @@ test_that("PDF indeholder Anhoej-statistik (runs og kryds)", {
   temp_file <- withr::local_tempfile(fileext = ".pdf")
   bfh_export_pdf(result, temp_file)
 
-  # Tabel skal indeholde rubrik for længste_løb og antal_kryds
+  # Tabel skal indeholde rubrik for laengste_loeb og antal_kryds
   # (label-teksten varierer — matcher flere plausible former)
   text <- pdftools::pdf_text(temp_file)
   combined <- paste(text, collapse = " ")

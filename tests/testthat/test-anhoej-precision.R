@@ -41,9 +41,9 @@ test_that("run-længde-signal fires ved 10+ konsekutive punkter på én side (n=
     info = "10+14 run-længde for n=24 burde trigger signal"
   )
 
-  # Summary skal indeholde længste_løb ≥ 10
-  expect_gte(result$summary$længste_løb[1], 10,
-    label = "længste_løb i summary"
+  # Summary skal indeholde laengste_loeb ≥ 10
+  expect_gte(result$summary$laengste_loeb[1], 10,
+    label = "laengste_loeb i summary"
   )
 })
 
@@ -65,9 +65,9 @@ test_that("run-længde-signal fires IKKE ved korte runs (n=24)", {
     info = "Korte runs (alternerende) skal ikke trigger signal"
   )
 
-  # Summary skal have lille længste_løb
-  expect_lte(result$summary$længste_løb[1], 5,
-    label = "længste_løb ≤ 5 for alternerende data"
+  # Summary skal have lille laengste_loeb
+  expect_lte(result$summary$laengste_loeb[1], 5,
+    label = "laengste_loeb ≤ 5 for alternerende data"
   )
 })
 
@@ -150,7 +150,7 @@ test_that("stabile data med blandede mønstre giver ingen Anhøj-signal", {
   )
 
   # Sanity: max run < 5 og mange crossings
-  expect_lte(result$summary$længste_løb[1], 4)
+  expect_lte(result$summary$laengste_loeb[1], 4)
   expect_gte(result$summary$antal_kryds[1], 8)
 })
 
@@ -269,7 +269,7 @@ test_that("summary indeholder Anhøj-kolonner for run-chart", {
 
   # Anhøj-stat-kolonner
   required_cols <- c(
-    "længste_løb", "længste_løb_max",
+    "laengste_loeb", "laengste_loeb_max",
     "antal_kryds", "antal_kryds_min",
     "anhoej_signal", "runs_signal", "crossings_signal"
   )
@@ -283,8 +283,8 @@ test_that("summary indeholder Anhøj-kolonner for run-chart", {
   )
 })
 
-test_that("længste_løb_max = round(log2(n)) + 3 for run-chart", {
-  # For n=24 skal længste_løb_max = round(log2(24))+3 = 5+3 = 8
+test_that("laengste_loeb_max = round(log2(n)) + 3 for run-chart", {
+  # For n=24 skal laengste_loeb_max = round(log2(24))+3 = 5+3 = 8
   data <- data.frame(
     period = 1:24,
     value = c(rep(60, 10), rep(40, 14))
@@ -293,10 +293,10 @@ test_that("længste_løb_max = round(log2(n)) + 3 for run-chart", {
   result <- bfh_qic(data, x = period, y = value, chart_type = "run")
 
   expected_max <- round(log2(24)) + 3
-  expect_equal(result$summary$længste_løb_max[1], expected_max,
+  expect_equal(result$summary$laengste_loeb_max[1], expected_max,
     tolerance = 1, # qicharts2 kan runde lidt anderledes
     label = paste0(
-      "længste_løb_max for n=24 = round(log2(24))+3 = ",
+      "laengste_loeb_max for n=24 = round(log2(24))+3 = ",
       expected_max
     )
   )
