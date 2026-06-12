@@ -115,9 +115,9 @@ test_that("summary has correct Danish column names", {
 
   expected_cols <- c(
     "fase", "antal_observationer", "anvendelige_observationer",
-    "længste_løb", "længste_løb_max", "antal_kryds", "antal_kryds_min",
+    "laengste_loeb", "laengste_loeb_max", "antal_kryds", "antal_kryds_min",
     "anhoej_signal", "runs_signal", "crossings_signal", "sigma_signal", "centerlinje",
-    "nedre_kontrolgrænse", "øvre_kontrolgrænse"
+    "nedre_kontrolgraense", "oevre_kontrolgraense"
   )
 
   expect_true(all(expected_cols %in% names(result$summary)))
@@ -140,12 +140,12 @@ test_that("summary works with run charts (no control limits)", {
 
   # Run charts have control limit columns but they contain NA values
   expect_true("centerlinje" %in% names(result$summary))
-  expect_true("nedre_kontrolgrænse" %in% names(result$summary))
-  expect_true("øvre_kontrolgrænse" %in% names(result$summary))
+  expect_true("nedre_kontrolgraense" %in% names(result$summary))
+  expect_true("oevre_kontrolgraense" %in% names(result$summary))
 
   # Values should be NA for run charts
-  expect_true(is.na(result$summary$nedre_kontrolgrænse[1]))
-  expect_true(is.na(result$summary$øvre_kontrolgrænse[1]))
+  expect_true(is.na(result$summary$nedre_kontrolgraense[1]))
+  expect_true(is.na(result$summary$oevre_kontrolgraense[1]))
 })
 
 test_that("summary works with p-charts", {
@@ -168,8 +168,8 @@ test_that("summary works with p-charts", {
   expect_s3_class(result$summary, "data.frame")
   expect_true("centerlinje" %in% names(result$summary))
   # P-charts have variable control limits, so they should NOT be in summary
-  expect_false("nedre_kontrolgrænse" %in% names(result$summary))
-  expect_false("øvre_kontrolgrænse" %in% names(result$summary))
+  expect_false("nedre_kontrolgraense" %in% names(result$summary))
+  expect_false("oevre_kontrolgraense" %in% names(result$summary))
 })
 
 test_that("summary works with c-charts", {
@@ -211,8 +211,8 @@ test_that("summary works with u-charts", {
   expect_s3_class(result$summary, "data.frame")
   expect_true("centerlinje" %in% names(result$summary))
   # U-charts have variable control limits, so they should NOT be in summary
-  expect_false("nedre_kontrolgrænse" %in% names(result$summary))
-  expect_false("øvre_kontrolgrænse" %in% names(result$summary))
+  expect_false("nedre_kontrolgraense" %in% names(result$summary))
+  expect_false("oevre_kontrolgraense" %in% names(result$summary))
 })
 
 test_that("summary handles multiple phases correctly", {
@@ -336,8 +336,8 @@ test_that("Anhøj statistics are included in summary", {
   )
 
   # Check Anhøj rule statistics
-  expect_true("længste_løb" %in% names(result$summary))
-  expect_true("længste_løb_max" %in% names(result$summary))
+  expect_true("laengste_loeb" %in% names(result$summary))
+  expect_true("laengste_loeb_max" %in% names(result$summary))
   expect_true("antal_kryds" %in% names(result$summary))
   expect_true("antal_kryds_min" %in% names(result$summary))
   expect_true("anhoej_signal" %in% names(result$summary))
@@ -413,10 +413,10 @@ test_that("i-charts and c-charts have constant control limits in summary", {
     y_axis_unit = "count"
   )
 
-  expect_true("nedre_kontrolgrænse" %in% names(result_i$summary))
-  expect_true("øvre_kontrolgrænse" %in% names(result_i$summary))
-  expect_type(result_i$summary$nedre_kontrolgrænse, "double")
-  expect_type(result_i$summary$øvre_kontrolgrænse, "double")
+  expect_true("nedre_kontrolgraense" %in% names(result_i$summary))
+  expect_true("oevre_kontrolgraense" %in% names(result_i$summary))
+  expect_type(result_i$summary$nedre_kontrolgraense, "double")
+  expect_type(result_i$summary$oevre_kontrolgraense, "double")
 
   # C-chart should also have control limits
   result_c <- bfh_qic(
@@ -427,6 +427,6 @@ test_that("i-charts and c-charts have constant control limits in summary", {
     y_axis_unit = "count"
   )
 
-  expect_true("nedre_kontrolgrænse" %in% names(result_c$summary))
-  expect_true("øvre_kontrolgrænse" %in% names(result_c$summary))
+  expect_true("nedre_kontrolgraense" %in% names(result_c$summary))
+  expect_true("oevre_kontrolgraense" %in% names(result_c$summary))
 })

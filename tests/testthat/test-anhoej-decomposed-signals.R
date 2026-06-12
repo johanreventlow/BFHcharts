@@ -87,8 +87,8 @@ test_that("runs_signal og crossings_signal er korrekt deriveret per fase", {
   )
   result <- bfh_qic(d, x = month, y = value, chart_type = "i", part = c(12))
 
-  loeb_col <- grep("ngste_løb$", names(result$summary), value = TRUE)[1]
-  loeb_max_col <- grep("ngste_løb_max$", names(result$summary), value = TRUE)[1]
+  loeb_col <- grep("ngste_loeb$", names(result$summary), value = TRUE)[1]
+  loeb_max_col <- grep("ngste_loeb_max$", names(result$summary), value = TRUE)[1]
 
   for (i in seq_len(nrow(result$summary))) {
     expected_runs <- isTRUE(
