@@ -540,8 +540,18 @@ validate_bfh_qic_inputs <- function(data,
     }
   }
 
-  # y column must be numeric (or integer). Early error prevents
-  # cryptic qicharts2 chain failures on e.g. character/factor input.
+  # y column must exist in data and be numeric (or integer). Early error
+  # prevents NSE silent fallback to calling environment when column is missing,
+  # which would silently plot stale data from a global variable.
+  if (!is.null(y_expr_char) && nzchar(y_expr_char) && !y_expr_char %in% names(data)) {
+    stop(
+      sprintf(
+        "Column '%s' not found in `data`. Available columns: %s",
+        y_expr_char, paste(names(data), collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
   if (!is.null(y_expr_char) && y_expr_char %in% names(data)) {
     y_data <- data[[y_expr_char]]
     if (!is.numeric(y_data)) {
@@ -577,6 +587,18 @@ validate_bfh_qic_inputs <- function(data,
         )
       }
     }
+  }
+
+  # n column must exist in data when specified. Same NSE silent-fallback risk
+  # as y: a missing n column silently resolves to a global variable.
+  if (!is.null(n_expr_char) && nzchar(n_expr_char) && !n_expr_char %in% names(data)) {
+    stop(
+      sprintf(
+        "Column '%s' (n) not found in `data`. Available columns: %s",
+        n_expr_char, paste(names(data), collapse = ", ")
+      ),
+      call. = FALSE
+    )
   }
 
   # notes must be a character vector (or all-NA) with same length as data.
