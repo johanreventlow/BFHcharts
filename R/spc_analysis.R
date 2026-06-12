@@ -554,6 +554,22 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #' )
 #' }
 #'
+#' @seealso
+#' This function is a single-step convenience wrapper. For the two-step
+#' pipeline that gives more control, use:
+#' \itemize{
+#'   \item \code{\link{bfh_analyse}} -- composes the structured
+#'         \code{bfh_spc_analysis} object (analysis layer).
+#'   \item \code{\link{bfh_render_analysis}} -- renders that object to
+#'         character output (render layer).
+#'   \item \code{\link{bfh_build_analysis_context}} -- lower-level helper
+#'         used internally to extract chart context.
+#'   \item \code{\link{bfh_generate_details}} -- generates the companion
+#'         detail row string from the same \code{bfh_qic_result} input.
+#'   \item \code{\link{bfh_qic}} for producing the \code{bfh_qic_result}
+#'         input object.
+#' }
+#'
 #' @export
 bfh_generate_analysis <- function(x,
                                   metadata = list(),
@@ -1163,7 +1179,8 @@ build_fallback_analysis <- function(context,
   # men bor kun bruges i target-/goal-specifikke varianter for at give
   # meningsfuld tekst.
   level_keys <- .compute_level_keys(centerline, target_value, flags$has_target,
-    y_axis_unit = context$y_axis_unit)
+    y_axis_unit = context$y_axis_unit
+  )
   level_direction <- if (!is.null(level_keys)) {
     i18n_lookup(paste0("labels.level_direction.", level_keys$direction_key), language)
   } else {

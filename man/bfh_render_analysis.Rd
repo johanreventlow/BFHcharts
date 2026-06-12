@@ -37,3 +37,18 @@ text <- bfh_render_analysis(analysis, max_chars = 375)
 }
 
 }
+\seealso{
+Pipeline position: third (final) of three layers.
+\itemize{
+\item \code{\link{bfh_analyse}} produces the \code{bfh_spc_analysis}
+input consumed by this function (analysis layer).
+\item \code{\link{bfh_qic}} produces the \code{bfh_qic_result} that
+feeds into \code{bfh_analyse()}.
+\item \code{\link{bfh_build_analysis_context}} is a lower-level helper
+used internally earlier in the pipeline.
+\item \code{\link{bfh_generate_analysis}} combines \code{bfh_analyse()}
+and rendering in a single convenience call.
+\item \code{\link{bfh_generate_details}} generates the companion detail
+row string from the same \code{bfh_qic_result} input.
+}
+}
