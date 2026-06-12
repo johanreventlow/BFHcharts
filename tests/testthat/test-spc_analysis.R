@@ -280,6 +280,13 @@ test_that("bfh_generate_analysis threads texts_loader to fallback pipeline", {
   expect_match(analysis, "CUSTOM_ACTION")
 })
 
+test_that("build_fallback_analysis validates texts_loader", {
+  expect_error(
+    BFHcharts:::build_fallback_analysis(list(), texts_loader = "bad"),
+    "texts_loader must be a function"
+  )
+})
+
 # ==============================================================================
 # pick_text() tests (intern funktion)
 # ==============================================================================
@@ -545,156 +552,107 @@ test_that("bfh_build_analysis_context bevarer numerisk target uden retning", {
 
 
 # ==============================================================================
-# bfh_render_analysis() — goal_met/goal_not_met + constraints
-# (ported from legacy build_fallback_analysis tests per ADR-004)
+# build_fallback_analysis() — goal_met/goal_not_met + constraints
 # ==============================================================================
 
-test_that("bfh_render_analysis overstiger aldrig max_chars", {
-  # Lower-direction: CL (45) <= target (50) -> goal_met. Stable data.
-  withr::with_seed(71L, {
-    d <- data.frame(
-      date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
-      value = round(rnorm(24, 45, 2), 1)
-    )
-  })
-  result <- bfh_qic(d,
-    x = date, y = value, chart_type = "i",
-    target_text = "<= 50"
-  )
-  analysis <- bfh_analyse(result)
+# Hjælpefunktion: fixture_analysis_context() er tilgængelig via helper-fixtures.R.
+
+test_that("build_fallback_analysis overstiger aldrig max_chars", {
   for (mx in c(200L, 275L, 375L, 500L)) {
-    txt <- bfh_render_analysis(analysis, max_chars = mx)
+    ctx <- fixture_analysis_context(target_value = 50, target_direction = "lower", centerline = 45)
+    txt <- BFHcharts:::build_fallback_analysis(ctx, max_chars = mx)
     expect_lte(nchar(txt), mx,
       label = sprintf("max_chars=%d giver %d tegn", mx, nchar(txt))
     )
   }
 })
 
-test_that("bfh_render_analysis bruger goal_met-tekst naar target_direction er 'lower' og CL <= target", {
-  # Lower-direction: steady process at mean=2.0, target="<= 2.5" -> goal_met.
-  withr::with_seed(72L, {
-    d <- data.frame(
-      date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
-      value = round(rnorm(24, 2.0, 0.1), 2)
-    )
-  })
-  result <- bfh_qic(d,
-    x = date, y = value, chart_type = "i",
-    target_text = "<= 2.5"
+test_that("build_fallback_analysis bruger goal_met-tekst når target_direction er 'lower' og CL <= target", {
+  ctx <- fixture_analysis_context(
+    target_value = 2.5, target_direction = "lower", centerline = 2.0,
+    target_display = "<= 2,5"
   )
-  analysis <- bfh_analyse(result)
-  txt <- bfh_render_analysis(analysis)
-  # Skal INDEHOLDE "opfylder malet" eller "malet ... naet"
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  # Skal INDEHOLDE "opfylder målet" eller "målet ... nået"
   expect_true(grepl("opfylder (udviklings)?målet|målet.*nået", txt),
     info = paste("Forventede goal_met-sprog, fik:", txt)
   )
-  # Ma IKKE indeholde den vaerdineutrale "ligger under maalet"
+  # Må IKKE indeholde den værdineutrale "ligger under målet"
   expect_false(grepl("ligger under målet", txt))
 })
 
-test_that("bfh_render_analysis bruger goal_not_met naar CL overstiger 'lower'-target", {
-  # Lower-direction: steady process at mean=4.0, target="<= 2.5" -> goal_not_met.
-  withr::with_seed(73L, {
-    d <- data.frame(
-      date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
-      value = round(rnorm(24, 4.0, 0.1), 2)
-    )
-  })
-  result <- bfh_qic(d,
-    x = date, y = value, chart_type = "i",
-    target_text = "<= 2.5"
+test_that("build_fallback_analysis bruger goal_not_met når CL overstiger 'lower'-target", {
+  ctx <- fixture_analysis_context(
+    target_value = 2.5, target_direction = "lower", centerline = 4.0,
+    target_display = "<= 2,5"
   )
-  analysis <- bfh_analyse(result)
-  txt <- bfh_render_analysis(analysis)
-  # goal_not_met-tekster: "opfylder (endnu )?ikke maalet", "endnu ikke naet",
-  # "er ikke naet", "naar ikke (udviklings)?maalet".
-  expect_true(
-    grepl("opfylder (endnu )?ikke (udviklings)?målet|endnu ikke nået|er ikke nået|når ikke (udviklings)?målet", txt),
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  # goal_not_met-tekster udtrykker negation paa flere maader afhaengigt af
+  # variant: "opfylder (endnu )?ikke maalet", "endnu ikke naaet", "er ikke
+  # naaet", "naar ikke (udviklings)?maalet". Daekker alle nuvaerende formuleringer.
+  expect_true(grepl("opfylder (endnu )?ikke (udviklings)?målet|endnu ikke nået|er ikke nået|når ikke (udviklings)?målet", txt),
     info = paste("Forventede goal_not_met-sprog, fik:", txt)
   )
 })
 
-test_that("bfh_render_analysis bruger goal_met for 'higher'-target naar CL >= target", {
-  # Higher-direction: steady process at mean=95, target=">= 90" -> goal_met.
-  withr::with_seed(74L, {
-    d <- data.frame(
-      date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
-      value = round(rnorm(24, 95, 1), 1)
-    )
-  })
-  result <- bfh_qic(d,
-    x = date, y = value, chart_type = "i",
-    target_text = ">= 90"
+test_that("build_fallback_analysis bruger goal_met for 'higher'-target når CL >= target", {
+  ctx <- fixture_analysis_context(
+    target_value = 90, target_direction = "higher", centerline = 95,
+    target_display = ">= 90"
   )
-  analysis <- bfh_analyse(result)
-  txt <- bfh_render_analysis(analysis)
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
   expect_true(grepl("opfylder (udviklings)?målet|målet.*nået", txt),
     info = paste("Forventede goal_met, fik:", txt)
   )
 })
 
-test_that("bfh_render_analysis bruger vaerdineutral tekst naar target_direction er NULL", {
-  # Numeric target (no direction operator): CL ~3.0 vs target=2.5 -> over_target.
-  withr::with_seed(75L, {
-    d <- data.frame(
-      date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
-      value = round(rnorm(24, 3.0, 0.1), 2)
-    )
-  })
-  result <- bfh_qic(d,
-    x = date, y = value, chart_type = "i",
-    target_value = 2.5
-  )
-  analysis <- bfh_analyse(result)
-  txt <- bfh_render_analysis(analysis)
-  # Vaerdineutral sti: "over" / "under" / "taet paa"
+test_that("build_fallback_analysis bruger værdineutral tekst når target_direction er NULL", {
+  ctx <- fixture_analysis_context(target_value = 2.5, target_direction = NULL, centerline = 3.0)
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  # Den værdineutrale sti bruger "over" / "under" / "tæt på"
   expect_true(grepl("over|under|tæt på", txt))
 })
 
-test_that("bfh_render_analysis reallokerer budget naar target mangler", {
-  # No target -> stability+action fylder meste af max_chars.
-  d <- fixture_phase_stable()
-  result <- bfh_qic(d, x = date, y = value, chart_type = "i")
-  analysis <- bfh_analyse(result)
-  txt <- bfh_render_analysis(analysis, max_chars = 400)
-  # Floor justeret 250 -> 240 efter text-stramninger 2026-05 (cycle 06).
+test_that("build_fallback_analysis reallokerer budget når target mangler", {
+  ctx_no_target <- fixture_analysis_context(target_value = NA_real_, target_direction = NULL)
+  txt <- BFHcharts:::build_fallback_analysis(ctx_no_target, max_chars = 400)
+  # Uden target skal stability+action fylde meste af max_chars.
+  # Floor justeret 250 -> 240 efter text-stramninger 2026-05 (cycle 06):
+  # stability.no_signals.detailed og action.stable_no_target.detailed
+  # blev forkortet -- ren tekst-justering, ej budget-allokerings-bug.
   expect_gte(nchar(txt), 240)
   expect_lte(nchar(txt), 400)
 })
 
-test_that("bfh_render_analysis bruger ental ved 1 outlier", {
-  # Data med en enkelt outlier: 23 obs taet paa 50 + 1 obs >> UCL.
-  withr::with_seed(76L, {
-    vals <- round(rnorm(23, 50, 2), 1)
-  })
-  vals <- c(vals, 80) # klar outlier (langt over UCL)
-  d <- data.frame(
-    date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
-    value = vals
+test_that("build_fallback_analysis bruger ental ved 1 outlier", {
+  stats <- list(
+    runs_actual = 5, runs_expected = 7,
+    crossings_actual = 8, crossings_expected = 5,
+    outliers_recent_count = 1
   )
-  result <- bfh_qic(d, x = date, y = value, chart_type = "i")
-  analysis <- bfh_analyse(result)
-  txt <- bfh_render_analysis(analysis)
-  # Enten "1 observation" (direkte) eller "1 af de seneste [N] observationer"
+  ctx <- fixture_analysis_context(spc_stats = stats)
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  # Grammatisk korrekt dansk: enten "1 observation ligger" (direkte) eller
+  # "1 af de seneste [N] observationer ligger" (flertal i "af de seneste"-konstruktion,
+  # muligvis med et vinduesantal indskudt).
   expect_match(txt, "1 observation\\b|1 af de seneste \\d* ?observationer")
+  # Må ikke indeholde "1 observationer" som direkte konstruktion
   expect_false(grepl("\\b1 observationer\\b", txt))
 })
 
-test_that("bfh_render_analysis bruger flertal ved 3 outliers", {
-  # Data med 3 outliers: 21 obs taet paa 50 + 3 obs >> UCL.
-  withr::with_seed(77L, {
-    vals <- round(rnorm(21, 50, 2), 1)
-  })
-  vals <- c(vals, 80, 82, 85) # 3 klare outliers
-  d <- data.frame(
-    date  = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
-    value = vals
+test_that("build_fallback_analysis bruger flertal ved 3 outliers", {
+  stats <- list(
+    runs_actual = 5, runs_expected = 7,
+    crossings_actual = 8, crossings_expected = 5,
+    outliers_recent_count = 3
   )
-  result <- bfh_qic(d, x = date, y = value, chart_type = "i")
-  analysis <- bfh_analyse(result)
-  txt <- bfh_render_analysis(analysis)
-  # Enten "3 observationer" (direkte) eller "3 af de seneste [N] observationer"
+  ctx <- fixture_analysis_context(spc_stats = stats)
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  # Grammatisk korrekt dansk: enten "3 observationer" (direkte) eller
+  # "3 af de seneste [N] observationer" (flertal i "af de seneste"-konstruktion,
+  # muligvis med et vinduesantal indskudt).
   expect_match(txt, "3 observationer|3 af de seneste \\d* ?observationer")
+  # Må aldrig bruge ental efter tal > 1
   expect_false(grepl("\\b3 observation\\b", txt))
 })
 
@@ -816,29 +774,26 @@ test_that("REGRESSION: bfh_build_analysis_context normaliserer '>= 90%' til 0.90
   expect_equal(ctx$target_direction, "higher")
 })
 
-test_that("REGRESSION: bfh_render_analysis producerer 'opfylder maalet' for 91% vs >= 90%", {
-  # Direkte klinisk konsekvens-test: normaliseret target (0.90) og CL (0.91)
-  # skal give goal_met = TRUE (bug: target var 90 -> goal_met = FALSE).
-  set.seed(78L)
-  p_data <- data.frame(
-    date   = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
-    n      = rep(100L, 24),
-    events = rep(91L, 24) # 91% -> CL ~0.91
+test_that("REGRESSION: build_fallback_analysis producerer 'opfylder målet' for 91% vs >= 90%", {
+  # Dette er den direkte kliniske konsekvens-test:
+  # Med normaliseret target (0.90) og centerline (0.91) skal goal_met = TRUE
+  ctx <- fixture_analysis_context(
+    chart_type = "p",
+    y_axis_unit = "percent",
+    centerline = 0.91,
+    target_value = 0.90, # normaliseret (bug: var 90 -> FALSE)
+    target_direction = "higher",
+    target_display = ">= 90%"
   )
-  result <- bfh_qic(p_data,
-    x = date, y = events, n = n,
-    chart_type = "p", y_axis_unit = "percent"
-  )
-  analysis <- bfh_analyse(result, metadata = list(target = ">= 90%"))
-  txt <- bfh_render_analysis(analysis)
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
 
-  # Teksten skal bekraefte at maalet er naet
+  # Teksten bør bekræfte at målet er nået
   expect_match(txt, "opfylder (udviklings)?målet|målet.*opfyldt|målet.*nået",
-    label = "Skal indeholde positivt maalbekraeftelse"
+    label = "Skal indeholde positivt målbekræftelse"
   )
   # Og IKKE den fejlagtige negative tekst
   expect_false(grepl("endnu ikke nået|opfylder ikke", txt),
-    label = "Ma ikke indeholde fejlagtig negation"
+    label = "Må ikke indeholde fejlagtig negation"
   )
 })
 
@@ -862,10 +817,9 @@ test_that("REGRESSION: lower-direction 3% vs '<= 5%' -> goal_met via normaliseri
   )
   expect_equal(ctx$target_direction, "lower")
 
-  analysis <- bfh_analyse(result, metadata = list(target = "<= 5%"))
-  txt <- bfh_render_analysis(analysis)
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
   expect_match(txt, "opfylder (udviklings)?målet|målet.*opfyldt",
-    label = "3% opfylder <= 5% maal"
+    label = "3% opfylder <= 5% mål"
   )
 })
 
@@ -1050,96 +1004,126 @@ test_that("Target fallback: no target anywhere yields NA target_value", {
 })
 
 # ==============================================================================
-# Process-variation-based at_target classification via .within_sigma_tolerance
+# Process-variation-based at_target classification
 # (openspec change: at-target-tolerance-process-variation)
-# Tests ported to .within_sigma_tolerance() (spc_features.R live implementation)
 # ==============================================================================
 
-test_that(".within_sigma_tolerance: tight process with small target -> NOT within", {
-  # Bug reproducer: target=0.01, delta=0.009, sigma_hat=0.01/6 ~=0.0017,
-  # 3*sigma_hat ~=0.005 -> delta (0.009) > tolerance (0.005) -> FALSE.
-  # Under the old rule max(0.01*0.05, 0.01)=0.01 dominated -> at_target (wrong).
-  sigma_hat <- 0.01 / 6
-  delta <- abs(0.019 - 0.01) # 0.009
-  expect_false(
-    BFHcharts:::.within_sigma_tolerance(delta, sigma_hat,
-      sigma_data = 0.002,
-      sigma_multiplier_hat = 3, is_percent = FALSE
-    ),
-    label = "delta=0.009 exceeds 3*sigma_hat=0.005 -> not within"
+test_that("at_target classifies CORRECTLY for tight process with small target (bug reproducer)", {
+  # Bug rapporteret af maintainer: target = "<1%" (proportionsskala: 0.01),
+  # centerline = 0.019, smalle kontrolgraenser (UCL-LCL ~= 0.01).
+  # Under den gamle regel: tolerance = max(0.01*0.05, 0.01) = 0.01 dominerer ->
+  # |0.019-0.01| = 0.009 <= 0.01 -> at_target = TRUE (forkert).
+  # Under den nye regel: sigma_hat = 0.01/6 ~= 0.0017, 3*sigma_hat ~= 0.005 ->
+  # 0.009 > 0.005 -> at_target = FALSE (korrekt).
+  # NB: target_direction = NULL, ellers rammer vi goal_not_met-grenen.
+  ctx <- fixture_analysis_context(
+    target_value = 0.01,
+    target_direction = NULL,
+    centerline = 0.019,
+    sigma_hat = 0.01 / 6, # half-width = 3*sigma => sigma = (UCL-LCL)/6
+    sigma_data = 0.002,
+    target_display = "0.01"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("over (udviklings)?m.let|over (udviklings)?malet", txt),
+    info = paste("Forventede over_target, fik:", txt)
+  )
+  expect_false(grepl("t.t p. (udviklings)?m.let|naer (udviklings)?m.let", txt))
+})
+
+test_that("at_target classifies CORRECTLY when target is inside wide control limits", {
+  # Vid process: UCL=12, LCL=2 -> sigma_hat = 10/6 ~= 1.67, 3*sigma_hat = 5.
+  # target=5, centerline=7 -> |7-5|=2 <= 5 -> at_target = TRUE.
+  ctx <- fixture_analysis_context(
+    target_value = 5,
+    target_direction = NULL,
+    centerline = 7,
+    sigma_hat = 10 / 6,
+    target_display = "5"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("t.t p. (udviklings)?m.let", txt),
+    info = paste("Forventede at_target, fik:", txt)
   )
 })
 
-test_that(".within_sigma_tolerance: wide control limits -> within", {
-  # Vid process: UCL=12, LCL=2 -> sigma_hat=10/6~=1.67, 3*sigma_hat=5.
-  # delta=|7-5|=2 <= 5 -> TRUE.
-  sigma_hat <- 10 / 6
-  delta <- abs(7 - 5) # 2
-  expect_true(
-    BFHcharts:::.within_sigma_tolerance(delta, sigma_hat,
-      sigma_data = NA_real_,
-      sigma_multiplier_hat = 3, is_percent = FALSE
-    ),
-    label = "delta=2 <= 3*sigma_hat=5 -> within"
+test_that("at_target falls back to sd(y) when sigma_hat is NA (run chart)", {
+  # Run chart har ingen UCL/LCL -> sigma_hat = NA, men sigma_data = sd(y).
+  # target=10, centerline=11, sd(y)=2 -> |11-10|=1 <= 2 -> at_target = TRUE.
+  ctx <- fixture_analysis_context(
+    target_value = 10,
+    target_direction = NULL,
+    centerline = 11,
+    sigma_hat = NA_real_,
+    sigma_data = 2,
+    target_display = "10"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("t.t p. (udviklings)?m.let", txt),
+    info = paste("Forventede at_target via sd-fallback, fik:", txt)
   )
 })
 
-test_that(".within_sigma_tolerance: sd(y) fallback when sigma_hat is NA (run chart)", {
-  # sigma_hat=NA, sigma_data=2 -> tolerance=2. delta=|11-10|=1 <= 2 -> TRUE.
-  delta <- abs(11 - 10) # 1
-  expect_true(
-    BFHcharts:::.within_sigma_tolerance(delta,
-      sigma_hat = NA_real_,
-      sigma_data = 2, sigma_multiplier_hat = 3, is_percent = FALSE
-    ),
-    label = "delta=1 <= sigma_data=2 -> within via sd-fallback"
+test_that("at_target falls back to sd(y) and classifies over_target when delta exceeds sd", {
+  # Run chart hvor target ligger uden for sd-baeltet.
+  ctx <- fixture_analysis_context(
+    target_value = 10,
+    target_direction = NULL,
+    centerline = 15,
+    sigma_hat = NA_real_,
+    sigma_data = 2,
+    target_display = "10"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("over (udviklings)?m.let", txt),
+    info = paste("Forventede over_target, fik:", txt)
   )
 })
 
-test_that(".within_sigma_tolerance: sd(y) fallback -> NOT within when delta exceeds sd", {
-  # sigma_hat=NA, sigma_data=2. delta=|15-10|=5 > 2 -> FALSE.
-  delta <- abs(15 - 10) # 5
-  expect_false(
-    BFHcharts:::.within_sigma_tolerance(delta,
-      sigma_hat = NA_real_,
-      sigma_data = 2, sigma_multiplier_hat = 3, is_percent = FALSE
-    ),
-    label = "delta=5 > sigma_data=2 -> not within"
+test_that("at_target uses exact-match when both sigma_hat and sigma_data are zero/NA", {
+  # Degenereret case: konstant y, ingen variation. CL == target -> at_target.
+  ctx <- fixture_analysis_context(
+    target_value = 5,
+    target_direction = NULL,
+    centerline = 5,
+    sigma_hat = 0,
+    sigma_data = 0,
+    target_display = "5"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("t.t p. (udviklings)?m.let", txt),
+    info = paste("Forventede at_target via eksakt-match, fik:", txt)
   )
 })
 
-test_that(".within_sigma_tolerance: exact-match (sigma=0) -> TRUE when delta=0", {
-  # Degenereret case: konstant y, sigma=0. CL==target -> delta=0 <= 1e-9 -> TRUE.
-  expect_true(
-    BFHcharts:::.within_sigma_tolerance(0,
-      sigma_hat = 0, sigma_data = 0,
-      sigma_multiplier_hat = 3, is_percent = FALSE
-    ),
-    label = "delta=0 <= 1e-9 tolerance -> within (exact match)"
+test_that("at_target eksakt-match: lille forskel klassificeres som over/under", {
+  # CL er minimalt over target med ingen variation -> over_target.
+  ctx <- fixture_analysis_context(
+    target_value = 5,
+    target_direction = NULL,
+    centerline = 5.001,
+    sigma_hat = 0,
+    sigma_data = 0,
+    target_display = "5"
   )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("over (udviklings)?m.let", txt))
 })
 
-test_that(".within_sigma_tolerance: exact-match (sigma=0) -> FALSE when delta > 0", {
-  # CL minimalt over target, ingen variation -> delta=0.001 > 1e-9 -> FALSE.
-  expect_false(
-    BFHcharts:::.within_sigma_tolerance(0.001,
-      sigma_hat = 0, sigma_data = 0,
-      sigma_multiplier_hat = 3, is_percent = FALSE
-    ),
-    label = "delta=0.001 > 1e-9 tolerance -> not within"
-  )
-})
-
-test_that(".within_sigma_tolerance: inclusive at the 3*sigma_hat boundary", {
-  # Boundary: |CL - target| = 3*sigma_hat exactly. <=konvention -> TRUE.
+test_that("at_target classifies inclusively at the 3*sigma_hat boundary", {
+  # Boundary case: |CL - target| = 3*sigma_hat exactly.
+  # Forventning: <=-konvention inkluderer graensen -> at_target.
   sigma <- 1
-  delta <- 3 * sigma # exactly at boundary
-  expect_true(
-    BFHcharts:::.within_sigma_tolerance(delta,
-      sigma_hat = sigma,
-      sigma_data = NA_real_, sigma_multiplier_hat = 3, is_percent = FALSE
-    ),
-    label = "delta = 3*sigma exactly -> within (inclusive boundary)"
+  ctx <- fixture_analysis_context(
+    target_value = 8,
+    target_direction = NULL,
+    centerline = 5,
+    sigma_hat = sigma, # 3*sigma = 3; |5-8| = 3 = 3 -> at_target
+    target_display = "8"
+  )
+  txt <- BFHcharts:::build_fallback_analysis(ctx)
+  expect_true(grepl("t.t p. (udviklings)?m.let", txt),
+    info = paste("Forventede at_target ved <=-graense, fik:", txt)
   )
 })
 

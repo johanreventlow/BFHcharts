@@ -233,7 +233,7 @@ fixture_test_chart <- function(title = "Test", n = 12, lambda = 15) {
 # Analysis context (spc_analysis tests)
 # ----------------------------------------------------------------------------
 
-#' Minimal analyse-context (synthetic list matching bfh_build_analysis_context output)
+#' Minimal analyse-context til build_fallback_analysis() tests
 #'
 #' Konsoliderer `make_ctx()` fra test-spc_analysis.R.
 #'

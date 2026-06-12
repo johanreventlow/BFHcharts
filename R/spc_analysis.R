@@ -10,8 +10,9 @@
 
 # Konverter ASCII-operatorer (>=, <=) til Unicode-sammentrukne tegn
 # (\U2265, \U2264) i target-display-strenge til klinisk prose-rendering.
-# Bruges af spc_render.R (struktureret pipeline). Holder operator-mappingen
-# i en enkelt autoritativ kilde.
+# Bruges af baade .evaluate_target_arm() (legacy) og spc_render.R
+# (struktureret pipeline). Holder operator-mappingen i en enkelt
+# autoritativ kilde.
 .normalize_target_operators <- function(x) {
   if (is.null(x) || !nzchar(x)) {
     return(x)
@@ -25,7 +26,8 @@
 # "at" | "over" | "under" -- eller NULL hvis target ej sat. Caller
 # resolverer keys via i18n_lookup(paste0("labels.level_*.", key)).
 #
-# Shared helper for spc_render.R (.compute_level_direction +
+# Erstatter dual-computation i build_fallback_analysis() (linje 990-1013)
+# og struktureret spc_render.R (.compute_level_direction +
 # .compute_level_vs_target).
 .compute_level_keys <- function(centerline, target_value, has_target,
                                 y_axis_unit = NULL) {
@@ -59,7 +61,7 @@
 #     reference for kontekstuel praecision).
 # Returnerer TRUE naar de to display-strenge repraesenterer samme tal.
 #
-# Brugt af .compute_level_keys() til at flippe
+# Brugt af .compute_level_keys() + .evaluate_target_arm() til at flippe
 # "lige over" -> "paa maalet"/"goal_met" naar visuel lighed gaelder.
 .cl_displays_at_target_pct <- function(centerline, target_value) {
   if (!is_valid_scalar(centerline) || !is_valid_scalar(target_value)) {
@@ -74,6 +76,43 @@
   }
   cl_pct_whole <- round(centerline * 100)
   isTRUE(cl_pct_whole == target_pct_whole)
+}
+
+# Beregn near_target / at_target tolerance via sigma-cascade.
+#
+# Cascade (uaendret fra original logik):
+#   1. sigma_hat tilgaengelig     -> 3*sigma_hat (kontrolgraense-bredde / 2)
+#   2. sigma_data tilgaengelig    -> sd(y)
+#   3. ingen sigma                -> 1e-9 (kraever eksakt match)
+#
+# Percent-units (is_percent=TRUE): tolerance capes ved
+#   min(3*sigma_hat, NEAR_TARGET_PCT_CAP, NEAR_TARGET_PCT_RELATIVE * target).
+# Absolut cap (3pp) haandterer noisy processes; relativ cap (25% af target)
+# haandterer smaa-target-cases hvor 3pp stadig er klinisk for stor.
+# Eksempler:
+#   target=15%, CL=19%, delta=4pp: cap=min(sigma,3pp,3.75pp)=3pp; 4pp>3pp -> NOT near
+#   target=3%,  CL=7%,  delta=4pp: cap=min(sigma,3pp,0.75pp)=0.75pp; 4pp>0.75pp -> NOT near
+#   target=90%, CL=87%, delta=3pp: cap=min(sigma,3pp,22.5pp)=3pp; 3pp<=3pp -> NEAR
+.near_target_tolerance <- function(sigma_hat, sigma_data, is_percent,
+                                   target_value = NULL) {
+  sigma_tol <- if (is_valid_scalar(sigma_hat) && is.finite(sigma_hat) &&
+    sigma_hat > 0) {
+    3 * sigma_hat
+  } else if (is_valid_scalar(sigma_data) && is.finite(sigma_data) &&
+    sigma_data > 0) {
+    sigma_data
+  } else {
+    1e-9
+  }
+  if (isTRUE(is_percent)) {
+    caps <- c(sigma_tol, NEAR_TARGET_PCT_CAP)
+    if (is_valid_scalar(target_value) && is.finite(target_value) &&
+      target_value > 0) {
+      caps <- c(caps, NEAR_TARGET_PCT_RELATIVE * target_value)
+    }
+    return(min(caps))
+  }
+  sigma_tol
 }
 
 # Resolve target for analysis context via fallback chain.
@@ -562,7 +601,8 @@ bfh_generate_analysis <- function(x,
     stop("min_chars must be less than max_chars", call. = FALSE)
   }
 
-  # Byg struktureret analyse-objekt via bfh_analyse + bfh_render_analysis.
+  # Byg struktureret analyse-objekt (Phase 2 cut-over: bfh_analyse +
+  # bfh_render_analysis erstatter monolitisk build_fallback_analysis).
   # Public-API-signatur uaendret -- intern delegation til ny pipeline.
   spc_analysis <- bfh_analyse(x, metadata = metadata, language = language)
   baseline_analysis <- bfh_render_analysis(
@@ -697,8 +737,9 @@ bfh_generate_analysis <- function(x,
 #   has_target                            (logical, derived: target_value + centerline gyldige)
 #   outliers_for_text                     (numeric, til pluralize_da + placeholder)
 #
-# Pure: samme input -> samme output. Driver cascade-dispatch og budget-
-# allokering uden at flade detection-logikken sammen med i18n-opslag.
+# Pure: samme input -> samme output. Bruges af build_fallback_analysis() til
+# at drive cascade-dispatch og budget-allokering uden at flade detection-
+# logikken sammen med i18n-opslag.
 # Atomic Anhoej-signal-detectors. Shared mellem .detect_signal_flags()
 # (feature-extraction) og AI-path has_signals (LLM-egress gate). Holder
 # semantik konsistent paa tvaers af call-sites -- ej re-implement risiko
@@ -869,7 +910,7 @@ bfh_generate_analysis <- function(x,
 #
 # goal_met, at_target og near_target er evalueret af caller; helper er pure
 # dispatch. Prioritet i direction-aware gren: goal_met > near_target >
-# goal_not_met.
+# goal_not_met (matcher .evaluate_target_arm() priority).
 .select_action_key <- function(flags, target_direction, goal_met, at_target,
                                near_target = FALSE) {
   is_stable <- flags$is_stable
@@ -917,6 +958,335 @@ bfh_generate_analysis <- function(x,
   } else {
     if (is_stable) "stable_no_target" else "unstable_no_target"
   }
+}
+
+
+# Evaluer maalvurderings-arm af fallback-analysen.
+#
+# Returnerer named list (target_text, goal_met, at_target, near_target).
+# Bruges af orchestrator + .select_action_key().
+#
+# Tre dispatch-veje (matcher .select_action_key()'s tre cascade-grene):
+#   1. has_target + target_direction: retningsbevidst goal_met-evaluering
+#      via centerline-vs-target sammenligning + sigma-cascade for
+#      near_target naar strict-condition fejler.
+#   2. has_target uden target_direction: vaerdineutral at_target/over/under
+#      med tolerance.
+#   3. !has_target: target_text = "".
+#
+# i18n-lookup foregaar her (ikke i orchestrator) for at holde
+# orchestrator fri af cascade-strukturer.
+.evaluate_target_arm <- function(context, flags, texts, target_budget,
+                                 language = "da",
+                                 extra_placeholders = list()) {
+  result <- list(
+    target_text = "", goal_met = FALSE,
+    at_target = FALSE, near_target = FALSE
+  )
+  if (!flags$has_target) {
+    return(result)
+  }
+
+  target_value <- context$target_value
+  target_direction <- context$target_direction
+  centerline <- context$centerline
+
+  # Foretraek display-streng fra input (fx "<= 2,5"), ellers format numerisk.
+  # language threades igennem til format_target_value() saa engelsk
+  # analyse-tekst faar "1.5" og dansk faar "1,5" (cycle 01 finding E4).
+  display_target <- if (!is.null(context$target_display) &&
+    nzchar(context$target_display)) {
+    context$target_display
+  } else {
+    format_target_value(target_value,
+      y_axis_unit = context$y_axis_unit,
+      language = language
+    )
+  }
+
+  # Erstat ASCII-operatorer med Unicode-sammentrukne tegn i analyseteksten.
+  # context$target_display selv bevares uaendret (invariant fra resolve_target()).
+  display_target <- .normalize_target_operators(display_target)
+
+  # Merge target-display med globale placeholders (level_direction, level_vs_target).
+  # Target tager precedence saa specifik target-display ikke kan overskrives.
+  data <- modifyList(extra_placeholders, list(target = display_target))
+
+  y_axis_unit <- context$y_axis_unit
+  is_percent <- identical(y_axis_unit, "percent")
+
+  if (!is.null(target_direction)) {
+    # Retningsbevidst: prioritet er strikt goal_met > near_target >
+    # goal_not_met. CL paa korrekt side af target laeses altid som
+    # "opfyldt" uanset afstand; near_target reserveres for "forkert side
+    # men inden for proces-stoej" (sigma-cascade matcher path A).
+    #
+    # Percent-units: display-precision-equality check foer strikt-numeric.
+    # CL og target der afrunder til samme chart-display-vaerdi (fx 1,0%
+    # vs 1%) klassificeres som goal_met. Forhindrer "lige over"-tekst
+    # naar laeseren visuelt ser CL paa maalstregen.
+    display_equal <- is_percent &&
+      .cl_displays_at_target_pct(centerline, target_value)
+    result$goal_met <- display_equal || switch(target_direction,
+      "higher" = centerline >= target_value,
+      "lower"  = centerline <= target_value,
+      FALSE
+    )
+    if (!result$goal_met) {
+      # Strict-condition fejler -- check om delta er inden for tolerance.
+      # Samme tre-vejs cascade som value-neutral gren (sigma_hat ->
+      # sigma_data -> eksakt). Tolerance-faldet for higher/lower er
+      # symmetrisk om target; retningen kodes via {level_direction}.
+      delta <- abs(centerline - target_value)
+      tolerance <- .near_target_tolerance(
+        context$sigma_hat, context$sigma_data, is_percent,
+        target_value = target_value
+      )
+      result$near_target <- delta <= tolerance
+    }
+    key <- if (result$goal_met) {
+      "goal_met"
+    } else if (result$near_target) {
+      "near_target"
+    } else {
+      "goal_not_met"
+    }
+    result$target_text <- pick_text(texts$target[[key]],
+      data = data,
+      budget = target_budget
+    )
+  } else {
+    # Vaerdineutral: at/over/under target med processkala-tolerance.
+    # Tre-vejs cascade (se openspec change at-target-tolerance-process-variation):
+    #   1. Kontrolgraense-baseret: |CL - target| <= 3 * sigma_hat
+    #      (svarer trivielt til LCL <= target <= UCL ved konstante 3-sigma-graenser)
+    #   2. Data-sigma fallback:    |CL - target| <= sd(y)
+    #      (run charts og no_variation hvor kontrolgraenser mangler)
+    #   3. Eksakt-match:           |CL - target| < 1e-9
+    #      (degenereret: konstant y, n=1, eller begge sigma er 0)
+    # Percent-units: capped ved NEAR_TARGET_PCT_CAP saa stoejende processer
+    # ej ratiionaliserer fjern-CL som "taet paa" (parity med direction-aware).
+    delta <- abs(centerline - target_value)
+    display_equal <- is_percent &&
+      .cl_displays_at_target_pct(centerline, target_value)
+    is_at_target <- display_equal ||
+      delta <= .near_target_tolerance(
+        context$sigma_hat, context$sigma_data, is_percent,
+        target_value = target_value
+      )
+    if (is_at_target) {
+      result$target_text <- pick_text(texts$target$at_target,
+        data = data,
+        budget = target_budget
+      )
+      result$at_target <- TRUE
+    } else if (centerline > target_value) {
+      result$target_text <- pick_text(texts$target$over_target,
+        data = data,
+        budget = target_budget
+      )
+    } else {
+      result$target_text <- pick_text(texts$target$under_target,
+        data = data,
+        budget = target_budget
+      )
+    }
+  }
+
+  result
+}
+
+
+# Intern funktion: Byg komplet fallback-analysetekst.
+#
+# BACKWARD-COMPAT LAYER (post-Phase-2 cut-over):
+# Primary path for bfh_generate_analysis() er nu bfh_analyse() +
+# bfh_render_analysis() (R/spc_compose.R + R/spc_render.R).
+# build_fallback_analysis bevares som intern fallback for direct-callere
+# (test-spc_analysis.R + eventuelle eksterne :::-konsumenter) -- vil
+# blive fjernet i naeste major release efter mindst et stabilt release-
+# cycle med den nye pipeline.
+#
+# Allokerer tegnbudget til stability/target/action dele og vaelger
+# passende variant for hver del. Naar context$target_direction er
+# non-NULL (udledt fra fx "<= 2,5"), bruges retningsbevidst maal-
+# vurdering (goal_met/goal_not_met) i stedet for vaerdineutral
+# at/over/under. ensure_within_max garanterer max_chars-graensen.
+#
+# @keywords internal
+# @noRd
+build_fallback_analysis <- function(context,
+                                    max_chars = 375,
+                                    language = "da",
+                                    texts_loader = NULL) {
+  if (is.null(texts_loader)) {
+    texts_loader <- function() load_spc_texts(language)
+  }
+  spc_stats <- context$spc_stats
+  target_value <- context$target_value
+  target_direction <- context$target_direction
+  centerline <- context$centerline
+  n_points <- context$n_points
+
+  # --- Detect signaler + target-tilstand ---
+  flags <- .detect_signal_flags(context)
+  has_runs <- flags$has_runs
+  has_crossings <- flags$has_crossings
+  has_outliers <- flags$has_outliers
+  is_stable <- flags$is_stable
+  no_variation <- flags$no_variation
+  has_target <- flags$has_target
+  outliers_for_text <- flags$outliers_for_text
+
+  # --- Budget-allokering ---
+  budgets <- .allocate_text_budget(max_chars, has_target)
+  stability_budget <- budgets$stability_budget
+  target_budget <- budgets$target_budget
+  action_budget <- budgets$action_budget
+
+  if (!is.function(texts_loader)) {
+    stop("texts_loader must be a function", call. = FALSE)
+  }
+  texts <- texts_loader()
+  # outliers_actual i placeholder_data bruger recent_count-vaerdien, saa YAML-
+  # skabelonernes {outliers_actual} placeholder ogsaa foelger "seneste 6 obs"-
+  # reglen. outliers_word giver korrekt dansk ental/flertal for 1 vs n.
+  outliers_n <- if (is_valid_scalar(outliers_for_text)) outliers_for_text else 0L
+
+  # level_direction / level_vs_target: target-relative position af centerlinje.
+  # Bruges som placeholders til at sammensaette saetninger som
+  # "Niveauet {level_vs_target} ({target})" -> "Niveauet ligger under maalet (90%)".
+  # For percent-units: "paa" rendres naar CL og target afrunder til samme
+  # chart-display-vaerdi (display-precision-equality). For andre units:
+  # strikt lighedstest (delta < 1e-9). Tomme strenge naar target ikke er
+  # sat, saa placeholderne kan staa i templates uden at generere fejl,
+  # men bor kun bruges i target-/goal-specifikke varianter for at give
+  # meningsfuld tekst.
+  level_keys <- .compute_level_keys(centerline, target_value, flags$has_target,
+    y_axis_unit = context$y_axis_unit)
+  level_direction <- if (!is.null(level_keys)) {
+    i18n_lookup(paste0("labels.level_direction.", level_keys$direction_key), language)
+  } else {
+    ""
+  }
+  level_vs_target <- if (!is.null(level_keys)) {
+    i18n_lookup(paste0("labels.level_vs_target.", level_keys$vs_target_key), language)
+  } else {
+    ""
+  }
+
+  # Formateret centerline-vaerdi til {centerline}-placeholder. Bruger
+  # format_target_value() saa centerline rendres pa samme skala som y-aksen
+  # (fx 85% paa percent-charts, 3.2 paa numeric-charts). target threades
+  # gennem saa percent-CL bevarer en decimal naar |CL - target| <= 2pp --
+  # matcher chart-label-praecision (format_y_value via
+  # format_percent_contextual). Tom-fallback til "ukendt"-label naar
+  # centerline er NULL/NA (degenereret data-tilfaelde).
+  cl_fmt <- if (!is.null(centerline) && !is.na(centerline)) {
+    format_target_value(centerline,
+      y_axis_unit = context$y_axis_unit,
+      language = language,
+      target = target_value
+    )
+  } else {
+    i18n_lookup("labels.misc.ukendt", language)
+  }
+
+  placeholder_data <- list(
+    runs_actual = spc_stats$runs_actual,
+    runs_expected = spc_stats$runs_expected,
+    crossings_actual = spc_stats$crossings_actual,
+    crossings_expected = spc_stats$crossings_expected,
+    outliers_actual = outliers_for_text,
+    outliers_word = pluralize_da(
+      outliers_n,
+      i18n_lookup("labels.outliers.singular", language),
+      i18n_lookup("labels.outliers.plural", language)
+    ),
+    effective_window = spc_stats$effective_window %||% RECENT_OBS_WINDOW,
+    centerline = cl_fmt,
+    level_direction = level_direction,
+    level_vs_target = level_vs_target
+  )
+
+  # --- 1. Stabilitetstekst ---
+  # Prioritet: no_variation > majority_at_centerline > auto_mean_unstable >
+  # signal-baseret dispatch.
+  # no_variation kraever Anhoej-stats er NA (alle identiske); majority_at_cl
+  # tillader normal variation men flagger >= 50% punkter eksakt paa CL;
+  # auto_mean_unstable fyrer naar CL er auto-skiftet til gennemsnit pga
+  # majoritets-paa-median, men signaler stadig er til stede.
+  if (no_variation) {
+    stability <- pick_text(
+      texts$stability$no_variation,
+      data = list(centerline = cl_fmt),
+      budget = stability_budget
+    )
+  } else if (isTRUE(flags$majority_at_cl)) {
+    stability <- pick_text(
+      texts$stability$majority_at_centerline,
+      data = list(centerline = cl_fmt),
+      budget = stability_budget
+    )
+  } else if (isTRUE(flags$auto_mean_unstable)) {
+    stability <- pick_text(
+      texts$stability$auto_mean_unstable,
+      data = list(centerline = cl_fmt),
+      budget = stability_budget
+    )
+  } else {
+    key <- .select_stability_key(flags)
+    stability <- pick_text(texts$stability[[key]],
+      data = placeholder_data,
+      budget = stability_budget
+    )
+  }
+
+  # --- 2. Maalvurdering ---
+  # extra_placeholders giver target-templates adgang til {level_direction},
+  # {level_vs_target} og {centerline} ved siden af det allerede formaterede
+  # {target}.
+  target_eval <- .evaluate_target_arm(
+    context, flags, texts,
+    target_budget,
+    language = language,
+    extra_placeholders = list(
+      centerline = cl_fmt,
+      level_direction = level_direction,
+      level_vs_target = level_vs_target
+    )
+  )
+  target_text <- target_eval$target_text
+  goal_met <- target_eval$goal_met
+  at_target <- target_eval$at_target
+  near_target <- target_eval$near_target
+
+  # --- 3. Handlingsforslag ---
+  # action-templates faar ogsaa adgang til level_*- og centerline-placeholders
+  # saa goal_met/goal_not_met-tekster kan beskrive niveau-position i forhold
+  # til maal.
+  action_key <- .select_action_key(flags, target_direction, goal_met,
+    at_target,
+    near_target = near_target
+  )
+  action <- pick_text(texts$action[[action_key]],
+    data = list(
+      centerline = cl_fmt,
+      level_direction = level_direction,
+      level_vs_target = level_vs_target
+    ),
+    budget = action_budget
+  )
+
+  # --- Kombiner ---
+  parts <- c(stability, target_text, action)
+  parts <- parts[nchar(parts) > 0]
+  text <- paste(parts, collapse = " ")
+
+  # --- Garanter max_chars-graensen (trim ved saetnings-/klausulgraense) ---
+  text <- ensure_within_max(text, max_chars)
+
+  return(text)
 }
 
 
