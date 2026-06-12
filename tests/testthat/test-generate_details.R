@@ -99,8 +99,8 @@ make_result_with_x <- function(x_col) {
     list(
       plot = ggplot2::ggplot(),
       summary = data.frame(
-        længste_løb = 3L,
-        længste_løb_max = 7L,
+        laengste_loeb = 3L,
+        laengste_loeb_max = 7L,
         antal_kryds = 6L,
         antal_kryds_min = 4L,
         centerlinje = 0

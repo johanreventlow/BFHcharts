@@ -68,13 +68,13 @@ test_that("scalar nedre/oevre_kontrolgraense matcher qic_data raat", {
   result <- bfh_qic(d, x = month, y = value, chart_type = "i")
 
   # I-chart skal have konstante graenser -> scalar kolonner
-  expect_true(result$summary$kontrolgrænser_konstante[1])
+  expect_true(result$summary$kontrolgraenser_konstante[1])
   expect_identical(
-    result$summary$nedre_kontrolgrænse[1],
+    result$summary$nedre_kontrolgraense[1],
     result$qic_data$lcl[1]
   )
   expect_identical(
-    result$summary$øvre_kontrolgrænse[1],
+    result$summary$oevre_kontrolgraense[1],
     result$qic_data$ucl[1]
   )
 })
@@ -94,21 +94,21 @@ test_that("variable kontrolgraenser min/max matcher qic_data$lcl/ucl raat", {
     chart_type = "p", y_axis_unit = "percent"
   )
 
-  expect_false(result$summary$kontrolgrænser_konstante[1])
+  expect_false(result$summary$kontrolgraenser_konstante[1])
   expect_identical(
-    result$summary$nedre_kontrolgrænse_min[1],
+    result$summary$nedre_kontrolgraense_min[1],
     min(result$qic_data$lcl, na.rm = TRUE)
   )
   expect_identical(
-    result$summary$nedre_kontrolgrænse_max[1],
+    result$summary$nedre_kontrolgraense_max[1],
     max(result$qic_data$lcl, na.rm = TRUE)
   )
   expect_identical(
-    result$summary$øvre_kontrolgrænse_min[1],
+    result$summary$oevre_kontrolgraense_min[1],
     min(result$qic_data$ucl, na.rm = TRUE)
   )
   expect_identical(
-    result$summary$øvre_kontrolgrænse_max[1],
+    result$summary$oevre_kontrolgraense_max[1],
     max(result$qic_data$ucl, na.rm = TRUE)
   )
 })
@@ -137,14 +137,14 @@ test_that("kontrolgraenser_konstante haandterer floating-point drift via toleran
 
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
-  expect_true(result$kontrolgrænser_konstante[1],
+  expect_true(result$kontrolgraenser_konstante[1],
     info = "Drift under tolerance skal stadig detekteres som konstant"
   )
-  expect_true("nedre_kontrolgrænse" %in% names(result),
+  expect_true("nedre_kontrolgraense" %in% names(result),
     info = "Konstans -> scalar kolonner"
   )
   # Den scalar vaerdi skal vaere RAA (ikke afrundet)
-  expect_equal(result$nedre_kontrolgrænse[1], 40.00001, tolerance = 1e-6)
+  expect_equal(result$nedre_kontrolgraense[1], 40.00001, tolerance = 1e-6)
 })
 
 # -----------------------------------------------------------------------------

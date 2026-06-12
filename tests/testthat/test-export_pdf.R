@@ -306,7 +306,7 @@ test_that("bfh_extract_spc_stats handles missing columns gracefully (public API)
 
   # Summary with some columns
   summary <- data.frame(
-    længste_løb = 8,
+    laengste_loeb = 8,
     antal_kryds = 5
   )
   stats <- bfh_extract_spc_stats(summary)
@@ -448,8 +448,8 @@ test_that("build_typst_content passes data_definition with preserved newlines", 
 test_that("bfh_extract_spc_stats extracts statistics from valid summary", {
   # Create valid summary data frame
   summary <- data.frame(
-    længste_løb_max = 8,
-    længste_løb = 6,
+    laengste_loeb_max = 8,
+    laengste_loeb = 6,
     antal_kryds_min = 10,
     antal_kryds = 12
   )
@@ -475,8 +475,8 @@ test_that("bfh_extract_spc_stats extracts statistics from valid summary", {
 
 test_that("bfh_extract_spc_stats extracts outliers from summary when present", {
   summary <- data.frame(
-    længste_løb_max = 8,
-    længste_løb = 6,
+    laengste_loeb_max = 8,
+    laengste_loeb = 6,
     antal_kryds_min = 10,
     antal_kryds = 12,
     forventede_outliers = 0,
@@ -516,7 +516,7 @@ test_that("bfh_extract_spc_stats handles empty data frame gracefully", {
 test_that("bfh_extract_spc_stats handles missing columns gracefully", {
   # Summary with only some columns
   summary <- data.frame(
-    længste_løb = 6,
+    laengste_loeb = 6,
     antal_kryds = 12
   )
 
@@ -2010,4 +2010,51 @@ test_that("bfh_export_pdf accepts custom analysis length parameters", {
       analysis_max_chars = 500
     )
   )
+})
+
+# ============================================================================
+# Classed conditions: bfhcharts_export_error
+# ============================================================================
+
+test_that("bfh_export_pdf emits bfhcharts_export_error for invalid x", {
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+  expect_error(
+    bfh_export_pdf("not a result", temp_file),
+    class = "bfhcharts_export_error"
+  )
+})
+
+test_that("bfh_export_pdf emits bfhcharts_export_error for empty output path", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    infections = rpois(12, lambda = 15)
+  )
+  result <- bfh_qic(data, month, infections, chart_type = "i")
+  expect_error(
+    bfh_export_pdf(result, ""),
+    class = "bfhcharts_export_error"
+  )
+})
+
+test_that("bfh_export_pdf emits bfhcharts_export_error for restrict_template violation", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    infections = rpois(12, lambda = 15)
+  )
+  result <- bfh_qic(data, month, infections, chart_type = "i")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+  expect_error(
+    bfh_export_pdf(result, temp_file, template_path = "/some/template.typ"),
+    class = "bfhcharts_export_error"
+  )
+})
+
+test_that("bfhcharts_export_error is also a bfhcharts_error", {
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+  err <- tryCatch(
+    bfh_export_pdf("not a result", temp_file),
+    error = function(e) e
+  )
+  expect_true(inherits(err, "bfhcharts_error"))
+  expect_true(inherits(err, "bfhcharts_export_error"))
 })

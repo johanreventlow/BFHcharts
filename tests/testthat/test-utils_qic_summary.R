@@ -15,8 +15,8 @@ test_that("format_qic_summary returnerer data frame med danske kolonnenavne", {
   expect_true("fase" %in% names(result))
   expect_true("antal_observationer" %in% names(result))
   expect_true("anvendelige_observationer" %in% names(result))
-  expect_true("længste_løb" %in% names(result))
-  expect_true("længste_løb_max" %in% names(result))
+  expect_true("laengste_loeb" %in% names(result))
+  expect_true("laengste_loeb_max" %in% names(result))
   expect_true("antal_kryds" %in% names(result))
   expect_true("antal_kryds_min" %in% names(result))
   expect_true("anhoej_signal" %in% names(result))
@@ -31,7 +31,7 @@ test_that("format_qic_summary returnerer korrekte typer", {
 
   expect_type(result$fase, "integer")
   expect_type(result$antal_observationer, "integer")
-  expect_type(result$længste_løb, "integer")
+  expect_type(result$laengste_loeb, "integer")
   expect_type(result$anhoej_signal, "logical")
   expect_type(result$runs_signal, "logical")
   expect_type(result$crossings_signal, "logical")
@@ -72,8 +72,8 @@ test_that("format_qic_summary aggregerer Anhøj-stats per part", {
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
   # safe_max per part — skal give max per fase
-  expect_equal(result$længste_løb[1], 3L)
-  expect_equal(result$længste_løb[2], 7L)
+  expect_equal(result$laengste_loeb[1], 3L)
+  expect_equal(result$laengste_loeb[2], 7L)
 })
 
 test_that("format_qic_summary kombinerer signals korrekt med any()", {
@@ -138,16 +138,16 @@ test_that("format_qic_summary inkluderer skalare kontrolgrænser ved konstante g
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
   # Backward-compat: skalare kolonner til stede
-  expect_true("nedre_kontrolgrænse" %in% names(result))
-  expect_true("øvre_kontrolgrænse" %in% names(result))
+  expect_true("nedre_kontrolgraense" %in% names(result))
+  expect_true("oevre_kontrolgraense" %in% names(result))
   # Flag sættes til TRUE
-  expect_true("kontrolgrænser_konstante" %in% names(result))
-  expect_true(all(result$kontrolgrænser_konstante))
+  expect_true("kontrolgraenser_konstante" %in% names(result))
+  expect_true(all(result$kontrolgraenser_konstante))
   # Min/max kolonner fraværende ved konstante grænser
-  expect_false("nedre_kontrolgrænse_min" %in% names(result))
-  expect_false("nedre_kontrolgrænse_max" %in% names(result))
-  expect_false("øvre_kontrolgrænse_min" %in% names(result))
-  expect_false("øvre_kontrolgrænse_max" %in% names(result))
+  expect_false("nedre_kontrolgraense_min" %in% names(result))
+  expect_false("nedre_kontrolgraense_max" %in% names(result))
+  expect_false("oevre_kontrolgraense_min" %in% names(result))
+  expect_false("oevre_kontrolgraense_max" %in% names(result))
 })
 
 test_that("format_qic_summary eksponerer min/max ved variable grænser", {
@@ -159,19 +159,19 @@ test_that("format_qic_summary eksponerer min/max ved variable grænser", {
   result <- format_qic_summary(qic_data, y_axis_unit = "percent")
 
   # Flag sættes til FALSE
-  expect_true("kontrolgrænser_konstante" %in% names(result))
-  expect_false(any(result$kontrolgrænser_konstante))
+  expect_true("kontrolgraenser_konstante" %in% names(result))
+  expect_false(any(result$kontrolgraenser_konstante))
   # Min/max kolonner tilstede
-  expect_true("nedre_kontrolgrænse_min" %in% names(result))
-  expect_true("nedre_kontrolgrænse_max" %in% names(result))
-  expect_true("øvre_kontrolgrænse_min" %in% names(result))
-  expect_true("øvre_kontrolgrænse_max" %in% names(result))
+  expect_true("nedre_kontrolgraense_min" %in% names(result))
+  expect_true("nedre_kontrolgraense_max" %in% names(result))
+  expect_true("oevre_kontrolgraense_min" %in% names(result))
+  expect_true("oevre_kontrolgraense_max" %in% names(result))
   # Skalare kolonner fraværende (misvisende at vise én værdi)
-  expect_false("nedre_kontrolgrænse" %in% names(result))
-  expect_false("øvre_kontrolgrænse" %in% names(result))
+  expect_false("nedre_kontrolgraense" %in% names(result))
+  expect_false("oevre_kontrolgraense" %in% names(result))
   # Min < max (grænser varierer)
-  expect_lt(result$nedre_kontrolgrænse_min, result$nedre_kontrolgrænse_max)
-  expect_lt(result$øvre_kontrolgrænse_min, result$øvre_kontrolgrænse_max)
+  expect_lt(result$nedre_kontrolgraense_min, result$nedre_kontrolgraense_max)
+  expect_lt(result$oevre_kontrolgraense_min, result$oevre_kontrolgraense_max)
 })
 
 test_that("format_qic_summary: variable grænser giver korrekte min/max-værdier", {
@@ -183,10 +183,10 @@ test_that("format_qic_summary: variable grænser giver korrekte min/max-værdier
   result <- format_qic_summary(qic_data, y_axis_unit = "percent")
 
   # Slice C: raa precision -- min/max matcher faktisk min/max uden afrunding
-  expect_equal(result$nedre_kontrolgrænse_min, 30)
-  expect_equal(result$nedre_kontrolgrænse_max, 40)
-  expect_equal(result$øvre_kontrolgrænse_min, 60)
-  expect_equal(result$øvre_kontrolgrænse_max, 70)
+  expect_equal(result$nedre_kontrolgraense_min, 30)
+  expect_equal(result$nedre_kontrolgraense_max, 40)
+  expect_equal(result$oevre_kontrolgraense_min, 60)
+  expect_equal(result$oevre_kontrolgraense_max, 70)
 })
 
 test_that("format_qic_summary: p-chart med konstant n → konstante grænser", {
@@ -195,9 +195,9 @@ test_that("format_qic_summary: p-chart med konstant n → konstante grænser", {
   # lcl/ucl er allerede konstante i fixture (rep(35,n) og rep(65,n))
   result <- format_qic_summary(qic_data, y_axis_unit = "percent")
 
-  expect_true(all(result$kontrolgrænser_konstante))
-  expect_true("nedre_kontrolgrænse" %in% names(result))
-  expect_true("øvre_kontrolgrænse" %in% names(result))
+  expect_true(all(result$kontrolgraenser_konstante))
+  expect_true("nedre_kontrolgraense" %in% names(result))
+  expect_true("oevre_kontrolgraense" %in% names(result))
 })
 
 test_that("format_qic_summary: multi-fase med variable grænser → flag per row korrekt", {
@@ -211,16 +211,16 @@ test_that("format_qic_summary: multi-fase med variable grænser → flag per row
 
   expect_equal(nrow(result), 2)
   # Fase 1 er konstant, fase 2 er variabel
-  expect_true(result$kontrolgrænser_konstante[1])
-  expect_false(result$kontrolgrænser_konstante[2])
+  expect_true(result$kontrolgraenser_konstante[1])
+  expect_false(result$kontrolgraenser_konstante[2])
   # Global beslutning: mindst én variabel → min/max kolonner for alle
-  expect_true("nedre_kontrolgrænse_min" %in% names(result))
-  expect_true("nedre_kontrolgrænse_max" %in% names(result))
-  expect_false("nedre_kontrolgrænse" %in% names(result))
+  expect_true("nedre_kontrolgraense_min" %in% names(result))
+  expect_true("nedre_kontrolgraense_max" %in% names(result))
+  expect_false("nedre_kontrolgraense" %in% names(result))
   # Fase 1 (konstant) → min == max
-  expect_equal(result$nedre_kontrolgrænse_min[1], result$nedre_kontrolgrænse_max[1])
+  expect_equal(result$nedre_kontrolgraense_min[1], result$nedre_kontrolgraense_max[1])
   # Fase 2 (variabel) → min < max
-  expect_lt(result$nedre_kontrolgrænse_min[2], result$nedre_kontrolgrænse_max[2])
+  expect_lt(result$nedre_kontrolgraense_min[2], result$nedre_kontrolgraense_max[2])
 })
 
 # =============================================================================
@@ -234,8 +234,8 @@ test_that("format_qic_summary håndterer run chart uden lcl/ucl", {
 
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
-  expect_false("nedre_kontrolgrænse" %in% names(result))
-  expect_false("øvre_kontrolgrænse" %in% names(result))
+  expect_false("nedre_kontrolgraense" %in% names(result))
+  expect_false("oevre_kontrolgraense" %in% names(result))
   # Men centerlinje skal stadig være der
   expect_true("centerlinje" %in% names(result))
 })
@@ -252,7 +252,7 @@ test_that("format_qic_summary håndterer NA i Anhøj-stats", {
   result <- format_qic_summary(qic_data, y_axis_unit = "count")
 
   # safe_max af alle NAs → NA_real_, som as.integer → NA_integer_
-  expect_true(is.na(result$længste_løb))
+  expect_true(is.na(result$laengste_loeb))
   expect_true(is.na(result$antal_kryds))
 })
 
