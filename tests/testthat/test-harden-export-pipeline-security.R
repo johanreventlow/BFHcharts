@@ -367,19 +367,26 @@ test_that("bfh_compile_typst quoter path-args korrekt per platform", {
   # metachars (parens, $, etc.). Begge brydes uden quotes.
   typst_arg <- grep(space_dir, captured_args, fixed = TRUE, value = TRUE)
   expect_true(length(typst_arg) >= 1,
-    info = "path-args skal optraede i captured args (evt. wrapped i quotes)")
+    info = "path-args skal optraede i captured args (evt. wrapped i quotes)"
+  )
 
   if (.Platform$OS.type == "windows") {
     # Windows: shQuote(type = "cmd") wrapper i double-quotes; MSVCRT
     # CommandLineToArgvW stripper outer quotes inden child-process argv.
     expect_true(all(grepl('^".*"$', typst_arg)),
-      info = paste("Windows path-args skal double-quotes,",
-                   "got:", paste(typst_arg, collapse = "; ")))
+      info = paste(
+        "Windows path-args skal double-quotes,",
+        "got:", paste(typst_arg, collapse = "; ")
+      )
+    )
   } else {
     # POSIX: shQuote() default wrapper i single-quotes for /bin/sh -c.
     expect_true(all(grepl("^'.*'$", typst_arg)),
-      info = paste("POSIX path-args skal single-quotes,",
-                   "got:", paste(typst_arg, collapse = "; ")))
+      info = paste(
+        "POSIX path-args skal single-quotes,",
+        "got:", paste(typst_arg, collapse = "; ")
+      )
+    )
   }
 })
 
@@ -587,5 +594,96 @@ test_that("bfh_export_pdf with restrict_template=FALSE allows custom template_pa
       grepl("restrict_template", conditionMessage(err)),
       info = "Error should be about missing template, not restrict_template guard"
     )
+  }
+})
+
+# ============================================================================
+# 9. I431: spc_stats type validation in bfh_create_typst_document()
+# ============================================================================
+
+test_that("bfh_create_typst_document rejects non-numeric spc_stats fields", {
+  # Minimal SVG image so chart_image validation passes.
+  tmp_svg <- withr::local_tempfile(fileext = ".svg")
+  writeLines(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>',
+    tmp_svg
+  )
+  tmp_typ <- withr::local_tempfile(fileext = ".typ")
+
+  for (field in c(
+    "runs_expected", "runs_actual",
+    "crossings_expected", "crossings_actual",
+    "outliers_expected", "outliers_actual"
+  )) {
+    expect_error(
+      BFHcharts:::bfh_create_typst_document(
+        chart_image = tmp_svg,
+        output = tmp_typ,
+        metadata = list(),
+        spc_stats = stats::setNames(
+          list("'; #import evil.typ; '"),
+          field
+        )
+      ),
+      regexp = field,
+      info = paste("Should reject non-numeric value in spc_stats$", field)
+    )
+  }
+})
+
+test_that("bfh_create_typst_document rejects non-logical spc_stats$is_run_chart", {
+  tmp_svg <- withr::local_tempfile(fileext = ".svg")
+  writeLines(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>',
+    tmp_svg
+  )
+  tmp_typ <- withr::local_tempfile(fileext = ".typ")
+
+  expect_error(
+    BFHcharts:::bfh_create_typst_document(
+      chart_image = tmp_svg,
+      output      = tmp_typ,
+      metadata    = list(),
+      spc_stats   = list(is_run_chart = "true")
+    ),
+    regexp = "is_run_chart"
+  )
+})
+
+test_that("bfh_create_typst_document accepts valid numeric and NULL spc_stats fields", {
+  tmp_svg <- withr::local_tempfile(fileext = ".svg")
+  writeLines(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>',
+    tmp_svg
+  )
+  tmp_typ <- withr::local_tempfile(fileext = ".typ")
+
+  # NULL fields + one numeric field: should pass type-validation guard.
+  # (May fail later on template copy -- that is unrelated to type guard.)
+  err <- tryCatch(
+    BFHcharts:::bfh_create_typst_document(
+      chart_image = tmp_svg,
+      output = tmp_typ,
+      metadata = list(),
+      spc_stats = list(
+        runs_expected = 5.5,
+        runs_actual   = NULL,
+        is_run_chart  = TRUE
+      )
+    ),
+    error = function(e) e
+  )
+  # Type guard must not fire -- any error should be about template/file, not type check.
+  if (inherits(err, "error")) {
+    expect_false(
+      grepl("must be numeric or NULL|must be logical or NULL", conditionMessage(err)),
+      info = paste(
+        "Valid numeric/NULL inputs should not trigger type guard, got:",
+        conditionMessage(err)
+      )
+    )
+  } else {
+    # No error at all -- type guard correctly did not block valid inputs.
+    expect_true(TRUE)
   }
 })
