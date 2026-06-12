@@ -2011,3 +2011,50 @@ test_that("bfh_export_pdf accepts custom analysis length parameters", {
     )
   )
 })
+
+# ============================================================================
+# Classed conditions: bfhcharts_export_error
+# ============================================================================
+
+test_that("bfh_export_pdf emits bfhcharts_export_error for invalid x", {
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+  expect_error(
+    bfh_export_pdf("not a result", temp_file),
+    class = "bfhcharts_export_error"
+  )
+})
+
+test_that("bfh_export_pdf emits bfhcharts_export_error for empty output path", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    infections = rpois(12, lambda = 15)
+  )
+  result <- bfh_qic(data, month, infections, chart_type = "i")
+  expect_error(
+    bfh_export_pdf(result, ""),
+    class = "bfhcharts_export_error"
+  )
+})
+
+test_that("bfh_export_pdf emits bfhcharts_export_error for restrict_template violation", {
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    infections = rpois(12, lambda = 15)
+  )
+  result <- bfh_qic(data, month, infections, chart_type = "i")
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+  expect_error(
+    bfh_export_pdf(result, temp_file, template_path = "/some/template.typ"),
+    class = "bfhcharts_export_error"
+  )
+})
+
+test_that("bfhcharts_export_error is also a bfhcharts_error", {
+  temp_file <- withr::local_tempfile(fileext = ".pdf")
+  err <- tryCatch(
+    bfh_export_pdf("not a result", temp_file),
+    error = function(e) e
+  )
+  expect_true(inherits(err, "bfhcharts_error"))
+  expect_true(inherits(err, "bfhcharts_export_error"))
+})

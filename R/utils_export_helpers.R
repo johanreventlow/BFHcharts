@@ -21,14 +21,16 @@
   if (!is.null(freeze_val) && length(freeze_val) == 1L &&
     is.numeric(freeze_val) && !is.na(freeze_val) &&
     freeze_val < MIN_BASELINE_N) {
-    stop(
-      sprintf(
-        "freeze = %s: baseline har faerre end %d punkter (MIN_BASELINE_N). ",
-        as.integer(freeze_val), MIN_BASELINE_N
+    bfh_abort(
+      paste0(
+        sprintf(
+          "freeze = %s: baseline har faerre end %d punkter (MIN_BASELINE_N). ",
+          as.integer(freeze_val), MIN_BASELINE_N
+        ),
+        "Saet strict_baseline = FALSE for at acceptere kortere baseline ",
+        "(kontrolgraenser kan vaere statistisk usikre)."
       ),
-      "Saet strict_baseline = FALSE for at acceptere kortere baseline ",
-      "(kontrolgraenser kan vaere statistisk usikre).",
-      call. = FALSE
+      class = "bfhcharts_export_error"
     )
   }
   qd <- x$qic_data
@@ -36,14 +38,16 @@
     phase_sizes <- as.integer(table(qd$part))
     short_phases <- which(phase_sizes < MIN_BASELINE_N)
     if (length(short_phases) > 0L) {
-      stop(
-        sprintf(
-          "Fase(r) %s har faerre end %d punkter (MIN_BASELINE_N). ",
-          paste(short_phases, collapse = ", "), MIN_BASELINE_N
+      bfh_abort(
+        paste0(
+          sprintf(
+            "Fase(r) %s har faerre end %d punkter (MIN_BASELINE_N). ",
+            paste(short_phases, collapse = ", "), MIN_BASELINE_N
+          ),
+          "Saet strict_baseline = FALSE for at acceptere kortere faser ",
+          "(kontrolgraenser kan vaere statistisk usikre)."
         ),
-        "Saet strict_baseline = FALSE for at acceptere kortere faser ",
-        "(kontrolgraenser kan vaere statistisk usikre).",
-        call. = FALSE
+        class = "bfhcharts_export_error"
       )
     }
   }
@@ -68,35 +72,39 @@
   }
   if (is.numeric(x)) {
     if (length(x) != 1L) {
-      stop(
-        "metadata$target must be a scalar (length 1), got length ", length(x),
-        call. = FALSE
+      bfh_abort(
+        paste0("metadata$target must be a scalar (length 1), got length ", length(x)),
+        class = "bfhcharts_export_error"
       )
     }
     if (!is.finite(x)) {
-      stop(
-        "metadata$target must be a finite numeric (no NA/Inf/NaN), got: ", x,
-        call. = FALSE
+      bfh_abort(
+        paste0("metadata$target must be a finite numeric (no NA/Inf/NaN), got: ", x),
+        class = "bfhcharts_export_error"
       )
     }
     return(invisible(NULL))
   }
   if (is.character(x)) {
     if (length(x) != 1L) {
-      stop(
-        "metadata$target must be a scalar (length 1), got length ", length(x),
-        call. = FALSE
+      bfh_abort(
+        paste0("metadata$target must be a scalar (length 1), got length ", length(x)),
+        class = "bfhcharts_export_error"
       )
     }
     if (is.na(x)) {
-      stop("metadata$target must not be NA", call. = FALSE)
+      bfh_abort("metadata$target must not be NA",
+        class = "bfhcharts_export_error"
+      )
     }
     return(invisible(NULL))
   }
-  stop(
-    "metadata$target must be NULL, a single finite numeric, or a single character string.\n",
-    "  Got class: ", paste(class(x), collapse = "/"),
-    call. = FALSE
+  bfh_abort(
+    paste0(
+      "metadata$target must be NULL, a single finite numeric, or a single character string.\n",
+      "  Got class: ", paste(class(x), collapse = "/")
+    ),
+    class = "bfhcharts_export_error"
   )
 }
 
@@ -112,17 +120,19 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
                                            batch_session, template_path) {
   # Klasse-tjek
   if (!inherits(x, "bfh_qic_result")) {
-    stop(
-      "x must be a bfh_qic_result object from bfh_qic().\n",
-      "  Got class: ", paste(class(x), collapse = ", "),
-      call. = FALSE
+    bfh_abort(
+      paste0(
+        "x must be a bfh_qic_result object from bfh_qic().\n",
+        "  Got class: ", paste(class(x), collapse = ", ")
+      ),
+      class = "bfhcharts_export_error"
     )
   }
 
   validate_export_path(output, extension = "pdf", ext_action = "stop")
 
   if (!is.list(metadata)) {
-    stop("metadata must be a list", call. = FALSE)
+    bfh_abort("metadata must be a list", class = "bfhcharts_export_error")
   }
 
   # Metadata felt-validering
@@ -167,11 +177,13 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
         if (is.null(value)) next
         if (!is.character(value) || length(value) != 1L || is.na(value) ||
           !nzchar(value)) {
-          stop(
-            "metadata$logo_path must be a single non-empty character string or NULL",
-            "\n  Got: ", paste(class(value), collapse = "/"),
-            " (length ", length(value), ")",
-            call. = FALSE
+          bfh_abort(
+            paste0(
+              "metadata$logo_path must be a single non-empty character string or NULL",
+              "\n  Got: ", paste(class(value), collapse = "/"),
+              " (length ", length(value), ")"
+            ),
+            class = "bfhcharts_export_error"
           )
         }
         .check_traversal(value)
@@ -181,19 +193,23 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
 
       if (!is.null(value) && !is.character(value)) {
         if (field == "date" && inherits(value, "Date")) next
-        stop(
-          "metadata$", field, " must be a character string",
-          if (field == "date") " (or Date object)" else "",
-          "\n  Got: ", class(value)[1],
-          call. = FALSE
+        bfh_abort(
+          paste0(
+            "metadata$", field, " must be a character string",
+            if (field == "date") " (or Date object)" else "",
+            "\n  Got: ", class(value)[1]
+          ),
+          class = "bfhcharts_export_error"
         )
       }
 
       if (is.character(value) && nchar(value) > 10000) {
-        stop(
-          "metadata$", field, " exceeds maximum length of 10,000 characters\n",
-          "  Current length: ", nchar(value),
-          call. = FALSE
+        bfh_abort(
+          paste0(
+            "metadata$", field, " exceeds maximum length of 10,000 characters\n",
+            "  Current length: ", nchar(value)
+          ),
+          class = "bfhcharts_export_error"
         )
       }
     }
@@ -201,42 +217,54 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
 
   # Valgfrie parameter-validering
   if (!is.null(inject_assets) && !is.function(inject_assets)) {
-    stop("inject_assets must be a function or NULL", call. = FALSE)
+    bfh_abort("inject_assets must be a function or NULL",
+      class = "bfhcharts_export_error"
+    )
   }
 
   if (!is.null(font_path)) {
     if (!is.character(font_path) || length(font_path) != 1) {
-      stop("font_path must be a single character string or NULL", call. = FALSE)
+      bfh_abort("font_path must be a single character string or NULL",
+        class = "bfhcharts_export_error"
+      )
     }
   }
 
   if (!is.numeric(dpi) || length(dpi) != 1 || is.na(dpi) || dpi <= 0) {
-    stop("dpi must be a single positive numeric value", call. = FALSE)
+    bfh_abort("dpi must be a single positive numeric value",
+      class = "bfhcharts_export_error"
+    )
   }
 
   # batch_session validering
   if (!is.null(batch_session)) {
     if (!inherits(batch_session, "bfh_export_session")) {
-      stop(
+      bfh_abort(
         "batch_session must be a bfh_export_session object from bfh_create_export_session()",
-        call. = FALSE
+        class = "bfhcharts_export_error"
       )
     }
     if (batch_session$closed()) {
-      stop("batch_session is already closed", call. = FALSE)
+      bfh_abort("batch_session is already closed",
+        class = "bfhcharts_export_error"
+      )
     }
     if (!is.null(template_path)) {
-      stop(
-        "batch_session cannot be combined with template_path.\n",
-        "  Custom templates are not supported in batch sessions.",
-        call. = FALSE
+      bfh_abort(
+        paste0(
+          "batch_session cannot be combined with template_path.\n",
+          "  Custom templates are not supported in batch sessions."
+        ),
+        class = "bfhcharts_export_error"
       )
     }
     if (!is.null(inject_assets)) {
-      stop(
-        "batch_session cannot be combined with inject_assets.\n",
-        "  Pass inject_assets to bfh_create_export_session() instead.",
-        call. = FALSE
+      bfh_abort(
+        paste0(
+          "batch_session cannot be combined with inject_assets.\n",
+          "  Pass inject_assets to bfh_create_export_session() instead."
+        ),
+        class = "bfhcharts_export_error"
       )
     }
   }
@@ -284,29 +312,35 @@ validate_template_path <- function(template_path) {
   }
 
   if (!is.character(template_path) || length(template_path) != 1) {
-    stop("template_path must be a single character string", call. = FALSE)
+    bfh_abort("template_path must be a single character string",
+      class = "bfhcharts_export_error"
+    )
   }
   validate_export_path(template_path)
 
   if (!file.exists(template_path)) {
-    stop(
-      "Custom template file not found: ", basename(template_path), "\n",
-      "  Ensure the file exists and the path is correct.",
-      call. = FALSE
+    bfh_abort(
+      paste0(
+        "Custom template file not found: ", basename(template_path), "\n",
+        "  Ensure the file exists and the path is correct."
+      ),
+      class = "bfhcharts_export_error"
     )
   }
   template_path <- validate_export_path(template_path, normalize = TRUE)
   if (dir.exists(template_path)) {
-    stop(
-      "template_path must be a file, not a directory: ", basename(template_path),
-      call. = FALSE
+    bfh_abort(
+      paste0("template_path must be a file, not a directory: ", basename(template_path)),
+      class = "bfhcharts_export_error"
     )
   }
   if (!grepl("\\.typ$", template_path, ignore.case = TRUE)) {
-    stop(
-      "template_path must be a .typ file: ", basename(template_path), "\n",
-      "  Typst templates require the .typ extension.",
-      call. = FALSE
+    bfh_abort(
+      paste0(
+        "template_path must be a .typ file: ", basename(template_path), "\n",
+        "  Typst templates require the .typ extension."
+      ),
+      class = "bfhcharts_export_error"
     )
   }
 
@@ -399,10 +433,9 @@ export_chart_svg <- function(plot_for_export, chart_svg, dpi) {
       device   = "svg"
     ),
     error = function(e) {
-      stop(
-        "Failed to save chart image\n",
-        "  Error: ", conditionMessage(e),
-        call. = FALSE
+      bfh_abort(
+        paste0("Failed to save chart image\n  Error: ", conditionMessage(e)),
+        class = "bfhcharts_export_error"
       )
     }
   )
