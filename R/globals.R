@@ -164,6 +164,17 @@ LABEL_PLACEMENT_COINCIDENT_THRESHOLD_FACTOR <- 0.1
 LABEL_PLACEMENT_SHELF_CENTER_THRESHOLD <- 0.5
 
 # ============================================================================
+# DEPENDENCY VERSION CONSTANTS
+# ============================================================================
+
+#' Minimum required version of BFHtheme
+#'
+#' Single source of truth for the BFHtheme lower-bound used in dep-guards
+#' (utils_dep_guards.R), .onAttach (zzz.R), and package-level docs
+#' (BFHcharts-package.R). Must match the Imports: lower-bound in DESCRIPTION.
+.BFHTHEME_MIN_VERSION <- "0.5.1"
+
+# ============================================================================
 # AUDIT + CONSENT CONSTANTS
 # ============================================================================
 

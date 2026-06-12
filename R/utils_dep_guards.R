@@ -27,7 +27,7 @@
 #' @return Invisibly TRUE on success.
 #' @keywords internal
 #' @noRd
-.ensure_bfhtheme <- function(min_version = "0.5.0",
+.ensure_bfhtheme <- function(min_version = .BFHTHEME_MIN_VERSION,
                              require_fn = requireNamespace,
                              version_fn = utils::packageVersion) {
   cache_key <- paste0("BFHtheme>=", min_version)
