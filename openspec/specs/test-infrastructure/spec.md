@@ -239,7 +239,7 @@ Control limit and centerline calculations SHALL be verified against hand-compute
 - **GIVEN** a constructed dataset with 9 consecutive points above median
 - **WHEN** `bfh_qic(..., chart_type = "run")` is called
 - **THEN** `anhoej.signal` SHALL be `TRUE` for those 9 points
-- **AND** the summary SHALL report `længste_løb` equal to 9 or higher
+- **AND** the summary SHALL report `laengste_loeb` equal to 9 or higher
 
 #### Scenario: Outlier counts distinguish total vs. recent
 

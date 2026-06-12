@@ -97,7 +97,7 @@ Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `
 - Kun brugt internt af `bfh_qic()`
 
 *Constants:*
-- `CHART_TYPES_EN` - Chart type identifiers (`run`, `i`, `mr`, `p`, `pp`, `u`, `up`, `c`, `g`, `xbar`, `s`, `t`)
+- `CHART_TYPES_EN` - Chart type identifiers (`run`, `i`, `mr`, `p`, `pp`, `u`, `up`, `c`, `g`, `xbar`, `s`, `t`, `ip`)
 - Brugere passer strings direkte: `chart_type = "p"`, ikke konstant-opslag
 
 **Rationale:** **Simpelt primært API** - brugere lærer reelt kun `bfh_qic()`; de sekundære exports er kun nødvendige ved eksport/analysetekst. Resten af kompleksiteten er skjult under motorhjelmen. Advanced users kan tilgå internals med `BFHcharts:::function_name()`.

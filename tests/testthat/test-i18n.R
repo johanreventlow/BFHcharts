@@ -219,3 +219,57 @@ test_that("texts_loader stadig virker som mock-parameter", {
   expect_match(analysis, "CUSTOM_STABILITY")
   expect_match(analysis, "CUSTOM_ACTION")
 })
+
+# Issue #419: prepare_export_metadata must pass language from x$config$language
+# to bfh_generate_details() and bfh_generate_analysis(), so that a chart
+# created with language = "en" produces English text in the PDF.
+test_that("prepare_export_metadata passes language from config to bfh_generate_details", {
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  result_en <- bfh_qic(data,
+    x = date, y = value, chart_type = "i",
+    language = "en"
+  )
+
+  meta <- BFHcharts:::prepare_export_metadata(
+    x = result_en,
+    metadata = list(),
+    auto_analysis = FALSE,
+    use_ai = FALSE,
+    analysis_min_chars = 300,
+    analysis_max_chars = 375
+  )
+
+  # English details must contain English labels, not Danish
+  expect_true(grepl("Period", meta$details))
+  expect_false(grepl("Periode", meta$details))
+})
+
+test_that("prepare_export_metadata passes language from config to bfh_generate_analysis", {
+  set.seed(42)
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, mean = 50, sd = 5)
+  )
+  result_en <- bfh_qic(data,
+    x = date, y = value, chart_type = "i",
+    language = "en"
+  )
+
+  meta <- BFHcharts:::prepare_export_metadata(
+    x = result_en,
+    metadata = list(),
+    auto_analysis = TRUE,
+    use_ai = FALSE,
+    analysis_min_chars = 300,
+    analysis_max_chars = 375
+  )
+
+  # Analysis must be English: no Danish phrases expected
+  expect_false(grepl("stabil og forudsigelig|niveauskift", meta$analysis))
+  expect_type(meta$analysis, "character")
+  expect_true(nchar(meta$analysis) > 0)
+})
