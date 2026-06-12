@@ -114,7 +114,7 @@ jobs:
           BFHCHARTS_TEST_FULL: "true"
         run: |
           Rscript -e "
-            devtools::load_all('.')
+            pkgload::load_all('.')
             testthat::test_file(
               'tests/testthat/test-production-template-renders.R',
               reporter = testthat::ProgressReporter
