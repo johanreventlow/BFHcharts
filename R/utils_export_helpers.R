@@ -252,6 +252,8 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
 prepare_export_metadata <- function(x, metadata, auto_analysis, use_ai,
                                     analysis_min_chars, analysis_max_chars,
                                     data_consent = NULL, use_rag = FALSE) {
+  language <- x$config$language %||% "da"
+
   if (isTRUE(auto_analysis) && is.null(metadata$analysis)) {
     metadata$analysis <- bfh_generate_analysis(
       x = x,
@@ -260,12 +262,13 @@ prepare_export_metadata <- function(x, metadata, auto_analysis, use_ai,
       data_consent = data_consent,
       use_rag = use_rag,
       min_chars = analysis_min_chars,
-      max_chars = analysis_max_chars
+      max_chars = analysis_max_chars,
+      language = language
     )
   }
 
   if (is.null(metadata$details)) {
-    metadata$details <- bfh_generate_details(x)
+    metadata$details <- bfh_generate_details(x, language = language)
   }
 
   metadata
