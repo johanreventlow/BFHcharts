@@ -186,8 +186,8 @@ fixture_bfh_qic_result <- function(sigma_signal,
   if (!is.null(part)) qic_data$part <- part
 
   default_summary <- data.frame(
-    længste_løb = 3L,
-    længste_løb_max = 7L,
+    laengste_loeb = 3L,
+    laengste_loeb_max = 7L,
     antal_kryds = 6L,
     antal_kryds_min = 4L,
     centerlinje = 0

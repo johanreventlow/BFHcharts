@@ -9,6 +9,14 @@
   `chart_type = "ip"` i alle kald. Det er en hård omdøbning -- `"i'"`
   accepteres ikke længere. (Introduceret i 0.24.0; omdøbt før bred udbredelse.)
 
+* **Kolonnenavnene i `result$summary` er omdøbt til ASCII-translitterationer.**
+  Danske UTF-8-navne medfoerte silent NULL naar brugere fulgte dokumentationens
+  ASCII-navne. De berorte kolonner: `laengste_loeb` (tidl. `laengste_loeb`
+  med UTF-8-bogstaver), `laengste_loeb_max`, `nedre_kontrolgraense`,
+  `oevre_kontrolgraense`, `kontrolgraenser_konstante` og de afledte
+  min/max/95-varianter. Migration: erstat UTF-8-navne med translittereringerne
+  i alle kald til `result$summary$...`. biSPCharts-tilpasning spoeres separat.
+
 # BFHcharts 0.24.0
 
 ## Nye features
@@ -868,15 +876,15 @@ develop. Verdict: APPROVE for produktion (multi-tenant Connect Cloud
   ```
 
   De nye `runs_signal` og `crossings_signal` er pure derivationer fra
-  eksisterende `længste_løb`/`længste_løb_max` og `antal_kryds`/`antal_kryds_min`
+  eksisterende `laengste_loeb`/`laengste_loeb_max` og `antal_kryds`/`antal_kryds_min`
   per fase. NA inheriterer fra inputs (degenererede faser hvor qicharts2
   returnerer NA). biSPCharts #468 sporer downstream-migration.
 
 * **`summary` numeriske kolonner returnerer raw qicharts2-precision** (ej
   længere afrundet til 1-2 decimaler). Påvirker `centerlinje`,
-  `nedre_kontrolgrænse`, `øvre_kontrolgrænse`, `nedre_kontrolgrænse_min/max`,
-  `øvre_kontrolgrænse_min/max`, `nedre_kontrolgrænse_95`,
-  `øvre_kontrolgrænse_95`. Display-formattere (`format_target_value()`,
+  `nedre_kontrolgraense`, `oevre_kontrolgraense`, `nedre_kontrolgraense_min/max`,
+  `oevre_kontrolgraense_min/max`, `nedre_kontrolgraense_95`,
+  `oevre_kontrolgraense_95`. Display-formattere (`format_target_value()`,
   `format_centerline_for_details()`) afrunder selv ved string-emission, så
   PDF-output forbliver byte-identisk. Logic-konsumere (target-sammenligning,
   statistisk videreanalyse) får nu korrekte resultater nær afrundings-
@@ -894,7 +902,7 @@ develop. Verdict: APPROVE for produktion (multi-tenant Connect Cloud
 ## Internal changes
 
 * ADR-002 addendum dokumenterer signal-rename + raw-precision-skift.
-* Konstans-detektion (`kontrolgrænser_konstante`) bevarer `decimal_places + 2`-
+* Konstans-detektion (`kontrolgraenser_konstante`) bevarer `decimal_places + 2`-
   tolerance for at absorbere floating-point drift fra qicharts2 -- detektions-
   logikken roundes, men de lagrede værdier forbliver raw.
 
