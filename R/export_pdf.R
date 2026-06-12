@@ -329,23 +329,27 @@ bfh_export_pdf <- function(x,
   # Shiny input with strict_json = FALSE).
   if (!is.logical(restrict_template) || length(restrict_template) != 1L ||
     is.na(restrict_template)) {
-    stop(
-      "restrict_template must be TRUE or FALSE (single non-NA logical)",
-      "\n  Got: ", paste(class(restrict_template), collapse = "/"),
-      " (length ", length(restrict_template), ")",
-      call. = FALSE
+    bfh_abort(
+      paste0(
+        "restrict_template must be TRUE or FALSE (single non-NA logical)",
+        "\n  Got: ", paste(class(restrict_template), collapse = "/"),
+        " (length ", length(restrict_template), ")"
+      ),
+      class = "bfhcharts_export_error"
     )
   }
   if (restrict_template && !is.null(template_path)) {
-    stop(
-      "template_path is not allowed when restrict_template = TRUE.",
-      "\n  Only the packaged BFHcharts template may be used in this configuration.",
-      "\n  To opt in to a trusted custom Typst template, pass",
-      " restrict_template = FALSE explicitly.",
-      "\n  WARNING: custom templates are compiled with full filesystem access",
-      " (equivalent to source()) -- never forward user-supplied input to",
-      " template_path.",
-      call. = FALSE
+    bfh_abort(
+      paste0(
+        "template_path is not allowed when restrict_template = TRUE.",
+        "\n  Only the packaged BFHcharts template may be used in this configuration.",
+        "\n  To opt in to a trusted custom Typst template, pass",
+        " restrict_template = FALSE explicitly.",
+        "\n  WARNING: custom templates are compiled with full filesystem access",
+        " (equivalent to source()) -- never forward user-supplied input to",
+        " template_path."
+      ),
+      class = "bfhcharts_export_error"
     )
   }
 
@@ -368,7 +372,9 @@ bfh_export_pdf <- function(x,
   }
   if (!is.logical(strict_baseline) || length(strict_baseline) != 1L ||
     is.na(strict_baseline)) {
-    stop("strict_baseline must be TRUE or FALSE", call. = FALSE)
+    bfh_abort("strict_baseline must be TRUE or FALSE",
+      class = "bfhcharts_export_error"
+    )
   }
   .validate_strict_baseline(x, strict_baseline)
 
@@ -384,12 +390,14 @@ bfh_export_pdf <- function(x,
 
   # ---- 4. Quarto-tjek --------------------------------------------------------
   if (!quarto_available()) {
-    stop(
-      "Quarto CLI not found or version too old. PDF export requires Quarto >= 1.4.0.\n",
-      "  Install or update from: https://quarto.org\n",
-      "  After installation, restart R and try again.\n",
-      "  Typst support was added in Quarto 1.4.",
-      call. = FALSE
+    bfh_abort(
+      paste0(
+        "Quarto CLI not found or version too old. PDF export requires Quarto >= 1.4.0.\n",
+        "  Install or update from: https://quarto.org\n",
+        "  After installation, restart R and try again.\n",
+        "  Typst support was added in Quarto 1.4."
+      ),
+      class = "bfhcharts_export_error"
     )
   }
 
@@ -504,7 +512,9 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
                                           label_size = NULL) {
   # Validate input
   if (!inherits(x, "bfh_qic_result")) {
-    stop("x must be a bfh_qic_result object", call. = FALSE)
+    bfh_abort("x must be a bfh_qic_result object",
+      class = "bfhcharts_export_error"
+    )
   }
 
   # Convert target dimensions to inches for label positioning
@@ -583,7 +593,9 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
     return(invisible(NULL))
   }
   if (!is.function(fn)) {
-    stop("inject_assets must be a function or NULL", call. = FALSE)
+    bfh_abort("inject_assets must be a function or NULL",
+      class = "bfhcharts_export_error"
+    )
   }
 
   if (!isTRUE(getOption(BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT, default = FALSE))) {
@@ -592,13 +604,15 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
     if (!is.null(fn_env)) {
       top_name <- environmentName(topenv(fn_env))
       if (!top_name %in% allowed_namespaces) {
-        stop(
-          "inject_assets must come from a trusted package namespace ",
-          "(e.g., MyOrgAssets::inject_my_assets), not from '", top_name, "'. ",
-          "Accepting functions from arbitrary environments is a privilege-escalation ",
-          "risk in production. If this is intentional in development, suppress with ",
-          "options(BFHcharts.allow_globalenv_inject = TRUE).",
-          call. = FALSE
+        bfh_abort(
+          paste0(
+            "inject_assets must come from a trusted package namespace ",
+            "(e.g., MyOrgAssets::inject_my_assets), not from '", top_name, "'. ",
+            "Accepting functions from arbitrary environments is a privilege-escalation ",
+            "risk in production. If this is intentional in development, suppress with ",
+            "options(BFHcharts.allow_globalenv_inject = TRUE)."
+          ),
+          class = "bfhcharts_export_error"
         )
       }
     }
@@ -632,11 +646,13 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
 prepare_plot_for_export <- function(plot, margin_mm = 0) {
   # Validate inputs
   if (!inherits(plot, "ggplot")) {
-    stop("plot must be a ggplot2 object", call. = FALSE)
+    bfh_abort("plot must be a ggplot2 object", class = "bfhcharts_export_error")
   }
 
   if (!is.numeric(margin_mm) || length(margin_mm) != 1 || margin_mm < 0) {
-    stop("margin_mm must be a non-negative number", call. = FALSE)
+    bfh_abort("margin_mm must be a non-negative number",
+      class = "bfhcharts_export_error"
+    )
   }
 
   # Set plot margins (axis title removal is now in apply_spc_theme)
