@@ -1163,7 +1163,8 @@ build_fallback_analysis <- function(context,
   # men bor kun bruges i target-/goal-specifikke varianter for at give
   # meningsfuld tekst.
   level_keys <- .compute_level_keys(centerline, target_value, flags$has_target,
-    y_axis_unit = context$y_axis_unit)
+    y_axis_unit = context$y_axis_unit
+  )
   level_direction <- if (!is.null(level_keys)) {
     i18n_lookup(paste0("labels.level_direction.", level_keys$direction_key), language)
   } else {
@@ -1291,33 +1292,31 @@ build_fallback_analysis <- function(context,
 
 
 # Formater maalvaerdi til visning
-# y_axis_unit bruges til at afgoere om vaerdien skal vises som procent.
-# language styrer decimal-separator: "da" -> "," (default), "en" -> "."
-# (cycle 01 finding E4: previously hardcoded "," produced danish decimals
-# in english analysis-text, eg. "1,5" instead of "1.5").
+# Delegates to format_y_value() for chart-label/analysis-text consistency
+# (fixes #426: two formatting kernels produced different output for same value).
 #
-# target: optional 0-1-skala maal-vaerdi. Naar sat OG x er i [0,1] med
-# y_axis_unit="percent", delegeres formatering til format_percent_contextual()
-# saa praecision matcher chart-labels: en decimal vises naar |x - target|
-# <= 2 procentpoint, ellers afrundes til hele procent. Sikrer at
-# {centerline}/{target}-placeholders i analyse-tekst rendres med samme
-# antal decimaler som CL-label paa selve grafen.
+# NULL guard: returns "" for NULL/NA (callers expect ""; format_y_value returns
+# NA_character_ for NA and errors for NULL y_unit).
+#
+# NULL y_axis_unit fallback: format_y_value requires a non-NULL y_unit.
+# When y_axis_unit is NULL (no unit context), fall back to generic locale-aware
+# formatting so existing callers are not broken.
 format_target_value <- function(x, y_axis_unit = NULL, language = "da",
                                 target = NULL) {
   if (is.null(x) || is.na(x)) {
     return("")
   }
 
-  # Konverter proportion til procent hvis relevant
-  # x i [0, 1] -> proportion, multiplicer med 100. x > 1 -> allerede procent.
-  if (!is.null(y_axis_unit) && y_axis_unit == "percent") {
-    if (x >= 0 && x <= 1) {
-      return(format_percent_contextual(x, target = target, language = language))
-    } else if (x > 1) {
-      return(paste0(round(x), "%"))
-    }
+  # Delegate to format_y_value when unit is known (canonical formatting path).
+  # NULL y_axis_unit: format_y_value errors on NULL y_unit, use generic fallback.
+  if (!is.null(y_axis_unit)) {
+    return(format_y_value(x,
+      y_unit = y_axis_unit, target = target,
+      language = language
+    ))
   }
 
+  # Generic fallback (NULL y_axis_unit): locale-aware, no unit-specific logic.
   if (is_effective_integer(x)) {
     as.character(as.integer(x))
   } else {
