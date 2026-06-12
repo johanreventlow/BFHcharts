@@ -605,6 +605,16 @@ validate_bfh_qic_inputs <- function(data,
     }
   }
 
+  # Migration hint: "i'" was the old name for the individuals chart; renamed
+  # to "ip" in BFHcharts 0.25.0 for consistency with the rest of the API.
+  if (identical(chart_type, "i'")) {
+    stop(
+      "chart_type \"i'\" was renamed to \"ip\" in BFHcharts 0.25.0",
+      " -- use chart_type = \"ip\"",
+      call. = FALSE
+    )
+  }
+
   if (!chart_type %in% CHART_TYPES_EN) {
     stop(sprintf(
       "chart_type must be one of: %s",
