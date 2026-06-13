@@ -213,6 +213,14 @@ test_that("validate_bfh_qic_inputs fejler ved ugyldig chart_type", {
   expect_error(call_validate(chart_type = "xyz"), "chart_type must be one of")
 })
 
+test_that("validate_bfh_qic_inputs gives migration hint for deprecated i-prime chart_type", {
+  expect_error(
+    call_validate(chart_type = "i'"),
+    regexp = "renamed to \"ip\" in BFHcharts 0\\.25\\.0",
+    fixed = FALSE
+  )
+})
+
 test_that("validate_bfh_qic_inputs fejler ved ugyldig y_axis_unit", {
   expect_error(call_validate(y_axis_unit = "liters"), "y_axis_unit must be one of")
 })
