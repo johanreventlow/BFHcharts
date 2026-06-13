@@ -56,7 +56,6 @@ with_temporary_device <- function(width_in, height_in, code) {
 #' @noRd
 measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, device_height = 7,
                                              device_ready = FALSE) {
-  # Find panel viewport navn fra gtable layout
   panel_layout <- gt$layout[gt$layout$name == "panel", , drop = FALSE]
 
   if (nrow(panel_layout) == 0) {
@@ -67,31 +66,20 @@ measure_panel_height_from_gtable <- function(gt, panel = 1, device_width = 7, de
     stop(sprintf("Panel %d findes ikke (plot har %d panels)", panel, nrow(panel_layout)))
   }
 
-  # Construct panel viewport navn (typisk format: "panel.t-l-b-r")
-  panel_row <- panel_layout[panel, , drop = FALSE]
-  panel_vp_name <- sprintf(
-    "panel.%s-%s-%s-%s",
-    panel_row$t, panel_row$l,
-    panel_row$b, panel_row$r
-  )
-
   measure <- function() {
-    grid::grid.newpage()
-    grid::grid.draw(gt)
-    grid::grid.force()
-
-    tryCatch(
-      grid::seekViewport(panel_vp_name),
-      error = function(e) grid::seekViewport("panel")
-    )
-
-    panel_height <- grid::convertHeight(
-      grid::unit(1, "npc"),
-      "inches",
-      valueOnly = TRUE
-    )
-    grid::upViewport(0)
-    panel_height
+    # Arithmetic: sum non-null row heights; null-unit panel rows absorb the rest.
+    # Avoids grid.newpage() + grid.draw() + grid.force() (~30ms per call).
+    # convertHeight() still needs an active device for line/char/grobheight units.
+    fixed_total <- 0
+    for (i in seq_along(gt$heights)) {
+      h <- gt$heights[i]
+      if (grid::unitType(h) == "null") next
+      fixed_total <- fixed_total + tryCatch(
+        max(0, grid::convertHeight(h, "inches", valueOnly = TRUE)),
+        error = function(e) 0
+      )
+    }
+    max(0.1, device_height - fixed_total)
   }
 
   if (device_ready) {
