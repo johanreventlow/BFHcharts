@@ -16,8 +16,8 @@
 
 test_that("bfh_extract_spc_stats.data.frame preserves backward-compatible behavior", {
   summary <- data.frame(
-    længste_løb = 5L,
-    længste_løb_max = 7L,
+    laengste_loeb = 5L,
+    laengste_loeb_max = 7L,
     antal_kryds = 6L,
     antal_kryds_min = 4L
   )
@@ -55,9 +55,9 @@ test_that("bfh_extract_spc_stats(bfh_qic_result) returns TOTAL outliers in lates
   # Efter fix: outliers_actual == 3 (total i seneste part).
   sigma_signal <- c(
     rep(FALSE, 5),
-    TRUE,                 # outlier på position 6 (udenfor seneste 6 obs)
+    TRUE, # outlier på position 6 (udenfor seneste 6 obs)
     rep(FALSE, 13),
-    TRUE, TRUE            # 2 outliers på position 20 og 21 (inden for seneste 6)
+    TRUE, TRUE # 2 outliers på position 20 og 21 (inden for seneste 6)
   )
   # 21 obs total: seneste 6 = positioner 16-21 => kun 2 outliers i vinduet
   result <- fixture_bfh_qic_result(sigma_signal)
@@ -85,9 +85,9 @@ test_that("bfh_extract_spc_stats only counts outliers in latest part when phases
 test_that("bfh_extract_spc_stats(bfh_qic_result) exposes outliers_recent_count for last 6 obs", {
   sigma_signal <- c(
     rep(FALSE, 5),
-    TRUE,                 # udenfor vinduet
+    TRUE, # udenfor vinduet
     rep(FALSE, 13),
-    TRUE, TRUE            # i vinduet (seneste 6 obs)
+    TRUE, TRUE # i vinduet (seneste 6 obs)
   )
   result <- fixture_bfh_qic_result(sigma_signal)
 

@@ -477,3 +477,19 @@ test_that("anhoej.signal kan være NA for en kort serie (n=6)", {
   # Enten er alle NA (for meget kort serie) eller logisk — ikke tvunget til FALSE
   expect_true(is.logical(anhoej_vals))
 })
+
+test_that("bfh_qic errors when y column missing from data", {
+  df <- data.frame(date = 1:10, value = 1:10)
+  expect_error(
+    bfh_qic(df, x = date, y = missing_col),
+    "missing_col"
+  )
+})
+
+test_that("bfh_qic errors when n column missing from data", {
+  df <- data.frame(date = 1:10, value = 1:10, denom = 1:10)
+  expect_error(
+    bfh_qic(df, x = date, y = value, n = missing_n, chart_type = "p"),
+    "missing_n"
+  )
+})

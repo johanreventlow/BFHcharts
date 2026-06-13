@@ -64,7 +64,19 @@ details <- bfh_generate_details(result)
 
 }
 \seealso{
-\code{\link[=bfh_export_pdf]{bfh_export_pdf()}} for PDF export functionality
+Companion to the analysis pipeline; operates on the same
+\code{bfh_qic_result} input:
+\itemize{
+\item \code{\link{bfh_qic}} produces the \code{bfh_qic_result} input.
+\item \code{\link{bfh_analyse}} composes the structured analysis object
+(main analysis pipeline entry point).
+\item \code{\link{bfh_generate_analysis}} generates the main analysis text
+in a single step.
+\item \code{\link{bfh_render_analysis}} renders a \code{bfh_spc_analysis}
+object to character output.
+\item \code{\link{bfh_export_pdf}} for PDF export that consumes both
+the analysis text and the details string.
+}
 
 Other utility-functions:
 \code{\link[=bfh_create_typst_document]{bfh_create_typst_document()}},

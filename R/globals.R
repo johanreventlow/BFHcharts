@@ -91,7 +91,7 @@ PDF_LABEL_SIZE <- 6
 RECENT_OBS_WINDOW <- 6L
 
 # Percent-unit "near target" classification caps (proportion scale, ej procentpoint).
-# Bruges af .evaluate_target_arm() / .compute_level_keys() i spc_analysis.R.
+# Bruges af .evaluate_target_arm() / .compute_level_keys() i analysis_core.R.
 #
 # NEAR_TARGET_DISPLAY_THRESHOLD (0.02 = 2pp): max delta hvor chart-label viser
 # en decimal istedet for hele procent. Matcher format_percent_contextual()
@@ -162,6 +162,17 @@ LABEL_PLACEMENT_COINCIDENT_THRESHOLD_FACTOR <- 0.1
 #' pushed to the opposite shelf (top vs bottom of panel) based on whether
 #' the priority label center is below this NPC threshold.
 LABEL_PLACEMENT_SHELF_CENTER_THRESHOLD <- 0.5
+
+# ============================================================================
+# DEPENDENCY VERSION CONSTANTS
+# ============================================================================
+
+#' Minimum required version of BFHtheme
+#'
+#' Single source of truth for the BFHtheme lower-bound used in dep-guards
+#' (utils_dep_guards.R), .onAttach (zzz.R), and package-level docs
+#' (BFHcharts-package.R). Must match the Imports: lower-bound in DESCRIPTION.
+.BFHTHEME_MIN_VERSION <- "0.5.1"
 
 # ============================================================================
 # AUDIT + CONSENT CONSTANTS

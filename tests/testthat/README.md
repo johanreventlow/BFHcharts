@@ -29,19 +29,27 @@ Kører alle tests, inklusive live Quarto PDF-rendering. Kræver lokal Quarto-ins
 ### Enkelt testfil
 
 ```r
-testthat::test_file("tests/testthat/test-spc_analysis.R")
+testthat::test_file("tests/testthat/test-analysis_core.R")
 ```
 
 ### CI (GitHub Actions)
 
-CI kører automatisk med begge miljøvariabler sat til `"true"` og installerer Quarto + åbne fallback-fonts (DejaVu, Liberation, Noto).
+Workflows og hvilke miljøvariabler de sætter:
 
-Workflows:
-- `.github/workflows/R-CMD-check.yaml` — R CMD check + testthat (PR-blocking)
-- `.github/workflows/pdf-smoke.yaml` — PDF smoke render via Quarto/Typst (PR-blocking)
-- `.github/workflows/render-tests.yaml` — Ugentlig live render-test suite (cron)
-- `.github/workflows/test-coverage.yml` — covr::codecov() rapportering
-- `.github/workflows/lint.yaml` — lintr (advisory)
+| Workflow | `BFHCHARTS_TEST_FULL` | `BFHCHARTS_TEST_RENDER` | Formål |
+|----------|-----------------------|-------------------------|--------|
+| `R-CMD-check.yaml` | `"true"` | **ikke sat** | R CMD check + testthat (PR-blocking) |
+| `pdf-smoke.yaml` | `"true"` | `"true"` | PDF smoke render via Quarto/Typst (PR-blocking) |
+| `render-tests.yaml` | `"true"` | `"true"` | Ugentlig live render-test suite (cron) |
+| `test-coverage.yml` | ikke sat | ikke sat | covr::codecov() rapportering |
+| `lint.yaml` | ikke sat | ikke sat | lintr (advisory) |
+| `vdiffr.yaml` | ikke sat | ikke sat | vdiffr visuel regression-tracking, push til develop/main (non-blocking, se nedenfor) |
+
+`BFHCHARTS_TEST_RENDER` er bevidst **ikke sat** i `R-CMD-check.yaml`: production-template render
+kræver Mari-fonts (proprietære, kun tilgængelige via BFHchartsAssets). Render-dækning håndteres
+af `pdf-smoke.yaml` med åbne fallback-fonts (DejaVu/Liberation).
+
+`pdf-smoke.yaml` installerer Quarto + åbne fallback-fonts (DejaVu, Liberation, Noto).
 
 #### CI Font-fallback strategi
 
@@ -56,18 +64,24 @@ CI anvender to komplementære strategier:
 - `ignore_system_fonts=TRUE` (Typst 0.13+) sikrer Typst kun bruger leverede fonts
 
 **vdiffr snapshot-tests:**
-- `skip_if_no_mari_font()` per test — skipper på CI (ingen Mari) uden at blokere suite
+- `skip_if_no_mari_font()` per test — skipper på CI (ingen Mari) i R-CMD-check og andre
+  standard-workflows. `vdiffr.yaml` sætter `BFHCHARTS_VDIFFR_CI=true` for at
+  bypass dette og køre tests med substitute-fonts (regression-detektion).
 - Snapshots re-baselinet ved: BFHtheme version-bump (forventede font-metric ændringer),
   bevidst layout-ændring, regression-fix
 - Commit-beskeden skal dokumentere årsag ved re-baseline
 
 **Opsummering af skip-logik for font-afhængige tests:**
 
-| Test type | CI-adfærd | Lokal adfærd (med Mari) |
-|-----------|-----------|------------------------|
-| vdiffr snapshots | SKIP (skip_if_no_mari_font) | PASS mod baselines |
-| PDF smoke render | PASS (åbne fallback-fonts) | PASS (Mari) |
-| Render-tests (ugentlig) | PASS (åbne fallback-fonts) | PASS (Mari) |
+| Test type | R-CMD-check CI | vdiffr.yaml CI | Lokal (med Mari) |
+|-----------|----------------|----------------|-----------------|
+| vdiffr snapshots | SKIP | FAIL/PASS (font-diffs forventede) | PASS mod baselines |
+| PDF smoke render | PASS (åbne fallback-fonts) | ikke relevant | PASS (Mari) |
+| Render-tests (ugentlig) | PASS (åbne fallback-fonts) | ikke relevant | PASS (Mari) |
+
+**vdiffr.yaml er altid rød** pga. font-metric-forskelle mellem Mari-baselines og DejaVu/Liberation
+substitute-fonts på CI. Det er korrekt og forventet. Nyt at bekymre sig om: ændringer i
+geometri, layer-rækkefølge, label-placering — ikke font-diffs alene.
 
 ---
 
@@ -77,8 +91,9 @@ CI anvender to komplementære strategier:
 |----------|---------|--------|
 | `BFHCHARTS_TEST_FULL` | ikke sat | Kører integration-tests ud over unit-tests |
 | `BFHCHARTS_TEST_RENDER` | ikke sat | Kører live render-tests (Quarto, PDF, PNG) |
+| `BFHCHARTS_VDIFFR_CI` | ikke sat | Bypass CI-skip i `skip_if_no_mari_font()` — bruges kun af `vdiffr.yaml` |
 
-**Status (2026-04-24):** Alle render/PDF-tests er migreret til de kanoniske helpers (`skip_if_not_render_test()` + `skip_if_no_quarto()`). Nye helpers `skip_if_no_quarto()` og `skip_if_no_mari_font()` tilføjet til `helper-skips.R`. Miljøvariablerne er sat i CI.
+**Status (2026-04-24):** Alle render/PDF-tests er migreret til de kanoniske helpers (`skip_if_not_render_test()` + `skip_if_no_quarto()`). Nye helpers `skip_if_no_quarto()` og `skip_if_no_mari_font()` tilføjet til `helper-skips.R`. Se CI-tabellen ovenfor for hvilke workflows der sætter hvilke variabler.
 
 ---
 
@@ -123,7 +138,7 @@ Aktuelt er 1-til-1 mapping mellem `R/<module>.R` og `tests/testthat/test-<module
 
 ```
 R/bfh_qic.R                ↔ tests/testthat/test-bfh_qic_*.R + test-integration.R
-R/spc_analysis.R           ↔ tests/testthat/test-spc_analysis.R
+R/analysis_core.R           ↔ tests/testthat/test-analysis_core.R
 R/plot_core.R              ↔ tests/testthat/test-plot_core.R
 R/export_pdf.R             ↔ tests/testthat/test-export_pdf*.R
 ...
@@ -131,7 +146,7 @@ R/export_pdf.R             ↔ tests/testthat/test-export_pdf*.R
 
 **Pågående omorganisering (Fase 1 task 3):** Store testfiler splittes efter funktionsgruppe:
 - `test-export_pdf.R` (1739 linjer) → validation / rendering / metadata / spc-stats
-- `test-spc_analysis.R` (597 linjer) → context / pick-text / fallback-analysis / resolve-target
+- `test-analysis_core.R` (597 linjer) → context / pick-text / fallback-analysis / resolve-target
 - `test-y_axis_formatting.R` (651 linjer) → logiske underfiler
 
 ---
@@ -170,7 +185,10 @@ covr::report(cov)
 Vdiffr-snapshots beskytter mod utilsigtede visuelle regressioner i BFHcharts' plot-output.
 Golden images er i `tests/testthat/_snaps/visual-regression/`.
 
-**Tests kræver Mari-fonts** — `skip_if_fonts_unavailable()` skipper hele filen på CI og maskiner uden Mari.
+**Tests kræver Mari-fonts lokalt.** I standard-CI-workflows (R-CMD-check, pdf-smoke osv.)
+skipper `skip_if_no_mari_font()` alle tests når `CI=true` (ingen Mari tilgængelig). Se
+CI Font-fallback strategi ovenfor for den dedikerede `vdiffr.yaml`-workflow der kører
+tests med substitute-fonts til regression-detektion.
 
 ### Snapshot-politik
 
@@ -216,4 +234,4 @@ Genuine warnings propageres stadig — kun den specifikke PostScript-lookup-adva
 - `openspec/changes/strengthen-test-infrastructure/design.md` — tekniske beslutninger (D1-D10)
 - `openspec/changes/strengthen-test-infrastructure/tasks.md` — opgaver og status
 
-**Sidst opdateret:** 2026-04-27
+**Sidst opdateret:** 2026-06-12

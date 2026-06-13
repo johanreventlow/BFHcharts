@@ -45,7 +45,20 @@
 #'   match `nrow(qic_data)`. Default `NULL` uses date-based formatting.
 #'
 #' @family utility-functions
-#' @seealso [bfh_export_pdf()] for PDF export functionality
+#' @seealso
+#' Companion to the analysis pipeline; operates on the same
+#' \code{bfh_qic_result} input:
+#' \itemize{
+#'   \item \code{\link{bfh_qic}} produces the \code{bfh_qic_result} input.
+#'   \item \code{\link{bfh_analyse}} composes the structured analysis object
+#'         (main analysis pipeline entry point).
+#'   \item \code{\link{bfh_generate_analysis}} generates the main analysis text
+#'         in a single step.
+#'   \item \code{\link{bfh_render_analysis}} renders a \code{bfh_spc_analysis}
+#'         object to character output.
+#'   \item \code{\link{bfh_export_pdf}} for PDF export that consumes both
+#'         the analysis text and the details string.
+#' }
 #' @export
 bfh_generate_details <- function(x, language = "da", x_labels = NULL) {
   if (!inherits(x, "bfh_qic_result")) {

@@ -190,6 +190,27 @@ bfh_create_typst_document <- function(chart_image,
   }
   # If files are the same, local_chart is already correct - no copy needed
 
+  # Validate spc_stats field types to prevent Typst injection via non-numeric
+  # values being passed through as.character() in build_typst_content().
+  .spc_numeric_fields <- c(
+    "runs_expected", "runs_actual",
+    "crossings_expected", "crossings_actual",
+    "outliers_expected", "outliers_actual"
+  )
+  for (.f in .spc_numeric_fields) {
+    .val <- spc_stats[[.f]]
+    if (!is.null(.val) && !is.numeric(.val)) {
+      stop(
+        sprintf("spc_stats$%s must be numeric or NULL, got %s", .f, class(.val)[1]),
+        call. = FALSE
+      )
+    }
+  }
+  # is_run_chart must be logical or NULL
+  if (!is.null(spc_stats$is_run_chart) && !is.logical(spc_stats$is_run_chart)) {
+    stop("spc_stats$is_run_chart must be logical or NULL", call. = FALSE)
+  }
+
   # Build Typst document content with relative paths
   typst_content <- build_typst_content(
     chart_image = chart_basename, # Use basename since image is now in output_dir

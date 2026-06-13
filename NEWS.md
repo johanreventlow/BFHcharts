@@ -1,3 +1,55 @@
+# BFHcharts 0.26.0
+
+## Nye features
+
+* **`agg_fun` og `return_data` accepteres som snake_case-aliasser** for de
+  tilsvarende dot.case-parametre (`agg.fun`, `return.data`) i `bfh_qic()`.
+  Begge idiomer virker nu side om side; dot.case forbliver primær API.
+  (#483, closes #429)
+
+## Bugfixes
+
+* `bfh_qic()` giver nu en klar fejlbesked med migrationsvejledning naar
+  `chart_type = "i'"` bruges -- den deprekerede apostrof-syntaks fra 0.24.0.
+  Tidligere var fejlmeddelelsen kryptisk. (#480, closes #430)
+
+* `add_right_labels_marquee()` aabner konsekvent en ny temp-device til
+  maaling og rydder altid op bagefter. Den tidligere "device already open"-genvej
+  efterlod caller-devicen korrupt. (#489, closes #436)
+
+## Performance
+
+* **Panel-hoejde maales nu aritmetisk** (sum af ikke-null gtable-raekkehoejder)
+  fremfor via `grid.newpage() + grid.draw()`. Sparer ca. 30 ms pr. `bfh_qic()`-kald
+  og eliminerer 3x-rendering ved PDF-eksport (#437). Maalt afvigelse vs.
+  draw-baseret metode: 0.0 %. (#488, closes #435, #437)
+
+## Interne ændringer
+
+* Analysefilen `R/spc_analysis.R` er opdelt i tre fokuserede filer:
+  `R/analysis_core.R` (primær indgang), `R/analysis_helpers.R` og
+  `R/analysis_signals.R`. Filnavnene afspejler nu indholdet. (#486, #487,
+  closes #420, #421)
+
+* `.compute_pref_pos()` er udtrukket som selvstaendig intern funktion fra
+  `fct_add_spc_labels.R`. Reducerer funktionens kompleksitet og
+  muliggoer isoleret test af label-placement-logik. (#482, closes #427)
+
+* Fontbaserede test-guards fjernet fra adfaerdstest -- tests der validerer
+  logik (ikke rendering) sprang fejlagtigt over paa CI. (#484, closes #432)
+
+* `@seealso`-krydsreferencer tilfoejt til alle analyse-indgangspunkter.
+  (#478, closes #428)
+
+* ADR-005 dokumenterer distributionsstrategi for BFHcharts (GitHub-only,
+  ingen CRAN). (#479, closes #423)
+
+* CI: vdiffr visuel-regressions-workflow tilfoejt (`.github/workflows/vdiffr.yaml`).
+  (#485, closes #433)
+
+* Test-README opdateret: `BFHCHARTS_TEST_RENDER`-variablen var fejlagtigt
+  markeret som "sat i R-CMD-check". (#481, closes #434)
+
 # BFHcharts 0.25.0
 
 ## Breaking changes
@@ -8,6 +60,14 @@
   i string-håndtering. Migration: skift `chart_type = "i'"` til
   `chart_type = "ip"` i alle kald. Det er en hård omdøbning -- `"i'"`
   accepteres ikke længere. (Introduceret i 0.24.0; omdøbt før bred udbredelse.)
+
+* **Kolonnenavnene i `result$summary` er omdøbt til ASCII-translitterationer.**
+  Danske UTF-8-navne medfoerte silent NULL naar brugere fulgte dokumentationens
+  ASCII-navne. De berorte kolonner: `laengste_loeb` (tidl. `laengste_loeb`
+  med UTF-8-bogstaver), `laengste_loeb_max`, `nedre_kontrolgraense`,
+  `oevre_kontrolgraense`, `kontrolgraenser_konstante` og de afledte
+  min/max/95-varianter. Migration: erstat UTF-8-navne med translittereringerne
+  i alle kald til `result$summary$...`. biSPCharts-tilpasning spoeres separat.
 
 # BFHcharts 0.24.0
 
@@ -868,15 +928,15 @@ develop. Verdict: APPROVE for produktion (multi-tenant Connect Cloud
   ```
 
   De nye `runs_signal` og `crossings_signal` er pure derivationer fra
-  eksisterende `længste_løb`/`længste_løb_max` og `antal_kryds`/`antal_kryds_min`
+  eksisterende `laengste_loeb`/`laengste_loeb_max` og `antal_kryds`/`antal_kryds_min`
   per fase. NA inheriterer fra inputs (degenererede faser hvor qicharts2
   returnerer NA). biSPCharts #468 sporer downstream-migration.
 
 * **`summary` numeriske kolonner returnerer raw qicharts2-precision** (ej
   længere afrundet til 1-2 decimaler). Påvirker `centerlinje`,
-  `nedre_kontrolgrænse`, `øvre_kontrolgrænse`, `nedre_kontrolgrænse_min/max`,
-  `øvre_kontrolgrænse_min/max`, `nedre_kontrolgrænse_95`,
-  `øvre_kontrolgrænse_95`. Display-formattere (`format_target_value()`,
+  `nedre_kontrolgraense`, `oevre_kontrolgraense`, `nedre_kontrolgraense_min/max`,
+  `oevre_kontrolgraense_min/max`, `nedre_kontrolgraense_95`,
+  `oevre_kontrolgraense_95`. Display-formattere (`format_target_value()`,
   `format_centerline_for_details()`) afrunder selv ved string-emission, så
   PDF-output forbliver byte-identisk. Logic-konsumere (target-sammenligning,
   statistisk videreanalyse) får nu korrekte resultater nær afrundings-
@@ -894,7 +954,7 @@ develop. Verdict: APPROVE for produktion (multi-tenant Connect Cloud
 ## Internal changes
 
 * ADR-002 addendum dokumenterer signal-rename + raw-precision-skift.
-* Konstans-detektion (`kontrolgrænser_konstante`) bevarer `decimal_places + 2`-
+* Konstans-detektion (`kontrolgraenser_konstante`) bevarer `decimal_places + 2`-
   tolerance for at absorbere floating-point drift fra qicharts2 -- detektions-
   logikken roundes, men de lagrede værdier forbliver raw.
 

@@ -45,6 +45,22 @@
 #'
 #' @return Object of class `bfh_spc_analysis`. See ADR-XXX for schema.
 #'
+#' @seealso
+#' Pipeline position: second of three layers.
+#' \itemize{
+#'   \item \code{\link{bfh_qic}} produces the \code{bfh_qic_result} input.
+#'   \item \code{\link{bfh_build_analysis_context}} is a lower-level helper
+#'         called internally (via \code{bfh_extract_spc_features()}) to build
+#'         the raw context consumed by this function.
+#'   \item \code{\link{bfh_render_analysis}} takes the returned
+#'         \code{bfh_spc_analysis} object and renders it to character output.
+#'   \item \code{\link{bfh_generate_analysis}} provides a single-step
+#'         alternative that combines analysis and rendering in one call.
+#'   \item \code{\link{bfh_generate_details}} generates the companion detail
+#'         row string (period, averages, latest values) from the same
+#'         \code{bfh_qic_result} input.
+#' }
+#'
 #' @examples
 #' \dontrun{
 #' result <- bfh_qic(data, x = month, y = value, chart_type = "i")

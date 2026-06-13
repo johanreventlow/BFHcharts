@@ -48,7 +48,7 @@ spc_metadata <- list(
                          resultat$summary$sigma_signal,
                          na.rm = TRUE),
     anhoej_rules = list(
-      longest_run = resultat$summary$længste_løb,
+      longest_run = resultat$summary$laengste_loeb,
       n_crossings = resultat$summary$antal_kryds,
       n_crossings_min = resultat$summary$antal_kryds_min
     )

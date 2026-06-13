@@ -186,8 +186,8 @@ fixture_bfh_qic_result <- function(sigma_signal,
   if (!is.null(part)) qic_data$part <- part
 
   default_summary <- data.frame(
-    længste_løb = 3L,
-    længste_løb_max = 7L,
+    laengste_loeb = 3L,
+    laengste_loeb_max = 7L,
     antal_kryds = 6L,
     antal_kryds_min = 4L,
     centerlinje = 0
@@ -230,12 +230,12 @@ fixture_test_chart <- function(title = "Test", n = 12, lambda = 15) {
 }
 
 # ----------------------------------------------------------------------------
-# Analysis context (spc_analysis tests)
+# Analysis context (analysis_core tests)
 # ----------------------------------------------------------------------------
 
-#' Minimal analyse-context til build_fallback_analysis() tests
+#' Minimal analyse-context (synthetic list matching bfh_build_analysis_context output)
 #'
-#' Konsoliderer `make_ctx()` fra test-spc_analysis.R.
+#' Konsoliderer `make_ctx()` fra test-analysis_core.R.
 #'
 #' @param ... Named args der overskriver defaults (fx target_value, centerline)
 #' @param spc_stats Override af spc_stats-liste (runs/crossings/outliers)

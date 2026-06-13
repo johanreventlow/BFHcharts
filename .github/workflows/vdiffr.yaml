@@ -1,0 +1,115 @@
+# vdiffr visual regression tracking for BFHcharts.
+#
+# Purpose:
+#   Run vdiffr snapshot tests on each push to develop/main using
+#   DejaVu/Liberation as Mari (proprietary) font substitutes. This
+#   detects layout regressions even though snapshots were originally
+#   generated on macOS with Mari -- font-metric diffs are expected
+#   and intentional (regression detection, not pixel-perfect matching).
+#
+# Failure semantics:
+#   continue-on-error: true -- failures are VISIBLE in the Actions UI but
+#   non-blocking. Every run will likely show diffs because snapshots are
+#   Mari-based. Watch for NEW failures (changed layout, broken geometry)
+#   vs baseline drift (font-metric only). .new.svg artifacts are uploaded
+#   on failure for visual inspection.
+#
+# Opt-in gating:
+#   BFHCHARTS_VDIFFR_CI=true bypasses the CI-proxy skip in
+#   skip_if_no_mari_font() (helper-skips.R). Without this flag all
+#   vdiffr tests skip silently on CI.
+#
+# Trigger:
+#   push to develop/main only -- non-blocking regression tracking, not
+#   a PR gate. workflow_dispatch for manual runs.
+#
+# Security: only safe inputs used (GITHUB_TOKEN, static strings).
+# No untrusted user input forwarded to run steps.
+
+name: vdiffr visual regression
+
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  vdiffr:
+    runs-on: ubuntu-latest
+    name: vdiffr (ubuntu-latest)
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+      # Activate the full + render test layers so test helpers do not short-
+      # circuit before reaching vdiffr::expect_doppelganger().
+      BFHCHARTS_TEST_FULL: "true"
+      BFHCHARTS_TEST_RENDER: "true"
+      # Opt-in override: bypass skip_if_no_mari_font() CI-proxy skip so that
+      # vdiffr tests run with substitute fonts installed below.
+      BFHCHARTS_VDIFFR_CI: "true"
+      # testthat honours NOT_CRAN when called directly (not via R CMD check).
+      NOT_CRAN: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system fonts (DejaVu/Liberation as Mari substitutes)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            fonts-dejavu \
+            fonts-liberation \
+            fonts-liberation2 \
+            fonts-noto \
+            fonts-noto-core \
+            fonts-roboto \
+            fontconfig
+          fc-cache -f -v
+        shell: bash
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "release"
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::vdiffr any::pkgload any::testthat
+          needs: check
+
+      - name: Run vdiffr visual regression tests
+        # Failures are expected (font-metric diffs vs Mari baselines).
+        # Non-blocking: watch for novel geometry/layout failures.
+        continue-on-error: true
+        run: |
+          options(crayon.enabled = TRUE)
+          pkgload::load_all(".", quiet = TRUE)
+          res <- testthat::test_dir(
+            "tests/testthat",
+            filter = "visual-regression",
+            reporter = c("progress", "fail")
+          )
+          summary_df <- as.data.frame(res)
+          cat("\n\n========== vdiffr visual regression summary ==========\n")
+          cat("Total files: ", nrow(summary_df), "\n", sep = "")
+          cat("Failed:      ", sum(summary_df$failed > 0, na.rm = TRUE), "\n", sep = "")
+          cat("Skipped:     ", sum(summary_df$skipped, na.rm = TRUE), "\n", sep = "")
+          cat("Passed:      ", sum(summary_df$passed, na.rm = TRUE), "\n", sep = "")
+          cat("======================================================\n")
+        shell: Rscript {0}
+
+      - name: Upload vdiffr diff artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vdiffr-diffs-${{ github.run_id }}
+          path: |
+            tests/testthat/_snaps/**/*.new.svg
+            tests/testthat/_snaps/**/*.svg
+          retention-days: 14
+          if-no-files-found: warn
