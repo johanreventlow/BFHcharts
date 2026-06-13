@@ -1,7 +1,5 @@
 # Integration Tests for BFHcharts
 # End-to-end tests of full workflow from data to plot
-# Skip i miljøer uden Mari-fonts (typisk CI)
-skip_if_fonts_unavailable()
 
 test_that("bfh_qic() generates valid run chart", {
   library(ggplot2)
