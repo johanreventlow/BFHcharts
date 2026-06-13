@@ -2,6 +2,7 @@
 # Claude Instructions – BFHcharts
 
 @~/.claude/rules/CLAUDE_BOOTSTRAP_WORKFLOW.md
+@~/.claude/rules-profiles/r/R_STANDARDS.md
 
 ---
 
@@ -97,7 +98,7 @@ Følgende funktioner er markeret som `@keywords internal` og tilgængelige via `
 - Kun brugt internt af `bfh_qic()`
 
 *Constants:*
-- `CHART_TYPES_EN` - Chart type identifiers (`run`, `i`, `mr`, `p`, `pp`, `u`, `up`, `c`, `g`, `xbar`, `s`, `t`)
+- `CHART_TYPES_EN` - Chart type identifiers (`run`, `i`, `mr`, `p`, `pp`, `u`, `up`, `c`, `g`, `xbar`, `s`, `t`, `ip`)
 - Brugere passer strings direkte: `chart_type = "p"`, ikke konstant-opslag
 
 **Rationale:** **Simpelt primært API** - brugere lærer reelt kun `bfh_qic()`; de sekundære exports er kun nødvendige ved eksport/analysetekst. Resten af kompleksiteten er skjult under motorhjelmen. Advanced users kan tilgå internals med `BFHcharts:::function_name()`.
@@ -431,11 +432,10 @@ warning("Kontrolgrænser er statistisk usikre")  # æ trigger CRAN warning
 ## 📚 Global Standards Reference
 
 **Dette projekt følger:**
-- **R Development:** `~/.claude/rules/R_STANDARDS.md`
-- **Architecture Patterns:** `~/.claude/rules/ARCHITECTURE_PATTERNS.md`
+- **R Development:** `~/.claude/rules-profiles/r/R_STANDARDS.md`
+- **Architecture Patterns:** `~/.claude/rules-profiles/shiny/ARCHITECTURE_PATTERNS.md`
 - **Git Workflow:** `~/.claude/rules/GIT_WORKFLOW.md`
 - **Development Philosophy:** `~/.claude/rules/DEVELOPMENT_PHILOSOPHY.md`
-- **Troubleshooting:** `~/.claude/rules/TROUBLESHOOTING_GUIDE.md`
 
 **Globale agents:** tidyverse-code-reviewer, performance-optimizer, security-reviewer, test-coverage-analyzer, refactoring-advisor, legacy-code-detector
 

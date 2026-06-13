@@ -134,15 +134,26 @@ skip_if_fonts_unavailable <- function(
 
 #' Skip test hvis Mari-fonts (BFHtheme) ikke er installeret
 #'
-#' Kanonisk erstatning for `skip_if_fonts_unavailable()`. Forsøger faktisk
+#' Kanonisk erstatning for `skip_if_fonts_unavailable()`. Forsoeger faktisk
 #' font-detektion via `systemfonts::system_fonts()` hvis pakken er installeret,
 #' falder ellers tilbage til CI-detektion.
+#'
+#' Opt-in CI override: saet `BFHCHARTS_VDIFFR_CI=true` for at tillade
+#' vdiffr-tests at koere paa CI med substitute-fonts (DejaVu/Liberation).
+#' Font-metric diffs er forventede og fanges som continue-on-error fejl i
+#' `.github/workflows/vdiffr.yaml` (regression-detektion, ikke pixel-perfect).
 #'
 #' @param msg Besked der vises ved skip
 #' @keywords internal
 skip_if_no_mari_font <- function(
   msg = "Skipping: Mari fonts (BFHtheme) not available"
 ) {
+  # Opt-in CI override for vdiffr regression workflow. Bypass CI-proxy skip
+  # and let tests run with substitute fonts installed on the runner.
+  if (.read_env_flag("BFHCHARTS_VDIFFR_CI")) {
+    return(invisible(TRUE))
+  }
+
   # Eksplicit CI-skip: vdiffr-snapshots er rebaseret pa macOS med Mari;
   # CI Ubuntu uden Mari producerer divergerende SVG selv hvis systemfonts
   # detekterer en font-rest med "Mari" i navnet.

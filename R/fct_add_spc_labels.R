@@ -28,6 +28,83 @@ compute_label_size_for_viewport <- function(viewport_width_inches,
 }
 
 
+#' Compute preferred label positions based on boundary proximity
+#'
+#' Determines whether each label should prefer to appear "under" or "over"
+#' its reference line. When both lines are near the same edge the labels
+#' are spread (one under, one over). When only one line is near an edge that
+#' line is pushed toward the edge (into the expansion zone) while the other
+#' is pushed the opposite way.
+#'
+#' @param yA Numeric data-coordinate of the first reference line (A = CL).
+#'   May be NA, in which case defaults are returned without NPC conversion.
+#' @param yB Numeric data-coordinate of the second reference line (B = target).
+#'   May be NA, in which case defaults are returned without NPC conversion.
+#' @param y_to_npc Function that converts a data-coordinate to NPC [0, 1].
+#'   Typically \code{shared_mapper$y_to_npc}.
+#' @param boundary_threshold Numeric fraction from 0 or 1 at which a line is
+#'   considered "near" an edge. Default 0.30.
+#' @return Character vector of length 2: \code{c(pref_A, pref_B)}, each
+#'   element either \code{"under"} or \code{"over"}.
+#'
+#' @keywords internal
+#' @noRd
+.compute_pref_pos <- function(yA, yB, y_to_npc, boundary_threshold = 0.30) {
+  pref_A <- "under"
+  pref_B <- "under"
+
+  if (!is.na(yA) && !is.na(yB)) {
+    npc_A <- y_to_npc(yA)
+    npc_B <- y_to_npc(yB)
+
+    if (!is.null(npc_A) && !is.na(npc_A) &&
+      !is.null(npc_B) && !is.na(npc_B)) {
+      both_near_bottom <- npc_A < boundary_threshold && npc_B < boundary_threshold
+      both_near_top <- npc_A > (1 - boundary_threshold) && npc_B > (1 - boundary_threshold)
+
+      if (both_near_bottom) {
+        # Spread: lower label under its line, upper label over its line
+        if (npc_A <= npc_B) {
+          pref_A <- "under"
+          pref_B <- "over"
+        } else {
+          pref_A <- "over"
+          pref_B <- "under"
+        }
+      } else if (both_near_top) {
+        # Spread: upper label over its line, lower label under its line
+        if (npc_A >= npc_B) {
+          pref_A <- "over"
+          pref_B <- "under"
+        } else {
+          pref_A <- "under"
+          pref_B <- "over"
+        }
+      } else {
+        # One line near edge: push it toward the edge (into expansion zone),
+        # push the other line the opposite way to maximise spread.
+        if (npc_A < boundary_threshold) {
+          pref_A <- "under" # CL near bottom -> under (into expansion)
+          pref_B <- "over" # Target -> over (away from CL)
+        } else if (npc_B < boundary_threshold) {
+          pref_B <- "under"
+          pref_A <- "over"
+        }
+        if (npc_A > (1 - boundary_threshold)) {
+          pref_A <- "over" # CL near top -> over (into expansion)
+          pref_B <- "under" # Target -> under (away from CL)
+        } else if (npc_B > (1 - boundary_threshold)) {
+          pref_B <- "over"
+          pref_A <- "under"
+        }
+      }
+    }
+  }
+
+  c(pref_A, pref_B)
+}
+
+
 #' Add SPC labels to plot using advanced placement system
 #'
 #' Wrapper funktion der tilfoejer CL og Target labels til SPC plot
@@ -159,30 +236,13 @@ add_spc_labels <- function(
     NULL
   }
 
-  # Ekstraher CL vaerdi fra seneste part ----
-  # INTENTIONEL ASYMMETRI: CL hentes fra seneste part (centerlinjen aendres ved
-  # faseovergange), mens target hentes som foerste non-NA (target er typisk
-  # konstant og sat af brugeren uafhaengigt af faser).
-  cl_value <- NA_real_
-  if (!is.null(qic_data$cl) && any(!is.na(qic_data$cl))) {
-    if ("part" %in% names(qic_data)) {
-      latest_part <- max(qic_data$part, na.rm = TRUE)
-      part_data <- qic_data[qic_data$part == latest_part & !is.na(qic_data$part), ]
-
-      if (nrow(part_data) > 0) {
-        last_row <- part_data[nrow(part_data), ]
-        cl_value <- last_row$cl
-      }
-    } else {
-      cl_value <- tail(stats::na.omit(qic_data$cl), 1)
-    }
-  }
-
-  # Ekstraher Target vaerdi ----
-  target_value <- NA_real_
-  if (!is.null(qic_data$target) && any(!is.na(qic_data$target))) {
-    target_value <- qic_data$target[!is.na(qic_data$target)][1]
-  }
+  # Extract CL and target from latest phase via shared helpers ----
+  # INTENTIONAL ASYMMETRY: CL is taken from the last row of the latest phase
+  # (centerline changes at phase transitions), while target is the first non-NA
+  # value (target is typically constant and user-supplied independently of
+  # phases).
+  cl_value <- extract_latest_cl(qic_data)
+  target_value <- extract_first_target(qic_data)
 
   # Valider at vi har mindst en vaerdi ----
   if (is.na(cl_value) && is.na(target_value)) {
@@ -305,66 +365,12 @@ add_spc_labels <- function(
   }
 
   # Placer labels med advanced placement system ----
-
-  # Boundary-aware pref_pos: Naar begge linjer er naer bund/top af plottet,
-  # spred labels ved at placere den nederste "under" og den oeverste "over".
-  # Naar kun en linje er naer kanten, foretruk den side med mest plads.
-  boundary_threshold <- 0.30
-  pref_A <- "under"
-  pref_B <- "under"
-
-  if (!is.na(yA) && !is.na(yB)) {
-    npc_A <- shared_mapper$y_to_npc(yA)
-    npc_B <- shared_mapper$y_to_npc(yB)
-
-    if (!is.null(npc_A) && !is.na(npc_A) &&
-      !is.null(npc_B) && !is.na(npc_B)) {
-      both_near_bottom <- npc_A < boundary_threshold && npc_B < boundary_threshold
-      both_near_top <- npc_A > (1 - boundary_threshold) && npc_B > (1 - boundary_threshold)
-
-      if (both_near_bottom) {
-        # Spred: nederste label under sin linje, oeverste over sin linje
-        if (npc_A <= npc_B) {
-          pref_A <- "under"
-          pref_B <- "over"
-        } else {
-          pref_A <- "over"
-          pref_B <- "under"
-        }
-      } else if (both_near_top) {
-        # Spred: oeverste label over sin linje, nederste under sin linje
-        if (npc_A >= npc_B) {
-          pref_A <- "over"
-          pref_B <- "under"
-        } else {
-          pref_A <- "under"
-          pref_B <- "over"
-        }
-      } else {
-        # En linje naer kanten: send den mod kanten (ind i expansion-zonen),
-        # og den anden linje den modsatte vej - det spreder labels maksimalt.
-        if (npc_A < boundary_threshold) {
-          pref_A <- "under" # CL n\u00e6r bund -> under (ind i expansion)
-          pref_B <- "over" # Target -> over (v\u00e6k fra CL)
-        } else if (npc_B < boundary_threshold) {
-          pref_B <- "under"
-          pref_A <- "over"
-        }
-        if (npc_A > (1 - boundary_threshold)) {
-          pref_A <- "over" # CL n\u00e6r top -> over (ind i expansion)
-          pref_B <- "under" # Target -> under (v\u00e6k fra CL)
-        } else if (npc_B > (1 - boundary_threshold)) {
-          pref_B <- "over"
-          pref_A <- "under"
-        }
-      }
-    }
-  }
+  pref_pos <- .compute_pref_pos(yA, yB, shared_mapper$y_to_npc)
 
   label_params <- list(
     pad_top = 0.01,
     pad_bot = 0.01,
-    pref_pos = c(pref_A, pref_B),
+    pref_pos = pref_pos,
     priority = "A"
   )
   if (has_arrow) label_params$gap_labels <- 0

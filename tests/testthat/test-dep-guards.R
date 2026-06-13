@@ -20,7 +20,7 @@ test_that(".ensure_bfhtheme() caches positive result", {
     call_count <<- call_count + 1L
     TRUE
   }
-  fake_version <- function(...) numeric_version("0.5.0")
+  fake_version <- function(...) numeric_version("0.5.1")
 
   # First call hits fake_require once; result cached
   BFHcharts:::.ensure_bfhtheme(
@@ -45,7 +45,7 @@ test_that(".ensure_bfhtheme() errors with install hint when BFHtheme missing", {
     error = function(e) e
   )
   expect_s3_class(err, "error")
-  expect_match(conditionMessage(err), "BFHtheme >= 0.5.0", fixed = TRUE)
+  expect_match(conditionMessage(err), "BFHtheme >= 0.5.1", fixed = TRUE)
   expect_match(conditionMessage(err), "remotes::install_github")
 })
 
@@ -61,7 +61,7 @@ test_that(".ensure_bfhtheme() errors when BFHtheme version too low", {
     error = function(e) e
   )
   expect_s3_class(err, "error")
-  expect_match(conditionMessage(err), "0.5.0", fixed = TRUE)
+  expect_match(conditionMessage(err), "0.5.1", fixed = TRUE)
   expect_match(conditionMessage(err), "0.4.9", fixed = TRUE)
 })
 
@@ -79,6 +79,14 @@ test_that(".ensure_bfhtheme() honours custom min_version argument", {
   )
   expect_s3_class(err, "error")
   expect_match(conditionMessage(err), "0.7.0", fixed = TRUE)
+})
+
+test_that(".BFHTHEME_MIN_VERSION constant exists and equals '0.5.1'", {
+  expect_true(exists(".BFHTHEME_MIN_VERSION", envir = asNamespace("BFHcharts")))
+  expect_equal(
+    get(".BFHTHEME_MIN_VERSION", envir = asNamespace("BFHcharts")),
+    "0.5.1"
+  )
 })
 
 # ============================================================================
