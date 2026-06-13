@@ -230,12 +230,12 @@ fixture_test_chart <- function(title = "Test", n = 12, lambda = 15) {
 }
 
 # ----------------------------------------------------------------------------
-# Analysis context (spc_analysis tests)
+# Analysis context (analysis_core tests)
 # ----------------------------------------------------------------------------
 
 #' Minimal analyse-context (synthetic list matching bfh_build_analysis_context output)
 #'
-#' Konsoliderer `make_ctx()` fra test-spc_analysis.R.
+#' Konsoliderer `make_ctx()` fra test-analysis_core.R.
 #'
 #' @param ... Named args der overskriver defaults (fx target_value, centerline)
 #' @param spc_stats Override af spc_stats-liste (runs/crossings/outliers)

@@ -1,7 +1,7 @@
 # Target Utilities and Value Formatting Helpers
 #
 # Internal helpers for target resolution, operator normalisation, percent
-# scale normalisation, and target value formatting. Used by spc_analysis.R
+# scale normalisation, and target value formatting. Used by analysis_core.R
 # (orchestration), spc_render.R, spc_features.R, and utils_export_helpers.R.
 
 

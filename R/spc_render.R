@@ -355,7 +355,7 @@ bfh_render_analysis <- function(analysis,
 
 # Resolverer {level_direction}-/{level_vs_target}-placeholders til
 # sprog-specifikke i18n-strings via shared .compute_level_keys()-helper
-# i spc_analysis.R (key-triplet "at"/"over"/"under"). Returnerer
+# i analysis_core.R (key-triplet "at"/"over"/"under"). Returnerer
 # named list (direction, vs_target) eller list("","") naar target
 # ej sat.
 .resolve_level_placeholders <- function(analysis, language) {
@@ -398,8 +398,10 @@ bfh_render_analysis <- function(analysis,
   # Override-state-paths: no_variation + majority_at_centerline +
   # auto_mean_unstable har forrang over low-confidence (specifikke
   # meddelelser for specifikke data-egenskaber).
-  is_override <- key %in% c("no_variation", "majority_at_centerline",
-    "auto_mean_unstable")
+  is_override <- key %in% c(
+    "no_variation", "majority_at_centerline",
+    "auto_mean_unstable"
+  )
 
   if (is_override) {
     data <- list(centerline = placeholder_data$centerline)
@@ -469,7 +471,7 @@ bfh_render_analysis <- function(analysis,
     )
   }
 
-  # Operator-Unicode-konvertering via shared helper i spc_analysis.R.
+  # Operator-Unicode-konvertering via shared helper i analysis_core.R.
   display <- .normalize_target_operators(display)
 
   data <- list(
