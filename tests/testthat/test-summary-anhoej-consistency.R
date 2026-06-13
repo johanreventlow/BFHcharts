@@ -31,7 +31,7 @@ check_anhoej_consistency <- function(result) {
   summary <- result$summary
   qic_data <- result$qic_data
 
-  loeb_col <- grep("ngste_løb$", names(summary), value = TRUE)[1]
+  loeb_col <- grep("ngste_loeb$", names(summary), value = TRUE)[1]
   sig_col <- if ("anhoej_signal" %in% names(summary)) "anhoej_signal" else NA_character_
 
   n_phases <- nrow(summary)
@@ -80,7 +80,7 @@ check_anhoej_consistency <- function(result) {
 
     # --- runs_signal (decomposed: laengste_loeb > laengste_loeb_max) ---
     if ("runs_signal" %in% names(summary)) {
-      loeb_max_col <- grep("ngste_løb_max$", names(summary), value = TRUE)[1]
+      loeb_max_col <- grep("ngste_loeb_max$", names(summary), value = TRUE)[1]
       s_run_sig <- as.logical(summary$runs_signal[i])
       expected_run_sig <- isTRUE(summary[[loeb_col]][i] > summary[[loeb_max_col]][i])
       if (!is.na(s_run_sig) && !isTRUE(s_run_sig == expected_run_sig)) {
@@ -136,7 +136,7 @@ test_that("summary Anhoej-stats matcher qic_data per fase - I-chart 2 faser", {
   expect_true(length(divs) == 0L, info = paste("Divergenser:", paste(divs, collapse = "; ")))
 
   # Eksplicitte fase-assertions (spec scenario 1)
-  loeb_col <- grep("ngste_løb$", names(result$summary), value = TRUE)[1]
+  loeb_col <- grep("ngste_loeb$", names(result$summary), value = TRUE)[1]
   for (i in 1:2) {
     phase_rows <- result$qic_data[result$qic_data$part == i, ]
     expect_equal(
@@ -183,7 +183,7 @@ test_that("summary Anhoej-stats matcher qic_data - enkelt fase (ingen part)", {
   expect_true(length(divs) == 0L, info = paste("Divergenser:", paste(divs, collapse = "; ")))
 
   # Global aggregering skal matche enkelt-fase summary
-  loeb_col <- grep("ngste_løb$", names(result$summary), value = TRUE)[1]
+  loeb_col <- grep("ngste_loeb$", names(result$summary), value = TRUE)[1]
   expect_equal(
     as.integer(result$summary[1, loeb_col]),
     max(result$qic_data$longest.run, na.rm = TRUE)
@@ -354,7 +354,7 @@ test_that("bfh_extract_spc_stats(result) matcher result$summary vaerdier", {
   stats <- bfh_extract_spc_stats(result)
 
   # stats er baseret paa seneste fase (fase 2)
-  loeb_col <- grep("ngste_løb$", names(result$summary), value = TRUE)[1]
+  loeb_col <- grep("ngste_loeb$", names(result$summary), value = TRUE)[1]
   latest_row <- result$summary[nrow(result$summary), ]
 
   expect_equal(stats$runs_actual, as.integer(latest_row[[loeb_col]]))

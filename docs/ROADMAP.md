@@ -1,5 +1,9 @@
 # BFHcharts Development Roadmap
 
+> **Historisk dokument** — dette roadmap er fra oktober 2025 og afspejler ikke
+> pakkens aktuelle tilstand (v0.25+). Det bevares som historisk reference.
+> Aktuelle planer og issues: <https://github.com/johanreventlow/BFHcharts/issues>
+
 Komplet oversigt over alle planlagte forbedringer og features for BFHcharts pakken.
 
 **Sidste opdateret:** 2025-10-12

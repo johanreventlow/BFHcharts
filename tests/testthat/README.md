@@ -34,15 +34,22 @@ testthat::test_file("tests/testthat/test-spc_analysis.R")
 
 ### CI (GitHub Actions)
 
-CI kører automatisk med begge miljøvariabler sat til `"true"` og installerer Quarto + åbne fallback-fonts (DejaVu, Liberation, Noto).
+Workflows og hvilke miljøvariabler de sætter:
 
-Workflows:
-- `.github/workflows/R-CMD-check.yaml` — R CMD check + testthat (PR-blocking)
-- `.github/workflows/pdf-smoke.yaml` — PDF smoke render via Quarto/Typst (PR-blocking)
-- `.github/workflows/render-tests.yaml` — Ugentlig live render-test suite (cron)
-- `.github/workflows/test-coverage.yml` — covr::codecov() rapportering
-- `.github/workflows/lint.yaml` — lintr (advisory)
-- `.github/workflows/vdiffr.yaml` — vdiffr visuel regression-tracking, push til develop/main (non-blocking, se nedenfor)
+| Workflow | `BFHCHARTS_TEST_FULL` | `BFHCHARTS_TEST_RENDER` | Formål |
+|----------|-----------------------|-------------------------|--------|
+| `R-CMD-check.yaml` | `"true"` | **ikke sat** | R CMD check + testthat (PR-blocking) |
+| `pdf-smoke.yaml` | `"true"` | `"true"` | PDF smoke render via Quarto/Typst (PR-blocking) |
+| `render-tests.yaml` | `"true"` | `"true"` | Ugentlig live render-test suite (cron) |
+| `test-coverage.yml` | ikke sat | ikke sat | covr::codecov() rapportering |
+| `lint.yaml` | ikke sat | ikke sat | lintr (advisory) |
+| `vdiffr.yaml` | ikke sat | ikke sat | vdiffr visuel regression-tracking, push til develop/main (non-blocking, se nedenfor) |
+
+`BFHCHARTS_TEST_RENDER` er bevidst **ikke sat** i `R-CMD-check.yaml`: production-template render
+kræver Mari-fonts (proprietære, kun tilgængelige via BFHchartsAssets). Render-dækning håndteres
+af `pdf-smoke.yaml` med åbne fallback-fonts (DejaVu/Liberation).
+
+`pdf-smoke.yaml` installerer Quarto + åbne fallback-fonts (DejaVu, Liberation, Noto).
 
 #### CI Font-fallback strategi
 
@@ -86,7 +93,7 @@ geometri, layer-rækkefølge, label-placering — ikke font-diffs alene.
 | `BFHCHARTS_TEST_RENDER` | ikke sat | Kører live render-tests (Quarto, PDF, PNG) |
 | `BFHCHARTS_VDIFFR_CI` | ikke sat | Bypass CI-skip i `skip_if_no_mari_font()` — bruges kun af `vdiffr.yaml` |
 
-**Status (2026-04-24):** Alle render/PDF-tests er migreret til de kanoniske helpers (`skip_if_not_render_test()` + `skip_if_no_quarto()`). Nye helpers `skip_if_no_quarto()` og `skip_if_no_mari_font()` tilføjet til `helper-skips.R`. Miljøvariablerne er sat i CI.
+**Status (2026-04-24):** Alle render/PDF-tests er migreret til de kanoniske helpers (`skip_if_not_render_test()` + `skip_if_no_quarto()`). Nye helpers `skip_if_no_quarto()` og `skip_if_no_mari_font()` tilføjet til `helper-skips.R`. Se CI-tabellen ovenfor for hvilke workflows der sætter hvilke variabler.
 
 ---
 

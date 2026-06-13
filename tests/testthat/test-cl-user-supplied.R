@@ -151,7 +151,7 @@ test_that("bfh_extract_spc_stats.data.frame surfaces cl_user_supplied", {
 test_that("bfh_extract_spc_stats.data.frame returns FALSE for plain data.frame", {
   # No attr set -> NULL attr -> isTRUE(NULL) = FALSE. Defensive sanity check.
   df <- data.frame(
-    "længste_løb_max" = 5L,
+    "laengste_loeb_max" = 5L,
     antal_kryds = 3L, check.names = FALSE
   )
   stats <- BFHcharts::bfh_extract_spc_stats(df)
