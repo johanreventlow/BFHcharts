@@ -159,3 +159,19 @@ analysis <- bfh_generate_analysis(result,
 }
 
 }
+\seealso{
+This function is a single-step convenience wrapper. For the two-step
+pipeline that gives more control, use:
+\itemize{
+\item \code{\link{bfh_analyse}} -- composes the structured
+\code{bfh_spc_analysis} object (analysis layer).
+\item \code{\link{bfh_render_analysis}} -- renders that object to
+character output (render layer).
+\item \code{\link{bfh_build_analysis_context}} -- lower-level helper
+used internally to extract chart context.
+\item \code{\link{bfh_generate_details}} -- generates the companion
+detail row string from the same \code{bfh_qic_result} input.
+\item \code{\link{bfh_qic}} for producing the \code{bfh_qic_result}
+input object.
+}
+}
