@@ -211,7 +211,7 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   # Add control limits at raw qicharts2 precision (no rounding).
   # Display-layer consumers (format_target_value, format_centerline_for_details)
   # apply their own rounding when emitting strings. Logic-layer consumers
-  # (e.g. spc_analysis::.evaluate_target_arm) need raw values to avoid
+  # (e.g. analysis_core::.evaluate_target_arm) need raw values to avoid
   # round-off bugs near target-comparison boundaries (cf. issue #290).
   if ("cl" %in% names(raw_summary)) {
     formatted$centerlinje <- raw_summary$cl

@@ -370,7 +370,7 @@ bfh_render_analysis <- function(analysis,
 
 # Resolverer {level_direction}-/{level_vs_target}-placeholders til
 # sprog-specifikke i18n-strings via shared .compute_level_keys()-helper
-# i spc_analysis.R (key-triplet "at"/"over"/"under"). Returnerer
+# i analysis_core.R (key-triplet "at"/"over"/"under"). Returnerer
 # named list (direction, vs_target) eller list("","") naar target
 # ej sat.
 .resolve_level_placeholders <- function(analysis, language) {
@@ -486,7 +486,7 @@ bfh_render_analysis <- function(analysis,
     )
   }
 
-  # Operator-Unicode-konvertering via shared helper i spc_analysis.R.
+  # Operator-Unicode-konvertering via shared helper i analysis_core.R.
   display <- .normalize_target_operators(display)
 
   data <- list(

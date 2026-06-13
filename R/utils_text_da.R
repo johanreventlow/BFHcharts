@@ -2,7 +2,7 @@
 # Danish text-formatting helpers.
 #
 # Pure string-manipulation utilities used by the SPC analysis pipeline
-# (R/spc_analysis.R) and other internal label/summary code paths. Live in
+# (R/analysis_core.R) and other internal label/summary code paths. Live in
 # their own file so the analysis pipeline does not have to host
 # language-specific text logic, and so future English-specific helpers can
 # follow the same `R/utils_text_<lang>.R` pattern symmetrically.

@@ -29,7 +29,7 @@ Kører alle tests, inklusive live Quarto PDF-rendering. Kræver lokal Quarto-ins
 ### Enkelt testfil
 
 ```r
-testthat::test_file("tests/testthat/test-spc_analysis.R")
+testthat::test_file("tests/testthat/test-analysis_core.R")
 ```
 
 ### CI (GitHub Actions)
@@ -138,7 +138,7 @@ Aktuelt er 1-til-1 mapping mellem `R/<module>.R` og `tests/testthat/test-<module
 
 ```
 R/bfh_qic.R                ↔ tests/testthat/test-bfh_qic_*.R + test-integration.R
-R/spc_analysis.R           ↔ tests/testthat/test-spc_analysis.R
+R/analysis_core.R           ↔ tests/testthat/test-analysis_core.R
 R/plot_core.R              ↔ tests/testthat/test-plot_core.R
 R/export_pdf.R             ↔ tests/testthat/test-export_pdf*.R
 ...
@@ -146,7 +146,7 @@ R/export_pdf.R             ↔ tests/testthat/test-export_pdf*.R
 
 **Pågående omorganisering (Fase 1 task 3):** Store testfiler splittes efter funktionsgruppe:
 - `test-export_pdf.R` (1739 linjer) → validation / rendering / metadata / spc-stats
-- `test-spc_analysis.R` (597 linjer) → context / pick-text / fallback-analysis / resolve-target
+- `test-analysis_core.R` (597 linjer) → context / pick-text / fallback-analysis / resolve-target
 - `test-y_axis_formatting.R` (651 linjer) → logiske underfiler
 
 ---

@@ -2,7 +2,7 @@
 #
 # Internal helpers for SPC signal detection (Anhoej rules), text-budget
 # allocation, and i18n key selection for the fallback analysis pipeline.
-# Used by spc_analysis.R (orchestration), spc_features.R, spc_compose.R,
+# Used by analysis_core.R (orchestration), spc_features.R, spc_compose.R,
 # and spc_render.R.
 
 

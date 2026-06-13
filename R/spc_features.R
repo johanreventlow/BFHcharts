@@ -56,7 +56,7 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 
   # Genbrug eksisterende context-builder for at faa Anhoej-stats,
   # sigma_hat/sigma_data, n_on_cl_ratio, target-resolution m.m. i den
-  # form spc_analysis.R-helpers forventer.
+  # form analysis_core.R-helpers forventer.
   context <- bfh_build_analysis_context(x, metadata)
 
   # Resolve analysis_date via 3-vejs praecedens (Phase 0.4).
@@ -330,7 +330,7 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 #   min(sigma_tol, NEAR_TARGET_PCT_CAP, NEAR_TARGET_PCT_RELATIVE * target).
 # Absolut cap (3pp) haandterer noisy processes; relativ cap (25% af target)
 # haandterer smaa-target-cases hvor 3pp stadig er klinisk for stor.
-# Parity med .near_target_tolerance() i spc_analysis.R.
+# Parity med .near_target_tolerance() i analysis_core.R.
 .within_sigma_tolerance <- function(delta, sigma_hat, sigma_data,
                                     sigma_multiplier_hat = 3,
                                     is_percent = FALSE,

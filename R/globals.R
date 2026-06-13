@@ -91,7 +91,7 @@ PDF_LABEL_SIZE <- 6
 RECENT_OBS_WINDOW <- 6L
 
 # Percent-unit "near target" classification caps (proportion scale, ej procentpoint).
-# Bruges af .evaluate_target_arm() / .compute_level_keys() i spc_analysis.R.
+# Bruges af .evaluate_target_arm() / .compute_level_keys() i analysis_core.R.
 #
 # NEAR_TARGET_DISPLAY_THRESHOLD (0.02 = 2pp): max delta hvor chart-label viser
 # en decimal istedet for hele procent. Matcher format_percent_contextual()
