@@ -1,6 +1,3 @@
-# Skip i miljøer uden Mari-fonts (typisk CI) — triggerer theme-loading
-skip_if_fonts_unavailable()
-
 test_that("notes parameter creates plot without errors", {
   data <- data.frame(
     month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),

@@ -1,6 +1,6 @@
 # Tests for ylim (y-axis display limits via coord_cartesian)
-# validate_ylim() er ren logik (ingen fonts). Plot-niveau-tests kraever
-# BFHtheme-fonts og gates via skip_if_fonts_unavailable().
+# validate_ylim() er ren logik (ingen fonts). Plot-niveau-tests kalder
+# bfh_qic() men checker kun data/config -- ingen font-skip paakraevet.
 
 # ============================================================================
 # 1. validate_ylim() - ren input-validering (ingen fonts)
@@ -63,7 +63,6 @@ make_ylim_test_data <- function() {
 }
 
 test_that("bfh_qic() with ylim sets coord_cartesian y-limits", {
-  skip_if_fonts_unavailable()
   df <- make_ylim_test_data()
 
   res <- bfh_qic(df, x = maaned, y = vaerdi, chart_type = "i", ylim = c(0, 20))
@@ -72,7 +71,6 @@ test_that("bfh_qic() with ylim sets coord_cartesian y-limits", {
 })
 
 test_that("bfh_qic() with ylim does NOT drop data points (zoom, not clip)", {
-  skip_if_fonts_unavailable()
   df <- make_ylim_test_data()
 
   # Punkt #12 (vaerdi = 50) ligger uden for ylim c(0, 20).
@@ -85,7 +83,6 @@ test_that("bfh_qic() with ylim does NOT drop data points (zoom, not clip)", {
 })
 
 test_that("bfh_qic() supports partial limit c(0, NA)", {
-  skip_if_fonts_unavailable()
   df <- make_ylim_test_data()
 
   res <- bfh_qic(df, x = maaned, y = vaerdi, chart_type = "i", ylim = c(0, NA))
@@ -94,7 +91,6 @@ test_that("bfh_qic() supports partial limit c(0, NA)", {
 })
 
 test_that("bfh_qic() without ylim leaves y-limits data-driven (NULL)", {
-  skip_if_fonts_unavailable()
   df <- make_ylim_test_data()
 
   res <- bfh_qic(df, x = maaned, y = vaerdi, chart_type = "i")
@@ -122,7 +118,6 @@ test_that("percent p-chart plots on 0-1 proportion scale (ylim contract)", {
 })
 
 test_that("bfh_qic() percent chart accepts ylim c(0, 1) for 0%-100%", {
-  skip_if_fonts_unavailable()
   d <- data.frame(
     m = seq.Date(as.Date("2023-01-01"), by = "month", length.out = 12),
     events = c(5, 8, 6, 7, 9, 4, 6, 8, 5, 7, 6, 9),
@@ -136,7 +131,6 @@ test_that("bfh_qic() percent chart accepts ylim c(0, 1) for 0%-100%", {
 })
 
 test_that("bfh_qic() warns and ignores ylim when min >= max", {
-  skip_if_fonts_unavailable()
   df <- make_ylim_test_data()
 
   expect_warning(
@@ -147,7 +141,6 @@ test_that("bfh_qic() warns and ignores ylim when min >= max", {
 })
 
 test_that("ylim placerer kommentarer inden for zoom-vinduet (ej fuld data-range)", {
-  skip_if_fonts_unavailable()
   notes_vec <- rep(NA_character_, 12)
   notes_vec[3] <- "Intervention"
   notes_vec[8] <- "Ny protokol"
