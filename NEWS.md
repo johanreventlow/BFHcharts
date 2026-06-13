@@ -1,3 +1,55 @@
+# BFHcharts 0.26.0
+
+## Nye features
+
+* **`agg_fun` og `return_data` accepteres som snake_case-aliasser** for de
+  tilsvarende dot.case-parametre (`agg.fun`, `return.data`) i `bfh_qic()`.
+  Begge idiomer virker nu side om side; dot.case forbliver primær API.
+  (#483, closes #429)
+
+## Bugfixes
+
+* `bfh_qic()` giver nu en klar fejlbesked med migrationsvejledning naar
+  `chart_type = "i'"` bruges -- den deprekerede apostrof-syntaks fra 0.24.0.
+  Tidligere var fejlmeddelelsen kryptisk. (#480, closes #430)
+
+* `add_right_labels_marquee()` aabner konsekvent en ny temp-device til
+  maaling og rydder altid op bagefter. Den tidligere "device already open"-genvej
+  efterlod caller-devicen korrupt. (#489, closes #436)
+
+## Performance
+
+* **Panel-hoejde maales nu aritmetisk** (sum af ikke-null gtable-raekkehoejder)
+  fremfor via `grid.newpage() + grid.draw()`. Sparer ca. 30 ms pr. `bfh_qic()`-kald
+  og eliminerer 3x-rendering ved PDF-eksport (#437). Maalt afvigelse vs.
+  draw-baseret metode: 0.0 %. (#488, closes #435, #437)
+
+## Interne ændringer
+
+* Analysefilen `R/spc_analysis.R` er opdelt i tre fokuserede filer:
+  `R/analysis_core.R` (primær indgang), `R/analysis_helpers.R` og
+  `R/analysis_signals.R`. Filnavnene afspejler nu indholdet. (#486, #487,
+  closes #420, #421)
+
+* `.compute_pref_pos()` er udtrukket som selvstaendig intern funktion fra
+  `fct_add_spc_labels.R`. Reducerer funktionens kompleksitet og
+  muliggoer isoleret test af label-placement-logik. (#482, closes #427)
+
+* Fontbaserede test-guards fjernet fra adfaerdstest -- tests der validerer
+  logik (ikke rendering) sprang fejlagtigt over paa CI. (#484, closes #432)
+
+* `@seealso`-krydsreferencer tilfoejt til alle analyse-indgangspunkter.
+  (#478, closes #428)
+
+* ADR-005 dokumenterer distributionsstrategi for BFHcharts (GitHub-only,
+  ingen CRAN). (#479, closes #423)
+
+* CI: vdiffr visuel-regressions-workflow tilfoejt (`.github/workflows/vdiffr.yaml`).
+  (#485, closes #433)
+
+* Test-README opdateret: `BFHCHARTS_TEST_RENDER`-variablen var fejlagtigt
+  markeret som "sat i R-CMD-check". (#481, closes #434)
+
 # BFHcharts 0.25.0
 
 ## Breaking changes
