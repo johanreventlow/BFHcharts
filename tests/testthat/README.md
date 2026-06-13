@@ -43,6 +43,7 @@ Workflows og hvilke miljøvariabler de sætter:
 | `render-tests.yaml` | `"true"` | `"true"` | Ugentlig live render-test suite (cron) |
 | `test-coverage.yml` | ikke sat | ikke sat | covr::codecov() rapportering |
 | `lint.yaml` | ikke sat | ikke sat | lintr (advisory) |
+| `vdiffr.yaml` | ikke sat | ikke sat | vdiffr visuel regression-tracking, push til develop/main (non-blocking, se nedenfor) |
 
 `BFHCHARTS_TEST_RENDER` er bevidst **ikke sat** i `R-CMD-check.yaml`: production-template render
 kræver Mari-fonts (proprietære, kun tilgængelige via BFHchartsAssets). Render-dækning håndteres
@@ -63,18 +64,24 @@ CI anvender to komplementære strategier:
 - `ignore_system_fonts=TRUE` (Typst 0.13+) sikrer Typst kun bruger leverede fonts
 
 **vdiffr snapshot-tests:**
-- `skip_if_no_mari_font()` per test — skipper på CI (ingen Mari) uden at blokere suite
+- `skip_if_no_mari_font()` per test — skipper på CI (ingen Mari) i R-CMD-check og andre
+  standard-workflows. `vdiffr.yaml` sætter `BFHCHARTS_VDIFFR_CI=true` for at
+  bypass dette og køre tests med substitute-fonts (regression-detektion).
 - Snapshots re-baselinet ved: BFHtheme version-bump (forventede font-metric ændringer),
   bevidst layout-ændring, regression-fix
 - Commit-beskeden skal dokumentere årsag ved re-baseline
 
 **Opsummering af skip-logik for font-afhængige tests:**
 
-| Test type | CI-adfærd | Lokal adfærd (med Mari) |
-|-----------|-----------|------------------------|
-| vdiffr snapshots | SKIP (skip_if_no_mari_font) | PASS mod baselines |
-| PDF smoke render | PASS (åbne fallback-fonts) | PASS (Mari) |
-| Render-tests (ugentlig) | PASS (åbne fallback-fonts) | PASS (Mari) |
+| Test type | R-CMD-check CI | vdiffr.yaml CI | Lokal (med Mari) |
+|-----------|----------------|----------------|-----------------|
+| vdiffr snapshots | SKIP | FAIL/PASS (font-diffs forventede) | PASS mod baselines |
+| PDF smoke render | PASS (åbne fallback-fonts) | ikke relevant | PASS (Mari) |
+| Render-tests (ugentlig) | PASS (åbne fallback-fonts) | ikke relevant | PASS (Mari) |
+
+**vdiffr.yaml er altid rød** pga. font-metric-forskelle mellem Mari-baselines og DejaVu/Liberation
+substitute-fonts på CI. Det er korrekt og forventet. Nyt at bekymre sig om: ændringer i
+geometri, layer-rækkefølge, label-placering — ikke font-diffs alene.
 
 ---
 
@@ -84,6 +91,7 @@ CI anvender to komplementære strategier:
 |----------|---------|--------|
 | `BFHCHARTS_TEST_FULL` | ikke sat | Kører integration-tests ud over unit-tests |
 | `BFHCHARTS_TEST_RENDER` | ikke sat | Kører live render-tests (Quarto, PDF, PNG) |
+| `BFHCHARTS_VDIFFR_CI` | ikke sat | Bypass CI-skip i `skip_if_no_mari_font()` — bruges kun af `vdiffr.yaml` |
 
 **Status (2026-04-24):** Alle render/PDF-tests er migreret til de kanoniske helpers (`skip_if_not_render_test()` + `skip_if_no_quarto()`). Nye helpers `skip_if_no_quarto()` og `skip_if_no_mari_font()` tilføjet til `helper-skips.R`. Se CI-tabellen ovenfor for hvilke workflows der sætter hvilke variabler.
 
@@ -177,7 +185,10 @@ covr::report(cov)
 Vdiffr-snapshots beskytter mod utilsigtede visuelle regressioner i BFHcharts' plot-output.
 Golden images er i `tests/testthat/_snaps/visual-regression/`.
 
-**Tests kræver Mari-fonts** — `skip_if_fonts_unavailable()` skipper hele filen på CI og maskiner uden Mari.
+**Tests kræver Mari-fonts lokalt.** I standard-CI-workflows (R-CMD-check, pdf-smoke osv.)
+skipper `skip_if_no_mari_font()` alle tests når `CI=true` (ingen Mari tilgængelig). Se
+CI Font-fallback strategi ovenfor for den dedikerede `vdiffr.yaml`-workflow der kører
+tests med substitute-fonts til regression-detektion.
 
 ### Snapshot-politik
 
