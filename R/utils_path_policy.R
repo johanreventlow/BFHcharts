@@ -130,8 +130,9 @@ validate_export_path <- function(path,
   ext_action <- match.arg(ext_action)
 
   if (!is.character(path) || length(path) != 1L || nchar(path) == 0L) {
-    stop("path must be a non-empty character string specifying the file path",
-      call. = FALSE
+    bfh_abort(
+      "path must be a non-empty character string specifying the file path",
+      class = "bfhcharts_export_error"
     )
   }
 
@@ -140,16 +141,20 @@ validate_export_path <- function(path,
 
   if (!is.null(extension)) {
     if (!extension %in% ALLOWED_EXPORT_EXTENSIONS) {
-      stop(
-        "extension '", extension, "' is not in the allowed export extensions: ",
-        paste(ALLOWED_EXPORT_EXTENSIONS, collapse = ", "),
-        call. = FALSE
+      bfh_abort(
+        paste0(
+          "extension '", extension, "' is not in the allowed export extensions: ",
+          paste(ALLOWED_EXPORT_EXTENSIONS, collapse = ", ")
+        ),
+        class = "bfhcharts_export_error"
       )
     }
     pattern <- paste0("\\.", extension, "$")
     if (!grepl(pattern, path, ignore.case = TRUE)) {
       msg <- paste0("path does not have .", extension, " extension: ", basename(path))
-      if (ext_action == "stop") stop(msg, call. = FALSE)
+      if (ext_action == "stop") {
+        bfh_abort(msg, class = "bfhcharts_export_error")
+      }
       if (ext_action == "warn") warning(msg, call. = FALSE)
     }
   }
@@ -162,11 +167,13 @@ validate_export_path <- function(path,
     if (!is.null(allow_root)) {
       root <- normalizePath(allow_root, mustWork = TRUE)
       if (!startsWith(resolved, root)) {
-        stop(
-          "path resolves outside the allowed root\n",
-          "  Resolved: ", resolved, "\n",
-          "  Root:     ", root,
-          call. = FALSE
+        bfh_abort(
+          paste0(
+            "path resolves outside the allowed root\n",
+            "  Resolved: ", resolved, "\n",
+            "  Root:     ", root
+          ),
+          class = "bfhcharts_export_error"
         )
       }
     }
@@ -180,30 +187,41 @@ validate_export_path <- function(path,
 .check_traversal <- function(path) {
   parts <- strsplit(path, "[/\\\\]")[[1]]
   if (any(parts == "..")) {
-    stop(
-      "path traversal attempt detected:",
-      " '..' is not allowed as a path component\n",
-      "  Provided path: ", basename(path),
-      call. = FALSE
+    bfh_abort(
+      paste0(
+        "path traversal attempt detected:",
+        " '..' is not allowed as a path component\n",
+        "  Provided path: ", basename(path)
+      ),
+      class = "bfhcharts_export_error"
     )
   }
 }
 
 .check_metachars <- function(path) {
-  # NUL-byte kan ikke optraede i R-strings under normale forhold, men kontroller
-  # for sikkerheds skyld (rawToChar/Encoding-edgecases).
+  # NUL-byte cannot appear in R strings under normal conditions, but check
+  # defensively for rawToChar/Encoding edge cases.
   if (any(charToRaw(path) == as.raw(0L))) {
-    stop("path contains disallowed unsafe characters (NUL byte)", call. = FALSE)
+    bfh_abort(
+      "path contains disallowed unsafe characters (NUL byte)",
+      class = "bfhcharts_export_error"
+    )
   }
   if (any(vapply(SHELL_METACHARS_OUTPUT_PATH, function(ch) grepl(ch, path, fixed = TRUE), logical(1L)))) {
-    stop("path contains disallowed unsafe characters", call. = FALSE)
+    bfh_abort(
+      "path contains disallowed unsafe characters",
+      class = "bfhcharts_export_error"
+    )
   }
 }
 
-# Variant til binary-stier: tillader parens/braces (Windows Program Files-stier),
-# men afviser egentlige shell-injection-tegn.
+# Variant for binary paths: allows parens/braces (Windows Program Files paths),
+# but rejects actual shell-injection characters.
 .check_metachars_binary <- function(path) {
   if (any(vapply(SHELL_METACHARS_BINARY, function(ch) grepl(ch, path, fixed = TRUE), logical(1L)))) {
-    stop("binary path contains disallowed unsafe characters", call. = FALSE)
+    bfh_abort(
+      "binary path contains disallowed unsafe characters",
+      class = "bfhcharts_export_error"
+    )
   }
 }

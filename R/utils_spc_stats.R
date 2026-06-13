@@ -101,11 +101,11 @@ bfh_extract_spc_stats.data.frame <- function(x) {
 
   row <- x[nrow(x), ]
 
-  if ("l\u00e6ngste_l\u00f8b_max" %in% names(row)) {
-    stats$runs_expected <- clean_spc_value(row[["l\u00e6ngste_l\u00f8b_max"]])
+  if ("laengste_loeb_max" %in% names(row)) {
+    stats$runs_expected <- clean_spc_value(row[["laengste_loeb_max"]])
   }
-  if ("l\u00e6ngste_l\u00f8b" %in% names(row)) {
-    stats$runs_actual <- clean_spc_value(row[["l\u00e6ngste_l\u00f8b"]])
+  if ("laengste_loeb" %in% names(row)) {
+    stats$runs_actual <- clean_spc_value(row[["laengste_loeb"]])
   }
   if ("antal_kryds_min" %in% names(row)) {
     stats$crossings_expected <- clean_spc_value(row$antal_kryds_min)
@@ -212,6 +212,43 @@ filter_qic_to_last_phase <- function(qic_data) {
     return(qic_data)
   }
   qic_data[qic_data$part == max(qic_data$part, na.rm = TRUE), , drop = FALSE]
+}
+
+# Returns the last row of the latest phase as a 1-row data frame, or NULL if
+# qic_data is NULL/empty.  Composes filter_qic_to_last_phase() so the
+# max(part) logic stays in one place.
+extract_latest_phase_row <- function(qic_data) {
+  phase <- filter_qic_to_last_phase(qic_data)
+  if (is.null(phase) || nrow(phase) == 0L) {
+    return(NULL)
+  }
+  phase[nrow(phase), , drop = FALSE]
+}
+
+# Returns the scalar CL value from the last row of the latest phase.
+# Falls back to the last non-NA CL across all rows when the part column is
+# absent (matches the defensive fallback in fct_add_spc_labels.R).
+# Returns NA_real_ if no CL is available.
+extract_latest_cl <- function(qic_data) {
+  if (is.null(qic_data$cl) || !any(!is.na(qic_data$cl))) {
+    return(NA_real_)
+  }
+  if ("part" %in% names(qic_data)) {
+    row <- extract_latest_phase_row(qic_data)
+    if (!is.null(row)) {
+      return(row$cl)
+    }
+  }
+  # No part column: fall back to last non-NA CL value.
+  tail(stats::na.omit(qic_data$cl), 1)
+}
+
+# Returns the first non-NA target value, or NA_real_ if none.
+extract_first_target <- function(qic_data) {
+  if (is.null(qic_data$target) || !any(!is.na(qic_data$target))) {
+    return(NA_real_)
+  }
+  qic_data$target[!is.na(qic_data$target)][1]
 }
 
 empty_spc_stats <- function() {

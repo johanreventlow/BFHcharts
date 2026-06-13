@@ -159,30 +159,13 @@ add_spc_labels <- function(
     NULL
   }
 
-  # Ekstraher CL vaerdi fra seneste part ----
-  # INTENTIONEL ASYMMETRI: CL hentes fra seneste part (centerlinjen aendres ved
-  # faseovergange), mens target hentes som foerste non-NA (target er typisk
-  # konstant og sat af brugeren uafhaengigt af faser).
-  cl_value <- NA_real_
-  if (!is.null(qic_data$cl) && any(!is.na(qic_data$cl))) {
-    if ("part" %in% names(qic_data)) {
-      latest_part <- max(qic_data$part, na.rm = TRUE)
-      part_data <- qic_data[qic_data$part == latest_part & !is.na(qic_data$part), ]
-
-      if (nrow(part_data) > 0) {
-        last_row <- part_data[nrow(part_data), ]
-        cl_value <- last_row$cl
-      }
-    } else {
-      cl_value <- tail(stats::na.omit(qic_data$cl), 1)
-    }
-  }
-
-  # Ekstraher Target vaerdi ----
-  target_value <- NA_real_
-  if (!is.null(qic_data$target) && any(!is.na(qic_data$target))) {
-    target_value <- qic_data$target[!is.na(qic_data$target)][1]
-  }
+  # Extract CL and target from latest phase via shared helpers ----
+  # INTENTIONAL ASYMMETRY: CL is taken from the last row of the latest phase
+  # (centerline changes at phase transitions), while target is the first non-NA
+  # value (target is typically constant and user-supplied independently of
+  # phases).
+  cl_value <- extract_latest_cl(qic_data)
+  target_value <- extract_first_target(qic_data)
 
   # Valider at vi har mindst en vaerdi ----
   if (is.na(cl_value) && is.na(target_value)) {

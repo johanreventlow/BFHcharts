@@ -687,3 +687,73 @@ test_that(".muffle_expected_warnings propagerer generel type-warning uaendret", 
   w <- capture_warnings_from_muffler("object 'foo' not found")
   expect_length(w, 1)
 })
+
+# ============================================================================
+# Classed conditions: bfhcharts_input_error
+# ============================================================================
+
+test_that("validate_bfh_qic_inputs emits bfhcharts_input_error for non-data.frame data", {
+  expect_error(
+    call_validate(data = list(x = 1:5, y = 1:5)),
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("validate_bfh_qic_inputs emits bfhcharts_input_error for invalid chart_type", {
+  expect_error(
+    call_validate(chart_type = "xyz"),
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("validate_bfh_qic_inputs emits bfhcharts_input_error for invalid y_axis_unit", {
+  expect_error(
+    call_validate(y_axis_unit = "liters"),
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("validate_bfh_qic_inputs emits bfhcharts_input_error for invalid return.data", {
+  expect_error(
+    call_validate(return.data = "ja"),
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("validate_bfh_qic_inputs emits bfhcharts_input_error for bad plot_margin", {
+  expect_error(
+    call_validate(plot_margin = c(1, 2, 3)),
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("validate_bfh_qic_inputs emits bfhcharts_input_error for missing x column", {
+  expect_error(
+    call_validate(x_expr_char = "missing_col"),
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("validate_bfh_qic_inputs emits bfhcharts_input_error for invalid notes", {
+  d <- data.frame(x = 1:5, y = 1:5)
+  expect_error(
+    call_validate(data = d, notes = 1:5),
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("validate_bfh_qic_inputs emits bfhcharts_input_error for non-character target_text", {
+  expect_error(
+    call_validate(target_text = 42),
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("bfhcharts_input_error is also a bfhcharts_error", {
+  err <- tryCatch(
+    call_validate(chart_type = "xyz"),
+    error = function(e) e
+  )
+  expect_true(inherits(err, "bfhcharts_error"))
+  expect_true(inherits(err, "bfhcharts_input_error"))
+})

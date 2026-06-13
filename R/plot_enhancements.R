@@ -70,12 +70,13 @@ add_plot_enhancements <- function(plot,
 
   # Centerline extension (only for latest part)
   if (!is.null(qic_data$cl) && any(!is.na(qic_data$cl))) {
-    latest_part <- max(qic_data$part, na.rm = TRUE)
-    part_data <- qic_data[qic_data$part == latest_part & !is.na(qic_data$part), ]
+    last_row <- extract_latest_phase_row(qic_data)
 
-    if (nrow(part_data) > 0) {
-      last_row <- part_data[nrow(part_data), ]
-      last_part_x <- max(part_data$x, na.rm = TRUE)
+    if (!is.null(last_row)) {
+      # max(x) across the whole latest phase; last_row$x may differ if the
+      # last observation has NA x, so we recompute from the full phase.
+      phase_data <- filter_qic_to_last_phase(qic_data)
+      last_part_x <- max(phase_data$x, na.rm = TRUE)
       if (inherits(last_part_x, "Date")) {
         last_part_x <- as.POSIXct(last_part_x)
       }
@@ -100,15 +101,16 @@ add_plot_enhancements <- function(plot,
   }
 
   # Target extension (only if not suppressed)
-  if (!suppress_targetline && !is.null(qic_data$target) && any(!is.na(qic_data$target))) {
-    target_value <- qic_data$target[!is.na(qic_data$target)][1]
-
-    extended_lines_list$target <- tibble::tibble(
-      x = c(last_x, extended_x),
-      y = c(target_value, target_value),
-      type = "target",
-      linetype = "42"
-    )
+  if (!suppress_targetline) {
+    target_value <- extract_first_target(qic_data)
+    if (!is.na(target_value)) {
+      extended_lines_list$target <- tibble::tibble(
+        x = c(last_x, extended_x),
+        y = c(target_value, target_value),
+        type = "target",
+        linetype = "42"
+      )
+    }
   }
 
   # Single bind operation - much more efficient

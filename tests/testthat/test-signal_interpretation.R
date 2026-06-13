@@ -69,8 +69,8 @@ test_that("signal-kolonner er tilgængelige i summary", {
   result <- bfh_qic(data, x = date, y = value, chart_type = "i")
 
   # Summary skal have Anhøj-relaterede kolonner
-  expect_true("længste_løb" %in% names(result$summary))
-  expect_true("længste_løb_max" %in% names(result$summary))
+  expect_true("laengste_loeb" %in% names(result$summary))
+  expect_true("laengste_loeb_max" %in% names(result$summary))
   expect_true("antal_kryds" %in% names(result$summary))
   expect_true("antal_kryds_min" %in% names(result$summary))
   expect_true("anhoej_signal" %in% names(result$summary))
