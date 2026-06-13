@@ -3,7 +3,6 @@
 # ============================================================================
 
 test_that("new_bfh_qic_result creates valid S3 object", {
-  skip_if_fonts_unavailable()
   set.seed(42)
 
   # Create mock components
@@ -70,7 +69,6 @@ test_that("new_bfh_qic_result creates valid S3 object", {
 })
 
 test_that("new_bfh_qic_result validates inputs", {
-  skip_if_fonts_unavailable()
   set.seed(42)
 
   # Create valid components
@@ -211,7 +209,6 @@ test_that("plot.bfh_qic_result displays plot", {
 })
 
 test_that("accessor functions work", {
-  skip_if_fonts_unavailable()
   set.seed(42)
 
   data <- data.frame(
@@ -249,7 +246,6 @@ test_that("accessor functions work", {
 })
 
 test_that("is_bfh_qic_result identifies objects correctly", {
-  skip_if_fonts_unavailable()
   set.seed(42)
 
   data <- data.frame(
