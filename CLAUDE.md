@@ -2,6 +2,7 @@
 # Claude Instructions – BFHcharts
 
 @~/.claude/rules/CLAUDE_BOOTSTRAP_WORKFLOW.md
+@~/.claude/rules-profiles/r/R_STANDARDS.md
 
 ---
 
@@ -431,11 +432,10 @@ warning("Kontrolgrænser er statistisk usikre")  # æ trigger CRAN warning
 ## 📚 Global Standards Reference
 
 **Dette projekt følger:**
-- **R Development:** `~/.claude/rules/R_STANDARDS.md`
-- **Architecture Patterns:** `~/.claude/rules/ARCHITECTURE_PATTERNS.md`
+- **R Development:** `~/.claude/rules-profiles/r/R_STANDARDS.md`
+- **Architecture Patterns:** `~/.claude/rules-profiles/shiny/ARCHITECTURE_PATTERNS.md`
 - **Git Workflow:** `~/.claude/rules/GIT_WORKFLOW.md`
 - **Development Philosophy:** `~/.claude/rules/DEVELOPMENT_PHILOSOPHY.md`
-- **Troubleshooting:** `~/.claude/rules/TROUBLESHOOTING_GUIDE.md`
 
 **Globale agents:** tidyverse-code-reviewer, performance-optimizer, security-reviewer, test-coverage-analyzer, refactoring-advisor, legacy-code-detector
 

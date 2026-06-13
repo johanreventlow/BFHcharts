@@ -68,7 +68,9 @@ NULL
 #'   chart simply zooms to the requested window. If `min >= max` (both
 #'   non-`NA`) the limit is ignored with a warning.
 #' @param multiply Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)
-#' @param agg.fun Aggregation function for run/I charts with multiple observations per subgroup: "mean" (default), "median", "sum", "sd"
+#' @param agg_fun Aggregation function for run/I charts with multiple observations per subgroup:
+#'   "mean" (default), "median", "sum", "sd". Preferred snake_case alias for the legacy `agg.fun`.
+#' @param agg.fun Deprecated. Use `agg_fun` instead. Kept for backwards compatibility.
 #' @param base_size Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)
 #' @param width Plot width (optional). Supports smart unit detection or explicit units parameter. See Details.
 #' @param height Plot height (optional). Supports smart unit detection or explicit units parameter. See Details.
@@ -79,7 +81,10 @@ NULL
 #' @param xlab X-axis label (default: "" for blank)
 #' @param subtitle Plot subtitle text (default: NULL for no subtitle)
 #' @param caption Plot caption text (default: NULL for no caption)
-#' @param return.data Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result object. If FALSE (default), return bfh_qic_result S3 object. Legacy parameter maintained for backwards compatibility.
+#' @param return_data Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result
+#'   object. If FALSE (default), return bfh_qic_result S3 object. Preferred snake_case alias for
+#'   the legacy `return.data`.
+#' @param return.data Deprecated. Use `return_data` instead. Kept for backwards compatibility.
 #' @param language Character string specifying output language. One of
 #'   \code{"da"} (Danish, default) or \code{"en"} (English). Controls
 #'   three independent aspects of output (since v0.12.0):
@@ -95,14 +100,14 @@ NULL
 #'   Default \code{"da"} preserves backward compatibility for Danish users.
 #'
 #' @return
-#' - Default (return.data = FALSE): \code{bfh_qic_result} S3 object with components:
+#' - Default (return_data = FALSE): \code{bfh_qic_result} S3 object with components:
 #'   \itemize{
 #'     \item \code{$plot}: ggplot2 object with the SPC chart
 #'     \item \code{$summary}: data.frame with SPC statistics
 #'     \item \code{$qic_data}: data.frame with raw qicharts2 calculations
 #'     \item \code{$config}: list with original function parameters
 #'   }
-#' - return.data = TRUE: data.frame with qic calculations (legacy behavior)
+#' - return_data = TRUE: data.frame with qic calculations (legacy behavior)
 #'
 #' @details
 #' **Helper map (internal orchestration functions):**
@@ -364,7 +369,7 @@ NULL
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
 #'   chart_title = "I-Chart Using Median",
-#'   agg.fun = "median"
+#'   agg_fun = "median"
 #' )
 #'
 #' # Example 8: Multiply y-values for unit conversion
@@ -515,7 +520,7 @@ NULL
 #'   y = infections,
 #'   chart_type = "i",
 #'   y_axis_unit = "count",
-#'   return.data = TRUE # Return data.frame instead of plot
+#'   return_data = TRUE # Return data.frame instead of plot
 #' )
 #'
 #' # Now you can access all qic calculations
@@ -662,6 +667,7 @@ bfh_qic <- function(data,
                     ylim = NULL,
                     multiply = 1,
                     agg.fun = c("mean", "median", "sum", "sd"),
+                    agg_fun = NULL,
                     base_size = 14,
                     width = NULL,
                     height = NULL,
@@ -673,11 +679,54 @@ bfh_qic <- function(data,
                     subtitle = NULL,
                     caption = NULL,
                     return.data = FALSE,
+                    return_data = NULL,
                     language = "da") {
   # ---- NSE + missing() flags kapteres FOERST i bfh_qic()-scopet ----
   # substitute(), missing() og parent.frame() er scope-sensitive:
   # de SKAL evalueres her, ikke inde i helpers.
-  agg_fun_supplied <- !missing(agg.fun)
+
+  # ---- Snake_case alias resolution ----
+  # agg_fun / return_data are the new preferred names;
+  # agg.fun / return.data are kept for backwards compatibility.
+  # Capture missing() BEFORE any reassignment.
+  dot_agg_fun_supplied <- !missing(agg.fun)
+  snake_agg_fun_supplied <- !is.null(agg_fun)
+
+  if (dot_agg_fun_supplied && snake_agg_fun_supplied) {
+    stop(
+      "Supply only one of 'agg_fun' or 'agg.fun', not both.",
+      call. = FALSE
+    )
+  }
+  if (dot_agg_fun_supplied) {
+    warning(
+      "'agg.fun' is deprecated. Use 'agg_fun' instead.",
+      call. = FALSE
+    )
+  }
+  if (snake_agg_fun_supplied) {
+    agg.fun <- agg_fun
+  }
+  agg_fun_supplied <- dot_agg_fun_supplied || snake_agg_fun_supplied
+
+  dot_return_data_supplied <- !missing(return.data)
+  snake_return_data_supplied <- !is.null(return_data)
+
+  if (dot_return_data_supplied && snake_return_data_supplied) {
+    stop(
+      "Supply only one of 'return_data' or 'return.data', not both.",
+      call. = FALSE
+    )
+  }
+  if (dot_return_data_supplied) {
+    warning(
+      "'return.data' is deprecated. Use 'return_data' instead.",
+      call. = FALSE
+    )
+  }
+  if (snake_return_data_supplied) {
+    return.data <- return_data
+  }
   base_size_supplied <- !missing(base_size)
   qic_envir <- parent.frame()
 
