@@ -156,14 +156,16 @@ test_that("Phase 99.3: placeholders matches mellem da og en per nøgle", {
 # ==========================================================================
 
 test_that("Phase 99.3: format_target_value bruger korrekt decimal-separator", {
-  # da: komma
+  # da: komma. format_target_value now delegates to format_y_value (fix #426).
+  # format_count rounds non-integer values >= 1 to 1 decimal (matching chart
+  # labels), so 50.59 -> "50,6" (was "50,59" under old 2-decimal kernel).
   expect_equal(
     BFHcharts:::format_target_value(1.5, y_axis_unit = "count", language = "da"),
     "1,5"
   )
   expect_equal(
     BFHcharts:::format_target_value(50.59, y_axis_unit = "count", language = "da"),
-    "50,59"
+    "50,6"
   )
 
   # en: punktum
@@ -173,7 +175,7 @@ test_that("Phase 99.3: format_target_value bruger korrekt decimal-separator", {
   )
   expect_equal(
     BFHcharts:::format_target_value(50.59, y_axis_unit = "count", language = "en"),
-    "50.59"
+    "50.6"
   )
 })
 
@@ -188,6 +190,59 @@ test_that("Phase 99.3: format_target_value percent rendres ens (% er sprog-neutr
     BFHcharts:::format_target_value(0.9, y_axis_unit = "percent", language = "en"),
     "90%"
   )
+})
+
+
+# ==========================================================================
+# Phase 99.3.3b: format_target_value paritet med format_y_value (fix #426)
+# ==========================================================================
+
+test_that("format_target_value matches format_y_value for count unit", {
+  # After delegation, analysis-text and chart-labels produce identical output.
+  expect_equal(
+    BFHcharts:::format_target_value(1500, "count", "da"),
+    BFHcharts:::format_y_value(1500, y_unit = "count", language = "da")
+  )
+  expect_equal(
+    BFHcharts:::format_target_value(1500, "count", "en"),
+    BFHcharts:::format_y_value(1500, y_unit = "count", language = "en")
+  )
+})
+
+test_that("format_target_value matches format_y_value for percent unit", {
+  expect_equal(
+    BFHcharts:::format_target_value(0.85, "percent", "da"),
+    BFHcharts:::format_y_value(0.85, y_unit = "percent", language = "da")
+  )
+  expect_equal(
+    BFHcharts:::format_target_value(0.85, "percent", "en"),
+    BFHcharts:::format_y_value(0.85, y_unit = "percent", language = "en")
+  )
+})
+
+test_that("format_target_value matches format_y_value for rate unit", {
+  expect_equal(
+    BFHcharts:::format_target_value(2.5, "rate", "da"),
+    BFHcharts:::format_y_value(2.5, y_unit = "rate", language = "da")
+  )
+})
+
+test_that("format_target_value matches format_y_value for time unit", {
+  # Time: format_time_composite produces composite format (e.g. "1t 30m").
+  # Both kernels now agree; old format_target_value produced plain numbers.
+  expect_equal(
+    BFHcharts:::format_target_value(90, "time", "da"),
+    BFHcharts:::format_y_value(90, y_unit = "time", language = "da")
+  )
+})
+
+test_that("format_target_value NULL/NA guard still returns empty string", {
+  expect_equal(BFHcharts:::format_target_value(NULL, "count"), "")
+  expect_equal(BFHcharts:::format_target_value(NA, "count"), "")
+  # NULL y_axis_unit: generic fallback path (not delegated to format_y_value)
+  expect_equal(BFHcharts:::format_target_value(5, NULL), "5")
+  expect_equal(BFHcharts:::format_target_value(1.5, NULL, "da"), "1,5")
+  expect_equal(BFHcharts:::format_target_value(1.5, NULL, "en"), "1.5")
 })
 
 

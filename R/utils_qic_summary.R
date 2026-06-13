@@ -170,8 +170,8 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   )
 
   # Add Anhoej rules statistics
-  formatted[["l\u00e6ngste_l\u00f8b"]] <- as.integer(raw_summary$longest.run)
-  formatted[["l\u00e6ngste_l\u00f8b_max"]] <- as.integer(raw_summary$longest.run.max)
+  formatted[["laengste_loeb"]] <- as.integer(raw_summary$longest.run)
+  formatted[["laengste_loeb_max"]] <- as.integer(raw_summary$longest.run.max)
   formatted$antal_kryds <- as.integer(raw_summary$n.crossings)
   formatted$antal_kryds_min <- as.integer(raw_summary$n.crossings.min)
 
@@ -182,8 +182,8 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
   # clarity; both are pure derivations from already-formatted columns and inherit
   # NA from their inputs (degenerate phases where qicharts2 cannot compute).
   formatted$anhoej_signal <- as.logical(raw_summary$runs.signal)
-  formatted$runs_signal <- formatted[["l\u00e6ngste_l\u00f8b"]] >
-    formatted[["l\u00e6ngste_l\u00f8b_max"]]
+  formatted$runs_signal <- formatted[["laengste_loeb"]] >
+    formatted[["laengste_loeb_max"]]
   formatted$crossings_signal <- formatted$antal_kryds < formatted$antal_kryds_min
   formatted$sigma_signal <- as.logical(raw_summary$sigma.signal)
 
@@ -242,24 +242,24 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     alle_konstante <- all(part_konstant)
 
     # Tilfoej per-row flag
-    formatted[["kontrolgr\u00e6nser_konstante"]] <- part_konstant
+    formatted[["kontrolgraenser_konstante"]] <- part_konstant
 
     if (alle_konstante) {
       # Backward-compat: bevar skalare kolonner (\u00e9n vaerdi per fase) i raa precision
-      formatted[["nedre_kontrolgr\u00e6nse"]] <- raw_summary$lcl
-      formatted[["\u00f8vre_kontrolgr\u00e6nse"]] <- raw_summary$ucl
+      formatted[["nedre_kontrolgraense"]] <- raw_summary$lcl
+      formatted[["oevre_kontrolgraense"]] <- raw_summary$ucl
     } else {
       # Variable graenser: eksponer min/max per fase i raa precision
-      formatted[["nedre_kontrolgr\u00e6nse_min"]] <- vapply(part_key, function(p) {
+      formatted[["nedre_kontrolgraense_min"]] <- vapply(part_key, function(p) {
         min(lcl_split[[p]], na.rm = TRUE)
       }, numeric(1))
-      formatted[["nedre_kontrolgr\u00e6nse_max"]] <- vapply(part_key, function(p) {
+      formatted[["nedre_kontrolgraense_max"]] <- vapply(part_key, function(p) {
         max(lcl_split[[p]], na.rm = TRUE)
       }, numeric(1))
-      formatted[["\u00f8vre_kontrolgr\u00e6nse_min"]] <- vapply(part_key, function(p) {
+      formatted[["oevre_kontrolgraense_min"]] <- vapply(part_key, function(p) {
         min(ucl_split[[p]], na.rm = TRUE)
       }, numeric(1))
-      formatted[["\u00f8vre_kontrolgr\u00e6nse_max"]] <- vapply(part_key, function(p) {
+      formatted[["oevre_kontrolgraense_max"]] <- vapply(part_key, function(p) {
         max(ucl_split[[p]], na.rm = TRUE)
       }, numeric(1))
     }
@@ -267,8 +267,8 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
 
   # Optionally add 95% limits if present (raa precision)
   if ("lcl.95" %in% names(raw_summary) && "ucl.95" %in% names(raw_summary)) {
-    formatted[["nedre_kontrolgr\u00e6nse_95"]] <- raw_summary$lcl.95
-    formatted[["\u00f8vre_kontrolgr\u00e6nse_95"]] <- raw_summary$ucl.95
+    formatted[["nedre_kontrolgraense_95"]] <- raw_summary$lcl.95
+    formatted[["oevre_kontrolgraense_95"]] <- raw_summary$ucl.95
   }
 
   # Add facet columns if present

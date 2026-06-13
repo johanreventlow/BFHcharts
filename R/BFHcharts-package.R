@@ -26,13 +26,13 @@
 #' * Comprehensive documentation and examples
 #'
 #' @section BFHtheme dependency:
-#' BFHcharts requires `BFHtheme >= 0.5.0` for theming, color palettes and
+#' BFHcharts requires `BFHtheme >= 0.5.1` for theming, color palettes and
 #' scale helpers. `BFHtheme` is hosted as a GitHub-only package via the
 #' `Remotes:` field; install with `pak::pkg_install("johanreventlow/BFHcharts")`
-#' or `remotes::install_github("johanreventlow/BFHtheme@v0.5.0")` to ensure
+#' or `remotes::install_github("johanreventlow/BFHtheme@v0.5.1")` to ensure
 #' it is present.
 #'
-#' If `BFHtheme` is missing or older than 0.5.0, BFHcharts emits a
+#' If `BFHtheme` is missing or older than 0.5.1, BFHcharts emits a
 #' `packageStartupMessage()` at `library(BFHcharts)` and fails fast with an
 #' actionable install hint at the first plot call. The check is cached per
 #' session for performance.

@@ -234,6 +234,7 @@ funktioner bruges kun til eksport, analysetekst og introspektion af resultatet.
 | `xbar` | Xbar-chart (delgruppe-gennemsnit) |
 | `s` | S-chart (delgruppe-standardafvigelse) |
 | `t` | T-chart (tid mellem hændelser) |
+| `ip` | I-prime chart (i-chart med varierende nævner; y/n ratio; kræver `pbcharts` under `Suggests`) |
 
 `y_axis_unit` styrer akseformatering og accepterer `"count"`, `"percent"`,
 `"rate"` eller `"time"`.
@@ -421,8 +422,9 @@ hospitalsfarver håndteres af
 ## Dokumentation
 
 - Roxygen-reference, fx `?bfh_qic` eller `help(package = "BFHcharts")`
-- Arkitekturnoter i [`docs/`](docs/DOCUMENTATION_OVERVIEW.md)
-- ADR'er i `inst/adr/`
+- Vignetter: `browseVignettes("BFHcharts")` — charttype-guide, faser, eksport m.m.
+- Arkitekturbeslutninger (ADR'er) i [`inst/adr/`](inst/adr/)
+- Tekniske noter i [`docs/`](docs/)
 
 ## Licens
 
