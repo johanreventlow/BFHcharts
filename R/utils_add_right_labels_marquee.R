@@ -148,44 +148,33 @@
 
   if (!is.null(viewport_width) && !is.null(viewport_height)) {
     # STRATEGY 1: Viewport dimensions provided (PRIMARY PATH)
+    #
+    # Always open a fresh temp device - even if the caller has a device open
+    # with matching dimensions. Measurement functions (measure_panel_height_from_gtable,
+    # estimate_label_heights_npc) call grid.newpage() internally, which would
+    # corrupt the caller's device if we reused it. Opening our own temp device
+    # ensures all measurement calls share exactly one open/close cycle.
     if (verbose) {
       message(sprintf(
         "[VIEWPORT_STRATEGY] Using provided viewport dimensions: %.2f x %.2f inches",
         viewport_width, viewport_height
       ))
+      message("[VIEWPORT_STRATEGY] Opening temporary Cairo PDF device for grob measurements")
     }
 
-    # Check if device is already open with correct dimensions
-    device_already_open <- FALSE
-    if (grDevices::dev.cur() > 1) {
-      current_size <- grDevices::dev.size("in")
-      if (abs(current_size[1] - viewport_width) / viewport_width < 0.01 &&
-        abs(current_size[2] - viewport_height) / viewport_height < 0.01) {
-        device_already_open <- TRUE
-        if (verbose) {
-          message("[VIEWPORT_STRATEGY] Device already open with matching dimensions")
-        }
-      }
-    }
+    temp_pdf <- tempfile(fileext = ".pdf")
+    grDevices::cairo_pdf(
+      filename = temp_pdf,
+      width = viewport_width, height = viewport_height
+    )
+    temp_dev_num <- grDevices::dev.cur()
+    temp_device_opened <- TRUE
 
-    if (!device_already_open) {
-      if (verbose) {
-        message("[VIEWPORT_STRATEGY] Opening temporary Cairo PDF device for grob measurements")
+    cleanup_fn <- function() {
+      if (temp_dev_num %in% grDevices::dev.list()) {
+        tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)
       }
-      temp_pdf <- tempfile(fileext = ".pdf")
-      grDevices::cairo_pdf(
-        filename = temp_pdf,
-        width = viewport_width, height = viewport_height
-      )
-      temp_dev_num <- grDevices::dev.cur()
-      temp_device_opened <- TRUE
-
-      cleanup_fn <- function() {
-        if (temp_dev_num %in% grDevices::dev.list()) {
-          tryCatch(grDevices::dev.off(temp_dev_num), error = function(e) NULL)
-        }
-        unlink(temp_pdf, force = TRUE)
-      }
+      unlink(temp_pdf, force = TRUE)
     }
 
     device_size <- list(
