@@ -407,3 +407,45 @@ test_that(".safe_system2_capture applies shQuote on non-Windows (mocked)", {
     info = "POSIX branch must wrap path args in single-quotes via shQuote"
   )
 })
+
+# ============================================================================
+# Classed conditions: bfhcharts_export_error
+# ============================================================================
+
+test_that("validate_export_path emits bfhcharts_export_error for non-string path", {
+  expect_error(
+    validate_export_path(NULL),
+    class = "bfhcharts_export_error"
+  )
+  expect_error(
+    validate_export_path(""),
+    class = "bfhcharts_export_error"
+  )
+})
+
+test_that("validate_export_path emits bfhcharts_export_error for shell metacharacters", {
+  expect_error(
+    validate_export_path("out; rm -rf /"),
+    class = "bfhcharts_export_error"
+  )
+  expect_error(
+    validate_export_path("out | cat"),
+    class = "bfhcharts_export_error"
+  )
+})
+
+test_that("validate_export_path emits bfhcharts_export_error for path traversal", {
+  expect_error(
+    validate_export_path("../etc/passwd"),
+    class = "bfhcharts_export_error"
+  )
+})
+
+test_that("bfhcharts_export_error is also a bfhcharts_error", {
+  err <- tryCatch(
+    validate_export_path("out; evil"),
+    error = function(e) e
+  )
+  expect_true(inherits(err, "bfhcharts_error"))
+  expect_true(inherits(err, "bfhcharts_export_error"))
+})
