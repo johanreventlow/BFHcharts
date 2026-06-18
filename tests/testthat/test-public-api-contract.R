@@ -9,22 +9,51 @@
 
 test_that("all NAMESPACE exports have a corresponding Rd file", {
   pkg_exports <- getNamespaceExports("BFHcharts")
-  man_dir <- system.file("help", package = "BFHcharts")
 
-  # Alternativt: brug devtools::load_all-stiknown man/ i package root
-  # Fallback naar pakken er loadet via load_all (help-dir er tomt)
-  if (!nzchar(man_dir) || !dir.exists(man_dir)) {
-    skip("Package not installed — run devtools::install() to test Rd coverage")
+  # Load Rd database: prefer installed package (R CMD check); fall back to
+  # in-tree man/ when running via devtools::test() (load_all empties help/).
+  rd_db <- tryCatch(tools::Rd_db(package = "BFHcharts"), error = function(e) list())
+  if (length(rd_db) == 0) {
+    # In-tree fallback: tests/testthat/ is two levels below package root
+    pkg_root_candidate <- tryCatch(
+      normalizePath(file.path(test_path(), "..", ".."), mustWork = FALSE),
+      error = function(e) NULL
+    )
+    in_tree_man <- if (!is.null(pkg_root_candidate)) {
+      file.path(pkg_root_candidate, "man")
+    }
+    if (!is.null(in_tree_man) && dir.exists(in_tree_man)) {
+      rd_db <- tryCatch(
+        suppressWarnings(tools::Rd_db(dir = pkg_root_candidate)),
+        error = function(e) list()
+      )
+    }
+  }
+  if (length(rd_db) == 0) {
+    skip("No Rd database available -- run devtools::document() first")
   }
 
-  # Rd filnavne (uden .Rd extension)
-  rd_names <- tools::Rd_db(package = "BFHcharts")
-  documented <- names(rd_names)
+  # Extract \\alias{} values from all Rd pages. Each export must appear as an
+  # exact alias in at least one Rd page. Using aliases (not filenames) correctly
+  # handles @rdname/@describeIn groups where multiple exports share one .Rd file.
+  # Previously used grepl(fn, rd_names) which caused false positives: e.g.
+  # "bfh_qic" matched "bfh_qic_result.Rd", hiding undocumented exports (#458).
+  alias_tag <- paste0(rawToChar(as.raw(0x5c)), "alias")
+  documented <- unique(unlist(lapply(rd_db, function(rd) {
+    out <- character(0)
+    for (item in rd) {
+      if (!is.null(attr(item, "Rd_tag")) && attr(item, "Rd_tag") == alias_tag) {
+        val <- item[[1]]
+        if (is.character(val)) out <- c(out, val)
+      }
+    }
+    out
+  })))
 
   for (fn in pkg_exports) {
     expect_true(
-      any(grepl(fn, documented, fixed = TRUE)),
-      info = paste0("Export '", fn, "' has no Rd page")
+      fn %in% documented,
+      info = paste0("Export '", fn, "' has no \\alias{} in any Rd page")
     )
   }
 })
