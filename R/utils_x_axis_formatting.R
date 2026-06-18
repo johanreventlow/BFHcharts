@@ -283,7 +283,7 @@ apply_numeric_x_axis <- function(plot) {
 #' not override `max_visible`. Threshold chosen to fit standard A4 PDF export
 #' width (200mm @ 300dpi) with horizontal Roboto Medium labels.
 #'
-#' @export
+#' @keywords internal
 BFH_MAX_X_LABELS_TEXT <- 12L
 
 #' Subsample Text X-Axis Label Indices

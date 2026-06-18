@@ -10,3 +10,4 @@ BFHCHARTS_OPT_SUPPRESS_UNIT_AUTO_DETECT
 When \code{TRUE}, \code{bfh_export_pdf()} and friends do not emit the informational
 message "Auto-detected units: ..." when units are inferred from filename.
 }
+\keyword{internal}

@@ -10,3 +10,4 @@ BFHCHARTS_OPT_AUDIT_LOG
 When set, \code{.emit_audit_event()} appends JSON-line records to this path.
 Otherwise events are emitted via \code{message()}.
 }
+\keyword{internal}

@@ -11,3 +11,4 @@ When \code{abs(yA_npc - yB_npc) < label_height_npc * THIS_FACTOR}, lines are
 treated as effectively coincident; labels are placed one above and one
 below the same line position.
 }
+\keyword{internal}

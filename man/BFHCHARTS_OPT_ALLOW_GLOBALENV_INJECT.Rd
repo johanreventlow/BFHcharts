@@ -10,3 +10,4 @@ BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT
 When \code{TRUE}, suppresses the warning emitted by \code{.validate_inject_assets()}
 for functions defined in \code{.GlobalEnv} (development convenience).
 }
+\keyword{internal}

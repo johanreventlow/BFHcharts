@@ -17,3 +17,4 @@ Anhoej J, Olesen AV (2014). Run charts revisited: a simulation study
 of run chart rules for detection of non-random variation in health
 care processes. PLoS One. 9(11):e113825.
 }
+\keyword{internal}

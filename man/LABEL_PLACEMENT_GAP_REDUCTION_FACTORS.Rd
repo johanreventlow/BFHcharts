@@ -12,3 +12,4 @@ incrementally shrinks the inter-label gap by these factors (50\%, then 30\%,
 then 15\% of the configured \code{gap_labels}). The first factor that resolves
 the collision is used.
 }
+\keyword{internal}
