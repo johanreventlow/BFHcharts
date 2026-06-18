@@ -210,8 +210,12 @@ validate_numeric_parameter <- function(value,
     } else {
       # Bounds-fejl uden kontekst
       if (param_name %in% c("width", "height")) {
-        range_str <- sprintf("between 0 and 1000 inches")
-        stop(sprintf("%s must be %s", param_name, range_str), call. = FALSE)
+        # Fix #456: report actual bounds (min/max as passed) so the message
+        # is accurate regardless of the call site's bound values.
+        stop(sprintf(
+          "%s must be between %s and %s (raw value before unit conversion)",
+          param_name, min, max
+        ), call. = FALSE)
       }
       stop(param_msg(sprintf("%s must be between %s and %s", param_name, min, max)),
         call. = FALSE

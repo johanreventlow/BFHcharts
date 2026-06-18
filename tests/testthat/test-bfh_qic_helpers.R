@@ -757,3 +757,70 @@ test_that("bfhcharts_input_error is also a bfhcharts_error", {
   expect_true(inherits(err, "bfhcharts_error"))
   expect_true(inherits(err, "bfhcharts_input_error"))
 })
+
+# ============================================================================
+# Fix #454: chart_type vector input validation
+# ============================================================================
+
+test_that("validate_bfh_qic_inputs rejects vector chart_type with clear error", {
+  expect_error(
+    call_validate(chart_type = c("i", "p")),
+    regexp = "chart_type must be a single string, got a vector of length 2",
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("validate_bfh_qic_inputs vector chart_type error includes first element hint", {
+  err <- tryCatch(
+    call_validate(chart_type = c("i", "p")),
+    error = function(e) e
+  )
+  expect_match(conditionMessage(err), "Did you mean chart_type = \"i\"")
+})
+
+test_that("validate_bfh_qic_inputs rejects vector chart_type even with NULL y_expr_char", {
+  # Fix #454: guard must fire before the y-column block (which is gated on
+  # y_expr_char being non-NULL). Passing y_expr_char = NULL ensures the
+  # length check is not inside a y-column-dependent gate.
+  expect_error(
+    call_validate(chart_type = c("run", "i"), y_expr_char = NULL),
+    regexp = "chart_type must be a single string",
+    class = "bfhcharts_input_error"
+  )
+})
+
+# ============================================================================
+# Fix #457: non-numeric target_value validation
+# ============================================================================
+
+test_that("validate_bfh_qic_inputs rejects character target_value", {
+  expect_error(
+    call_validate(target_value = "0.1"),
+    regexp = "target_value must be numeric",
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("validate_bfh_qic_inputs rejects logical target_value", {
+  expect_error(
+    call_validate(target_value = TRUE),
+    regexp = "target_value must be numeric",
+    class = "bfhcharts_input_error"
+  )
+})
+
+test_that("validate_bfh_qic_inputs non-numeric target_value error includes class info", {
+  err <- tryCatch(
+    call_validate(target_value = "0.5"),
+    error = function(e) e
+  )
+  expect_match(conditionMessage(err), "class: character")
+})
+
+test_that("validate_bfh_qic_inputs accepts numeric target_value", {
+  expect_no_error(call_validate(target_value = 0.5))
+})
+
+test_that("validate_bfh_qic_inputs accepts NULL target_value", {
+  expect_no_error(call_validate(target_value = NULL))
+})
