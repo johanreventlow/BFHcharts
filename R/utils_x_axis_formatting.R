@@ -19,9 +19,40 @@
   )
 }
 
+# Package-level cache: maps language -> resolved locale string (or NA if none
+# worked). Avoids re-running the candidate search on every label evaluation.
+# NA sentinel means "we tried and nothing worked" -- do not re-search.
+.locale_cache <- new.env(parent = emptyenv())
+
+# Resolve the best available LC_TIME locale for a language, caching the result.
+# Returns the winning locale string, or NA_character_ if none is available.
+.resolve_locale_for_language <- function(language, candidates) {
+  if (exists(language, envir = .locale_cache)) {
+    return(.locale_cache[[language]])
+  }
+  resolved <- NA_character_
+  for (loc in candidates) {
+    ok <- tryCatch(
+      suppressWarnings({
+        set <- Sys.setlocale("LC_TIME", loc)
+        !identical(set, "")
+      }),
+      error = function(e) FALSE
+    )
+    if (isTRUE(ok)) {
+      resolved <- loc
+      break
+    }
+  }
+  .locale_cache[[language]] <- resolved
+  resolved
+}
+
 # Wrap en label-funktion saa den evaluerer med passende LC_TIME-locale.
 # Bevarer original locale via on.exit-restore; fejl ved locale-set logges
 # stilfaerdigt (ikke fatal) saa cross-platform robusthed bevares.
+# Fix #461: locale candidate resolution is cached per language after the first
+# call; subsequent calls skip the search loop and use the cached winner.
 with_lc_time_labeler <- function(label_fn, language = "da") {
   if (!is.function(label_fn)) {
     return(label_fn)
@@ -33,15 +64,9 @@ with_lc_time_labeler <- function(label_fn, language = "da") {
   function(x) {
     current <- Sys.getlocale("LC_TIME")
     on.exit(suppressWarnings(Sys.setlocale("LC_TIME", current)), add = TRUE)
-    for (loc in candidates) {
-      ok <- tryCatch(
-        suppressWarnings({
-          set <- Sys.setlocale("LC_TIME", loc)
-          !identical(set, "")
-        }),
-        error = function(e) FALSE
-      )
-      if (isTRUE(ok)) break
+    resolved <- .resolve_locale_for_language(language, candidates)
+    if (!is.na(resolved)) {
+      suppressWarnings(Sys.setlocale("LC_TIME", resolved))
     }
     label_fn(x)
   }
