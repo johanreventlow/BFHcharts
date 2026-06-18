@@ -197,7 +197,8 @@ test_that("bfh_generate_analysis has correct default values", {
   expect_equal(fn_args$min_chars, 300)
   expect_equal(fn_args$max_chars, 375)
   expect_null(fn_args$texts_loader)
-  expect_equal(as.character(fn_args$language), "da")
+  # language=NULL: inherits from chart config (#419); falls back to "da"
+  expect_null(fn_args$language)
 })
 
 test_that("bfh_generate_analysis validates min_chars < max_chars", {
@@ -1262,4 +1263,47 @@ test_that("bfh_generate_analysis does NOT warn when target_tolerance omitted", {
     }
   )
   succeed("Default-kald fyrer ikke target_tolerance-deprecation")
+})
+
+# ==============================================================================
+# Issue 419: bfh_generate_analysis() inherits language from bfh_qic_result
+# ==============================================================================
+
+test_that("bfh_generate_analysis() inherits language='en' from chart config (#419)", {
+  d <- fixture_minimal_chart_data(n = 24)
+  result_en <- bfh_qic(d,
+    x = month, y = infections, chart_type = "run",
+    language = "en"
+  )
+
+  # When language= is omitted, analysis should be in English (inherited from chart)
+  analysis <- bfh_generate_analysis(result_en)
+
+  # English output contains English keywords, not Danish ones
+  expect_match(analysis,
+    "(stable|predictable|improvement|signal|process)",
+    ignore.case = TRUE
+  )
+  expect_no_match(analysis, "Processen", ignore.case = FALSE)
+})
+
+test_that("bfh_generate_analysis() explicit language= overrides chart config (#419)", {
+  d <- fixture_minimal_chart_data(n = 24)
+  result_en <- bfh_qic(d,
+    x = month, y = infections, chart_type = "run",
+    language = "en"
+  )
+
+  # Explicit language="da" must override chart config
+  analysis_da <- bfh_generate_analysis(result_en, language = "da")
+  expect_match(analysis_da, "Processen", ignore.case = FALSE)
+})
+
+test_that("bfh_generate_analysis() defaults to 'da' for charts without language (#419)", {
+  d <- fixture_minimal_chart_data(n = 24)
+  result <- bfh_qic(d, x = month, y = infections, chart_type = "run")
+
+  # No explicit language -> inherits "da" from config
+  analysis <- bfh_generate_analysis(result)
+  expect_match(analysis, "Processen", ignore.case = FALSE)
 })

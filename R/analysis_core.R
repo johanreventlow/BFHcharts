@@ -226,7 +226,9 @@ bfh_build_analysis_context <- function(x, metadata = list()) {
 #'   relative-to-target tolerance. Passing a non-default value emits a
 #'   deprecation warning. The parameter will be removed in the next major
 #'   release.
-#' @param language Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Default \code{"da"} preserves backward compatibility.
+#' @param language Character string specifying output language. One of \code{"da"} (Danish) or \code{"en"} (English).
+#'   Default \code{NULL} inherits the language stored in \code{x$config$language} (set via \code{bfh_qic(language=)}).
+#'   Falls back to \code{"da"} when the chart carries no language (pre-v0.26 objects).
 #' @param texts_loader Function that returns SPC analysis text templates.
 #'   Defaults to \code{load_spc_texts(language)}. Primarily intended for tests/mocking.
 #'
@@ -319,7 +321,7 @@ bfh_generate_analysis <- function(x,
                                   min_chars = 300,
                                   max_chars = 375,
                                   target_tolerance = 0.05,
-                                  language = "da",
+                                  language = NULL,
                                   texts_loader = NULL) {
   # target_tolerance er deprecated -- value-neutral at_target-klassifikation
   # bruger nu processens variation (sigma_hat / sd(y)) i stedet for relativ-
@@ -342,6 +344,13 @@ bfh_generate_analysis <- function(x,
   # Input validation
   if (!inherits(x, "bfh_qic_result")) {
     stop("x must be a bfh_qic_result object from bfh_qic()", call. = FALSE)
+  }
+
+  # Inherit language from chart's config when caller does not supply it.
+  # Falls back to "da" for backward compatibility (pre-#419 callers that
+  # did not pass language= relied on the "da" default).
+  if (is.null(language)) {
+    language <- x$config$language %||% "da"
   }
 
   validate_language(language)
