@@ -148,6 +148,17 @@ plot.bfh_qic_result <- function(x, ...) {
 #'
 #' @return ggplot2 object
 #'
+#' @examples
+#' \dontrun{
+#' data <- data.frame(
+#'   x = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+#'   y = rnorm(12, 10, 2)
+#' )
+#' result <- bfh_qic(data, x = x, y = y, chart_type = "run")
+#' p <- bfh_get_plot(result)
+#' print(p)
+#' }
+#'
 #' @export
 bfh_get_plot <- function(x) {
   if (!inherits(x, "bfh_qic_result")) {

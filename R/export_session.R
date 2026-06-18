@@ -68,6 +68,14 @@
 #' subject to the trusted-code-only contract above. See
 #' \code{\link{bfh_export_pdf}} Security section for full details.
 #'
+#' @examples
+#' \dontrun{
+#' # Create an export session for batch PDF export
+#' session <- bfh_create_export_session(output_dir = tempdir())
+#' # ... add charts ...
+#' close(session)
+#' }
+#'
 #' @export
 #' @seealso
 #'   - [bfh_export_pdf()] for single exports and the full security note
