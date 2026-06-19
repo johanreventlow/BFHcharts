@@ -313,6 +313,11 @@ bfh_export_pdf <- function(x,
                            inject_assets = NULL,
                            batch_session = NULL,
                            strict_baseline) {
+  rlang::check_installed(
+    c("commonmark", "xml2"),
+    reason = "for PDF/Typst export (markdown rendering in document fields)"
+  )
+
   # strict_baseline: per-call > session > default(TRUE).
   # missing()-flag fanges FOERST i orchestrator-scopet (NSE-sensitive).
   strict_baseline_supplied <- !missing(strict_baseline)
