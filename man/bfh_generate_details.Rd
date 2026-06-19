@@ -13,7 +13,7 @@ bfh_generate_details(x, language = "da", x_labels = NULL)
 
 \item{x_labels}{Optional character vector of original categorical x-axis
 labels (month names, weekdays, etc.). When supplied, the period range
-uses the first and last labels (e.g. "januar \u2013 december") rather than
+uses the first and last labels (e.g. "januar - december") rather than
 the numeric sequence stored in \code{qic_data$x}. Use this when text-x has
 been converted to a numeric sequence by upstream pipelines. Length must
 match \code{nrow(qic_data)}. Default \code{NULL} uses date-based formatting.}
