@@ -473,8 +473,7 @@ strip_label_layers <- function(plot) {
 
   # Identify layers to keep (everything except GeomMarquee)
   layers_to_keep <- vapply(plot$layers, function(layer) {
-    geom_class <- class(layer$geom)[1]
-    !grepl("Marquee", geom_class, ignore.case = TRUE)
+    !inherits(layer$geom, "GeomMarquee")
   }, logical(1))
 
   # Keep only non-marquee layers
@@ -526,7 +525,6 @@ recalculate_labels_for_export <- function(x, target_width_mm, target_height_mm,
 
   # Extract configuration
   config <- x$config
-  label_config <- config$label_config
 
   # Beregn label_size: brug eksplicit vaerdi eller resolve fra target-dimensioner
   new_label_size <- label_size %||% resolve_label_size(
