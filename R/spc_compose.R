@@ -43,7 +43,7 @@
 #'   object for downstream render-defaults; SHALL NOT cause text
 #'   resolution at this stage.
 #'
-#' @return Object of class `bfh_spc_analysis`. See ADR-XXX for schema.
+#' @return Object of class `bfh_spc_analysis`. See ADR-005 for schema.
 #'
 #' @seealso
 #' Pipeline position: second of three layers.

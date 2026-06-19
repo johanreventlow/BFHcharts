@@ -10,3 +10,4 @@ AUDIT_EVENT_AI_EGRESS
 Used as the \code{event} field of audit records produced by
 \code{.emit_audit_event()} when AI analysis is invoked.
 }
+\keyword{internal}

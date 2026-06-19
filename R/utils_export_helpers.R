@@ -129,7 +129,9 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
     )
   }
 
-  validate_export_path(output, extension = "pdf", ext_action = "stop")
+  # Fix #455: PDF export warned on extension mismatch (same as PNG export)
+  # for consistency. Both now use "warn" so users are informed but not blocked.
+  validate_export_path(output, extension = "pdf", ext_action = "warn")
 
   if (!is.list(metadata)) {
     bfh_abort("metadata must be a list", class = "bfhcharts_export_error")
