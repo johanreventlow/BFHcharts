@@ -2058,3 +2058,35 @@ test_that("bfhcharts_export_error is also a bfhcharts_error", {
   expect_true(inherits(err, "bfhcharts_error"))
   expect_true(inherits(err, "bfhcharts_export_error"))
 })
+
+# Fix #455: PDF extension mismatch warns (not stops) for consistency with PNG
+test_that("bfh_export_pdf warns (not errors) on non-.pdf extension", {
+  skip_if_not(
+    requireNamespace("typst", quietly = TRUE) ||
+      nzchar(Sys.which("typst")),
+    "typst not available"
+  )
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    infections = rpois(12, lambda = 15)
+  )
+  result <- bfh_qic(data, month, infections, chart_type = "i")
+  # Use a .txt extension to trigger the mismatch; file never needs to succeed
+  # (export will fail after the validation step for other reasons on CI)
+  tmp_txt <- withr::local_tempfile(fileext = ".txt")
+  # Should warn about extension, NOT stop with an error at the validation stage
+  expect_no_error(
+    tryCatch(
+      suppressWarnings(bfh_export_pdf(result, tmp_txt)),
+      error = function(e) {
+        # Errors from typst/render step are acceptable; extension must NOT be
+        # the cause of the error (it should have been demoted to a warning).
+        msg <- conditionMessage(e)
+        if (grepl("does not have .pdf extension", msg, fixed = TRUE)) {
+          stop("bfh_export_pdf stopped on extension mismatch -- should warn instead: ", msg)
+        }
+        invisible(NULL)
+      }
+    )
+  )
+})

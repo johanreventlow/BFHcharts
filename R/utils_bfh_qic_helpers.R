@@ -518,6 +518,20 @@ validate_bfh_qic_inputs <- function(data,
     )
   }
 
+  # Fix #454: chart_type vector input -> clear error with length info.
+  # Runs before any %in% on chart_type (which would fire "condition has
+  # length > 1" on a vector input). Must precede the count_chart_types
+  # check inside the y-column block and the CHART_TYPES_EN check below.
+  if (length(chart_type) != 1L) {
+    bfh_abort(
+      sprintf(
+        "chart_type must be a single string, got a vector of length %d. Did you mean chart_type = \"%s\"?",
+        length(chart_type), chart_type[[1L]]
+      ),
+      class = "bfhcharts_input_error"
+    )
+  }
+
   # x column must exist and be of an x-axis-compatible type. Early
   # error prevents cryptic qicharts2 failures on e.g. character input.
   if (!is.null(x_expr_char)) {
@@ -773,6 +787,19 @@ validate_bfh_qic_inputs <- function(data,
     n_col = n_expr_char
   )
 
+  # Fix #457: non-numeric target_value is caught here rather than silently
+  # skipping validate_target_for_unit and failing late in qicharts2 with
+  # a cryptic error. is.numeric("0.1") returns FALSE, so the block below
+  # would have been skipped -- now we catch it explicitly.
+  if (!is.null(target_value) && !is.numeric(target_value)) {
+    bfh_abort(
+      sprintf(
+        "target_value must be numeric, got: %s (class: %s)",
+        deparse(target_value), class(target_value)[1L]
+      ),
+      class = "bfhcharts_input_error"
+    )
+  }
   if (!is.null(target_value) && is.numeric(target_value)) {
     validate_target_for_unit(target_value, y_axis_unit, multiply)
   }
