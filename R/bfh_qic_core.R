@@ -487,6 +487,7 @@ validate_column_name_expr <- function(col_expr, param_name) {
 #' @keywords internal
 #' @noRd
 validate_bfh_qic_inputs <- function(data,
+                                    ...,
                                     chart_type,
                                     y_axis_unit,
                                     part,
@@ -507,6 +508,7 @@ validate_bfh_qic_inputs <- function(data,
                                     x_expr_char = NULL,
                                     notes = NULL,
                                     target_text = NULL) {
+  rlang::check_dots_empty()
   if (!is.data.frame(data)) {
     bfh_abort("data must be a data frame", class = "bfhcharts_input_error")
   }
