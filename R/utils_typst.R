@@ -62,6 +62,11 @@ bfh_create_typst_document <- function(chart_image,
                                       template = "bfh-diagram",
                                       template_path = NULL,
                                       skip_template_copy = FALSE) {
+  rlang::check_installed(
+    c("commonmark", "xml2"),
+    reason = "for PDF/Typst export (markdown rendering in document fields)"
+  )
+
   # Validate output and chart_image paths to prevent traversal/injection
   validate_export_path(output)
   validate_export_path(chart_image)

@@ -690,7 +690,7 @@ add_right_labels_marquee <- function(
     result <- result +
       marquee::geom_marquee(
         data = label_data,
-        ggplot2::aes(x = x, y = y, label = label, color = color, vjust = vjust),
+        ggplot2::aes(x = .data[["x"]], y = .data[["y"]], label = .data[["label"]], color = .data[["color"]], vjust = .data[["vjust"]]),
         hjust = 1,
         style = right_aligned_style,
         size = marquee_size,

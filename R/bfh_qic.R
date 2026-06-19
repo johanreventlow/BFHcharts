@@ -81,10 +81,12 @@ NULL
 #' @param xlab X-axis label (default: "" for blank)
 #' @param subtitle Plot subtitle text (default: NULL for no subtitle)
 #' @param caption Plot caption text (default: NULL for no caption)
-#' @param return_data Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result
-#'   object. If FALSE (default), return bfh_qic_result S3 object. Preferred snake_case alias for
-#'   the legacy `return.data`.
-#' @param return.data Deprecated. Use `return_data` instead. Kept for backwards compatibility.
+#' @param return_data Logical. **Deprecated**: `TRUE` is type-unstable and will be removed in
+#'   a future version. Use [bfh_extract_spc_stats()] to access the underlying SPC data frame.
+#'   If TRUE, returns the raw qic data frame; if FALSE (default), returns a `bfh_qic_result`
+#'   S3 object. Preferred snake_case alias for the legacy `return.data`.
+#' @param return.data **Deprecated**. Use `return_data` instead. Kept for backwards
+#'   compatibility. Passing `TRUE` emits a deprecation warning.
 #' @param language Character string specifying output language. One of
 #'   \code{"da"} (Danish, default) or \code{"en"} (English). Controls
 #'   three independent aspects of output (since v0.12.0):
@@ -726,6 +728,15 @@ bfh_qic <- function(data,
   }
   if (snake_return_data_supplied) {
     return.data <- return_data
+  }
+  # Deprecation warning for type-unstable return value (return.data = TRUE).
+  # Separate from the spelling deprecation above (return.data vs return_data).
+  if (isTRUE(return.data)) {
+    warning(
+      "return.data = TRUE is deprecated and will be removed in a future version. ",
+      "Use bfh_extract_spc_stats(result) to access the underlying SPC data frame.",
+      call. = FALSE
+    )
   }
   base_size_supplied <- !missing(base_size)
   qic_envir <- parent.frame()

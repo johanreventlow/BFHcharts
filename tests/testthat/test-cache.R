@@ -19,10 +19,19 @@ test_that("font-cache: samme fontfamily giver cache hit (kun 1 entry)", {
   expect_equal(length(cache_keys), 1L)
 })
 
-test_that("bfh_reset_caches() tømmer alle caches", {
-  # Fyld caches
+test_that("bfh_reset_caches() tommer alle caches (#439)", {
+  # Fyld samtlige 6 caches foer reset.
+  # Caches er environments (reference semantics); hold en lokal reference
+  # og tildel via assign() saa testmiljoejet kan mutere package-state.
   BFHcharts:::.resolve_font_family("sans")
   BFHcharts:::get_right_aligned_marquee_style(0.9)
+  BFHcharts:::i18n_lookup("labels.misc.ukendt", "da")
+
+  dep_env <- BFHcharts:::.dep_guard_cache
+  assign("testkey", TRUE, envir = dep_env)
+
+  tpl_env <- BFHcharts:::.bfh_template_cache
+  assign("dir", "/tmp", envir = tpl_env)
 
   bfh_reset_caches()
 
@@ -30,6 +39,9 @@ test_that("bfh_reset_caches() tømmer alle caches", {
   expect_equal(length(ls(envir = BFHcharts:::.marquee_style_cache)), 0L)
   expect_equal(length(ls(envir = BFHcharts:::.quarto_cache)), 0L)
   expect_equal(length(ls(envir = BFHcharts:::.i18n_cache)), 0L)
+  # Previously missing from bfh_reset_caches():
+  expect_equal(length(ls(envir = BFHcharts:::.bfh_template_cache)), 0L)
+  expect_equal(length(ls(envir = BFHcharts:::.dep_guard_cache)), 0L)
 })
 
 test_that("marquee style-cache: identiske lineheights giver kun 1 entry", {
