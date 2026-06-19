@@ -4,16 +4,11 @@ NULL
 # Global variables for NSE in ggplot2/dplyr
 # Suppresses R CMD check NOTEs about "no visible binding"
 
-utils::globalVariables(c(
-  # ggplot2 aesthetics
-  "x", "y", "lcl", "ucl", "target", "cl",
-  "label", "color", "vjust",
-
-  # dplyr/qicharts2 columns
-  "part", "anhoej.signal",
-  "n.crossings", "n.crossings.min",
-  "part_n_cross", "part_n_cross_min"
-))
+# All ggplot2 aes() calls now use the .data pronoun (e.g. .data[["x"]]) so
+# no bare column names need to be declared here. Keep this block as a
+# reminder that globalVariables() should only list names that genuinely
+# cannot be expressed via .data or rlang::.data in NSE contexts.
+# utils::globalVariables(character(0))
 
 # ============================================================================
 # SIZING CONSTANTS
