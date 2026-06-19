@@ -39,7 +39,7 @@
 #'
 #' @param x_labels Optional character vector of original categorical x-axis
 #'   labels (month names, weekdays, etc.). When supplied, the period range
-#'   uses the first and last labels (e.g. "januar \u2013 december") rather than
+#'   uses the first and last labels (e.g. "januar - december") rather than
 #'   the numeric sequence stored in `qic_data$x`. Use this when text-x has
 #'   been converted to a numeric sequence by upstream pipelines. Length must
 #'   match `nrow(qic_data)`. Default `NULL` uses date-based formatting.

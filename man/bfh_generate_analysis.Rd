@@ -13,7 +13,7 @@ bfh_generate_analysis(
   min_chars = 300,
   max_chars = 375,
   target_tolerance = 0.05,
-  language = "da",
+  language = NULL,
   texts_loader = NULL
 )
 }
@@ -78,7 +78,9 @@ relative-to-target tolerance. Passing a non-default value emits a
 deprecation warning. The parameter will be removed in the next major
 release.}
 
-\item{language}{Character string specifying output language. One of \code{"da"} (Danish, default) or \code{"en"} (English). Default \code{"da"} preserves backward compatibility.}
+\item{language}{Character string specifying output language. One of \code{"da"} (Danish) or \code{"en"} (English).
+Default \code{NULL} inherits the language stored in \code{x$config$language} (set via \code{bfh_qic(language=)}).
+Falls back to \code{"da"} when the chart carries no language (pre-v0.26 objects).}
 
 \item{texts_loader}{Function that returns SPC analysis text templates.
 Defaults to \code{load_spc_texts(language)}. Primarily intended for tests/mocking.}

@@ -854,8 +854,11 @@ bfh_qic <- function(data,
   #   tied to median are also substituted.
   # - H3: include-mask respected for both trigger ratio + replacement mean
   #   (rows excluded via exclude= no longer skew CL).
+  # Auto-mean substitution is only possible for run charts (other chart
+  # types return integer(0) from detect_majority_at_median_per_phase, so
+  # skipping the outer block saves the function call overhead entirely).
   cl_auto_mean_substituted <- FALSE
-  if (is.null(cl) && is.null(freeze)) {
+  if (identical(chart_type, "run") && is.null(cl) && is.null(freeze)) {
     trigger_phases <- detect_majority_at_median_per_phase(qic_data, chart_type)
     if (length(trigger_phases) > 0L) {
       new_cl <- build_auto_cl_for_phases(

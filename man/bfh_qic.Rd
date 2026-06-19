@@ -132,11 +132,13 @@ non-\code{NA}) the limit is ignored with a warning.}
 
 \item{caption}{Plot caption text (default: NULL for no caption)}
 
-\item{return.data}{Deprecated. Use \code{return_data} instead. Kept for backwards compatibility.}
+\item{return.data}{\strong{Deprecated}. Use \code{return_data} instead. Kept for backwards
+compatibility. Passing \code{TRUE} emits a deprecation warning.}
 
-\item{return_data}{Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result
-object. If FALSE (default), return bfh_qic_result S3 object. Preferred snake_case alias for
-the legacy \code{return.data}.}
+\item{return_data}{Logical. \strong{Deprecated}: \code{TRUE} is type-unstable and will be removed in
+a future version. Use \code{\link[=bfh_extract_spc_stats]{bfh_extract_spc_stats()}} to access the underlying SPC data frame.
+If TRUE, returns the raw qic data frame; if FALSE (default), returns a \code{bfh_qic_result}
+S3 object. Preferred snake_case alias for the legacy \code{return.data}.}
 
 \item{language}{Character string specifying output language. One of
 \code{"da"} (Danish, default) or \code{"en"} (English). Controls
