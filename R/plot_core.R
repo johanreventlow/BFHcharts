@@ -154,7 +154,7 @@ bfh_spc_plot <- function(qic_data,
   comment_data <- extract_comment_data(qic_data, max_length = 100)
 
   # Build base plot ----
-  plot <- ggplot2::ggplot(qic_data, ggplot2::aes(x = x, y = y))
+  plot <- ggplot2::ggplot(qic_data, ggplot2::aes(x = .data[["x"]], y = .data[["y"]]))
 
   # Pre-compute layers for performance
   plot_layers <- list()
@@ -164,19 +164,19 @@ bfh_spc_plot <- function(qic_data,
     !is.null(qic_data$lcl) && !all(is.na(qic_data$lcl))) {
     plot_layers <- c(plot_layers, list(
       ggplot2::geom_ribbon(
-        ggplot2::aes(ymin = lcl, ymax = ucl, group = part),
+        ggplot2::aes(ymin = .data[["lcl"]], ymax = .data[["ucl"]], group = .data[["part"]]),
         fill = cols$very_light_blue,
         alpha = 0.5
       ),
       ggplot2::geom_line(
-        ggplot2::aes(y = ucl, x = x, group = part),
+        ggplot2::aes(y = .data[["ucl"]], x = .data[["x"]], group = .data[["part"]]),
         inherit.aes = FALSE,
         linewidth = ucl_linewidth,
         colour = cols$light_blue,
         na.rm = TRUE
       ),
       ggplot2::geom_line(
-        ggplot2::aes(y = lcl, x = x, group = part),
+        ggplot2::aes(y = .data[["lcl"]], x = .data[["x"]], group = .data[["part"]]),
         inherit.aes = FALSE,
         linewidth = ucl_linewidth,
         colour = cols$light_blue,
@@ -189,7 +189,7 @@ bfh_spc_plot <- function(qic_data,
   if (!suppress_targetline && !is.null(qic_data$target) && any(!is.na(qic_data$target))) {
     plot_layers <- c(plot_layers, list(
       ggplot2::geom_line(
-        ggplot2::aes(y = target, x = x),
+        ggplot2::aes(y = .data[["target"]], x = .data[["x"]]),
         inherit.aes = FALSE,
         linewidth = target_linewidth,
         colour = cols$dark_grey,
@@ -205,21 +205,21 @@ bfh_spc_plot <- function(qic_data,
       # Drop NA-y rows so the line connects across missing observations
       # within the same part; part boundaries still break the line via group.
       data = function(d) d[!is.na(d$y), ],
-      ggplot2::aes(y = y, group = part),
+      ggplot2::aes(y = .data[["y"]], group = .data[["part"]]),
       colour = cols$grey,
       linewidth = data_linewidth,
       na.rm = TRUE
     ),
     ggplot2::geom_point(
-      ggplot2::aes(y = y, group = part),
+      ggplot2::aes(y = .data[["y"]], group = .data[["part"]]),
       colour = qic_data$point_colour,
       size = point_size,
       na.rm = TRUE
     ),
     ggplot2::geom_line(
       ggplot2::aes(
-        y = cl, group = part,
-        linetype = anhoej.signal
+        y = .data[["cl"]], group = .data[["part"]],
+        linetype = .data[["anhoej.signal"]]
       ),
       color = cols$blue,
       linewidth = cl_linewidth

@@ -42,6 +42,15 @@ estimate_label_heights_npc <- function(
 
   measure_all <- function() {
     purrr::map(texts, ~ {
+      # Fix #463: skip grob build + measurement for empty/NA labels.
+      # Return same shape as the internal function's fallback branch.
+      if (is.na(.x) || !nzchar(trimws(.x))) {
+        if (return_details) {
+          return(list(npc = fallback_npc, inches = NA_real_, panel_height_inches = panel_height_inches))
+        } else {
+          return(fallback_npc)
+        }
+      }
       tryCatch(
         .estimate_label_height_npc_internal(
           text = .x,

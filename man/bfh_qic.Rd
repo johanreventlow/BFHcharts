@@ -22,6 +22,7 @@ bfh_qic(
   ylim = NULL,
   multiply = 1,
   agg.fun = c("mean", "median", "sum", "sd"),
+  agg_fun = NULL,
   base_size = 14,
   width = NULL,
   height = NULL,
@@ -33,6 +34,7 @@ bfh_qic(
   subtitle = NULL,
   caption = NULL,
   return.data = FALSE,
+  return_data = NULL,
   language = "da"
 )
 }
@@ -105,7 +107,10 @@ non-\code{NA}) the limit is ignored with a warning.}
 
 \item{multiply}{Numeric multiplier for y-axis values, e.g. 100 to convert proportions to percentages (default: 1)}
 
-\item{agg.fun}{Aggregation function for run/I charts with multiple observations per subgroup: "mean" (default), "median", "sum", "sd"}
+\item{agg.fun}{Deprecated. Use \code{agg_fun} instead. Kept for backwards compatibility.}
+
+\item{agg_fun}{Aggregation function for run/I charts with multiple observations per subgroup:
+"mean" (default), "median", "sum", "sd". Preferred snake_case alias for the legacy \code{agg.fun}.}
 
 \item{base_size}{Base font size in points (default: auto-calculated from width/height if provided, otherwise 14)}
 
@@ -127,7 +132,13 @@ non-\code{NA}) the limit is ignored with a warning.}
 
 \item{caption}{Plot caption text (default: NULL for no caption)}
 
-\item{return.data}{Logical. If TRUE, return the raw qic data frame instead of bfh_qic_result object. If FALSE (default), return bfh_qic_result S3 object. Legacy parameter maintained for backwards compatibility.}
+\item{return.data}{\strong{Deprecated}. Use \code{return_data} instead. Kept for backwards
+compatibility. Passing \code{TRUE} emits a deprecation warning.}
+
+\item{return_data}{Logical. \strong{Deprecated}: \code{TRUE} is type-unstable and will be removed in
+a future version. Use \code{\link[=bfh_extract_spc_stats]{bfh_extract_spc_stats()}} to access the underlying SPC data frame.
+If TRUE, returns the raw qic data frame; if FALSE (default), returns a \code{bfh_qic_result}
+S3 object. Preferred snake_case alias for the legacy \code{return.data}.}
 
 \item{language}{Character string specifying output language. One of
 \code{"da"} (Danish, default) or \code{"en"} (English). Controls
@@ -145,14 +156,14 @@ Default \code{"da"} preserves backward compatibility for Danish users.}
 }
 \value{
 \itemize{
-\item Default (return.data = FALSE): \code{bfh_qic_result} S3 object with components:
+\item Default (return_data = FALSE): \code{bfh_qic_result} S3 object with components:
 \itemize{
 \item \code{$plot}: ggplot2 object with the SPC chart
 \item \code{$summary}: data.frame with SPC statistics
 \item \code{$qic_data}: data.frame with raw qicharts2 calculations
 \item \code{$config}: list with original function parameters
 }
-\item return.data = TRUE: data.frame with qic calculations (legacy behavior)
+\item return_data = TRUE: data.frame with qic calculations (legacy behavior)
 }
 }
 \description{
@@ -443,7 +454,7 @@ plot_median <- bfh_qic(
   chart_type = "i",
   y_axis_unit = "count",
   chart_title = "I-Chart Using Median",
-  agg.fun = "median"
+  agg_fun = "median"
 )
 
 # Example 8: Multiply y-values for unit conversion
@@ -594,7 +605,7 @@ qic_data <- bfh_qic(
   y = infections,
   chart_type = "i",
   y_axis_unit = "count",
-  return.data = TRUE # Return data.frame instead of plot
+  return_data = TRUE # Return data.frame instead of plot
 )
 
 # Now you can access all qic calculations

@@ -11,3 +11,4 @@ When \code{abs(yA_npc - yB_npc) < min_center_gap * THIS_FACTOR}, lines are
 considered too close for both labels to share a side; pref_pos is rewritten
 so one label sits above and the other below.
 }
+\keyword{internal}

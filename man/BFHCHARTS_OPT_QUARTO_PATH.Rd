@@ -10,3 +10,4 @@ BFHCHARTS_OPT_QUARTO_PATH
 When set, \code{find_quarto()} uses this path instead of running auto-detection.
 The path is shell-metachar validated and existence-checked before use.
 }
+\keyword{internal}

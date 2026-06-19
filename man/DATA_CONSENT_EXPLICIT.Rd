@@ -10,3 +10,4 @@ DATA_CONSENT_EXPLICIT
 Caller must pass exactly this string to acknowledge AI-egress of clinical
 data. Used by \code{bfh_generate_analysis()}.
 }
+\keyword{internal}

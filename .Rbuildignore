@@ -41,3 +41,8 @@
 ^CLAUDE\.md\.backup$
 ^doc$
 ^Meta$
+^CONTRIBUTING\.md$
+^tmp$
+^tmp/
+^tests/smoke$
+^tests/smoke/

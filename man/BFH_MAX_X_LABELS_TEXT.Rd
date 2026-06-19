@@ -12,3 +12,4 @@ without rotation. Drives \code{\link[=bfh_subsample_label_indices]{bfh_subsample
 not override \code{max_visible}. Threshold chosen to fit standard A4 PDF export
 width (200mm @ 300dpi) with horizontal Roboto Medium labels.
 }
+\keyword{internal}

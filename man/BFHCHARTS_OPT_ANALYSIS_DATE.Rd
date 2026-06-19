@@ -13,3 +13,4 @@ anchor instead of \code{Sys.Date()}. Lower priority than per-call
 and audit-replay scenarios where determinism across calendar days
 matters.
 }
+\keyword{internal}

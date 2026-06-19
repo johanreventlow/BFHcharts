@@ -124,7 +124,7 @@ add_plot_enhancements <- function(plot,
       plot <- plot +
         ggplot2::geom_line(
           data = cl_ext,
-          ggplot2::aes(x = x, y = y),
+          ggplot2::aes(x = .data[["x"]], y = .data[["y"]]),
           color = cols$blue,
           linewidth = cl_linewidth,
           linetype = cl_ext$linetype[1],
@@ -138,7 +138,7 @@ add_plot_enhancements <- function(plot,
       plot <- plot +
         ggplot2::geom_line(
           data = target_ext,
-          ggplot2::aes(x = x, y = y),
+          ggplot2::aes(x = .data[["x"]], y = .data[["y"]]),
           color = cols$dark_grey,
           linewidth = target_linewidth,
           linetype = "42",

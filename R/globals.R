@@ -4,16 +4,11 @@ NULL
 # Global variables for NSE in ggplot2/dplyr
 # Suppresses R CMD check NOTEs about "no visible binding"
 
-utils::globalVariables(c(
-  # ggplot2 aesthetics
-  "x", "y", "lcl", "ucl", "target", "cl",
-  "label", "color", "vjust",
-
-  # dplyr/qicharts2 columns
-  "part", "anhoej.signal",
-  "n.crossings", "n.crossings.min",
-  "part_n_cross", "part_n_cross_min"
-))
+# All ggplot2 aes() calls now use the .data pronoun (e.g. .data[["x"]]) so
+# no bare column names need to be declared here. Keep this block as a
+# reminder that globalVariables() should only list names that genuinely
+# cannot be expressed via .data or rlang::.data in NSE contexts.
+# utils::globalVariables(character(0))
 
 # ============================================================================
 # SIZING CONSTANTS
@@ -124,6 +119,7 @@ NEAR_TARGET_PCT_RELATIVE <- 0.25
 #' The Anhoej rules and SPC literature (Anhoej & Olesen 2014) require approximately
 #' 8+ points for meaningful control limits and reliable signal detection.
 #' Below this threshold, the control limits are statistically unreliable.
+#' @keywords internal
 MIN_BASELINE_N <- 8L
 
 # ============================================================================
@@ -140,6 +136,7 @@ MIN_BASELINE_N <- 8L
 #' incrementally shrinks the inter-label gap by these factors (50%, then 30%,
 #' then 15% of the configured `gap_labels`). The first factor that resolves
 #' the collision is used.
+#' @keywords internal
 LABEL_PLACEMENT_GAP_REDUCTION_FACTORS <- c(0.5, 0.3, 0.15)
 
 #' Tight-lines threshold factor for early flip-strategy
@@ -147,6 +144,7 @@ LABEL_PLACEMENT_GAP_REDUCTION_FACTORS <- c(0.5, 0.3, 0.15)
 #' When `abs(yA_npc - yB_npc) < min_center_gap * THIS_FACTOR`, lines are
 #' considered too close for both labels to share a side; pref_pos is rewritten
 #' so one label sits above and the other below.
+#' @keywords internal
 LABEL_PLACEMENT_TIGHT_LINES_THRESHOLD_FACTOR <- 0.5
 
 #' Coincident-lines threshold factor
@@ -154,6 +152,7 @@ LABEL_PLACEMENT_TIGHT_LINES_THRESHOLD_FACTOR <- 0.5
 #' When `abs(yA_npc - yB_npc) < label_height_npc * THIS_FACTOR`, lines are
 #' treated as effectively coincident; labels are placed one above and one
 #' below the same line position.
+#' @keywords internal
 LABEL_PLACEMENT_COINCIDENT_THRESHOLD_FACTOR <- 0.1
 
 #' Shelf-center threshold for NIVEAU 3 placement
@@ -161,6 +160,7 @@ LABEL_PLACEMENT_COINCIDENT_THRESHOLD_FACTOR <- 0.1
 #' During NIVEAU 3 (last-resort shelf placement), the non-priority label is
 #' pushed to the opposite shelf (top vs bottom of panel) based on whether
 #' the priority label center is below this NPC threshold.
+#' @keywords internal
 LABEL_PLACEMENT_SHELF_CENTER_THRESHOLD <- 0.5
 
 # ============================================================================
@@ -182,30 +182,35 @@ LABEL_PLACEMENT_SHELF_CENTER_THRESHOLD <- 0.5
 #'
 #' Caller must pass exactly this string to acknowledge AI-egress of clinical
 #' data. Used by `bfh_generate_analysis()`.
+#' @keywords internal
 DATA_CONSENT_EXPLICIT <- "explicit"
 
 #' Audit event type for AI-egress events
 #'
 #' Used as the `event` field of audit records produced by
 #' `.emit_audit_event()` when AI analysis is invoked.
+#' @keywords internal
 AUDIT_EVENT_AI_EGRESS <- "ai_egress"
 
 #' Option name: path to audit log file
 #'
 #' When set, `.emit_audit_event()` appends JSON-line records to this path.
 #' Otherwise events are emitted via `message()`.
+#' @keywords internal
 BFHCHARTS_OPT_AUDIT_LOG <- "BFHcharts.audit_log"
 
 #' Option name: opt-out for globalenv inject_assets warning
 #'
 #' When `TRUE`, suppresses the warning emitted by `.validate_inject_assets()`
 #' for functions defined in `.GlobalEnv` (development convenience).
+#' @keywords internal
 BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT <- "BFHcharts.allow_globalenv_inject"
 
 #' Option name: explicit Quarto binary path
 #'
 #' When set, `find_quarto()` uses this path instead of running auto-detection.
 #' The path is shell-metachar validated and existence-checked before use.
+#' @keywords internal
 BFHCHARTS_OPT_QUARTO_PATH <- "BFHcharts.quarto_path"
 
 #' Option name: analysis_date override
@@ -215,6 +220,7 @@ BFHCHARTS_OPT_QUARTO_PATH <- "BFHcharts.quarto_path"
 #' `metadata$analysis_date`. Intended for test-suites (set in `setup.R`)
 #' and audit-replay scenarios where determinism across calendar days
 #' matters.
+#' @keywords internal
 BFHCHARTS_OPT_ANALYSIS_DATE <- "BFHcharts.analysis_date"
 
 #' Minimum observation count for full Anhoej-evaluability
@@ -227,6 +233,7 @@ BFHCHARTS_OPT_ANALYSIS_DATE <- "BFHcharts.analysis_date"
 #' Anhoej J, Olesen AV (2014). Run charts revisited: a simulation study
 #' of run chart rules for detection of non-random variation in health
 #' care processes. PLoS One. 9(11):e113825.
+#' @keywords internal
 N_MIN <- 12L
 
 #' Low-confidence reason enum
@@ -236,6 +243,7 @@ N_MIN <- 12L
 #' (`.compute_low_confidence_reason`), render-dispatch
 #' (`.render_stability` -> `texts$base$not_evaluable[[reason]]`) og
 #' schema-validator. NA_character_ er gyldig vaerdi naar tier != "low".
+#' @keywords internal
 LOW_CONFIDENCE_REASONS <- c("few_obs", "no_centerline", "no_spread")
 
 #' Magnitude-modifier ratio-cap
@@ -250,16 +258,19 @@ LOW_CONFIDENCE_REASONS <- c("few_obs", "no_centerline", "no_spread")
 #'
 #' Cycle 04 H2 fix (2026-05-18). Foreloebigt safety-net; permanent
 #' loesning kraever sigma-floor med scale/unit-awareness.
+#' @keywords internal
 MAGNITUDE_RATIO_CAP <- 100
 
 #' Option name: suppress unit auto-detection message
 #'
 #' When `TRUE`, `bfh_export_pdf()` and friends do not emit the informational
 #' message "Auto-detected units: ..." when units are inferred from filename.
+#' @keywords internal
 BFHCHARTS_OPT_SUPPRESS_UNIT_AUTO_DETECT <- "BFHcharts.suppress_unit_auto_detect_message"
 
 #' Option name: debug logging for label-placement fallback paths
 #'
 #' When `TRUE`, `place_two_labels_npc()` emits diagnostic messages when the
 #' niveau cascade falls back to legacy NPC-based gap calculation.
+#' @keywords internal
 BFHCHARTS_OPT_DEBUG_LABEL_PLACEMENT <- "BFHcharts.debug.label_placement"

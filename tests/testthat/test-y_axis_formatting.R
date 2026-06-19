@@ -360,69 +360,6 @@ test_that("format_y_axis_time bruger tids-naturlige breaks", {
   expect_equal(scale$breaks, c(0, 30, 60, 90, 120))
 })
 
-# NOTE: Tests updated to use canonical format_time_danish() from utils_time_formatting.R
-# (Previously tested format_time_with_unit which was removed in DRY consolidation)
-
-test_that("format_time_danish formats minutes correctly", {
-  # Test singular (1 minut) and plural (30 minutter)
-  expect_equal(format_time_danish(1, "minutes"), "1 minut")
-  expect_equal(format_time_danish(30, "minutes"), "30 minutter")
-  expect_equal(format_time_danish(45.5, "minutes"), "45,5 minutter")
-})
-
-test_that("format_time_danish formats hours correctly", {
-  # Test singular (1 time) and plural (3 timer)
-  expect_equal(format_time_danish(60, "hours"), "1 time")
-  expect_equal(format_time_danish(90, "hours"), "1,5 timer")
-  expect_equal(format_time_danish(180, "hours"), "3 timer")
-})
-
-test_that("format_time_danish formats days correctly", {
-  # Test singular (1 dag) and plural (2 dage)
-  expect_equal(format_time_danish(1440, "days"), "1 dag")
-  expect_equal(format_time_danish(2880, "days"), "2 dage")
-  expect_equal(format_time_danish(2160, "days"), "1,5 dage")
-})
-
-test_that("format_time_danish handles NA values", {
-  expect_true(is.na(format_time_danish(NA, "minutes")))
-  expect_true(is.na(format_time_danish(NA, "hours")))
-  expect_true(is.na(format_time_danish(NA, "days")))
-})
-
-test_that("format_time_danish handles zero and edge cases", {
-  # Zero values use plural in Danish
-  expect_equal(format_time_danish(0, "minutes"), "0 minutter")
-
-  # Zero hours (should show as 0 hours with plural)
-  expect_equal(format_time_danish(0, "hours"), "0 timer")
-
-  # Zero days use plural
-  expect_equal(format_time_danish(0, "days"), "0 dage")
-
-  # Very small positive values (still plural when decimal)
-  expect_true(grepl("minutter", format_time_danish(0.5, "minutes")))
-  expect_true(grepl("timer", format_time_danish(0.5, "hours")))
-})
-
-test_that("format_time_danish uses Danish labels", {
-  # Minutes - can be singular (minut) or plural (minutter)
-  expect_true(grepl("minut", format_time_danish(30, "minutes")))
-
-  # Hours - can be singular (time) or plural (timer)
-  result_hours <- format_time_danish(60, "hours")
-  expect_true(grepl("time|timer", result_hours))
-
-  # Days - can be singular (dag) or plural (dage)
-  result_days <- format_time_danish(1440, "days")
-  expect_true(grepl("dag|dage", result_days))
-})
-
-test_that("format_time_danish uses Danish decimal notation", {
-  result <- format_time_danish(90, "hours") # 1.5 hours
-  expect_true(grepl("1,5", result)) # Comma as decimal separator
-})
-
 # ============================================================================
 # INTEGRATION TESTS
 # ============================================================================
@@ -523,16 +460,12 @@ test_that("All formatters handle NA values consistently", {
 
   # Unscaled numbers (canonical from utils_number_formatting.R)
   expect_true(is.na(format_unscaled_number(NA)))
-
-  # Time values (canonical from utils_time_formatting.R)
-  expect_true(is.na(format_time_danish(NA, "minutes")))
 })
 
 test_that("Danish number notation is consistent across formatters", {
   # All should use comma as decimal separator
   expect_true(grepl(",", format_scaled_number(1.5e6, 1e6, "M")))
   expect_true(grepl(",", format_unscaled_number(123.5)))
-  expect_true(grepl(",", format_time_danish(90, "hours")))
 
   # Unscaled numbers should use dot as thousand separator
   expect_true(grepl("\\.", format_unscaled_number(1234)))

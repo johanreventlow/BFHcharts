@@ -93,27 +93,28 @@ test_that("bfh_qic validates width and height are reasonable", {
   })
 
   # Excessive width (potential memory exhaustion)
+  # Fix #456: message now shows actual bounds (0.1, 3000) + unit context
   expect_error(
     bfh_qic(data, x = month, y = value, width = 99999, height = 6, chart_type = "run"),
-    "width must be between 0 and 1000 inches"
+    "width must be between"
   )
 
   # Excessive height
   expect_error(
     bfh_qic(data, x = month, y = value, width = 10, height = 99999, chart_type = "run"),
-    "height must be between 0 and 1000 inches"
+    "height must be between"
   )
 
   # Negative width
   expect_error(
     bfh_qic(data, x = month, y = value, width = -10, height = 6, chart_type = "run"),
-    "width must be between 0 and 1000 inches"
+    "width must be between"
   )
 
   # Zero height
   expect_error(
     bfh_qic(data, x = month, y = value, width = 10, height = 0, chart_type = "run"),
-    "height must be between 0 and 1000 inches"
+    "height must be between"
   )
 })
 

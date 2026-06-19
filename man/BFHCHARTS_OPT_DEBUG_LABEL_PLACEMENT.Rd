@@ -10,3 +10,4 @@ BFHCHARTS_OPT_DEBUG_LABEL_PLACEMENT
 When \code{TRUE}, \code{place_two_labels_npc()} emits diagnostic messages when the
 niveau cascade falls back to legacy NPC-based gap calculation.
 }
+\keyword{internal}

@@ -24,7 +24,7 @@ object for downstream render-defaults; SHALL NOT cause text
 resolution at this stage.}
 }
 \value{
-Object of class \code{bfh_spc_analysis}. See ADR-XXX for schema.
+Object of class \code{bfh_spc_analysis}. See ADR-005 for schema.
 }
 \description{
 Returnerer struktureret \code{bfh_spc_analysis}-objekt med features,
