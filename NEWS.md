@@ -1,3 +1,58 @@
+# BFHcharts 0.26.1
+
+## Bugfixes
+
+* `bfh_reset_caches()` nulstiller nu alle caches (inkl. locale- og
+  panel-hoejde-cachen). Tidligere blev kun analyse-cachen ryddet.
+  (#499, closes #419)
+
+* PDF-eksport anvender nu korrekt sproget fra `bfh_qic(language =)` i stedet
+  for altid at bruge dansk. (#499, closes #439)
+
+* `bfh_qic()` beregner ikke laengere automatisk gennemsnit som centrallinje
+  ved ikke-run-diagrammer. Guard tilfoejet saa auto-mean-substitution kun
+  sker for `chart_type = "run"`. (#501, closes #462)
+
+* Validering: `chart_type` afviser nu vectors med laengde > 1, `target_value`
+  afviser ikke-numeriske vaerdier, og `width`/`height` afviser negative tal.
+  (`#494`, closes #454, #455, #456)
+
+* `bfh_export_pdf()` og `bfh_export_png()` anvender konsistent validering af
+  `output`-stien. (#494, closes #457)
+
+## Performance
+
+* Locale-opslag (`Sys.getlocale()`) caches nu per R-session -- eliminerer
+  gentagne systemkald ved seriel PDF-eksport. (#498, closes #461)
+
+* Marquee-grobs springes over for tomme labels -- sparer render-tid ved
+  diagrammer med faa annotationer. (#498, closes #463)
+
+## Interne aendringer
+
+* `R/utils_bfh_qic_helpers.R` omdoebt til `R/bfh_qic_core.R` for at afspejle
+  indholdet. (#501, closes #438)
+
+* CI-pipeline blokkerer nu ved WARNINGs (ikke kun ERRORs) under
+  `R CMD check --as-cran`. (#501, closes #152)
+
+* `commonmark` og `xml2` flyttet fra `Imports` til `Suggests` -- reducerer
+  obligatoriske afhaengigheder. (#500, closes #444)
+
+* `format_time_danish` og `format_time_english` (interne hjaelpere) fjernet --
+  erstattet af `format_duration_label()`. (#496, closes #440)
+
+* `return.data`-parameteren i `bfh_qic()` er nu deprekereret til fordel for
+  `return_data` (snake_case). Deprekerings-advarsel vises ved brug af
+  dot.case-formen. (#500, closes #449)
+
+* `validate_bfh_qic_inputs()` kraever nu named-only argumenter ud over `data`.
+  Forhindrer stille positionelle fejl ved fremtidig refaktorering. (#502,
+  closes #452)
+
+* `print.viewport_dims` viser ikke laengere fejlagtigt "px" som enhed --
+  objektet er enhedsagnostisk. (#502, closes #443)
+
 # BFHcharts 0.26.0
 
 ## Nye features
