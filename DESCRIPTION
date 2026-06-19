@@ -13,7 +13,7 @@ Description: A modern R package for creating Statistical Process Control (SPC)
     provides beautiful, publication-ready SPC visualizations with configurable
     themes and multi-organizational branding support. Inspired by BBC's bbplot
     design philosophy.
-License: GPL-3 + file LICENSE
+License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 SystemRequirements: Quarto CLI (>= 1.4.0) for PDF export via Typst templates

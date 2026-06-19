@@ -19,3 +19,4 @@ kontrolgraense-baseret SPC.
 Cycle 04 H2 fix (2026-05-18). Foreloebigt safety-net; permanent
 loesning kraever sigma-floor med scale/unit-awareness.
 }
+\keyword{internal}

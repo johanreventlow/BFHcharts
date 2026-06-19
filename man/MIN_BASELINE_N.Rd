@@ -11,3 +11,4 @@ The Anhoej rules and SPC literature (Anhoej & Olesen 2014) require approximately
 8+ points for meaningful control limits and reliable signal detection.
 Below this threshold, the control limits are statistically unreliable.
 }
+\keyword{internal}

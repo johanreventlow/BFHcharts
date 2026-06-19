@@ -13,3 +13,4 @@ Set af gyldige \code{low_confidence_reason}-vaerdier ved
 (\code{.render_stability} -> \code{texts$base$not_evaluable[[reason]]}) og
 schema-validator. NA_character_ er gyldig vaerdi naar tier != "low".
 }
+\keyword{internal}

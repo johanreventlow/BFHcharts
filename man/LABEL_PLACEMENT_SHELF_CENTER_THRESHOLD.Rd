@@ -11,3 +11,4 @@ During NIVEAU 3 (last-resort shelf placement), the non-priority label is
 pushed to the opposite shelf (top vs bottom of panel) based on whether
 the priority label center is below this NPC threshold.
 }
+\keyword{internal}
