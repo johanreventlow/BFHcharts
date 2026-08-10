@@ -47,7 +47,7 @@
 - [x] 6.1 Render foer/efter for: 12, 16, 26, 37 (PDF-casen), 52 og 104 uger; 20, 30, 60 og 120 dage; 18 maaneder fra d. 1. og fra d. 15. — alle 12 cases renderer fejlfrit; PDF-casen giver `DEC 2025 | JAN 2026 | FEB | ...` mod tidligere `01, 28, 25, 22, ...`
 - [x] 6.2 Vurdér eksplicit om daily-threshold paa 15 dage giver et for groft udtryk — JA, bekraeftet: ren maanedsankring gav 0-2 labels. Loest med uge-ankret mellemtrin (task 4.8), ikke ved at haeve threshold
 - [ ] 6.3 vdiffr-snapshots: **kan ikke koeres lokalt** — `{vdiffr} is not installed` (skip #89 i fuld suite). Visual-regression-snapshots skal genereres i CI eller efter lokal vdiffr-install. NB: en testkoersel uden vdiffr SLETTER `_snaps/visual-regression/*.svg`; gendan med `git checkout -- tests/testthat/_snaps/` foer commit
-- [x] 6.4 Fuld testkoersel: `devtools::test()` — 0 failures, 89 skips (render-tests + vdiffr), 8 forventede warnings fra eksisterende tests
+- [x] 6.4 Fuld testkoersel paa endelig kode: `devtools::test()` exit 0 — **0 failures**, 89 skips (render-tests + vdiffr), 8 forventede warnings fra eksisterende tests
 - [ ] 6.5 `devtools::check()` uden WARNINGs/ERRORs — **kan ikke koeres lokalt**: hverken Pandoc (vignette-build) eller Rtools (pakke-build) er installeret paa maskinen. Uafhaengigt af denne change; pakken kan slet ikke bygges lokalt. Daekkes af `.github/workflows/R-CMD-check.yaml` i CI
 
 ## 7. Dokumentation + afslutning
