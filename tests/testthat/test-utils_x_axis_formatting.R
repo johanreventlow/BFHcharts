@@ -535,39 +535,25 @@ test_that("formatted temporal plots build without warnings", {
   n
 }
 
-test_that("minor_tick_theme is a no-op without minor breaks", {
-  plot <- .formatted_plot(seq(as.Date("2026-01-05"), by = "week", length.out = 12))
+test_that("tick styling comes from the theme, not from this package", {
+  # Ownership split: BFHtheme decides how ticks look (colour, width, length,
+  # direction); this package decides only whether the axis carries minor
+  # breaks. A restyle in the design system must carry over without a change
+  # here, so nothing in the plot pipeline may override these elements.
+  skip_if_not_installed("BFHtheme")
+  theme <- BFHtheme::theme_bfh()
 
-  result <- minor_tick_theme(plot)
-
-  expect_false(inherits(result, "theme"))
-  expect_length(result, 0)
-})
-
-test_that("minor_tick_theme returns a theme when minor breaks exist", {
-  plot <- .formatted_plot(seq(as.Date("2025-12-01"), by = "week", length.out = 37))
-
-  result <- minor_tick_theme(plot)
-
-  expect_s3_class(result, "theme")
-  expect_s3_class(
-    result$axis.minor.ticks.x.bottom,
-    "element_line"
-  )
-})
-
-test_that("minor tick styling is derived from the theme, not hard-coded", {
-  # Colour and linewidth follow the theme's own tick element so a BFHtheme
-  # restyle carries over without a change here.
-  plot <- .formatted_plot(seq(as.Date("2025-12-01"), by = "week", length.out = 37))
-  reference <- ggplot2::calc_element(
-    "axis.ticks.y.left",
-    BFHtheme::theme_bfh()
+  major <- ggplot2::calc_element("axis.ticks.length.x.bottom", theme)
+  minor <- ggplot2::calc_element("axis.minor.ticks.length.x.bottom", theme)
+  skip_if(
+    !grid::is.unit(major) || !grid::is.unit(minor),
+    "BFHtheme predates two-level x-axis tick support"
   )
 
-  element <- minor_tick_theme(plot + BFHtheme::theme_bfh())$axis.minor.ticks.x.bottom
-
-  expect_equal(element$colour, reference$colour)
+  # Opposing directions keep the two levels visually distinct: the labelled
+  # level points outward, the finer level inward.
+  expect_gt(as.numeric(major), 0)
+  expect_lt(as.numeric(minor), 0)
 })
 
 test_that("month-anchored weekly charts render minor ticks end to end", {
@@ -629,6 +615,141 @@ test_that("monthly charts render no minor ticks", {
   )
 
   expect_lte(.count_rendered_x_ticks(bfh_get_plot(result)), 1L)
+})
+
+# ============================================================================
+# Week number labels
+# ============================================================================
+#
+# Week numbers annotate the minor tick grid on month-anchored axes. They are
+# ISO-8601 week numbers, and the label sequence deliberately starts at the
+# second tick so the "UGE" prefix has room away from the panel edge.
+
+test_that("week labels are ISO week numbers on the given breaks", {
+  breaks <- generate_calendar_sequence(
+    as.POSIXct("2025-12-01"), as.POSIXct("2026-02-28"),
+    by = "1 week", unit = "week"
+  )
+
+  result <- calculate_week_number_labels(breaks)
+
+  expect_s3_class(result$x, "POSIXct")
+  expect_equal(nrow(result), length(result$x))
+  expect_true(all(result$x %in% breaks))
+  # Every label but the prefixed one is a bare two-digit week number
+  expect_true(all(grepl("^[0-9]{2}$", result$label[-1])))
+})
+
+test_that("the first visible label carries the UGE prefix", {
+  breaks <- generate_calendar_sequence(
+    as.POSIXct("2025-12-01"), as.POSIXct("2026-08-09"),
+    by = "1 week", unit = "week"
+  )
+
+  result <- calculate_week_number_labels(breaks)
+
+  expect_match(result$label[1], "^UGE [0-9]{2}$")
+  expect_false(any(grepl("UGE", result$label[-1])))
+})
+
+test_that("the label sequence starts at the second tick, not the first", {
+  # The first tick sits flush against the panel edge, where the prefix would
+  # be clipped and a lone label reads as accidental.
+  breaks <- generate_calendar_sequence(
+    as.POSIXct("2025-12-01"), as.POSIXct("2026-08-09"),
+    by = "1 week", unit = "week"
+  )
+
+  result <- calculate_week_number_labels(breaks)
+
+  expect_false(breaks[1] %in% result$x)
+  expect_true(result$x[1] > breaks[1])
+})
+
+test_that("label density adapts to series length", {
+  spans <- list(
+    c("2025-12-01", "2026-03-30"), # ~17 weeks
+    c("2025-12-01", "2026-08-09"), # ~37 weeks
+    c("2024-01-01", "2025-12-29") # ~104 weeks
+  )
+
+  for (s in spans) {
+    breaks <- generate_calendar_sequence(
+      as.POSIXct(s[1]), as.POSIXct(s[2]),
+      by = "1 week", unit = "week"
+    )
+    result <- calculate_week_number_labels(breaks)
+
+    label <- paste(s, collapse = " to ")
+    expect_gte(nrow(result), 5L, label = label)
+    expect_lte(nrow(result), 14L, label = label)
+  }
+})
+
+test_that("week numbers stay in date order across a year boundary", {
+  # ISO week 01 can fall in December (2025-12-29 is week 01 of ISO year 2026).
+  # Labels are text on date positions, so ordering can never be driven by the
+  # week number itself.
+  breaks <- generate_calendar_sequence(
+    as.POSIXct("2025-11-03"), as.POSIXct("2026-02-16"),
+    by = "1 week", unit = "week"
+  )
+
+  result <- calculate_week_number_labels(breaks)
+
+  expect_false(is.unsorted(result$x))
+  # The December week that ISO assigns to week 01 keeps its calendar slot
+  expect_equal(
+    strftime(as.POSIXct("2025-12-29"), "%V"), "01"
+  )
+})
+
+test_that("degenerate break vectors are handled", {
+  expect_null(calculate_week_number_labels(NULL))
+  expect_null(calculate_week_number_labels(as.POSIXct(character(0))))
+  # A single tick cannot carry a shifted sequence
+  one <- as.POSIXct("2026-01-05")
+  expect_null(calculate_week_number_labels(one))
+})
+
+test_that("month-anchored weekly charts render week numbers", {
+  data <- data.frame(
+    dato = seq(as.Date("2025-12-01"), by = "week", length.out = 37),
+    taeller = rep(c(86, 87, 85), length.out = 37),
+    naevner = 100
+  )
+
+  result <- bfh_qic(data,
+    x = dato, y = taeller, n = naevner,
+    chart_type = "p", y_axis_unit = "percent"
+  )
+  plot <- bfh_get_plot(result)
+  texts <- unlist(lapply(plot$layers, function(l) {
+    if (!is.null(l$data) && "label" %in% names(l$data)) l$data$label else NULL
+  }))
+
+  expect_true(any(grepl("^UGE ", texts)))
+})
+
+test_that("charts without minor breaks render no week numbers", {
+  # Short weekly series label every week on the axis itself, so a second
+  # numbering would be redundant.
+  data <- data.frame(
+    dato = seq(as.Date("2026-01-05"), by = "week", length.out = 12),
+    taeller = rep(c(86, 87, 85), length.out = 12),
+    naevner = 100
+  )
+
+  result <- bfh_qic(data,
+    x = dato, y = taeller, n = naevner,
+    chart_type = "p", y_axis_unit = "percent"
+  )
+  plot <- bfh_get_plot(result)
+  texts <- unlist(lapply(plot$layers, function(l) {
+    if (!is.null(l$data) && "label" %in% names(l$data)) l$data$label else NULL
+  }))
+
+  expect_false(any(grepl("^UGE ", texts)))
 })
 
 test_that("apply_numeric_x_axis adds continuous scale", {

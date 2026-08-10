@@ -41,15 +41,13 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL, ylim = NUL
   # ylim saettes PAA coord_capped_cart (lemon arver coord_cartesian) i stedet for
   # en separat coord_cartesian -- ellers ville BFH-akse-caps blive erstattet.
   # ylim = NULL er coord_cartesian-default => ingen zoom (uaendret adfaerd).
+  # Tick styling for the two-level x-axis (major outward, minor inward) comes
+  # from theme_bfh() itself -- see BFHtheme >= 0.5.5. This package decides
+  # only WHETHER the axis carries minor breaks, which is data-driven; the
+  # theme decides how they look.
   plot <- plot +
     BFHtheme::theme_bfh(base_size = base_size) +
     lemon::coord_capped_cart(bottom = "right", gap = 0, ylim = ylim)
-
-  # Minor x ticks mark the finer calendar unit under a coarser label rhythm
-  # (weeks under month labels, days under week labels). Applied after the
-  # complete theme, which would otherwise reset the element. No-op when the
-  # axis carries no minor breaks -- see minor_tick_theme().
-  plot <- plot + minor_tick_theme(plot)
 
   # Apply margins: use custom if provided, otherwise default 5mm
   if (!is.null(plot_margin)) {

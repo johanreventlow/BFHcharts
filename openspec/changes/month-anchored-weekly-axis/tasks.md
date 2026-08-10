@@ -46,9 +46,11 @@
 
 - [x] 6.1 Render foer/efter for: 12, 16, 26, 37 (PDF-casen), 52 og 104 uger; 20, 30, 60 og 120 dage; 18 maaneder fra d. 1. og fra d. 15. — alle 12 cases renderer fejlfrit; PDF-casen giver `DEC 2025 | JAN 2026 | FEB | ...` mod tidligere `01, 28, 25, 22, ...`
 - [x] 6.2 Vurdér eksplicit om daily-threshold paa 15 dage giver et for groft udtryk — JA, bekraeftet: ren maanedsankring gav 0-2 labels. Loest med uge-ankret mellemtrin (task 4.8), ikke ved at haeve threshold
-- [ ] 6.3 vdiffr-snapshots: **kan ikke koeres lokalt** — `{vdiffr} is not installed` (skip #89 i fuld suite). Visual-regression-snapshots skal genereres i CI eller efter lokal vdiffr-install. NB: en testkoersel uden vdiffr SLETTER `_snaps/visual-regression/*.svg`; gendan med `git checkout -- tests/testthat/_snaps/` foer commit
+- [x] 6.3 vdiffr-snapshots: genereret og verificeret i CI (`ubuntu-latest release` + `oldrel-1`, `windows-latest release` — alle gronne, ingen visuelle diffs paa eksisterende chart-typer). Kunne ikke koeres lokalt (`{vdiffr}` ej installeret). **NB:** en lokal testkoersel uden vdiffr SLETTER `_snaps/visual-regression/*.svg`; gendan med `git checkout -- tests/testthat/_snaps/` foer commit
 - [x] 6.4 Fuld testkoersel paa endelig kode: `devtools::test()` exit 0 — **0 failures**, 89 skips (render-tests + vdiffr), 8 forventede warnings fra eksisterende tests
-- [ ] 6.5 `devtools::check()` uden WARNINGs/ERRORs — **kan ikke koeres lokalt**: hverken Pandoc (vignette-build) eller Rtools (pakke-build) er installeret paa maskinen. Uafhaengigt af denne change; pakken kan slet ikke bygges lokalt. Daekkes af `.github/workflows/R-CMD-check.yaml` i CI
+- [x] 6.5 `devtools::check()` uden WARNINGs/ERRORs — **gron i CI** paa tre R-versioner/platforme (`ubuntu release`, `ubuntu oldrel-1`, `windows release`). Kunne ikke koeres lokalt: hverken Pandoc (vignette-build) eller Rtools (pakke-build) er installeret paa maskinen; uafhaengigt af denne change
+- [x] 6.6 **[Brugergodkendelse 2026-08-10]** Layoutet godkendt af bruger paa baggrund af renderede cases (`daily-30`, `weekly-104`, `monthly-18-15th`, `weekly-16`, `daily-120`, `weekly-37-PDF`). Inkluderer eksplicit accept af D8-konsekvensen: maanedsdata der ikke starter d. 1. mister foerste label (`monthly-18-15th` viser foerste label `APR 2025` for data fra 15. jan)
+- [x] 6.7 **[Undersoegt]** Flaky test observeret: `test-quarto-isolation.R:500` (`.system2 mock: success path`, forventer 7 args, faar 9) fejlede i fuld-suite-koersler paa tre uafhaengige branches. **Ikke en regression fra denne change** — diffen roerer ingen Quarto-filer, testen kommer fra upstream (`8cb2f63`), isolerede koersler giver 0 failures, og CI's `windows-latest (release)` (samme platform, fuld suite) er gron. Konklusion: mock-state der laekker mellem testfiler. Foreslaas rapporteret separat
 
 ## 7. Dokumentation + afslutning
 
@@ -56,5 +58,6 @@
 - [x] 7.2 Opdatér roxygen for beroerte interne funktioner (alle nye er `@noRd`, saa ingen NAMESPACE/.Rd-regenerering noedvendig)
 - [x] 7.3 NEWS-entry (dansk) under `# BFHcharts (development)`: "Nye features" + "Bug fixes" (4 stk.) + "Kendte begraensninger" (tick-synlighed)
 - [x] 7.4 `styler::style_file()` paa de fire aendrede filer
-- [ ] 7.5 PR (draft) mod `develop`; MINOR-bump haandteres ved naeste release-PR
+- [x] 7.5 PR mod `develop`: **#506** merged — alle 7 CI-jobs gronne (3x R CMD check, lint, test-coverage, pdf-smoke, git-archive-render). MINOR-bump haandteres ved naeste release-PR
+- [x] 7.7 **[Tilfoejet]** Rebased paa `origin/develop` foer push: lokal `develop` var 70 commits bagud (op til v0.26.1). Een konflikt i `NEWS.md` (begge sider tilfoejede entries oeverst) loest ved at placere `(development)`-sektionen over 0.26.1. Upstream-refactor af locale-caching i samme fil sameksisterer uden problemer
 - [x] 7.6 **[Tilfoejet]** Omdoebt `calculate_month_anchored_breaks()` → `calculate_anchored_breaks()` da den nu ogsaa haandterer uge-ankring

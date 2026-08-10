@@ -387,6 +387,96 @@ calculate_minor_breaks <- function(data_x_min, data_x_max, format_config) {
   if (length(minor) == 0) NULL else minor
 }
 
+#' Target Number of Week-Number Labels
+#'
+#' Density aim for the week numbers annotating a month-anchored axis. The
+#' step between labels is chosen from a small set of calendar-sensible
+#' intervals so the count lands near this figure regardless of series length.
+#'
+#' @keywords internal
+#' @noRd
+BFH_TARGET_WEEK_LABELS <- 10L
+
+#' Calculate Week-Number Labels for a Minor Tick Grid
+#'
+#' Annotates weekly minor ticks with ISO-8601 week numbers. Only every Nth
+#' tick is labelled -- the step adapts so a 17-week series and a 104-week
+#' series both end up with a readable count.
+#'
+#' The sequence deliberately starts at the *second* tick: the first sits
+#' flush against the panel edge, where the "UGE" prefix would be clipped and
+#' a lone number reads as accidental. Shifting the whole sequence one tick
+#' inward costs a single label and gives the prefix room.
+#'
+#' Week numbers are labels on date positions, never sort keys, so an ISO
+#' year boundary (2025-12-29 is week 01 of ISO year 2026) cannot disturb the
+#' ordering.
+#'
+#' @param breaks POSIXct vector of weekly minor breaks, or NULL
+#' @param language Character language code for the prefix ("da" or "en")
+#' @return data.frame with `x` (POSIXct) and `label` (character), or NULL
+#'   when there are too few breaks to annotate
+#' @keywords internal
+#' @noRd
+calculate_week_number_labels <- function(breaks, language = "da") {
+  if (is.null(breaks) || length(breaks) < 2) {
+    return(NULL)
+  }
+
+  # Calendar-sensible steps: weekly, fortnightly, monthly-ish, quarterly-ish
+  candidates <- c(1L, 2L, 4L, 8L, 13L)
+  step <- candidates[which.min(
+    abs(length(breaks) / candidates - BFH_TARGET_WEEK_LABELS)
+  )]
+
+  start_at <- if (length(breaks) > step) 1L + step else 1L
+  idx <- seq(start_at, length(breaks), by = step)
+  if (length(idx) == 0) {
+    return(NULL)
+  }
+
+  labels <- strftime(breaks[idx], "%V")
+  labels[1] <- paste(i18n_lookup("labels.week_prefix", language), labels[1])
+
+  data.frame(
+    x = breaks[idx],
+    label = labels,
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Add Week-Number Annotations Below the X-Axis
+#'
+#' Draws ISO week numbers just inside the panel floor, above the month
+#' labels on the axis itself. A text layer is used rather than a second
+#' axis: ggplot2 cannot label minor breaks, and a secondary axis would place
+#' the numbers above the panel.
+#'
+#' `clip = "off"` is not required -- the labels sit inside the panel -- so
+#' the plot's coordinate system is left untouched.
+#'
+#' @param plot ggplot object
+#' @param minor_breaks POSIXct vector of weekly breaks, or NULL
+#' @param language Character language code
+#' @return Modified ggplot object, unchanged when there is nothing to label
+#' @keywords internal
+#' @noRd
+add_week_number_labels <- function(plot, minor_breaks, language = "da") {
+  week_labels <- calculate_week_number_labels(minor_breaks, language)
+  if (is.null(week_labels)) {
+    return(plot)
+  }
+
+  plot + ggplot2::geom_text(
+    data = week_labels,
+    mapping = ggplot2::aes(x = .data$x, y = -Inf, label = .data$label),
+    inherit.aes = FALSE,
+    vjust = -0.7,
+    size = 3,
+    colour = "grey35"
+  )
+}
+
 #' Does a Plot Carry Explicit Minor X Breaks?
 #'
 #' @param plot ggplot object
@@ -408,53 +498,6 @@ has_x_minor_breaks <- function(plot) {
   !is.null(minor) && !inherits(minor, "waiver") && length(minor) > 0
 }
 
-#' Theme Overrides for Minor X Ticks
-#'
-#' Enables unlabelled tick marks on the x-axis when the plot carries minor
-#' breaks. Returns an empty list otherwise, which `+` accepts as a no-op.
-#'
-#' Whether the ticks appear is data-driven and therefore owned by this
-#' package: they mark the finer calendar unit under a coarser label rhythm
-#' (weeks under month labels, days under week labels), and a theme cannot
-#' know the interval type. How they look is owned by the theme, so colour and
-#' width are derived from its own tick element rather than hard-coded -- a
-#' restyle in BFHtheme carries over without a change here.
-#'
-#' Must be applied AFTER any complete theme (e.g. `BFHtheme::theme_bfh()`),
-#' which resets every element including these. `theme_bfh()` blanks
-#' `axis.ticks.x`, and minor ticks inherit that blanking, so the element is
-#' set explicitly.
-#'
-#' @param plot ggplot object to inspect for minor x breaks
-#' @return A ggplot2 theme, or an empty list
-#' @keywords internal
-#' @noRd
-minor_tick_theme <- function(plot) {
-  if (!has_x_minor_breaks(plot)) {
-    return(list())
-  }
-
-  theme <- plot$theme %||% ggplot2::theme_get()
-
-  # Borrow styling from whichever tick element the theme actually draws.
-  # theme_bfh() blanks the x ticks but keeps the y ticks styled, so the y
-  # element is the reliable source of the current look.
-  reference <- ggplot2::calc_element("axis.ticks.y.left", theme)
-  if (!inherits(reference, "element_line")) {
-    reference <- ggplot2::calc_element("axis.ticks", theme)
-  }
-  colour <- if (inherits(reference, "element_line")) reference$colour else "grey70"
-  linewidth <- if (inherits(reference, "element_line")) reference$linewidth else 0.3
-
-  ggplot2::theme(
-    axis.minor.ticks.x.bottom = ggplot2::element_line(
-      colour = colour %||% "grey70",
-      # Subordinate to major ticks: thinner than the reference element.
-      linewidth = (linewidth %||% 0.5) * 0.6
-    ),
-    axis.minor.ticks.length.x.bottom = grid::unit(2, "pt")
-  )
-}
 
 #' Apply Temporal X-Axis Formatting
 #'
@@ -496,11 +539,10 @@ apply_temporal_x_axis <- function(plot, x_col, data_x_min, data_x_max,
     # Unlabelled ticks on the finer calendar boundary. They keep a
     # month-labelled axis countable at week resolution without adding text.
     #
-    # NB: these are currently computed but not visible. BFHtheme::theme_bfh()
-    # sets axis.ticks = element_blank(), and minor ticks inherit that
-    # blanking, so rendering them requires a BFHtheme decision rather than a
-    # local override here. The breaks are attached to the scale so they start
-    # rendering as soon as the theme supports them.
+    # NB: tick VISIBILITY depends on BFHtheme::theme_bfh(), which blanks
+    # axis.ticks.x; minor ticks inherit that blanking. The breaks are
+    # attached regardless, so they render as soon as the theme supports it
+    # (BFHtheme#80). The week numbers below do not depend on that.
     minor_breaks <- calculate_minor_breaks(
       data_x_min, data_x_max, format_config
     )
@@ -511,6 +553,13 @@ apply_temporal_x_axis <- function(plot, x_col, data_x_min, data_x_max,
         minor_breaks = minor_breaks,
         guide = ggplot2::guide_axis(minor.ticks = TRUE)
       )
+    }
+
+    # Week numbers annotating the minor grid. Only meaningful when the minor
+    # unit is weeks: a day-level grid would need a different label entirely,
+    # and month-level minor ticks already carry month names above them.
+    if (identical(format_config$minor_break_unit, "week")) {
+      plot <- add_week_number_labels(plot, minor_breaks, language)
     }
 
     if (!is.null(breaks_posix)) {
