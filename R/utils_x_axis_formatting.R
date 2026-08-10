@@ -480,13 +480,14 @@ add_week_number_labels <- function(plot, minor_breaks, language = "da") {
   }
 
   # Alle labels er to-linjede (se calculate_week_number_labels), saa vjust
-  # giver dem samme baseline. Vaerdien loefter teksten fri af de indadgaaende
-  # minor ticks, som stikker ca. 0.10cm op i panelet.
+  # giver dem samme baseline. Vaerdien er valgt visuelt saa teksten faar
+  # omtrent samme luft til de indadgaaende ugemaerker (0.10cm op i panelet)
+  # som maanedslabels har til deres udadgaaende maerker.
   plot + ggplot2::geom_text(
     data = week_labels,
     mapping = ggplot2::aes(x = .data$x, y = -Inf, label = .data$label),
     inherit.aes = FALSE,
-    vjust = -0.75,
+    vjust = -0.42,
     lineheight = 0.85,
     size = 3,
     colour = "grey35"
