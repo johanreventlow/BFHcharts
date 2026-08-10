@@ -602,6 +602,51 @@ test_that("week-anchored daily charts render minor ticks", {
   expect_gt(.count_rendered_x_ticks(bfh_get_plot(result)), 10)
 })
 
+test_that("week numbers leave the right-hand label placement untouched", {
+  # The centreline label is positioned by a sensitive measurement pass. Week
+  # numbers must not perturb it: they sit inside the panel and add no layout
+  # requirements, so panel geometry and the label's own coordinates have to
+  # be identical with and without them.
+  data <- data.frame(
+    dato = seq(as.Date("2025-12-01"), by = "week", length.out = 37),
+    taeller = rep(c(78, 79, 77), length.out = 37),
+    naevner = 100
+  )
+  result <- bfh_qic(data,
+    x = dato, y = taeller, n = naevner,
+    chart_type = "p", y_axis_unit = "percent"
+  )
+  with_weeks <- bfh_get_plot(result)
+
+  is_week_layer <- vapply(with_weeks$layers, function(l) {
+    !is.null(l$data) && is.data.frame(l$data) &&
+      "label" %in% names(l$data) && any(grepl("UGE", l$data$label))
+  }, logical(1))
+  skip_if(!any(is_week_layer), "chart carries no week numbers")
+
+  without_weeks <- with_weeks
+  without_weeks$layers <- without_weeks$layers[!is_week_layer]
+
+  panel_of <- function(plot) {
+    ggplot2::ggplot_build(plot)$layout$panel_params[[1]]
+  }
+  expect_equal(panel_of(with_weeks)$y.range, panel_of(without_weeks)$y.range)
+  expect_equal(panel_of(with_weeks)$x.range, panel_of(without_weeks)$x.range)
+
+  # The centreline label itself resolves to the same coordinate
+  marquee_y <- function(plot) {
+    built <- ggplot2::ggplot_build(plot)
+    idx <- which(vapply(
+      plot$layers, function(l) inherits(l$geom, "GeomMarquee"), logical(1)
+    ))
+    if (length(idx) == 0) {
+      return(NULL)
+    }
+    built$data[[idx[1]]]$y[1]
+  }
+  expect_equal(marquee_y(with_weeks), marquee_y(without_weeks))
+})
+
 test_that("monthly charts render no minor ticks", {
   # Monthly series carry no finer unit worth marking.
   data <- data.frame(
@@ -636,8 +681,11 @@ test_that("week labels are ISO week numbers on the given breaks", {
   expect_s3_class(result$x, "POSIXct")
   expect_equal(nrow(result), length(result$x))
   expect_true(all(result$x %in% breaks))
-  # Every label but the prefixed one is a bare two-digit week number
-  expect_true(all(grepl("^[0-9]{2}$", result$label[-1])))
+  # Every label is two lines -- prefix (or blank padding) over the number --
+  # so all text blocks are equally tall and share one baseline.
+  expect_true(all(grepl("^.*\n[0-9]{2}$", result$label)))
+  # Only the first carries the actual prefix; the rest pad with a blank line
+  expect_true(all(grepl("^ \n[0-9]{2}$", result$label[-1])))
 })
 
 test_that("the first visible label carries the UGE prefix", {
