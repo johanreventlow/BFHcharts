@@ -40,7 +40,7 @@
 - [x] 5.2 Opdatér `apply_temporal_x_axis()`: send `minor_breaks` + `guide` gennem `BFHtheme::scale_x_datetime_bfh(...)` via `do.call`; ny helper `calculate_minor_breaks()` + `has_x_minor_breaks()`
 - [x] 5.3 Verificér labels stadig locale-wrappes via `with_lc_time_labeler()` (dansk maanedsnavne-test med `skip_if` naar da-locale mangler paa host)
 - [x] 5.4 **[Tilfoejet under implementering — BLOKERET, brugerbeslutning]** Minor-tick-SYNLIGHED leveres ikke i denne change. `BFHtheme::theme_bfh()` saetter `axis.ticks = element_blank()`; minor ticks arver blankingen. Verificeret at hverken theme-raekkefoelge eller `lemon::coord_capped_cart()` er aarsagen. Bruger valgte at rejse spoergsmaalet i BFHtheme-repoet frem for lokal override. `minor_breaks` + `guide_axis(minor.ticks = TRUE)` vedhaeftes scalen, saa ticks renderer automatisk naar BFHtheme understoetter dem
-- [ ] 5.5 **[Opfoelgning, andet repo]** Rejs issue i BFHtheme: skal `theme_bfh()` understoette minor ticks paa temporale akser? Vedhaeft variant A-screenshot (kun minor ticks, graa 2pt) fra visuel validering som forslag
+- [x] 5.5 **[Opfoelgning, andet repo]** Issue oprettet: [BFHtheme#80](https://github.com/johanreventlow/BFHtheme/issues/80). Verificeret mod v0.5.4-kilden (`R/themes.R:108`): `axis.ticks.x = element_blank()`, mens `axis.minor.ticks.x.bottom` slet ikke saettes — minor ticks blankes altsaa som *sideeffekt* af arv, ikke ved bevidst valg. Y-aksen har aktive ticks (`R/themes.R:106-107`), saa "ingen ticks" er ikke et gennemgaaende princip. Forslag i issue: saet `axis.minor.ticks.x.bottom` eksplicit uden at roere major ticks. Ingen kodeaendring noedvendig i BFHcharts naar det lander
 
 ## 6. Visuel validering + snapshots
 
