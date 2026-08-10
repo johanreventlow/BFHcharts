@@ -648,7 +648,9 @@ test_that("the first visible label carries the UGE prefix", {
 
   result <- calculate_week_number_labels(breaks)
 
-  expect_match(result$label[1], "^UGE [0-9]{2}$")
+  # Prefix sits on its own line above the number, so the number stays
+  # centred on its tick mark.
+  expect_match(result$label[1], "^UGE\n[0-9]{2}$")
   expect_false(any(grepl("UGE", result$label[-1])))
 })
 
@@ -728,7 +730,7 @@ test_that("month-anchored weekly charts render week numbers", {
     if (!is.null(l$data) && "label" %in% names(l$data)) l$data$label else NULL
   }))
 
-  expect_true(any(grepl("^UGE ", texts)))
+  expect_true(any(grepl("^UGE\n", texts)))
 })
 
 test_that("charts without minor breaks render no week numbers", {
@@ -749,7 +751,7 @@ test_that("charts without minor breaks render no week numbers", {
     if (!is.null(l$data) && "label" %in% names(l$data)) l$data$label else NULL
   }))
 
-  expect_false(any(grepl("^UGE ", texts)))
+  expect_false(any(grepl("^UGE\n", texts)))
 })
 
 test_that("apply_numeric_x_axis adds continuous scale", {
