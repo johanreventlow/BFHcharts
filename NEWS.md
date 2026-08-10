@@ -24,13 +24,17 @@
   slår automatisk igennem. Kræver `BFHtheme (>= 0.5.5)`.
 
 * **Ugenumre på månedsforankrede uge-akser.** Over månedslabels vises
-  ISO-ugenumre ved hver n'te ugemarkør, med `UGE` foran den første synlige,
-  så det fremgår hvad tallene er. Antallet af numre tilpasses seriens
-  længde: et halvt års data får ét nummer hver 4. uge, to års data hver
-  13. Rækkefølgen kan ikke bryde ved årsskifte — ugenummeret er en
-  etikette på en datoposition, aldrig en sorteringsnøgle, så uge 52 og
-  uge 01 lander hver sit rigtige sted (29. dec. 2025 er ISO-uge 01, men
-  hører kalendermæssigt til december).
+  ISO-ugenumre ved hver n'te ugemarkør, med `UGE` på en linje over det
+  første synlige nummer, så det fremgår hvad tallene er. Antallet af numre
+  tilpasses seriens længde: et halvt års data får ét nummer hver 4. uge,
+  to års data hver 13. Rækkefølgen kan ikke bryde ved årsskifte —
+  ugenummeret er en etikette på en datoposition, aldrig en sorteringsnøgle,
+  så uge 52 og uge 01 lander hver sit rigtige sted (29. dec. 2025 er
+  ISO-uge 01, men hører kalendermæssigt til december).
+
+  Alle numre står på samme linje og er centreret over deres markør, også
+  det første med præfikset over sig. Teksten holder afstand til de
+  indadgående ugemarkører.
 
   Numrene vises kun i månedsforankret visning. Korte serier har allerede
   en dato ved hver uge og er uændrede.
