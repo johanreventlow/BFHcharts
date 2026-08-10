@@ -11,6 +11,15 @@
   hvilken ugedag data starter på. Det hierarkiske label-udtryk (måned, med
   årstal kun ved første label og årsskifte) er uændret.
 
+* **Uge- og dagsmarkører på kalenderforankrede akser.** Når x-aksen er
+  månedsforankret, markeres hver uge med en lille streg; er den
+  ugeforankret, markeres hver dag. Det gør det muligt at aflæse den
+  tidsmæssige position mellem labels — fx på et kort med 120 daglige
+  punkter under fire månedslabels. Markørerne vises kun hvor der er en
+  finere enhed at markere: månedsdata og korte serier forbliver uændret
+  uden streger. Farve og stregtykkelse afledes fra `BFHtheme`, så et
+  senere temaskift slår automatisk igennem.
+
 ## Bug fixes
 
 * **Ugestart er nu mandag (ISO-8601), ikke søndag.** `lubridate::floor_date()`
@@ -25,13 +34,6 @@
 * **Lange dags- og ugeserier honorerer nu deres break-konfiguration.**
   `calculate_date_breaks()` ignorerede den valgte break-enhed, så
   intentionen om månedsvisning ved lange serier aldrig fik effekt.
-
-## Kendte begrænsninger
-
-* Uge-markører (små streger mellem månedslabels) beregnes og vedhæftes
-  aksen, men vises ikke: `BFHtheme::theme_bfh()` slår alle akse-ticks fra.
-  Synlighed afventer en beslutning i BFHtheme og kræver ingen ændring her
-  når den kommer.
 
 # BFHcharts 0.26.1
 

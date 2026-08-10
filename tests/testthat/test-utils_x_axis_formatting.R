@@ -495,6 +495,142 @@ test_that("formatted temporal plots build without warnings", {
   }
 })
 
+# ============================================================================
+# Conditional minor tick rendering
+# ============================================================================
+#
+# Whether minor ticks appear is data-driven: they mark the finer calendar unit
+# under a coarser label rhythm (weeks under month labels, days under week
+# labels). BFHtheme cannot make that call -- a theme is static and knows
+# nothing about the interval type -- so BFHcharts enables them per chart and
+# derives the styling from the theme rather than hard-coding it.
+
+# Helper: count tick marks rendered on the bottom axis.
+# Ticks are drawn as polylines with two points per mark, nested inside the
+# axis gtable. The axis line drawn by lemon::coord_capped_cart() also lands
+# here as a 2-point polyline, so a single mark is indistinguishable from it;
+# tests therefore assert on counts well above 1.
+.count_rendered_x_ticks <- function(plot) {
+  gt <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(plot))
+  idx <- grep("axis-b", gt$layout$name)
+  if (length(idx) == 0) {
+    return(0L)
+  }
+  n <- 0L
+  walk <- function(g) {
+    if (inherits(g, "gtable")) {
+      for (child in g$grobs) walk(child)
+    }
+    if (!is.null(g$children)) {
+      for (ch in g$children) {
+        if (grepl("polyline|segments", class(ch)[1], ignore.case = TRUE) &&
+          !is.null(ch$x)) {
+          n <<- n + length(ch$x) %/% 2L
+        }
+        walk(ch)
+      }
+    }
+  }
+  walk(gt$grobs[[idx[1]]])
+  n
+}
+
+test_that("minor_tick_theme is a no-op without minor breaks", {
+  plot <- .formatted_plot(seq(as.Date("2026-01-05"), by = "week", length.out = 12))
+
+  result <- minor_tick_theme(plot)
+
+  expect_false(inherits(result, "theme"))
+  expect_length(result, 0)
+})
+
+test_that("minor_tick_theme returns a theme when minor breaks exist", {
+  plot <- .formatted_plot(seq(as.Date("2025-12-01"), by = "week", length.out = 37))
+
+  result <- minor_tick_theme(plot)
+
+  expect_s3_class(result, "theme")
+  expect_s3_class(
+    result$axis.minor.ticks.x.bottom,
+    "element_line"
+  )
+})
+
+test_that("minor tick styling is derived from the theme, not hard-coded", {
+  # Colour and linewidth follow the theme's own tick element so a BFHtheme
+  # restyle carries over without a change here.
+  plot <- .formatted_plot(seq(as.Date("2025-12-01"), by = "week", length.out = 37))
+  reference <- ggplot2::calc_element(
+    "axis.ticks.y.left",
+    BFHtheme::theme_bfh()
+  )
+
+  element <- minor_tick_theme(plot + BFHtheme::theme_bfh())$axis.minor.ticks.x.bottom
+
+  expect_equal(element$colour, reference$colour)
+})
+
+test_that("month-anchored weekly charts render minor ticks end to end", {
+  # The regression that matters: ticks must survive theme_bfh(), which blanks
+  # axis.ticks.x, and lemon::coord_capped_cart().
+  data <- data.frame(
+    dato = seq(as.Date("2025-12-01"), by = "week", length.out = 37),
+    taeller = rep(c(86, 87, 85), length.out = 37),
+    naevner = 100
+  )
+  result <- bfh_qic(data,
+    x = dato, y = taeller, n = naevner,
+    chart_type = "p", y_axis_unit = "percent"
+  )
+
+  expect_gt(.count_rendered_x_ticks(bfh_get_plot(result)), 10)
+})
+
+test_that("short weekly charts render no x ticks", {
+  # Below the anchoring threshold every week carries its own label, so there
+  # is no finer unit to mark -- the axis stays tick-free per BFHtheme.
+  data <- data.frame(
+    dato = seq(as.Date("2026-01-05"), by = "week", length.out = 12),
+    taeller = rep(c(86, 87, 85), length.out = 12),
+    naevner = 100
+  )
+  result <- bfh_qic(data,
+    x = dato, y = taeller, n = naevner,
+    chart_type = "p", y_axis_unit = "percent"
+  )
+
+  expect_lte(.count_rendered_x_ticks(bfh_get_plot(result)), 1L)
+})
+
+test_that("week-anchored daily charts render minor ticks", {
+  data <- data.frame(
+    dato = seq(as.Date("2026-01-01"), by = "day", length.out = 60),
+    taeller = rep(c(86, 87, 85), length.out = 60),
+    naevner = 100
+  )
+  result <- bfh_qic(data,
+    x = dato, y = taeller, n = naevner,
+    chart_type = "p", y_axis_unit = "percent"
+  )
+
+  expect_gt(.count_rendered_x_ticks(bfh_get_plot(result)), 10)
+})
+
+test_that("monthly charts render no minor ticks", {
+  # Monthly series carry no finer unit worth marking.
+  data <- data.frame(
+    dato = seq(as.Date("2025-01-01"), by = "month", length.out = 18),
+    taeller = rep(c(86, 87, 85), length.out = 18),
+    naevner = 100
+  )
+  result <- bfh_qic(data,
+    x = dato, y = taeller, n = naevner,
+    chart_type = "p", y_axis_unit = "percent"
+  )
+
+  expect_lte(.count_rendered_x_ticks(bfh_get_plot(result)), 1L)
+})
+
 test_that("apply_numeric_x_axis adds continuous scale", {
   library(ggplot2)
   data <- data.frame(x = 1:10, y = rnorm(10))
