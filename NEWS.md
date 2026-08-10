@@ -17,8 +17,23 @@
   tidsmæssige position mellem labels — fx på et kort med 120 daglige
   punkter under fire månedslabels. Markørerne vises kun hvor der er en
   finere enhed at markere: månedsdata og korte serier forbliver uændret
-  uden streger. Farve og stregtykkelse afledes fra `BFHtheme`, så et
-  senere temaskift slår automatisk igennem.
+  uden streger.
+
+  Selve udseendet — farve, længde og retning (månedsmarkører udad,
+  ugemarkører indad) — kommer fra `theme_bfh()`, så et senere temaskift
+  slår automatisk igennem. Kræver `BFHtheme (>= 0.5.5)`.
+
+* **Ugenumre på månedsforankrede uge-akser.** Over månedslabels vises
+  ISO-ugenumre ved hver n'te ugemarkør, med `UGE` foran den første synlige,
+  så det fremgår hvad tallene er. Antallet af numre tilpasses seriens
+  længde: et halvt års data får ét nummer hver 4. uge, to års data hver
+  13. Rækkefølgen kan ikke bryde ved årsskifte — ugenummeret er en
+  etikette på en datoposition, aldrig en sorteringsnøgle, så uge 52 og
+  uge 01 lander hver sit rigtige sted (29. dec. 2025 er ISO-uge 01, men
+  hører kalendermæssigt til december).
+
+  Numrene vises kun i månedsforankret visning. Korte serier har allerede
+  en dato ved hver uge og er uændrede.
 
 ## Bug fixes
 

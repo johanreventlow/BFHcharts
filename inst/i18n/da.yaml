@@ -320,6 +320,10 @@ labels:
     yearly: "år"
     irregular: "periode"
 
+  # Præfiks på det første synlige ugenummer på en månedsforankret x-akse.
+  # Forklarer hvad de øvrige tal betyder uden at kræve en aksetitel.
+  week_prefix: "UGE"
+
   outliers:
     singular: "observation"
     plural: "observationer"
