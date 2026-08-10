@@ -436,7 +436,13 @@ calculate_week_number_labels <- function(breaks, language = "da") {
   }
 
   labels <- strftime(breaks[idx], "%V")
-  labels[1] <- paste(i18n_lookup("labels.week_prefix", language), labels[1])
+  # Praefikset staar paa sin egen linje OVER nummeret, saa alle numre --
+  # ogsaa det foerste -- forbliver centreret over deres tickmark. Med
+  # praefikset paa samme linje ville "UGE 01" dele midterpunkt med de oevrige
+  # og skubbe tallet til hoejre for sit maerke.
+  labels[1] <- paste0(
+    i18n_lookup("labels.week_prefix", language), "\n", labels[1]
+  )
 
   data.frame(
     x = breaks[idx],
@@ -467,11 +473,15 @@ add_week_number_labels <- function(plot, minor_breaks, language = "da") {
     return(plot)
   }
 
+  # vjust/lineheight er afstemt saa den to-linjede foerste label (praefiks
+  # over nummer) faar sit NUMMER paa samme baseline som de oevrige labels.
+  # Teksten er bundforankret, saa den ekstra linje voxer opad.
   plot + ggplot2::geom_text(
     data = week_labels,
     mapping = ggplot2::aes(x = .data$x, y = -Inf, label = .data$label),
     inherit.aes = FALSE,
-    vjust = -0.7,
+    vjust = -0.45,
+    lineheight = 0.85,
     size = 3,
     colour = "grey35"
   )
