@@ -192,32 +192,46 @@ ved 15 maaneder er max i uge-mode).
 *Rationale:* ved 2+ aars ugedata er 100+ uge-ticks stoej; maanedsticks
 bevarer taelleligheden paa det relevante granularitetsniveau.
 
-### D6: Minor-tick-SYNLIGHED er en BFHtheme-beslutning (REVIDERET)
+### D6: Minor-tick-SYNLIGHED ejes af BFHcharts, styling af BFHtheme (REVIDERET 2x)
 
-*(Oprindelig beslutning: saet theme-detaljer lokalt i BFHcharts. Omgjort
-under implementering efter empirisk fund.)*
+*(Historik: (1) saet theme-detaljer lokalt → (2) overlad alt til BFHtheme →
+(3) split ansvaret. Hver revision fulgte af et empirisk fund.)*
 
-`BFHtheme::theme_bfh()` saetter `axis.ticks = element_blank()` — BFH's
-designsprog har **ingen akse-ticks overhovedet**. Minor ticks arver den
-blanking, saa de kan ikke renderes uden at overskrive designsystemet lokalt.
+Ansvarsdelingen deler sig i to spoergsmaal med hver sin ejer:
 
-*Maalt:* minor breaks naar korrekt hele vejen til `panel_params` (37 stk.
-for PDF-casen), og `guide_axis(minor.ticks = TRUE)` er aktiv, men
-akse-grob'en indeholder ingen tick-segmenter. Verificeret at hverken
-rekkefoelge (theme foer/efter scale) eller `lemon::coord_capped_cart()` er
-aarsagen — det er `element_blank()` alene.
+| Spoergsmaal | Ejer | Hvorfor |
+| ----------- | ---- | ------- |
+| **Om** ticks vises paa et givet chart | BFHcharts | Datadrevet: kun naar aksen er kalenderankret og har en finere enhed under (uger under maanedslabels, dage under ugelabels). Et tema er statisk og kender ikke interval-typen |
+| **Hvordan** de ser ud | BFHtheme | Visuelt udtryk. `minor_tick_theme()` afleder farve + linewidth fra temaets eget tick-element i stedet for at hardcode |
 
-**Beslutning:** BFHcharts overskriver IKKE designsystemet. `minor_breaks`
-beregnes og vedhaeftes scalen, saa ticks renderer automatisk naar/hvis
-BFHtheme faar understoettelse. Spoergsmaalet rejses separat i BFHtheme-repoet.
+Betingelsen findes allerede som `format_config$minor_break_unit`, saa
+aktiveringen kraever ingen ny parameter — og ingen brugervalg.
 
-*Konsekvens:* denne change leverer den maaneds-ankrede label-rytme (som var
-hovedproblemet), men ikke de synlige ugestreger. Afproevet lokalt override
-(`axis.minor.ticks.x.bottom = element_line(...)`) virker teknisk og er
-dokumenteret i visual-validering, men afventer designsystem-godkendelse.
+*Fejl i den forrige revision (rettet):* den paastod at minor ticks ikke
+kunne renderes uden at overskrive designsystemet. Det byggede paa en **fejl
+i maaleteknikken**, ikke paa adfaerden: tick-grobs blev talt via `id`-feltet,
+men ggplot2 tegner ticks som polylines *uden* `id` (2 punkter pr. maerke,
+nestet i akse-gtablet). Kontrolmaaling viste `ticks=0` selv under
+`theme_grey()` uden nogen blanking — hvilket afsloerede maalefejlen.
 
-*Alternativ forkastet:* nyt BFHtheme-API (`scale_x_datetime_bfh(minor = ...)`)
-— samme cross-repo-afhaengighed, men uden at loese blanking-problemet.
+*Faktisk adfaerd (verificeret):* `theme_bfh()` blanker `axis.ticks.x`, og
+minor ticks arver det. Men `axis.minor.ticks.x.bottom` kan saettes eksplicit
+**efter** temaet, og saa renderer de fint — ogsaa gennem
+`lemon::coord_capped_cart()`. Maalt: 37 uge-maerker paa PDF-casen, 0 paa
+maanedsdata.
+
+**Beslutning:** `apply_spc_theme()` tilfoejer `minor_tick_theme(plot)` efter
+`theme_bfh()`. No-op naar aksen ikke baerer minor breaks, saa monthly-charts
+og korte serier forbliver tick-frie jf. BFHtheme's udtryk.
+
+*Note om BFHtheme#80:* issuet er stadig relevant — men som et
+**styling**-spoergsmaal (hvilke tokens er de rigtige at afledde fra), ikke
+som en blokering. Verificeret i v0.5.4-kilden at y-aksen har aktive ticks
+(`R/themes.R:106-107`), saa "ingen ticks" gaelder specifikt x-aksen.
+
+*Alternativ forkastet:* `bfh_qic(x_minor_ticks = TRUE)` som opt-in — unoedigt,
+da betingelsen er datadrevet og allerede beregnet. Ville tilfoeje en parameter
+til et API hvis pointe er at man kun skal laere `bfh_qic()`.
 
 ### D7: Daily-serier faar en tre-trins kalenderankring
 
