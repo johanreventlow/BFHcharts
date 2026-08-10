@@ -636,8 +636,11 @@ test_that("week labels are ISO week numbers on the given breaks", {
   expect_s3_class(result$x, "POSIXct")
   expect_equal(nrow(result), length(result$x))
   expect_true(all(result$x %in% breaks))
-  # Every label but the prefixed one is a bare two-digit week number
-  expect_true(all(grepl("^[0-9]{2}$", result$label[-1])))
+  # Every label is two lines -- prefix (or blank padding) over the number --
+  # so all text blocks are equally tall and share one baseline.
+  expect_true(all(grepl("^.*\n[0-9]{2}$", result$label)))
+  # Only the first carries the actual prefix; the rest pad with a blank line
+  expect_true(all(grepl("^ \n[0-9]{2}$", result$label[-1])))
 })
 
 test_that("the first visible label carries the UGE prefix", {
