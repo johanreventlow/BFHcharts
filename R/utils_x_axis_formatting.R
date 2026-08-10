@@ -239,9 +239,9 @@ generate_calendar_sequence <- function(from, to, by, unit) {
 #' @keywords internal
 #' @noRd
 calculate_anchored_breaks <- function(data_x_min, data_x_max,
-                                            label_multiplier = 1,
-                                            minor_unit = NULL,
-                                            major_unit = "month") {
+                                      label_multiplier = 1,
+                                      minor_unit = NULL,
+                                      major_unit = "month") {
   major <- generate_calendar_sequence(
     data_x_min, data_x_max,
     by = paste(label_multiplier, paste0(major_unit, "s")),
@@ -406,6 +406,54 @@ has_x_minor_breaks <- function(plot) {
   }
   minor <- x_scales[[length(x_scales)]]$minor_breaks
   !is.null(minor) && !inherits(minor, "waiver") && length(minor) > 0
+}
+
+#' Theme Overrides for Minor X Ticks
+#'
+#' Enables unlabelled tick marks on the x-axis when the plot carries minor
+#' breaks. Returns an empty list otherwise, which `+` accepts as a no-op.
+#'
+#' Whether the ticks appear is data-driven and therefore owned by this
+#' package: they mark the finer calendar unit under a coarser label rhythm
+#' (weeks under month labels, days under week labels), and a theme cannot
+#' know the interval type. How they look is owned by the theme, so colour and
+#' width are derived from its own tick element rather than hard-coded -- a
+#' restyle in BFHtheme carries over without a change here.
+#'
+#' Must be applied AFTER any complete theme (e.g. `BFHtheme::theme_bfh()`),
+#' which resets every element including these. `theme_bfh()` blanks
+#' `axis.ticks.x`, and minor ticks inherit that blanking, so the element is
+#' set explicitly.
+#'
+#' @param plot ggplot object to inspect for minor x breaks
+#' @return A ggplot2 theme, or an empty list
+#' @keywords internal
+#' @noRd
+minor_tick_theme <- function(plot) {
+  if (!has_x_minor_breaks(plot)) {
+    return(list())
+  }
+
+  theme <- plot$theme %||% ggplot2::theme_get()
+
+  # Borrow styling from whichever tick element the theme actually draws.
+  # theme_bfh() blanks the x ticks but keeps the y ticks styled, so the y
+  # element is the reliable source of the current look.
+  reference <- ggplot2::calc_element("axis.ticks.y.left", theme)
+  if (!inherits(reference, "element_line")) {
+    reference <- ggplot2::calc_element("axis.ticks", theme)
+  }
+  colour <- if (inherits(reference, "element_line")) reference$colour else "grey70"
+  linewidth <- if (inherits(reference, "element_line")) reference$linewidth else 0.3
+
+  ggplot2::theme(
+    axis.minor.ticks.x.bottom = ggplot2::element_line(
+      colour = colour %||% "grey70",
+      # Subordinate to major ticks: thinner than the reference element.
+      linewidth = (linewidth %||% 0.5) * 0.6
+    ),
+    axis.minor.ticks.length.x.bottom = grid::unit(2, "pt")
+  )
 }
 
 #' Apply Temporal X-Axis Formatting

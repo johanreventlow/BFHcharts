@@ -45,6 +45,12 @@ apply_spc_theme <- function(plot, base_size = 14, plot_margin = NULL, ylim = NUL
     BFHtheme::theme_bfh(base_size = base_size) +
     lemon::coord_capped_cart(bottom = "right", gap = 0, ylim = ylim)
 
+  # Minor x ticks mark the finer calendar unit under a coarser label rhythm
+  # (weeks under month labels, days under week labels). Applied after the
+  # complete theme, which would otherwise reset the element. No-op when the
+  # axis carries no minor breaks -- see minor_tick_theme().
+  plot <- plot + minor_tick_theme(plot)
+
   # Apply margins: use custom if provided, otherwise default 5mm
   if (!is.null(plot_margin)) {
     if (inherits(plot_margin, "margin")) {
