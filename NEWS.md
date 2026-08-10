@@ -1,3 +1,38 @@
+# BFHcharts (development)
+
+## Nye features
+
+* **Kalenderforankret x-akse for dags- og ugedata.** Lange serier fik
+  tidligere labels på vilkårlige datoer (fx `01 dec, 28 dec, 25 jan, 22 feb`
+  på et 37-ugers kort), fordi breaks blev beregnet som multipla af
+  datastarten i stedet for at følge kalenderen. Nu forankres labels til
+  kalendergrænser: månedsstarter for lange serier, ugestarter (mandage) for
+  dags-serier på nogle få uger. Rytmen bliver forudsigelig og uafhængig af
+  hvilken ugedag data starter på. Det hierarkiske label-udtryk (måned, med
+  årstal kun ved første label og årsskifte) er uændret.
+
+## Bug fixes
+
+* **Ugestart er nu mandag (ISO-8601), ikke søndag.** `lubridate::floor_date()`
+  bruger søndag som standard når `lubridate.week.start` ikke er sat, hvilket
+  gav en ugeforskydning i x-akse-beregningen.
+* **Ingen labels efter sidste datapunkt.** Break-beregningen kunne generere
+  op til to breaks ud over dataområdet (målt: 18 breaks for 16 ugers data),
+  hvilket gav tomme labels og strakte plot-området.
+* **Intet skævt startlabel.** Et break blev tvunget ind på præcis første
+  datapunkt, selv når det lå uden for kalendergrid'et. Ramte også
+  månedsdata der ikke er observeret den 1. i måneden.
+* **Lange dags- og ugeserier honorerer nu deres break-konfiguration.**
+  `calculate_date_breaks()` ignorerede den valgte break-enhed, så
+  intentionen om månedsvisning ved lange serier aldrig fik effekt.
+
+## Kendte begrænsninger
+
+* Uge-markører (små streger mellem månedslabels) beregnes og vedhæftes
+  aksen, men vises ikke: `BFHtheme::theme_bfh()` slår alle akse-ticks fra.
+  Synlighed afventer en beslutning i BFHtheme og kræver ingen ændring her
+  når den kommer.
+
 # BFHcharts 0.26.1
 
 ## Bugfixes

@@ -90,6 +90,10 @@ normalize_to_posixct <- function(x) {
 #' Round Date to Interval Start
 #'
 #' Floors a date to the beginning of its interval (day, week, or month).
+#' Weeks start on Monday (ISO-8601), which lubridate does not do by default:
+#' `floor_date(unit = "week")` uses Sunday unless `lubridate.week.start` is
+#' set, so `week_start` is passed explicitly rather than relying on session
+#' state.
 #'
 #' @param date POSIXct date
 #' @param interval_type Character: "daily", "weekly", or "monthly"
@@ -100,7 +104,7 @@ round_to_interval_start <- function(date, interval_type) {
   if (interval_type == "monthly") {
     lubridate::floor_date(date, unit = "month")
   } else if (interval_type == "weekly") {
-    lubridate::floor_date(date, unit = "week")
+    lubridate::floor_date(date, unit = "week", week_start = 1)
   } else {
     date # daily or unknown \u2192 no rounding
   }
@@ -123,10 +127,23 @@ calculate_base_interval_secs <- function(interval_type) {
   )
 }
 
+#' Maximum Date Breaks on a Temporal X-Axis
+#'
+#' Upper bound on labelled breaks for temporal axes. Serves two purposes:
+#' (1) selects the interval multiplier in [calculate_interval_multiplier()],
+#' and (2) triggers the switch to calendar-anchored breaks for daily/weekly
+#' series in `get_optimal_formatting()`. Exceeding this count means labels
+#' would need thinning, which is precisely when off-calendar break positions
+#' start to appear.
+#'
+#' @keywords internal
+#' @noRd
+BFH_MAX_DATE_BREAKS <- 15L
+
 #' Calculate Interval Multiplier for Dense Data
 #'
-#' Determines the multiplier to apply to base interval when there are >15
-#' potential breaks on the axis.
+#' Determines the multiplier to apply to base interval when there are more
+#' than [BFH_MAX_DATE_BREAKS] potential breaks on the axis.
 #'
 #' @param potential_breaks Numeric: number of breaks without multiplier
 #' @param interval_type Character: "daily", "weekly", or "monthly"
@@ -134,7 +151,7 @@ calculate_base_interval_secs <- function(interval_type) {
 #' @keywords internal
 #' @noRd
 calculate_interval_multiplier <- function(potential_breaks, interval_type) {
-  if (potential_breaks <= 15) {
+  if (potential_breaks <= BFH_MAX_DATE_BREAKS) {
     return(1) # No multiplier needed
   }
 
@@ -145,21 +162,114 @@ calculate_interval_multiplier <- function(potential_breaks, interval_type) {
     c(2, 4, 8) # daily or fallback
   )
 
-  # Find smallest multiplier that reduces breaks to <=15
+  # Find smallest multiplier that reduces breaks to <= BFH_MAX_DATE_BREAKS
   for (m in multipliers) {
-    if (potential_breaks / m <= 15) {
+    if (potential_breaks / m <= BFH_MAX_DATE_BREAKS) {
       return(m)
     }
   }
 
-  # If all multipliers still exceed 15 breaks, use largest
+  # If all multipliers still exceed the cap, use largest
   utils::tail(multipliers, 1)
+}
+
+#' Generate a Calendar-Anchored Date Sequence
+#'
+#' Builds a sequence of calendar boundaries between two instants. The
+#' sequence is generated at Date resolution and converted to POSIXct
+#' afterwards: POSIXct arithmetic with `by = "1 week"` drifts by an hour
+#' across DST transitions, which would leave minor ticks off midnight.
+#'
+#' @param from POSIXct lower bound (inclusive after trimming)
+#' @param to POSIXct upper bound (inclusive after trimming)
+#' @param by Character passed to [base::seq.Date()], e.g. "1 month", "1 week"
+#' @param unit Character: "month" or "week" -- which boundary to snap to
+#' @return POSIXct vector trimmed to `[from, to]`, possibly length zero
+#' @keywords internal
+#' @noRd
+generate_calendar_sequence <- function(from, to, by, unit) {
+  # week_start only applies to week units; floor_date() rejects NULL.
+  floored <- if (identical(unit, "week")) {
+    lubridate::floor_date(from, unit = unit, week_start = 1)
+  } else {
+    lubridate::floor_date(from, unit = unit)
+  }
+
+  start_date <- as.Date(format(floored, "%Y-%m-%d"))
+  end_date <- as.Date(format(
+    lubridate::ceiling_date(to, unit = unit),
+    "%Y-%m-%d"
+  ))
+
+  dates <- seq(from = start_date, to = end_date, by = by)
+
+  # Rebuild in the input's own timezone. Using the session timezone instead
+  # would offset every break by the UTC delta, and the trim below would then
+  # discard a boundary that in fact coincides with the first observation.
+  tz <- attr(from, "tzone")
+  if (is.null(tz) || !nzchar(tz[1])) {
+    tz <- Sys.timezone()
+  }
+  breaks <- as.POSIXct(as.character(dates), tz = tz[1])
+
+  # Trim at BOTH ends: breaks past the last observation render as empty
+  # labels and stretch the panel (there is no right-hand expansion).
+  breaks[breaks >= from & breaks <= to]
+}
+
+#' Calculate Calendar-Anchored Breaks for X-Axis
+#'
+#' Places major breaks on calendar boundaries -- month starts, or week
+#' starts for spans too short to contain enough months -- with optional
+#' unlabelled minor ticks at a finer boundary. Used for daily and weekly
+#' series whose span exceeds [BFH_MAX_DATE_BREAKS], where per-unit labels
+#' would need thinning and thus drift off the calendar.
+#'
+#' No break is forced at `data_x_min`: the calendar grid is the anchor, and
+#' an extra off-grid break breaks the rhythm without adding information.
+#'
+#' @param data_x_min POSIXct minimum x value
+#' @param data_x_max POSIXct maximum x value
+#' @param label_multiplier Integer: label every Nth unit (1 = every unit)
+#' @param minor_unit Character "day"/"week"/"month", or NULL for no minor
+#'   ticks
+#' @param major_unit Character: "month" (default) or "week" -- the boundary
+#'   major breaks snap to
+#' @return List with `major` (POSIXct) and `minor` (POSIXct or NULL)
+#' @keywords internal
+#' @noRd
+calculate_anchored_breaks <- function(data_x_min, data_x_max,
+                                            label_multiplier = 1,
+                                            minor_unit = NULL,
+                                            major_unit = "month") {
+  major <- generate_calendar_sequence(
+    data_x_min, data_x_max,
+    by = paste(label_multiplier, paste0(major_unit, "s")),
+    unit = major_unit
+  )
+
+  minor <- NULL
+  if (!is.null(minor_unit)) {
+    minor <- generate_calendar_sequence(
+      data_x_min, data_x_max,
+      by = paste("1", minor_unit),
+      unit = minor_unit
+    )
+  }
+
+  list(major = major, minor = minor)
 }
 
 #' Calculate Date Breaks for X-Axis
 #'
-#' Computes optimal break points for temporal x-axes based on data range
-#' and interval type. Applies multipliers for dense data to keep <=15 breaks.
+#' Computes optimal break points for temporal x-axes. When `format_config`
+#' carries a `break_unit` of "month" the breaks are anchored to calendar
+#' month starts; otherwise breaks step through the interval's own unit with
+#' a multiplier that keeps the count at or below [BFH_MAX_DATE_BREAKS].
+#'
+#' Breaks are trimmed to the observed span in both directions and no break
+#' is forced at `data_x_min`, so an axis never carries an off-grid label or
+#' an empty label past the last observation.
 #'
 #' @param data_x_min POSIXct minimum x value
 #' @param data_x_max POSIXct maximum x value
@@ -181,6 +291,32 @@ calculate_date_breaks <- function(data_x_min, data_x_max, interval_type,
   timespan_secs <- as.numeric(difftime(data_x_max, data_x_min, units = "secs"))
   potential_breaks <- timespan_secs / base_interval_secs
   mult <- calculate_interval_multiplier(potential_breaks, interval_type)
+
+  # Calendar-anchored path: daily/weekly series past the label cap, plus
+  # every monthly series. Label cadence is derived from how many anchor
+  # units the span holds, so dense spans thin to quarterly/half-yearly
+  # labels rather than drifting off the calendar.
+  anchor_unit <- format_config$break_unit
+  if (identical(anchor_unit, "month") || identical(anchor_unit, "week")) {
+    span_secs <- potential_breaks * base_interval_secs
+    units_in_span <- if (identical(anchor_unit, "month")) {
+      span_secs / (30 * 86400)
+    } else {
+      span_secs / 604800
+    }
+    label_mult <- calculate_interval_multiplier(
+      units_in_span,
+      if (identical(anchor_unit, "month")) "monthly" else "weekly"
+    )
+
+    anchored <- calculate_anchored_breaks(
+      data_x_min, data_x_max,
+      label_multiplier = label_mult,
+      minor_unit = format_config$minor_break_unit,
+      major_unit = anchor_unit
+    )
+    return(anchored$major)
+  }
 
   # Interval size as difftime
   interval_size <- as.difftime(base_interval_secs * mult, units = "secs")
@@ -214,14 +350,62 @@ calculate_date_breaks <- function(data_x_min, data_x_max, interval_type,
     )
   }
 
-  # Filter to data range and ensure first break exists
-  breaks_posix <- breaks_posix[breaks_posix >= data_x_min]
-  if (length(breaks_posix) == 0 || breaks_posix[1] != data_x_min) {
-    breaks_posix <- unique(c(data_x_min, breaks_posix))
-  }
+  # Trim to the observed span at both ends. No break is forced at
+  # data_x_min: an off-grid first label breaks the rhythm of the grid, and
+  # label_date_short() still shows the year on the first visible label.
+  breaks_posix <- breaks_posix[
+    breaks_posix >= data_x_min & breaks_posix <= data_x_max
+  ]
 
   # Ensure POSIXct
   as.POSIXct(breaks_posix)
+}
+
+#' Calculate Minor Tick Breaks
+#'
+#' Returns the unlabelled tick positions for a temporal axis, or NULL when
+#' the format config asks for none.
+#'
+#' @param data_x_min POSIXct minimum x value
+#' @param data_x_max POSIXct maximum x value
+#' @param format_config List from get_optimal_formatting()
+#' @return POSIXct vector, or NULL
+#' @keywords internal
+#' @noRd
+calculate_minor_breaks <- function(data_x_min, data_x_max, format_config) {
+  minor_unit <- format_config$minor_break_unit
+  if (is.null(minor_unit)) {
+    return(NULL)
+  }
+
+  minor <- generate_calendar_sequence(
+    data_x_min, data_x_max,
+    by = paste("1", minor_unit),
+    unit = minor_unit
+  )
+
+  if (length(minor) == 0) NULL else minor
+}
+
+#' Does a Plot Carry Explicit Minor X Breaks?
+#'
+#' @param plot ggplot object
+#' @return Logical
+#' @keywords internal
+#' @noRd
+has_x_minor_breaks <- function(plot) {
+  if (!inherits(plot, "gg") || is.null(plot$scales)) {
+    return(FALSE)
+  }
+  x_scales <- Filter(
+    function(s) "x" %in% s$aesthetics,
+    plot$scales$scales
+  )
+  if (length(x_scales) == 0) {
+    return(FALSE)
+  }
+  minor <- x_scales[[length(x_scales)]]$minor_breaks
+  !is.null(minor) && !inherits(minor, "waiver") && length(minor) > 0
 }
 
 #' Apply Temporal X-Axis Formatting
@@ -261,20 +445,56 @@ apply_temporal_x_axis <- function(plot, x_col, data_x_min, data_x_max,
       interval_info$type, format_config
     )
 
+    # Unlabelled ticks on the finer calendar boundary. They keep a
+    # month-labelled axis countable at week resolution without adding text.
+    #
+    # NB: these are currently computed but not visible. BFHtheme::theme_bfh()
+    # sets axis.ticks = element_blank(), and minor ticks inherit that
+    # blanking, so rendering them requires a BFHtheme decision rather than a
+    # local override here. The breaks are attached to the scale so they start
+    # rendering as soon as the theme supports them.
+    minor_breaks <- calculate_minor_breaks(
+      data_x_min, data_x_max, format_config
+    )
+    minor_args <- if (is.null(minor_breaks)) {
+      list()
+    } else {
+      list(
+        minor_breaks = minor_breaks,
+        guide = ggplot2::guide_axis(minor.ticks = TRUE)
+      )
+    }
+
     if (!is.null(breaks_posix)) {
       # Apply scale with calculated breaks
       if (!is.null(format_config$use_smart_labels) && format_config$use_smart_labels) {
-        plot <- plot + BFHtheme::scale_x_datetime_bfh(
-          expand = ggplot2::expansion(mult = c(0.025, 0)),
-          labels = format_config$labels,
-          breaks = breaks_posix
+        plot <- plot + do.call(
+          BFHtheme::scale_x_datetime_bfh,
+          c(
+            list(
+              expand = ggplot2::expansion(mult = c(0.025, 0)),
+              labels = format_config$labels,
+              breaks = breaks_posix
+            ),
+            minor_args
+          )
         )
       } else {
-        plot <- plot + BFHtheme::scale_x_datetime_bfh(
-          labels = format_config$labels,
-          breaks = breaks_posix
+        plot <- plot + do.call(
+          BFHtheme::scale_x_datetime_bfh,
+          c(
+            list(
+              labels = format_config$labels,
+              breaks = breaks_posix
+            ),
+            minor_args
+          )
         )
       }
+
+      # NB: the theme override for minor tick length is NOT applied here.
+      # A complete theme (BFHtheme::theme_bfh) is added downstream and would
+      # reset it; apply_spc_theme() re-applies it after the theme instead.
       return(plot)
     }
   }

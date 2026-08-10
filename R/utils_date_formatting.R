@@ -121,7 +121,10 @@ detect_date_interval <- function(dates, debug = FALSE) {
 #' @return List with formatting configuration:
 #' \describe{
 #'   \item{labels}{Date format string or scales label function}
-#'   \item{breaks}{Break specification for scale}
+#'   \item{break_unit}{Calendar unit driving major breaks: "day", "week"
+#'     or "month". Consumed by calculate_date_breaks()}
+#'   \item{minor_break_unit}{Calendar unit for unlabelled minor ticks, or
+#'     NULL when the axis carries no minor ticks}
 #'   \item{n_breaks}{Number of breaks}
 #'   \item{use_smart_labels}{Logical, use scales::label_date_short()}
 #' }
@@ -139,54 +142,63 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
   n_obs <- interval_info$n_obs
   timespan_days <- interval_info$timespan_days
 
+  # Month-anchored config shared by dense daily and weekly series. Once
+  # labels need thinning, per-unit breaks drift off the calendar (e.g. a
+  # 4-week step lands on arbitrary days of the month), so both types switch
+  # to month starts with unlabelled weekly ticks.
+  month_anchored_config <- list(
+    use_smart_labels = TRUE,
+    labels = scales::label_date_short(format = c("%Y", "%b", "", "")),
+    break_unit = "month",
+    minor_break_unit = "week",
+    n_breaks = 12
+  )
+
   # Formatering matrix baseret paa interval type og antal observationer
   config <- switch(interval_type,
     daily = {
-      if (n_obs < 30) {
-        # Short daily: Show days with month context
+      if (timespan_days <= BFH_MAX_DATE_BREAKS) {
+        # Short daily: every day can carry its own label
         list(
           use_smart_labels = TRUE,
           labels = scales::label_date_short(format = c("%Y", "%b", "%d", "")),
-          breaks = "1 week",
+          break_unit = "day",
+          minor_break_unit = NULL,
           n_breaks = 8
         )
-      } else if (n_obs < 90) {
-        # Medium daily: Emphasize months
+      } else if (timespan_days / 7 <= BFH_MAX_DATE_BREAKS) {
+        # Medium daily: a span of a few weeks holds too few month starts to
+        # label (30 days can contain just one), so anchor on week starts and
+        # keep day-level ticks.
         list(
           use_smart_labels = TRUE,
-          labels = scales::label_date_short(format = c("%Y", "%b", "", "")),
-          breaks = "2 weeks",
-          n_breaks = 10
-        )
-      } else {
-        # Long daily: Monthly breaks
-        list(
-          use_smart_labels = TRUE,
-          labels = scales::label_date_short(format = c("%Y", "%b", "", "")),
-          breaks = "1 month",
+          labels = scales::label_date_short(format = c("%Y", "%b", "%d", "")),
+          break_unit = "week",
+          minor_break_unit = "day",
           n_breaks = 12
         )
+      } else {
+        month_anchored_config
       }
     },
     weekly = {
-      if (n_obs <= 36) {
+      if (timespan_days / 7 <= BFH_MAX_DATE_BREAKS) {
         # Intelligent uge-formatering med scales::label_date_short()
         list(
           use_smart_labels = TRUE,
           labels = scales::label_date_short(),
+          break_unit = "week",
+          minor_break_unit = NULL,
           n_breaks = min(n_obs, 24)
         )
       } else {
-        # For mange uger - skift til maanedlig visning
-        list(
-          use_smart_labels = TRUE,
-          labels = scales::label_date_short(format = c("%Y", "%b", "", "")),
-          breaks = "1 month",
-          n_breaks = 12
-        )
+        month_anchored_config
       }
     },
     monthly = {
+      # Monthly series are already calendar-anchored; only break_unit is
+      # added so the contract is explicit. Label cadence keeps coming from
+      # calculate_interval_multiplier().
       if (n_obs < 12) {
         # Intelligent maaneds-formatering med scales::label_date_short()
         list(
@@ -195,14 +207,16 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
             format = c("%Y", "%b", "", ""), # \u00c5r f\u00f8rst, s\u00e5 m\u00e5neder
             sep = "\n"
           ),
-          breaks = "1 month",
+          break_unit = "month",
+          minor_break_unit = NULL,
           n_breaks = n_obs
         )
       } else if (n_obs < 40) {
         list(
           use_smart_labels = TRUE,
           labels = scales::label_date_short(),
-          breaks = "3 months",
+          break_unit = "month",
+          minor_break_unit = NULL,
           n_breaks = 8
         )
       } else {
@@ -212,7 +226,8 @@ get_optimal_formatting <- function(interval_info, debug = FALSE) {
           labels = scales::label_date_short(
             format = c("%Y", "%b", "", "")
           ),
-          breaks = "6 months",
+          break_unit = "month",
+          minor_break_unit = NULL,
           n_breaks = 10
         )
       }
