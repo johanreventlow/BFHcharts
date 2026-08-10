@@ -202,10 +202,16 @@ Ansvarsdelingen deler sig i to spoergsmaal med hver sin ejer:
 | Spoergsmaal | Ejer | Hvorfor |
 | ----------- | ---- | ------- |
 | **Om** ticks vises paa et givet chart | BFHcharts | Datadrevet: kun naar aksen er kalenderankret og har en finere enhed under (uger under maanedslabels, dage under ugelabels). Et tema er statisk og kender ikke interval-typen |
-| **Hvordan** de ser ud | BFHtheme | Visuelt udtryk. `minor_tick_theme()` afleder farve + linewidth fra temaets eget tick-element i stedet for at hardcode |
+| **Hvordan** de ser ud | BFHtheme | Visuelt udtryk: farve, bredde, laengde og retning. Sat i `theme_bfh()` fra v0.5.5 (BFHtheme#81) |
 
 Betingelsen findes allerede som `format_config$minor_break_unit`, saa
 aktiveringen kraever ingen ny parameter — og ingen brugervalg.
+
+*Endelig implementering (2026-08-10):* BFHcharts har **ingen** lokal
+styling-override. `minor_tick_theme()` er fjernet helt; `theme_bfh()`
+saetter `axis.ticks.x.bottom` (udad, 0.15cm) og
+`axis.minor.ticks.x.bottom` (indad, -0.10cm). Et restyle i designsystemet
+slaar dermed igennem uden aendring her. Kraever `BFHtheme (>= 0.5.5)`.
 
 *Fejl i den forrige revision (rettet):* den paastod at minor ticks ikke
 kunne renderes uden at overskrive designsystemet. Det byggede paa en **fejl
@@ -220,18 +226,50 @@ minor ticks arver det. Men `axis.minor.ticks.x.bottom` kan saettes eksplicit
 `lemon::coord_capped_cart()`. Maalt: 37 uge-maerker paa PDF-casen, 0 paa
 maanedsdata.
 
-**Beslutning:** `apply_spc_theme()` tilfoejer `minor_tick_theme(plot)` efter
-`theme_bfh()`. No-op naar aksen ikke baerer minor breaks, saa monthly-charts
-og korte serier forbliver tick-frie jf. BFHtheme's udtryk.
+**Beslutning:** BFHcharts leverer `minor_breaks` +
+`guide_axis(minor.ticks = TRUE)` paa scalen; `theme_bfh()` staar for al
+styling. Monthly-charts og korte serier forbliver tick-frie, fordi de slet
+ikke faar minor breaks.
 
-*Note om BFHtheme#80:* issuet er stadig relevant — men som et
-**styling**-spoergsmaal (hvilke tokens er de rigtige at afledde fra), ikke
-som en blokering. Verificeret i v0.5.4-kilden at y-aksen har aktive ticks
-(`R/themes.R:106-107`), saa "ingen ticks" gaelder specifikt x-aksen.
+*BFHtheme#80 loest i #81:* `axis.minor.ticks.x.bottom` var slet ikke sat i
+temaet og arvede derfor `element_blank()` fra `axis.ticks.x` — minor ticks
+var altsaa slaaet fra som en sideeffekt af arv, ikke ved et bevidst valg
+(ggplot2 fik foerst minor ticks i 3.5, feb. 2024). Y-aksen har aktive ticks
+(`R/themes.R:106-107`), saa "ingen ticks" gjaldt specifikt x-aksen.
 
 *Alternativ forkastet:* `bfh_qic(x_minor_ticks = TRUE)` som opt-in — unoedigt,
 da betingelsen er datadrevet og allerede beregnet. Ville tilfoeje en parameter
 til et API hvis pointe er at man kun skal laere `bfh_qic()`.
+
+### D11: Ugenumre annoterer minor-gridet, ikke en anden akse
+
+Paa maanedsforankrede uge-akser vises ISO-ugenumre over maanedslabelsene.
+De tegnes som et `geom_text`-lag inde i panelet, ikke som en akse.
+
+*Hvorfor ikke en akse:* ggplot2 kan ikke labele minor breaks —
+`guide_axis()` har hverken `key`- eller `labels`-parameter (verificeret i
+4.0.3). De tre alternativer blev afproevet og maalt:
+
+| Metode | Resultat |
+| ------ | -------- |
+| `sec.axis` + `dup_axis()` | Labels havner **over** panelet; `position = "bottom"` ignoreres |
+| `ggh4x::guide_axis_nested()` | Virker kun paa diskrete akser (1 tekstraekke paa datetime) og er **deprecated** i 0.3.0 til fordel for `legendry` |
+| `guide_axis_stack()` | Giver 2 tekstraekker, men begge lag deler skalaens labels — intet API til at give lag 2 sit eget saet |
+
+En diskret akse ville desuden bryde kalenderforankringen, korrekt afstand
+ved manglende uger, og dato-baseret placering af `target`/`freeze`/`part`.
+
+*Label-taethed:* adaptivt step fra `c(1, 2, 4, 8, 13)` uger, valgt saa
+antallet lander naer `BFH_TARGET_WEEK_LABELS = 10`. Maalt: 17 uger → hver
+2., 37 uger → hver 4., 104 uger → hver 13.
+
+*Startpunkt:* sekvensen begynder ved **andet** tick. Det foerste ligger
+klods op ad venstre panelkant, hvor `UGE`-praefikset blev klippet og en
+enlig label saa tilfaeldig ud. Koster een label.
+
+*Aarsskifte:* ugenummeret er en etikette paa en datoposition, aldrig en
+sorteringsnoegle. 2025-12-29 er ISO-uge 01 i ISO-aar 2026, men beholder sin
+kalenderplads i december. Daekket af test.
 
 ### D7: Daily-serier faar en tre-trins kalenderankring
 

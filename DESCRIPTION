@@ -22,7 +22,7 @@ BugReports: https://github.com/johanreventlow/BFHcharts/issues
 Depends:
     R (>= 4.1.0)
 Imports:
-    BFHtheme (>= 0.5.1),
+    BFHtheme (>= 0.5.5),
     ggplot2 (>= 3.5.0),
     qicharts2 (>= 0.7.0),
     scales (>= 1.2.0),
@@ -54,7 +54,7 @@ Suggests:
     rmarkdown
 VignetteBuilder: knitr
 Remotes:
-    johanreventlow/BFHtheme@v0.5.2,
+    johanreventlow/BFHtheme@v0.5.5,
     johanreventlow/BFHllm@v0.2.0,
     anhoej/pbcharts@d37a8ec1864528ece1f5cd60ac152d06c013515f
 Config/testthat/edition: 3
