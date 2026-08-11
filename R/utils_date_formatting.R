@@ -330,6 +330,66 @@ format_danish_date_short <- function(date) {
   paste(month_abbr, year)
 }
 
+#' Format a Period Endpoint at the Data's Own Granularity
+#'
+#' Renders one end of the period line so it describes the data as precisely
+#' as the data allows. Month + year on a weekly series hides which weeks are
+#' covered; a bare year on daily data hides everything below it.
+#'
+#' | Interval  | Example        |
+#' | --------- | -------------- |
+#' | daily     | `1. dec. 2025` |
+#' | weekly    | `UGE 49, 2025` |
+#' | monthly   | `dec. 2025`    |
+#' | quarterly | `K4 2025`      |
+#' | yearly    | `2025`         |
+#'
+#' Week numbers are paired with the **ISO year**, not the calendar year:
+#' 2025-12-29 is week 01 of ISO year 2026, and reporting it as "week 01,
+#' 2025" would place it a year off.
+#'
+#' Unknown or irregular intervals fall back to month + year, which carries
+#' no assumption about a finer unit.
+#'
+#' @param date Date or POSIXt scalar
+#' @param interval_type Character from [detect_date_interval()]
+#' @param language Character language code
+#' @return Character scalar, or `NA_character_` for unusable input
+#' @keywords internal
+#' @noRd
+format_period_endpoint <- function(date, interval_type, language = "da") {
+  if (is.null(date) || length(date) == 0 || all(is.na(date))) {
+    return(NA_character_)
+  }
+  date <- as.Date(date)
+
+  switch(interval_type,
+    "daily" = sprintf(
+      "%d. %s %s",
+      as.integer(format(date, "%d")),
+      .danish_months[as.integer(format(date, "%m"))],
+      format(date, "%Y")
+    ),
+    "weekly" = sprintf(
+      "%s %s, %s",
+      i18n_lookup("labels.details.periode_uge", language),
+      strftime(date, "%V"),
+      # %G is the ISO week-numbering year, which diverges from %Y around
+      # the turn of the year -- exactly where the distinction matters.
+      strftime(date, "%G")
+    ),
+    "quarterly" = sprintf(
+      "%s%d %s",
+      i18n_lookup("labels.details.periode_kvartal", language),
+      (as.integer(format(date, "%m")) - 1L) %/% 3L + 1L,
+      format(date, "%Y")
+    ),
+    "yearly" = format(date, "%Y"),
+    # monthly, irregular, insufficient_data
+    format_danish_date_short(date)
+  )
+}
+
 #' Get Danish Interval Label
 #'
 #' Returns the Danish label for a detected interval type.

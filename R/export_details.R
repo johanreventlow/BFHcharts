@@ -99,8 +99,15 @@ bfh_generate_details <- function(x, language = "da", x_labels = NULL) {
   } else {
     interval_info <- detect_date_interval(qic_data$x)
     interval_label <- get_danish_interval_label(interval_info$type, language)
-    start_date <- format_danish_date_short(min(qic_data$x, na.rm = TRUE))
-    end_date <- format_danish_date_short(max(qic_data$x, na.rm = TRUE))
+    # Periodelinjen foelger datas egen granularitet: ugedata angives i
+    # ugenumre, dagsdata i fulde datoer. Maaned + aar paa ugedata skjuler
+    # hvilke uger der faktisk er daekket.
+    start_date <- format_period_endpoint(
+      min(qic_data$x, na.rm = TRUE), interval_info$type, language
+    )
+    end_date <- format_period_endpoint(
+      max(qic_data$x, na.rm = TRUE), interval_info$type, language
+    )
   }
 
   periode <- sprintf(

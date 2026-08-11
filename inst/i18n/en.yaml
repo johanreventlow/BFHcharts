@@ -291,6 +291,10 @@ labels:
 
   details:
     periode: "Period"
+    # Prefixes in the period line. The format follows the granularity of the
+    # data, so weekly series are stated in week numbers rather than months.
+    periode_uge: "WEEK"
+    periode_kvartal: "Q"
     gns: "Avg."
     seneste: "Latest"
     niveau_label: "Current level"
