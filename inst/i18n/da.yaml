@@ -343,6 +343,10 @@ labels:
 
   details:
     periode: "Periode"
+    # Præfikser i periodelinjen. Formatet følger datas granularitet, så
+    # ugedata angives i ugenumre frem for måneder.
+    periode_uge: "UGE"
+    periode_kvartal: "K"
     gns: "Gns."
     seneste: "Seneste"
     niveau_label: "Nuværende niveau"
