@@ -449,3 +449,100 @@ test_that("BFH_MAX_X_LABELS_TEXT er eksporteret og har default 12", {
   expect_equal(BFH_MAX_X_LABELS_TEXT, 12L)
   expect_true(is.integer(BFH_MAX_X_LABELS_TEXT))
 })
+
+# ============================================================================
+# Interval-aware period formatting
+# ============================================================================
+#
+# The period line should describe the data at the granularity the data
+# actually has. Month+year on weekly data hides which weeks are covered.
+
+test_that("weekly data reports the period in week numbers", {
+  dates <- seq(as.Date("2025-12-01"), by = "week", length.out = 37)
+
+  start <- format_period_endpoint(min(dates), "weekly", "da")
+  end <- format_period_endpoint(max(dates), "weekly", "da")
+
+  expect_match(start, "^UGE [0-9]{2}, [0-9]{4}$")
+  expect_match(end, "^UGE [0-9]{2}, [0-9]{4}$")
+  # 2025-12-01 is ISO week 49 of 2025
+  expect_equal(start, "UGE 49, 2025")
+})
+
+test_that("week periods use the ISO year, not the calendar year", {
+  # 2025-12-29 is ISO week 01 of ISO year 2026 despite falling in December.
+  # Pairing week 01 with 2025 would be wrong.
+  result <- format_period_endpoint(as.Date("2025-12-29"), "weekly", "da")
+
+  expect_equal(result, "UGE 01, 2026")
+})
+
+test_that("daily data reports full dates", {
+  start <- format_period_endpoint(as.Date("2025-12-01"), "daily", "da")
+  end <- format_period_endpoint(as.Date("2026-08-09"), "daily", "da")
+
+  expect_equal(start, "1. dec. 2025")
+  expect_equal(end, "9. aug. 2026")
+})
+
+test_that("quarterly data reports quarters", {
+  expect_equal(
+    format_period_endpoint(as.Date("2025-11-15"), "quarterly", "da"),
+    "K4 2025"
+  )
+  expect_equal(
+    format_period_endpoint(as.Date("2026-01-05"), "quarterly", "da"),
+    "K1 2026"
+  )
+})
+
+test_that("yearly data reports bare years", {
+  expect_equal(
+    format_period_endpoint(as.Date("2025-06-15"), "yearly", "da"), "2025"
+  )
+})
+
+test_that("monthly and unknown intervals keep month + year", {
+  expect_equal(
+    format_period_endpoint(as.Date("2025-12-01"), "monthly", "da"),
+    "dec. 2025"
+  )
+  # Irregular data has no meaningful finer unit to report
+  expect_equal(
+    format_period_endpoint(as.Date("2025-12-01"), "irregular", "da"),
+    "dec. 2025"
+  )
+})
+
+test_that("period endpoints are localised", {
+  expect_match(
+    format_period_endpoint(as.Date("2025-12-01"), "weekly", "en"),
+    "^WEEK 49, 2025$"
+  )
+  expect_equal(
+    format_period_endpoint(as.Date("2025-11-15"), "quarterly", "en"),
+    "Q4 2025"
+  )
+})
+
+test_that("degenerate input yields NA rather than an error", {
+  expect_true(is.na(format_period_endpoint(NA, "weekly", "da")))
+  expect_true(is.na(format_period_endpoint(NULL, "weekly", "da")))
+})
+
+test_that("details line reports weekly data in week numbers end to end", {
+  data <- data.frame(
+    dato = seq(as.Date("2025-12-01"), by = "week", length.out = 37),
+    taeller = rep(c(78, 79, 77), length.out = 37),
+    naevner = 100
+  )
+  result <- bfh_qic(data,
+    x = dato, y = taeller, n = naevner,
+    chart_type = "p", y_axis_unit = "percent"
+  )
+
+  details <- bfh_generate_details(result)
+
+  expect_match(details, "UGE 49, 2025")
+  expect_false(grepl("dec. 2025", details, fixed = TRUE))
+})

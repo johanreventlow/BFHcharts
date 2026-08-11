@@ -2,6 +2,23 @@
 
 ## Nye features
 
+* **Periodelinjen følger nu datas granularitet.** Tidligere blev perioden
+  altid angivet i måned + år, uanset hvor præcise data var. På et ugekort
+  betød det, at `PERIODE: DEC. 2025 – AUG. 2026` skjulte hvilke uger der
+  faktisk indgik. Nu vises:
+
+  | Data | Periode |
+  | --- | --- |
+  | Uge | `UGE 49, 2025 – UGE 33, 2026` |
+  | Dag | `1. dec. 2025 – 9. aug. 2026` |
+  | Måned | `dec. 2025 – aug. 2026` (uændret) |
+  | Kvartal | `K4 2025 – K3 2026` |
+  | År | `2025 – 2026` |
+
+  Ugenumre parres med ISO-året, ikke kalenderåret: 29. dec. 2025 er uge 01
+  i ISO-år 2026, og at rapportere den som "uge 01, 2025" ville placere den
+  et år forkert.
+
 * **Kalenderforankret x-akse for dags- og ugedata.** Lange serier fik
   tidligere labels på vilkårlige datoer (fx `01 dec, 28 dec, 25 jan, 22 feb`
   på et 37-ugers kort), fordi breaks blev beregnet som multipla af
