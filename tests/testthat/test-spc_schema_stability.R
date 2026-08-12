@@ -183,10 +183,10 @@ test_that("Phase 99.4: slice-aktiveringer bryder ej top-level schema", {
   a2 <- bfh_analyse(res2, metadata = list(analysis_date = as.Date("2026-05-18")))
   expect_setequal(intersect(names(a2), required_top_level), required_top_level)
 
-  # 3. Slice 8 (few-obs n=8)
+  # 3. Slice 8 (few-obs n=6 -- under N_WARN; n=8 analyseres nu normalt)
   short_data <- data.frame(
-    date = seq(as.Date("2024-01-01"), by = "month", length.out = 8L),
-    value = c(50, 51, 49, 52, 48, 50, 51, 49)
+    date = seq(as.Date("2024-01-01"), by = "month", length.out = 6L),
+    value = c(50, 51, 49, 52, 48, 50)
   )
   res3 <- bfh_qic(short_data, x = date, y = value, chart_type = "i")
   a3 <- bfh_analyse(res3, metadata = list(analysis_date = as.Date("2026-05-18")))

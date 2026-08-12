@@ -329,9 +329,9 @@ fixture_phase_constant <- function(n = 24L, value = 50) {
 }
 
 
-#' Kort serie (n < N_MIN -> low confidence)
+#' Kort serie (n < N_WARN -> low confidence)
 #' @keywords internal
-fixture_phase_short <- function(seed = 992L, n = 8L) {
+fixture_phase_short <- function(seed = 992L, n = 6L) {
   withr::with_seed(seed, {
     data.frame(
       date = seq(as.Date("2024-01-01"), by = "month", length.out = n),
