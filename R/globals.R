@@ -223,18 +223,36 @@ BFHCHARTS_OPT_QUARTO_PATH <- "BFHcharts.quarto_path"
 #' @keywords internal
 BFHCHARTS_OPT_ANALYSIS_DATE <- "BFHcharts.analysis_date"
 
-#' Minimum observation count for full Anhoej-evaluability
+#' Recommended observation count for full Anhoej-evaluability
 #'
-#' Below this threshold, `confidence_tier` collapses to `"low"` and the
-#' renderer substitutes the `not_evaluable`-base. Default value follows
-#' Anhoej & Olesen (2014) detection-power analysis: run-detection-power
-#' drops sharply below n = 12.
+#' Statistical recommendation surfaced in analysis prose ("mindst 12,
+#' helst 20 observationer"). Follows Anhoej & Olesen (2014)
+#' detection-power analysis: run-detection-power drops sharply below
+#' n = 12.
+#'
+#' NB: this is the *recommendation*, not the warning gate. Series with
+#' `N_WARN <= n < N_MIN` are analysed normally; only `n < N_WARN`
+#' suppresses the analysis. See `N_WARN`.
 #'
 #' Anhoej J, Olesen AV (2014). Run charts revisited: a simulation study
 #' of run chart rules for detection of non-random variation in health
 #' care processes. PLoS One. 9(11):e113825.
 #' @keywords internal
 N_MIN <- 12L
+
+#' Minimum observation count before the series is deemed unevaluable
+#'
+#' Below this threshold, `confidence_tier` collapses to `"low"`, the
+#' renderer substitutes the `not_evaluable`-base, and target+action
+#' arms are suppressed entirely.
+#'
+#' Deliberately lower than `N_MIN`: n in [N_WARN, N_MIN) yields a
+#' weaker-but-usable analysis, and suppressing it withheld a useful
+#' assessment from users who had enough data to act on. The 12/20
+#' recommendation is retained in the `few_obs`-prose that fires below
+#' `N_WARN`.
+#' @keywords internal
+N_WARN <- 8L
 
 #' Low-confidence reason enum
 #'

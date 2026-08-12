@@ -1,20 +1,25 @@
 # Tests: Slice 8 INCLUDE -- Few-obs / not-evaluable override
 #
 # Refs: openspec change restructure-spc-analysis-architecture, Slice 8
+#
+# NB: gaten er N_WARN (8), ej N_MIN (12). Fixtures er opdateret fra
+# n=8/n=11 til n=6/n=7 saa de fortsat ligger UNDER traersklen. Serier
+# med 8-11 observationer analyseres nu normalt -- se
+# test-few-obs-warning-threshold.R.
 
 set.seed(808L)
 TEST_DATA_SHORT <- data.frame(
-  date = seq(as.Date("2024-01-01"), by = "month", length.out = 8L),
-  value = round(rnorm(8L, 50, 5), 1)
+  date = seq(as.Date("2024-01-01"), by = "month", length.out = 6L),
+  value = round(rnorm(6L, 50, 5), 1)
 )
 
 TEST_DATA_MIN <- data.frame(
-  date = seq(as.Date("2024-01-01"), by = "month", length.out = 11L),
-  value = round(rnorm(11L, 50, 5), 1)
+  date = seq(as.Date("2024-01-01"), by = "month", length.out = 7L),
+  value = round(rnorm(7L, 50, 5), 1)
 )
 
 
-test_that("Slice 8: n < N_MIN udloeser confidence_tier=low + stability_pattern=not_evaluable", {
+test_that("Slice 8: n < N_WARN udloeser confidence_tier=low + stability_pattern=not_evaluable", {
   res <- bfh_qic(TEST_DATA_SHORT, x = date, y = value, chart_type = "i")
   analysis <- bfh_analyse(res,
     metadata = list(analysis_date = as.Date("2026-05-18"))
@@ -65,7 +70,7 @@ test_that("Slice 8: low-confidence skipper target+action arms", {
 })
 
 
-test_that("Slice 8: n = 11 (lige under N_MIN) udloeser low-tier", {
+test_that("Slice 8: n = 7 (lige under N_WARN) udloeser low-tier", {
   res <- bfh_qic(TEST_DATA_MIN, x = date, y = value, chart_type = "i")
   analysis <- bfh_analyse(res,
     metadata = list(analysis_date = as.Date("2026-05-18"))
@@ -75,13 +80,13 @@ test_that("Slice 8: n = 11 (lige under N_MIN) udloeser low-tier", {
 })
 
 
-test_that("Slice 8: n >= N_MIN er IKKE low-tier", {
+test_that("Slice 8: n >= N_WARN er IKKE low-tier", {
   set.seed(810L)
-  data_12 <- data.frame(
-    date = seq(as.Date("2024-01-01"), by = "month", length.out = 12L),
-    value = round(rnorm(12L, 50, 5), 1)
+  data_8 <- data.frame(
+    date = seq(as.Date("2024-01-01"), by = "month", length.out = 8L),
+    value = round(rnorm(8L, 50, 5), 1)
   )
-  res <- bfh_qic(data_12, x = date, y = value, chart_type = "i")
+  res <- bfh_qic(data_8, x = date, y = value, chart_type = "i")
   analysis <- bfh_analyse(res,
     metadata = list(analysis_date = as.Date("2026-05-18"))
   )

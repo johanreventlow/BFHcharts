@@ -16,7 +16,9 @@ make_stable_data <- function(n = 24) {
 set.seed(42L)
 TEST_DATA_N24 <- make_stable_data(24L)
 set.seed(43L)
-TEST_DATA_N8 <- make_stable_data(8L)
+# n=6: under N_WARN (8) -- low-confidence-gaten. Tidligere n=8, men
+# 8-11 observationer analyseres nu normalt.
+TEST_DATA_N6 <- make_stable_data(6L)
 set.seed(44L)
 TEST_DATA_N15 <- make_stable_data(15L)
 
@@ -100,13 +102,13 @@ test_that("aux indeholder obligatoriske felter inkl. analysis_date", {
 # Chart-type-aware confidence_tier (spec ADDED requirement)
 # ==========================================================================
 
-test_that("confidence_tier = 'low' for n < N_MIN (12)", {
-  result <- make_fixture_result(data = TEST_DATA_N8, chart_type = "i")
+test_that("confidence_tier = 'low' for n < N_WARN (8)", {
+  result <- make_fixture_result(data = TEST_DATA_N6, chart_type = "i")
   features <- BFHcharts:::bfh_extract_spc_features(result)
   expect_equal(features$features$confidence_tier, "low")
 })
 
-test_that("confidence_tier = 'medium' for n in [12, 19]", {
+test_that("confidence_tier = 'medium' for n in [N_WARN, 19]", {
   result <- make_fixture_result(data = TEST_DATA_N15, chart_type = "i")
   features <- BFHcharts:::bfh_extract_spc_features(result)
   expect_equal(features$features$confidence_tier, "medium")

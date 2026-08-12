@@ -1,3 +1,32 @@
+# BFHcharts 0.27.1
+
+## Bug fixes
+
+* **Afdelinger der præsterer over målet får ikke længere en tekst, der
+  lyder som en bebrejdelse.** Når et udviklingsmål angives som et bart tal
+  (fx `target_value = 0.85`) kender analysen afvigelsens retning, men ikke
+  om den er ønskværdig — `85%` kan både være et minimum og et loft. Den
+  værdineutrale gren formulerede sig alligevel normativt: en stabil proces
+  på 89% mod et mål på 85% fik "Uden en målrettet indsats vil den nuværende
+  praksis fortsætte med at levere det samme resultat", samtidig med at
+  målafsnittet korrekt konstaterede, at niveauet lå *over* målet. De to
+  udsagn modsagde hinanden i samme afsnit.
+
+  Teksten rapporterer nu retningen og overlader vurderingen til læseren:
+  "Niveauet ligger stabilt over målet. Vurdér, om det er tilfredsstillende."
+  Angives målet med operator (`target_text = "≥ 85%"`) kender analysen
+  retningen og giver som hidtil den skarpe formulering "Det nuværende niveau
+  opfylder udviklingsmålet".
+
+* **Serier med 8-11 observationer analyseres nu normalt.** Grænsen for
+  "for kort serie til vurdering" var bundet til den statistiske anbefaling
+  om mindst 12 observationer. Konsekvensen var, at en serie med fx 9
+  observationer fik advarslen i stedet for en analyse — både mål- og
+  handlingsafsnittet blev undertrykt — selv om datagrundlaget var
+  tilstrækkeligt til at handle på. Advarslen fyrer nu først under 8
+  observationer. Anbefalingen om mindst 12, helst 20 observationer er
+  uændret i advarslens tekst.
+
 # BFHcharts 0.27.0
 
 ## Nye features

@@ -24,7 +24,7 @@
     Code
       cat(text)
     Output
-      Med kun 8 observationer kan processen ikke vurderes pålideligt med statistisk proceskontrol. Det anbefales at have mindst 12, helst 20 observationer.
+      Med kun 6 observationer kan processen ikke vurderes pålideligt med statistisk proceskontrol. Det anbefales at have mindst 12, helst 20 observationer.
 
 # golden: shifted data (runs_only signal)
 

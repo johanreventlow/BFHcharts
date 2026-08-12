@@ -190,9 +190,13 @@ analysis:
       standard: "Continue current practice and monitor the process on an ongoing basis."
       detailed: "Continue current practice and monitor the process on an ongoing basis to maintain the current level."
     stable_not_at_target:
-      short: "A targeted effort is needed to reach the goal."
-      standard: "The process is stable but does not meet the target. A targeted effort is required to shift the level."
-      detailed: "The process is stable but does not meet the target. Without a targeted effort, current practice will continue to deliver the same level."
+      # Value-neutral branch (target without operator): the direction of the
+      # deviation is known, but not whether it is desirable. The text must
+      # therefore assert neither goal attainment nor goal failure -- it reports
+      # the direction and lets the reader judge the level.
+      short: "Assess whether the current level is satisfactory."
+      standard: "The process is stable, holding {level_direction} the target. Assess whether this is satisfactory."
+      detailed: "The process is stable, holding {level_direction} the target. Assess whether this is satisfactory - otherwise current practice will continue to deliver the same level."
     stable_no_target:
       short: "Consider setting a target for the indicator."
       standard: "Consider setting a target for the indicator so the level can be assessed."
