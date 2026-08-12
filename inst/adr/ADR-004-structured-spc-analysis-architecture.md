@@ -54,7 +54,7 @@ uændret public-signatur — internt delegerer til ny pipeline.
 ### Composition-cascade (kanonisk prioritets-rækkefølge)
 
 1. **Blocking caveats** (erstatter base):
-   - `not_evaluable` (n < N_MIN) eller manglende centerline/sigma
+   - `not_evaluable` (n < N_WARN) eller manglende centerline/sigma
    - `no_variation` (konstant data) — overrider low-confidence
    - `discrete_scale = extreme` (majority_at_centerline)
 2. **Base sentence** (stability_pattern, 10 værdier)
@@ -91,11 +91,19 @@ ville fejlmarkere 24-punkt run-charts som not_evaluable.
 Korrekt regel (R/spc_features.R `.compute_confidence_tier`):
 
 ```
-low:    n_points < N_MIN (12) OR ingen centerline OR
+low:    n_points < N_WARN (8) OR ingen centerline OR
         BÅDE sigma_hat OG sigma_data er NA/zero
-medium: n_points in [12, 19] AND finite spread-estimat
+medium: n_points in [8, 19] AND finite spread-estimat
 high:   n_points >= 20 AND finite spread-estimat
 ```
+
+**N_WARN (8) vs N_MIN (12):** gaten var oprindeligt bundet til N_MIN, så
+serier med 8-11 observationer fik `not_evaluable` og dermed hverken
+mål- eller handlingstekst. Det tilbageholdt en brugbar — om end svagere
+— vurdering fra brugere med tilstrækkeligt datagrundlag til at handle.
+Konstanterne er derfor adskilt: N_WARN styrer gaten, N_MIN forbliver den
+statistiske anbefaling (Anhøj 2014), som fortsat formidles i
+`few_obs`-prosen under gaten.
 
 Spread-estimat: `sigma_hat` (control-charts) eller `sigma_data` (run-charts).
 

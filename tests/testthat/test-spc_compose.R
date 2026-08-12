@@ -124,10 +124,12 @@ test_that("bfh_analyse(): cl_user_supplied caveat aktiveres af cl=", {
   expect_equal(analysis$caveats$cl_source, "cl_user_supplied")
 })
 
-test_that("bfh_analyse(): n < 12 udloeser confidence=low + stability_pattern=not_evaluable", {
+test_that("bfh_analyse(): n < N_WARN udloeser confidence=low + stability_pattern=not_evaluable", {
+  # n=6: under N_WARN (8). Tidligere n=8, men serier med 8-11
+  # observationer analyseres nu normalt.
   short_data <- data.frame(
-    date = seq(as.Date("2024-01-01"), by = "month", length.out = 8L),
-    value = c(50, 52, 48, 51, 49, 53, 47, 50)
+    date = seq(as.Date("2024-01-01"), by = "month", length.out = 6L),
+    value = c(50, 52, 48, 51, 49, 53)
   )
   result <- bfh_qic(short_data, x = date, y = value, chart_type = "i")
   analysis <- bfh_analyse(result)

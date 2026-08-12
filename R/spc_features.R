@@ -382,8 +382,10 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 .compute_confidence_tier <- function(context, x) {
   n_points <- context$n_points
 
-  # "low" hvis n < N_MIN OR ingen centerline OR ingen spread-estimat.
-  if (is.null(n_points) || is.na(n_points) || n_points < N_MIN ||
+  # "low" hvis n < N_WARN OR ingen centerline OR ingen spread-estimat.
+  # N_WARN (8) ej N_MIN (12): serier med 8-11 observationer analyseres
+  # normalt. 12/20-anbefalingen bevares i few_obs-prosen under N_WARN.
+  if (is.null(n_points) || is.na(n_points) || n_points < N_WARN ||
     !.has_centerline(context$centerline) ||
     !.has_finite_spread(context$sigma_hat, context$sigma_data)) {
     return("low")
@@ -397,7 +399,7 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 
 # Cycle 05 finding #5 fix: low_confidence_reason-akse.
 # Returnerer primaer aarsag til low-confidence:
-#   "few_obs"       -- n < N_MIN
+#   "few_obs"       -- n < N_WARN
 #   "no_centerline" -- centerline NA/non-finite
 #   "no_spread"     -- baade sigma_hat og sigma_data NA/zero
 #   NA_character_   -- confidence_tier != "low"
@@ -408,7 +410,7 @@ bfh_extract_spc_features <- function(x, metadata = list()) {
 # reason saa not_evaluable-prose matcher faktisk aarsag.
 .compute_low_confidence_reason <- function(context) {
   n_points <- context$n_points
-  if (is.null(n_points) || is.na(n_points) || n_points < N_MIN) {
+  if (is.null(n_points) || is.na(n_points) || n_points < N_WARN) {
     return("few_obs")
   }
   if (!.has_centerline(context$centerline)) {

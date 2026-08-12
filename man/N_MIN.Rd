@@ -2,17 +2,21 @@
 % Please edit documentation in R/globals.R
 \name{N_MIN}
 \alias{N_MIN}
-\title{Minimum observation count for full Anhoej-evaluability}
+\title{Recommended observation count for full Anhoej-evaluability}
 \usage{
 N_MIN
 }
 \description{
-Below this threshold, \code{confidence_tier} collapses to \code{"low"} and the
-renderer substitutes the \code{not_evaluable}-base. Default value follows
-Anhoej & Olesen (2014) detection-power analysis: run-detection-power
-drops sharply below n = 12.
+Statistical recommendation surfaced in analysis prose ("mindst 12,
+helst 20 observationer"). Follows Anhoej & Olesen (2014)
+detection-power analysis: run-detection-power drops sharply below
+n = 12.
 }
 \details{
+NB: this is the \emph{recommendation}, not the warning gate. Series with
+\verb{N_WARN <= n < N_MIN} are analysed normally; only \code{n < N_WARN}
+suppresses the analysis. See \code{N_WARN}.
+
 Anhoej J, Olesen AV (2014). Run charts revisited: a simulation study
 of run chart rules for detection of non-random variation in health
 care processes. PLoS One. 9(11):e113825.

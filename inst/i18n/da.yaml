@@ -228,9 +228,13 @@ analysis:
       standard: "Fortsæt med praksis som hidtil, og overvåg processen løbende."
       detailed: "Fortsæt med praksis som hidtil, og hold øje med processen løbende for ikke at tabe det nuværende niveau."
     stable_not_at_target:
-      short: "En målrettet indsats er nødvendig for at nå målet."
-      standard: "Der kræves en målrettet indsats for at flytte niveauet mod målet."
-      detailed: "Uden en målrettet indsats vil den nuværende praksis fortsætte med at levere det samme resultat."
+      # Vaerdineutral gren (target uden operator): retningen af afvigelsen
+      # er kendt, men ikke om den er oenskvaerdig. Teksten maa derfor hverken
+      # paastaa maalopfyldelse eller maalsvigt -- den rapporterer retningen
+      # og lader laeseren vurdere niveauet. Se test-value-neutral-action-text.R.
+      short: "Vurdér, om niveauet er tilfredsstillende."
+      standard: "Niveauet ligger stabilt {level_direction} målet. Vurdér, om det er tilfredsstillende."
+      detailed: "Niveauet ligger stabilt {level_direction} målet. Vurdér, om det er tilfredsstillende - ellers vil nuværende praksis fortsætte med at levere samme resultat."
     stable_no_target:
       short: "Overvej, om et udviklingsmål kan fastsættes."
       standard: "Overvej, om et udviklingsmål kan fastsættes, så det kan vurderes, om niveauet er tilfredsstillende."
