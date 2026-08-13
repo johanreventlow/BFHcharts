@@ -214,6 +214,8 @@ format_centerline_for_details <- function(cl_value, y_axis_unit, language = "da"
         scientific = FALSE
       )
     },
+    # Klokkeslaet: sekunder siden midnat -> "tt:mm"
+    "clock" = format_clock(cl_value),
     {
       if (is_effective_integer(cl_value)) {
         format(

@@ -32,7 +32,8 @@ NULL
 #'   chart degenerates to a classic individuals chart with constant limits.
 #'   \pkg{pbcharts} is an optional dependency; install with
 #'   `remotes::install_github("anhoej/pbcharts")` if not present.
-#' @param y_axis_unit Unit type: "count", "percent", "rate", or "time"
+#' @param y_axis_unit Unit type: "count", "percent", "rate", "time", or
+#'   "clock" (klokkeslaet tt:mm; y-vaerdier i sekunder siden midnat)
 #' @param chart_title Plot title (optional)
 #' @param target_value Numeric target value (optional)
 #' @param target_text Target label text (optional)

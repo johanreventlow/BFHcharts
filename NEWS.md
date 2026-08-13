@@ -1,3 +1,16 @@
+# BFHcharts 0.28.0
+
+## Nye features
+
+* **Ny y-akse-enhed `"clock"` til klokkeslæts-indikatorer.** Indikatorer
+  hvor måleværdien er et tidspunkt på dagen (fx "median knivtidsstart")
+  kunne hidtil kun vises som rå tal ("32,2K") eller misvisende varighed
+  ("8t 57m"). Med `y_axis_unit = "clock"` formateres y-aksen, niveau-label
+  og detalje-eksport som klokkeslæt ("08:15"); input er sekunder siden
+  midnat, og akse-ticks lægges på klokkeslæts-naturlige intervaller via
+  samme algoritme som varigheds-aksen. Første aftager er operationsgangens
+  "første elektive pt: Knivtid-start" i dataportalen.
+
 # BFHcharts 0.27.1
 
 ## Bug fixes

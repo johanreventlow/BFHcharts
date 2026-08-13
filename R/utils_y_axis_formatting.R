@@ -88,11 +88,12 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count",
     count = plot + format_y_axis_count(language = language),
     rate = plot + format_y_axis_rate(language = language),
     time = plot + format_y_axis_time(qic_data),
+    clock = plot + format_y_axis_clock(qic_data),
     {
       # Unknown unit - warn user
       warning(
         sprintf(
-          "Unknown y_axis_unit: '%s'. Valid values are: 'count', 'percent', 'rate', 'time'. No formatting applied.",
+          "Unknown y_axis_unit: '%s'. Valid values are: 'count', 'percent', 'rate', 'time', 'clock'. No formatting applied.",
           y_axis_unit
         ),
         call. = FALSE
@@ -207,6 +208,45 @@ format_y_axis_rate <- function(language = "da") {
       # format_rate() dispatcher er scalar - vektoriser via map_chr for at
       # haandtere ggplot2's vektor-input af breakpoints.
       purrr::map_chr(x, format_rate, language = language)
+    }
+  )
+}
+
+#' Format Y-Axis for Clock Data (Klokkeslaet: "08:15", "09:00")
+#'
+#' Som `format_y_axis_time()`, men for tidspunkt-paa-dagen-data i sekunder
+#' siden midnat. Producerer klokkeslaets-naturlige tick-breaks via
+#' `clock_breaks()` og "tt:mm"-labels via `format_clock()`.
+#'
+#' @param qic_data QIC data frame with y column (seconds since midnight)
+#'
+#' @return ggplot2 scale layer
+#' @keywords internal
+#' @noRd
+format_y_axis_clock <- function(qic_data) {
+  .ensure_bfhtheme()
+  if (is.null(qic_data) || !"y" %in% names(qic_data)) {
+    warning("format_y_axis_clock: missing qic_data or y column, using default")
+    return(BFHtheme::scale_y_continuous_bfh(
+      expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT))
+    ))
+  }
+
+  # Klokkeslaets-naturlige tick-breaks (sekunder siden midnat)
+  breaks <- clock_breaks(qic_data$y)
+
+  BFHtheme::scale_y_continuous_bfh(
+    expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
+    breaks = breaks,
+    labels = function(x, ...) {
+      # Defensiv: ggplot2 kan passere waiver-objekter under layout
+      if (inherits(x, "waiver")) {
+        return(x)
+      }
+      if (!is.numeric(x)) {
+        x <- suppressWarnings(as.numeric(as.character(x)))
+      }
+      format_clock(x)
     }
   )
 }

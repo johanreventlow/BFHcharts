@@ -75,7 +75,7 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02, lang
 #' Understoetter flere enhedstyper: count, percent, rate, time.
 #'
 #' @param val numeric vaerdi at formatere
-#' @param y_unit character enhedstype ("count", "percent", "rate", "time", eller andet)
+#' @param y_unit character enhedstype ("count", "percent", "rate", "time", "clock", eller andet)
 #' @param y_range numeric(2) y-akse range. Legacy-parameter bibeholdt for
 #'   bagudkompatibilitet; ignoreres for `"time"` (komposit-format
 #'   auto-detekterer minutter/timer/dage) og bruges kun som signatur-
@@ -144,6 +144,13 @@ format_y_value <- function(val, y_unit, y_range = NULL, target = NULL, language 
   # minutter/timer/dage via componentopdeling.
   if (y_unit == "time") {
     return(format_time_composite(val))
+  }
+
+  # Clock formatting - klokkeslaet "tt:mm" fra sekunder siden midnat.
+  # Til tidspunkt-paa-dagen-indikatorer hvor varigheds-formatet ville
+  # vaere semantisk forkert.
+  if (y_unit == "clock") {
+    return(format_clock(val))
   }
 
   # Default formatting - locale-aware notation

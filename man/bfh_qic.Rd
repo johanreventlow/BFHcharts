@@ -60,7 +60,8 @@ chart degenerates to a classic individuals chart with constant limits.
 \pkg{pbcharts} is an optional dependency; install with
 \code{remotes::install_github("anhoej/pbcharts")} if not present.}
 
-\item{y_axis_unit}{Unit type: "count", "percent", "rate", or "time"}
+\item{y_axis_unit}{Unit type: "count", "percent", "rate", "time", or
+"clock" (klokkeslaet tt:mm; y-vaerdier i sekunder siden midnat)}
 
 \item{chart_title}{Plot title (optional)}
 
