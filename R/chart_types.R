@@ -29,4 +29,4 @@ CHART_TYPES_EN <- c("run", "i", "mr", "p", "pp", "u", "up", "c", "g", "xbar", "s
 #' @format Character vector of valid y-axis unit codes
 #' @keywords internal
 #' @noRd
-Y_AXIS_UNITS <- c("count", "percent", "rate", "time")
+Y_AXIS_UNITS <- c("count", "percent", "rate", "time", "clock")

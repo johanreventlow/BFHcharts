@@ -184,3 +184,71 @@ time_breaks <- function(y_values, target_n = 5L) {
 
   seq(start, end, by = chosen_interval)
 }
+
+# ============================================================================
+# CLOCK FORMAT (klokkeslaet tt:mm - for tidspunkt-paa-dagen-indikatorer)
+# ============================================================================
+
+#' Formater sekunder siden midnat som klokkeslaet (single value)
+#'
+#' Til indikatorer hvor maalevaerdien er et TIDSPUNKT paa dagen (fx median
+#' knivtidsstart), ikke en varighed - komposit-formatet ("8t 57m") ville
+#' vaere semantisk forkert. Input-enheden er sekunder siden midnat, som er
+#' den enhed klokkeslaets-data typisk lagres i
+#' (\code{period_to_seconds(hms(...))}).
+#'
+#' Runder til hele minutter foer komponentopdeling, saa 08:59:50 bliver
+#' \code{"09:00"} (ikke \code{"08:60"}). Ingen doegn-wrap: vaerdier er
+#' samme-dags klokkeslaet, saa 86390 formateres \code{"24:00"}.
+#'
+#' @param v numeric(1). Sekunder siden midnat.
+#' @return character(1) \code{"tt:mm"}-streng. \code{NA_character_} ved NA.
+#' @keywords internal
+#' @noRd
+format_clock_single <- function(v) {
+  if (is.na(v)) {
+    return(NA_character_)
+  }
+
+  min_total <- as.integer(round(v / 60))
+  t <- min_total %/% 60L
+  m <- min_total %% 60L
+
+  sprintf("%02d:%02d", t, m)
+}
+
+#' Formater sekunder siden midnat som klokkeslaet (vektoriseret)
+#'
+#' @param seconds numeric. Sekunder siden midnat. NA propageres.
+#' @return character vektor med \code{"tt:mm"}-strenge.
+#' @keywords internal
+#' @noRd
+#' @examples
+#' \dontrun{
+#' format_clock(29700) # "08:15"
+#' format_clock(0) # "00:00"
+#' format_clock(c(21600, NA)) # c("06:00", NA)
+#' }
+format_clock <- function(seconds) {
+  if (length(seconds) == 0) {
+    return(character(0))
+  }
+
+  vapply(seconds, format_clock_single, character(1))
+}
+
+#' Generer klokkeslaets-naturlige tick-breaks (sekunder siden midnat)
+#'
+#' Genbruger \code{time_breaks()}-algoritmen ved at skalere sekunder til
+#' minutter og tilbage: tick-intervallerne bliver dermed de samme
+#' tids-naturlige kandidater (1m, 5m, 15m, 30m, 1t, ...) som varigheds-
+#' aksen, blot udtrykt i sekunder saa de matcher clock-dataenes enhed.
+#'
+#' @param y_values numeric. Data-range i sekunder siden midnat.
+#' @param target_n integer. Minimums-antal ticks. Default \code{5L}.
+#' @return numeric vektor med tick-positioner i sekunder.
+#' @keywords internal
+#' @noRd
+clock_breaks <- function(y_values, target_n = 5L) {
+  time_breaks(y_values / 60, target_n = target_n) * 60
+}

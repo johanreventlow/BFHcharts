@@ -1,3 +1,28 @@
+# BFHcharts 0.28.0
+
+## Bug fixes
+
+* **Y-aksen blev meningsløs når alle observationer havde samme værdi.**
+  En helt flad serie (fx et rygestop-henvisningskort med 0 henvisninger i
+  alle uger) fik ggplot2's automatiske akse-range til at klemme sig sammen
+  om den ene værdi, så aksen viste hverken skala eller kontekst. `ylim`
+  udledes nu automatisk for konstante serier, når brugeren ikke selv har
+  angivet `ylim`: `percent`-akser vises altid 0-100%, øvrige enheder
+  (`count`, `rate`, `time`, `clock`) vises 0 til værdien × 1,2 (mindst
+  værdi + 1), udvidet til at dække et evt. `target_value`. Et eksplicit
+  brugervalgt `ylim` overstyres aldrig.
+
+## Nye features
+
+* **Ny y-akse-enhed `"clock"` til klokkeslæts-indikatorer.** Indikatorer
+  hvor måleværdien er et tidspunkt på dagen (fx "median knivtidsstart")
+  kunne hidtil kun vises som rå tal ("32,2K") eller misvisende varighed
+  ("8t 57m"). Med `y_axis_unit = "clock"` formateres y-aksen, niveau-label
+  og detalje-eksport som klokkeslæt ("08:15"); input er sekunder siden
+  midnat, og akse-ticks lægges på klokkeslæts-naturlige intervaller via
+  samme algoritme som varigheds-aksen. Første aftager er operationsgangens
+  "første elektive pt: Knivtid-start" i dataportalen.
+
 # BFHcharts 0.27.1
 
 ## Bug fixes

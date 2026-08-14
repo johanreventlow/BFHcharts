@@ -32,7 +32,8 @@ NULL
 #'   chart degenerates to a classic individuals chart with constant limits.
 #'   \pkg{pbcharts} is an optional dependency; install with
 #'   `remotes::install_github("anhoej/pbcharts")` if not present.
-#' @param y_axis_unit Unit type: "count", "percent", "rate", or "time"
+#' @param y_axis_unit Unit type: "count", "percent", "rate", "time", or
+#'   "clock" (klokkeslaet tt:mm; y-vaerdier i sekunder siden midnat)
 #' @param chart_title Plot title (optional)
 #' @param target_value Numeric target value (optional)
 #' @param target_text Target label text (optional)
@@ -902,6 +903,12 @@ bfh_qic <- function(data,
     ylab = ylab
   )
 
+  # ---- Auto-ylim for konstant (flad) serie ----
+  # Naar alle observationer har samme vaerdi, giver ggplot2's automatiske
+  # range en meningsloes akse. Overstyrer aldrig et eksplicit brugervalgt
+  # ylim (resolve_constant_series_ylim() er no-op i det tilfaelde).
+  effective_ylim <- resolve_constant_series_ylim(qic_data, y_axis_unit, ylim) %||% ylim
+
   # ---- Render plot ----
   plot <- render_bfh_plot(
     qic_data = qic_data,
@@ -916,7 +923,7 @@ bfh_qic <- function(data,
     caption = caption,
     base_size = vp$base_size,
     plot_margin = plot_margin,
-    ylim = ylim,
+    ylim = effective_ylim,
     language = language
   )
 

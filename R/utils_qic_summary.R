@@ -158,6 +158,7 @@ format_qic_summary <- function(qic_data, y_axis_unit = "count") {
     "rate" = 2,
     "count" = 1,
     "time" = 1,
+    "clock" = 0,
     2 # default
   )
 

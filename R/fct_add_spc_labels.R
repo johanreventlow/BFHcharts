@@ -229,8 +229,8 @@ add_spc_labels <- function(
     }
   }
 
-  # Beregn y_range for time formatting context
-  y_range <- if (y_axis_unit == "time" && !is.null(qic_data$y)) {
+  # Beregn y_range for time/clock formatting context
+  y_range <- if (y_axis_unit %in% c("time", "clock") && !is.null(qic_data$y)) {
     range(qic_data$y, na.rm = TRUE)
   } else {
     NULL
