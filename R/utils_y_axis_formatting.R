@@ -8,6 +8,55 @@
 NULL
 
 # ============================================================================
+# CONSTANT-SERIES YLIM
+# ============================================================================
+
+#' Udled ylim for en konstant (flad) serie
+#'
+#' Naar alle observationer har samme vaerdi, giver ggplot2's automatiske
+#' akse-range en meningsloes akse (data ligger klemt op mod en enkelt
+#' usynlig kant). Denne funktion beregner en fornuftig default-range i det
+#' tilfaelde, uden at overstyre et eksplicit brugervalgt `ylim`.
+#'
+#' @param qic_data QIC data frame med kolonnen `y` (og evt. `target`).
+#' @param y_axis_unit Enhed: "percent", "count", "rate", "time" eller "clock".
+#' @param ylim Brugerens `ylim`-argument (allerede normaliseret af
+#'   `validate_ylim()`). Er den ikke `NULL`, returneres altid `NULL` her
+#'   (no-op) -- brugerens valg har altid forrang.
+#'
+#' @return `NULL` (no-op) hvis serien ikke er konstant, brugeren selv har
+#'   sat `ylim`, eller alle `y`-vaerdier er `NA`. Ellers `c(min, max)`.
+#' @keywords internal
+#' @noRd
+resolve_constant_series_ylim <- function(qic_data, y_axis_unit = "count", ylim = NULL) {
+  if (!is.null(ylim)) {
+    return(NULL)
+  }
+  if (is.null(qic_data) || !"y" %in% names(qic_data)) {
+    return(NULL)
+  }
+
+  y_values <- qic_data$y[!is.na(qic_data$y)]
+  if (length(y_values) < 2 || length(unique(y_values)) != 1) {
+    return(NULL)
+  }
+  value <- y_values[1]
+
+  if (identical(y_axis_unit, "percent")) {
+    return(c(0, 1))
+  }
+
+  upper <- max(value * 1.2, value + 1)
+
+  target <- if ("target" %in% names(qic_data)) extract_first_target(qic_data) else NA_real_
+  if (!is.na(target)) {
+    upper <- max(upper, target)
+  }
+
+  c(0, upper)
+}
+
+# ============================================================================
 # MAIN FORMATTING FUNCTION
 # ============================================================================
 

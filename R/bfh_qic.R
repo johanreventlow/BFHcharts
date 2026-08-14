@@ -903,6 +903,12 @@ bfh_qic <- function(data,
     ylab = ylab
   )
 
+  # ---- Auto-ylim for konstant (flad) serie ----
+  # Naar alle observationer har samme vaerdi, giver ggplot2's automatiske
+  # range en meningsloes akse. Overstyrer aldrig et eksplicit brugervalgt
+  # ylim (resolve_constant_series_ylim() er no-op i det tilfaelde).
+  effective_ylim <- resolve_constant_series_ylim(qic_data, y_axis_unit, ylim) %||% ylim
+
   # ---- Render plot ----
   plot <- render_bfh_plot(
     qic_data = qic_data,
@@ -917,7 +923,7 @@ bfh_qic <- function(data,
     caption = caption,
     base_size = vp$base_size,
     plot_margin = plot_margin,
-    ylim = ylim,
+    ylim = effective_ylim,
     language = language
   )
 
