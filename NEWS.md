@@ -1,3 +1,20 @@
+# BFHcharts 0.28.1
+
+## Bug fixes
+
+* **Retningspilen ved `target_text` uden `target_value` blev aldrig tegnet.**
+  Indikatorer der kun har en ønsket retning sat (fx `ønsket_tendens = ">"`
+  i BFHddl, uden en tal-værdi i `mål`) sender korrekt `target_text = ">"`
+  til `bfh_qic()`, men ingen `target_value`. `add_spc_labels()` betingede
+  hele sin pil-parsing af `target_value` faktisk værende sat — men
+  `qicharts2` populerer kun `qic_data$target` når en numerisk
+  `target_value` er givet, så betingelsen var altid falsk i dette scenarie,
+  og pilen blev stiltiende sprunget over. Pilens y-position beregnes fra
+  plot-kanten (NPC panel-bounds), ikke fra `target_value`, så der er
+  reelt intet behov for en numerisk værdi for at tegne den. En ren
+  retningspil (`target_text` uden tal) vises nu uanset om `target_value`
+  er sat.
+
 # BFHcharts 0.28.0
 
 ## Bug fixes

@@ -283,7 +283,15 @@ add_spc_labels <- function(
   has_arrow <- FALSE
   arrow_type <- NULL
 
-  if (!is.na(target_value)) {
+  # En target_text-only pil (fx ">" eller "<" uden vaerdi) kraever ingen
+  # target_value: dens y-position beregnes nedenfor fra NPC panel-bounds,
+  # ikke fra target_value. Uden dette OR ville en indikator med kun
+  # oensket_tendens sat (retning uden maal-vaerdi -- qicharts2 populerer
+  # da aldrig qic_data$target) stiltiende miste sin pil, selvom target_text
+  # blev parset korrekt.
+  text_is_bare_arrow <- !is.null(target_text) && has_arrow_symbol(target_text)
+
+  if (!is.na(target_value) || text_is_bare_arrow) {
     if (!is.null(target_text) && nchar(trimws(target_text)) > 0) {
       # Struktureret parsing: operator og value separeres, saa sanitizeren
       # aldrig ser raa <, >, >=, <= (de er allerede Unicode-symboler).
