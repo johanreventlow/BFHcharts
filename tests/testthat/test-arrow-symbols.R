@@ -157,3 +157,51 @@ test_that("Comparison operators with numbers do NOT suppress target line", {
 
   expect_equal(count_line_layers(built), 5)
 })
+
+test_that("Arrow renders when target_text is a bare arrow WITHOUT target_value", {
+  # Regression test: indicators with only oensket_tendens set (retning uden
+  # maal-vaerdi, fx BFHddl's abx_forbrug_j01g) send target_text = ">" or "<"
+  # with NO target_value. Before the fix, add_spc_labels() gated its entire
+  # arrow-parsing block on !is.na(target_value), so qic_data$target being
+  # all-NA (qicharts2 never populates it without a numeric target) silently
+  # suppressed the arrow -- even though target_text was parsed correctly in
+  # isolation. The arrow's y-position is computed from NPC panel bounds, not
+  # from target_value, so no numeric target should be required to render it.
+  skip_if_fonts_unavailable()
+  set.seed(42)
+
+  data <- data.frame(
+    month = seq(as.Date("2024-01-01"), by = "month", length.out = 12),
+    value = rnorm(12, 15, 2)
+  )
+
+  plot_up <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count",
+    target_text = ">" # No target_value supplied
+  )
+  plot_down <- bfh_qic(
+    data = data,
+    x = month,
+    y = value,
+    chart_type = "run",
+    y_axis_unit = "count",
+    target_text = "<" # No target_value supplied
+  )
+
+  expect_s3_class(plot_up, "bfh_qic_result")
+  expect_s3_class(plot_down, "bfh_qic_result")
+
+  # qic_data$target must indeed be all-NA in this scenario (confirms the
+  # test actually exercises the target_value-absent path, not a false pass).
+  expect_true(all(is.na(plot_up$qic_data$target %||% NA)))
+  expect_true(all(is.na(plot_down$qic_data$target %||% NA)))
+
+  expect_true(isTRUE(attr(plot_up$plot, "suppress_targetline")))
+  expect_true(isTRUE(attr(plot_down$plot, "suppress_targetline")))
+  expect_equal(attr(plot_up$plot, "arrow_type"), "up")
+  expect_equal(attr(plot_down$plot, "arrow_type"), "down")
+})
