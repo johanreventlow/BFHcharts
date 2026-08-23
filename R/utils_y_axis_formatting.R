@@ -156,6 +156,62 @@ apply_y_axis_formatting <- function(plot, y_axis_unit = "count",
 # UNIT-SPECIFIC FORMATTERS
 # ============================================================================
 
+#' Beregn percent-akse breaks for et givet limits-interval
+#'
+#' Fri funktion udtrukket fra format_y_axis_percent(), saa breaks-logikken
+#' kan genbruges til at udlede label-praecision andre steder end selve
+#' aksen (fx "NUV. NIVEAU"-labels i add_spc_labels()).
+#'
+#' @param limits numeric(2) proportion-limits (0-1 skala)
+#' @return Numerisk vektor af breaks paa 0-1 skala, sorteret og unik
+#' @keywords internal
+#' @noRd
+resolve_percent_axis_breaks <- function(limits) {
+  b <- scales::breaks_pretty(n = 5)(limits)
+  b <- b[b >= 0 & b <= 1]
+  if (length(b) > 0) {
+    if (limits[1] <= 0.05 && !0 %in% b) b <- c(0, b)
+    if (limits[2] >= 0.95 && !1 %in% b) b <- c(b, 1)
+  }
+  sort(unique(b))
+}
+
+#' Bestem percent-label accuracy for et givet saet breaks
+#'
+#' Fri funktion udtrukket fra format_y_axis_percent(): vaelger den mindste
+#' accuracy der kan skelne alle akse-breaks fra hinanden. Bruges baade til
+#' selve aksens labels og til at lade andre labels (fx "NUV. NIVEAU") arve
+#' samme praecision som aksen rent faktisk viser.
+#'
+#' @param breaks numeric vektor af breaks paa 0-1 skala (fra
+#'   resolve_percent_axis_breaks() eller tilsvarende). NULL eller < 2
+#'   elementer giver accuracy = 1 (hele procent).
+#' @return Numerisk accuracy: 1, 0.1 eller 0.01
+#' @keywords internal
+#' @noRd
+resolve_percent_axis_accuracy <- function(breaks) {
+  if (is.null(breaks) || length(breaks) < 2) {
+    return(1)
+  }
+
+  # Beregn mindste interval mellem breaks (i procentpoint)
+  intervals <- diff(sort(breaks)) * 100
+  intervals <- intervals[intervals > 0]
+  if (length(intervals) == 0) {
+    return(1)
+  }
+  min_interval <- min(intervals)
+
+  # Vaelg accuracy der kan skelne alle breaks
+  if (min_interval >= 1) {
+    1 # 1%, 2%, 3%
+  } else if (min_interval >= 0.1) {
+    0.1 # 0.5%, 1.0%, 1.5%
+  } else {
+    0.01 # 0.05%, 0.10%
+  }
+}
+
 #' Format Y-Axis for Percentage Data
 #'
 #' Range-aware precision: viser decimaler naar y-aksen spaender < 5 procentpoint.
@@ -171,40 +227,8 @@ format_y_axis_percent <- function(y_range = NULL, language = "da") {
   big_mark <- if (identical(language, "en")) "," else "."
   pct_suffix <- if (identical(language, "en")) "%" else " %"
 
-  # Custom breaks + accuracy der sikrer unikke labels uden huller
-  percent_breaks <- function(limits) {
-    b <- scales::breaks_pretty(n = 5)(limits)
-    b <- b[b >= 0 & b <= 1]
-    if (length(b) > 0) {
-      if (limits[1] <= 0.05 && !0 %in% b) b <- c(0, b)
-      if (limits[2] >= 0.95 && !1 %in% b) b <- c(b, 1)
-    }
-    sort(unique(b))
-  }
-
-  # Bestem accuracy baseret paa faktisk break-interval (beregnes dynamisk)
   percent_labels <- function(x) {
-    if (length(x) < 2) {
-      return(scales::label_percent(
-        accuracy = 1,
-        decimal.mark = decimal_mark,
-        big.mark = big_mark,
-        suffix = pct_suffix
-      )(x))
-    }
-
-    # Beregn mindste interval mellem breaks (i procentpoint)
-    intervals <- diff(sort(x)) * 100
-    min_interval <- min(intervals[intervals > 0])
-
-    # Vaelg accuracy der kan skelne alle breaks
-    accuracy <- if (min_interval >= 1) {
-      1 # 1%, 2%, 3%
-    } else if (min_interval >= 0.1) {
-      0.1 # 0.5%, 1.0%, 1.5%
-    } else {
-      0.01 # 0.05%, 0.10%
-    }
+    accuracy <- resolve_percent_axis_accuracy(x)
 
     scales::label_percent(
       accuracy = accuracy,
@@ -216,7 +240,7 @@ format_y_axis_percent <- function(y_range = NULL, language = "da") {
 
   BFHtheme::scale_y_continuous_bfh(
     expand = ggplot2::expansion(mult = c(Y_AXIS_BASE_EXPANSION_MULT, Y_AXIS_BASE_EXPANSION_MULT)),
-    breaks = percent_breaks,
+    breaks = resolve_percent_axis_breaks,
     labels = percent_labels
   )
 }
