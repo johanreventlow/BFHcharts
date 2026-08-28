@@ -294,10 +294,18 @@ Additive feature — no migration. Rollout: implement behind no flag, document i
 optional and coordinated via an `enhancement`-labelled issue after merge.
 Rollback = removing the two exports before any release ships them.
 
-## Open Questions
+## Benchmark (task 4.3, run 2026-08-28, Linux container, fallback fonts)
 
-- Recommended default guidance for `pages_per_chunk` (a docs question, settled
-  by the benchmark task; the API default of NULL/single-compile is fixed).
+500-page batch (replicated bundle, real Quarto/Typst pipeline):
+compile 5.4 s, output 5.1 MB, 2 embedded font objects in total; staging one
+real chart 0.8 s; single `bfh_export_pdf()` 1.2 s and 27 KB, i.e. a naive
+500-file merge would be ~13.6 MB even with small fallback-font subsets.
+Extrapolated 1,800 pages: ~20 s single compile. Conclusion: chunking is not
+needed for correctness or speed at the target scale; document
+`pages_per_chunk` as an opt-in memory safety valve (suggest 250-500 per
+chunk) rather than a default.
+
+## Open Questions
 - Whether a stage-if-changed convenience (content hash of data + config in the
   bundle, skipping re-render when unchanged) is worth adding for callers who
   re-stage everything defensively — deferable, additive (see D8).

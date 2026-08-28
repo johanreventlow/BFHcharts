@@ -295,6 +295,33 @@ for (dept in departments) {
 - Send i stedet `inject_assets` og `font_path` til `bfh_create_export_session()`.
 - Sessioner er enkelt-trådede; del dem ikke på tværs af parallelle workers.
 
+### Samlerapporter: mange grafer i ét PDF-dokument
+
+Skal hundredvis af grafer samles i **én** PDF, så flet ikke enkelt-PDF'er med
+eksterne værktøjer — hver kompileret PDF bærer sit eget font-subset, så den
+flettede fil vokser med ét subset per side. Stage i stedet hver graf som et
+persistent side-bundt og kompilér alle sider i ét hug (hvert font-snit
+indlejres da præcis én gang):
+
+```r
+cache_dir <- "spc-cache"
+dir.create(cache_dir, showWarnings = FALSE)
+
+ids <- names(dept_data)                  # produktionslisten styrer indholdet
+for (id in ids) {                        # re-stage kun nye/rettede grafer
+  result <- bfh_qic(dept_data[[id]], x = month, y = value, chart_type = "i")
+  bfh_stage_pdf_page(result, cache_dir, id = id)
+}
+
+bfh_export_batch_pdf(cache_dir, "samlet_rapport.pdf", ids = ids)
+bfh_prune_page_cache(cache_dir, keep = ids)   # ryd udgaaede bundter
+```
+
+Bundterne overlever R-sessioner og processer: skal to grafer rettes, re-stages
+kun de to id'er, hvorefter `bfh_export_batch_pdf()` genbruger resten fra
+cachen uden nogen genberegning. Se `vignette("safe-exports")` for
+trust-modellen for cache-mappen.
+
 ### Skrifttyper og branding
 
 PDF-eksport bruger **Mari-fonten** til hospitalsbranding når den er

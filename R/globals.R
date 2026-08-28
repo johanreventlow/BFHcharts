@@ -79,6 +79,20 @@ PDF_CHART_HEIGHT_MM <- 109
 PDF_LABEL_SIZE <- 6
 
 # ============================================================================
+# BATCH PDF EXPORT (page-bundle cache)
+# ============================================================================
+
+# Format version written into every staged page bundle (page.rds) and
+# validated by bfh_export_batch_pdf() before compilation. Bump whenever the
+# bundle contract changes shape (fields added/removed/retyped) so stale
+# bundles fail loudly with a re-stage remedy instead of rendering wrong.
+BATCH_CACHE_FORMAT_VERSION <- 1L
+
+# Page bundle identifiers become directory names in the cache; this pattern
+# rejects path traversal and shell metacharacters by construction.
+BATCH_PAGE_ID_PATTERN <- "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+
+# ============================================================================
 # SPC ANALYSIS CONSTANTS
 # ============================================================================
 
