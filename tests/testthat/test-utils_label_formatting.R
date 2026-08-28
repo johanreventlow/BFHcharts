@@ -59,6 +59,40 @@ test_that("format_percent_contextual shows whole percent when no target", {
   expect_equal(format_percent_contextual(0.999, target = NULL), "100%")
 })
 
+test_that("format_percent_contextual arver decimal-praecision fra axis_limits naar der intet target er", {
+  # Snaevert akse-vindue (0.5%-breaks, som i "Aminoglycosid antibakterika"-eksemplet:
+  # y-akse 0,5% til 3,0%) -> label boer vise 1 decimal, ligesom aksen selv
+  expect_equal(
+    format_percent_contextual(0.016, target = NULL, axis_limits = c(0.005, 0.03)),
+    "1,6%"
+  )
+})
+
+test_that("format_percent_contextual viser hel procent naar axis_limits er bredt", {
+  # Bredt akse-vindue (0-100%) -> heltals-breaks -> hel procent, som foer
+  expect_equal(
+    format_percent_contextual(0.634, target = NULL, axis_limits = c(0, 1)),
+    "63%"
+  )
+})
+
+test_that("format_percent_contextual: target-naerhed har forrang over axis_limits", {
+  # Naer target: target-reglens 1-decimal-format gaelder uanset axis_limits
+  expect_equal(
+    format_percent_contextual(0.887, target = 0.90, axis_limits = c(0, 1)),
+    "88,7%"
+  )
+  # Langt fra target, men axis_limits er snaevert -> axis_limits afgoer
+  expect_equal(
+    format_percent_contextual(0.016, target = 0.90, axis_limits = c(0.005, 0.03)),
+    "1,6%"
+  )
+})
+
+test_that("format_percent_contextual ignorerer axis_limits = NULL (uaendret default)", {
+  expect_equal(format_percent_contextual(0.887, target = NULL, axis_limits = NULL), "89%")
+})
+
 test_that("format_percent_contextual handles boundary at 2 percentage points", {
   # Just within 2 percentage points - shows decimal
   expect_equal(format_percent_contextual(0.881, target = 0.90), "88,1%")
