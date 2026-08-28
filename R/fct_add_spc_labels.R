@@ -229,9 +229,22 @@ add_spc_labels <- function(
     }
   }
 
-  # Beregn y_range for time/clock formatting context
+  # Byg plot tidligt for at kunne laese den FAKTISKE synlige y-akse-range
+  # (panel_params$y.range) -- den afspejler eksplicit/auto-udledt ylim samt
+  # scale-expansion, i modsaetning til raa data-range. Genbruges laengere
+  # nede til NPC-mapping (se .built_plot-kommentar ved arrow-positionering).
+  built_plot <- ggplot2::ggplot_build(plot)
+  panel_y_range <- built_plot$layout$panel_params[[1]]$y.range
+
+  # Beregn y_range til value-label-formatering:
+  # - time/clock: raa data-range (komposit-format haandterer selv skala)
+  # - percent: FAKTISK synlig akse-range, saa "NUV. NIVEAU" arver samme
+  #   decimal-praecision som akse-labels rent faktisk viser (se
+  #   format_percent_contextual()/resolve_percent_axis_accuracy())
   y_range <- if (y_axis_unit %in% c("time", "clock") && !is.null(qic_data$y)) {
     range(qic_data$y, na.rm = TRUE)
+  } else if (y_axis_unit == "percent" && !is.null(panel_y_range)) {
+    panel_y_range
   } else {
     NULL
   }
@@ -326,7 +339,8 @@ add_spc_labels <- function(
     )
   }
 
-  # Build plot og mapper en gang - genbrug til arrow-placering + labels
+  # Genbrug built_plot (bygget tidligere for panel_y_range) til NPC-mapper --
+  # dele mellem arrow-placering + labels.
   #
   # ylim-awareness: add_spc_labels() kaldes EFTER coord_capped_cart(ylim)
   # er sat paa plottet (se bfh_qic.R: render_bfh_plot foer
@@ -339,7 +353,6 @@ add_spc_labels <- function(
   # flytter saaledes labels korrekt med. (Edge case: saetter man ylim
   # der UDELUKKER target/CL-vaerdien, forsvinder den linje + dens label
   # fra vinduet -- bevidst zoom-adfaerd, ikke en placeringsfejl.)
-  built_plot <- ggplot2::ggplot_build(plot)
   shared_mapper <- npc_mapper_from_built(built_plot, original_plot = plot)
 
   # Haandter pil-positioning via NPC panel bounds (ikke raa data-ekstremer,

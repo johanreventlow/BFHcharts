@@ -26,6 +26,23 @@
   men uden import — den fandtes kun via base R på R >= 4.4, selvom
   DESCRIPTION erklærer R >= 4.1. Pakken loader nu også på R 4.1–4.3.
 
+# BFHcharts 0.28.2
+
+## Bug fixes
+
+* **"NUV. NIVEAU"/centerlinje-labelen viste hel procent, selvom y-aksen
+  havde en decimal.** For procent-indikatorer med lav variation (fx et
+  antibiotika-forbrug der svinger omkring 1-3%) viste y-aksen selv 1
+  decimal (0,5%-intervaller), men centerlinje-labelen i toppen af PDF'en
+  rundede altid til hel procent ("2%" i stedet for "1,6%") — medmindre der
+  var et numerisk `target_value` sat tæt på værdien, hvilket kun dækkede
+  et fåtal af indikatorer. Labelen arver nu samme decimal-præcision som
+  y-aksens faktiske, synlige breaks (samme algoritme som allerede styrede
+  aksens egne labels: mindste interval mellem breaks afgør om 1, 0,1 eller
+  0,01 procentpoint er nødvendigt for at skelne dem), når intet target
+  afgør det. Et target tæt på værdien har fortsat forrang. Bredere
+  akse-vinduer (fx 0-100%) er uændrede og viser stadig hel procent.
+
 # BFHcharts 0.28.1
 
 ## Bug fixes
