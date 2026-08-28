@@ -627,13 +627,46 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   escaped_template <- escape_typst_string(template_file)
   import_line <- sprintf('#import "%s": %s', escaped_template, template)
 
-  # Build template call with parameters
-  params <- list()
-
   # Chart image is already a relative filename (copied to output dir by caller)
   # Chart is passed as body content after #show, not as named parameter
   # Escape filename in case it has special characters
   escaped_chart <- escape_typst_string(chart_image)
+
+  param_block <- build_typst_page_params(metadata, spc_stats)
+
+  # Assemble document
+  # In Typst, the chart (positional param) comes as body content after #show block
+  content <- c(
+    import_line,
+    "",
+    sprintf("#show: %s.with(", template),
+    param_block,
+    ")",
+    "",
+    "// Chart content (body parameter)",
+    sprintf('#image("%s")', escaped_chart),
+    ""
+  )
+
+  return(content)
+}
+
+#' Build Typst Parameter Block for One Page
+#'
+#' Renders the named-parameter block passed to the template function for a
+#' single chart page. Shared between the single-page document path
+#' (build_typst_content(), which applies the template via #show) and the
+#' batch document path (build_typst_page_call(), which calls the template
+#' function directly once per page). All escaping and type guards for
+#' user-supplied metadata/stats live here so both paths stay in sync.
+#'
+#' @param metadata Metadata list
+#' @param spc_stats SPC statistics list
+#' @return Single string: comma-and-newline separated named parameters
+#' @keywords internal
+#' @noRd
+build_typst_page_params <- function(metadata, spc_stats) {
+  params <- list()
 
   # Standard escaped string fields: presence check only, no extra guards.
   for (f in c("hospital", "department", "details", "author")) {
@@ -740,23 +773,39 @@ build_typst_content <- function(chart_image, metadata, spc_stats, template, temp
   for (name in names(params)) {
     param_strings <- c(param_strings, sprintf("  %s: %s", name, params[[name]]))
   }
-  param_block <- paste(param_strings, collapse = ",\n")
+  paste(param_strings, collapse = ",\n")
+}
 
-  # Assemble document
-  # In Typst, the chart (positional param) comes as body content after #show block
-  content <- c(
-    import_line,
-    "",
-    sprintf("#show: %s.with(", template),
+#' Build a Direct Template Call for One Batch Page
+#'
+#' Emits `#<template>(<params>)[#image("<chart>")]` for use in a multi-page
+#' batch document, where the template function is called once per page
+#' (in contrast to the single-page #show form). The template's internal
+#' set page(...) rule starts each call on a fresh page; an explicit weak
+#' pagebreak is emitted by the batch composer between calls as a guard.
+#'
+#' @param chart_image Filename of chart image (relative to document location)
+#' @param metadata Metadata list
+#' @param spc_stats SPC statistics list
+#' @param template Template name (validated Typst identifier)
+#' @return Character vector with the Typst lines for one page call
+#' @keywords internal
+#' @noRd
+build_typst_page_call <- function(chart_image, metadata, spc_stats, template) {
+  if (!grepl("^[a-zA-Z][a-zA-Z0-9_-]*$", template)) {
+    stop("template must be a valid Typst identifier (letters, numbers, hyphens, underscores)",
+      call. = FALSE
+    )
+  }
+  escaped_chart <- escape_typst_string(chart_image)
+  param_block <- build_typst_page_params(metadata, spc_stats)
+  c(
+    sprintf("#%s(", template),
     param_block,
-    ")",
-    "",
-    "// Chart content (body parameter)",
-    sprintf('#image("%s")', escaped_chart),
-    ""
+    ")[",
+    sprintf('  #image("%s")', escaped_chart),
+    "]"
   )
-
-  return(content)
 }
 
 #' Escape String for Typst

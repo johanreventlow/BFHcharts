@@ -1,3 +1,31 @@
+# BFHcharts (udviklingsversion)
+
+## Nye funktioner
+
+* **Batch-PDF-eksport med side-cache: `bfh_stage_pdf_page()`,
+  `bfh_export_batch_pdf()` og `bfh_prune_page_cache()`.** Store
+  samlerapporter (hundredvis af grafer i ét dokument) blev tidligere lavet
+  ved at flette enkelt-PDF'er med eksterne værktøjer — men Typst indlejrer
+  et unikt font-subset per kompileret PDF, så den flettede fil bar ét
+  Mari-subset (gange antal snit) *per side*. Nu kan hver graf i stedet
+  stages som et persistent "side-bundt" (chart-SVG + serialiseret
+  metadata/statistik — ingen genberegning og ingen ggplot-serialisering)
+  i en caller-ejet cache-mappe, hvorefter `bfh_export_batch_pdf()`
+  kompilerer alle sider i ét Typst-run, så hvert font-snit indlejres
+  præcis én gang. `ids`-manifestet gør kalderens produktionsliste — ikke
+  cache-indholdet — til sandheden om, hvad dokumentet indeholder
+  (manglende id = fejl; ulistede bundter udelades), re-staging under samme
+  id retter enkeltsider atomisk, og `bfh_prune_page_cache()` fjerner
+  udgåede bundter via keep-liste eller alder. Valgfri `pages_per_chunk`
+  deler meget store dokumenter i chunks (kræver qpdf-pakken). Benchmark:
+  500 sider kompileres på ~5 s med 2 indlejrede font-objekter i alt.
+
+## Bug fixes
+
+* **`%||%` importeres nu fra rlang.** Pakken brugte operatoren overalt,
+  men uden import — den fandtes kun via base R på R >= 4.4, selvom
+  DESCRIPTION erklærer R >= 4.1. Pakken loader nu også på R 4.1–4.3.
+
 # BFHcharts 0.28.2
 
 ## Bug fixes
