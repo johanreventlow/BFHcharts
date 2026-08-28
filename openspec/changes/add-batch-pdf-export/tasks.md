@@ -88,7 +88,7 @@
 
 ## 5. Documentation and package hygiene
 
-- [ ] 5.1 Roxygen for all three exports (trust model of cache_dir, ordering
+- [x] 5.1 Roxygen for all three exports (trust model of cache_dir, ordering
       semantics, manifest-as-source-of-truth workflow, chunking guidance,
       cross-refs to `bfh_export_pdf()` / `bfh_create_export_session()`), run
       `devtools::document()`; verify NAMESPACE gains exactly the three new
@@ -101,7 +101,7 @@
 - [x] 5.3 Add `NEWS.md` entry describing the new capability and the
       font-embedding motivation; verify entry present under the dev version
       heading.
-- [ ] 5.4 ASCII policy + coverage: verify `tests/testthat/test-source-ascii.R`
+- [x] 5.4 ASCII policy + coverage: verify `tests/testthat/test-source-ascii.R`
       passes for new files and coverage on the two new exports is 100%
       (`covr::package_coverage()`); run full `devtools::test()` +
       `devtools::check()` clean.
