@@ -52,11 +52,23 @@
       custom `template_path` under `restrict_template = TRUE` raises the same
       classed error, and (smoke, CI fallback fonts) a 3-page batch compiles to
       a 3-page PDF.
-- [ ] 3.4 Implement `pages_per_chunk` chunked compile + `qpdf::pdf_combine()`
+- [ ] 3.4 Implement manifest selection (`ids` + `order_by`): exact inclusion,
+      error listing ALL missing ids before compilation, silent exclusion of
+      unlisted bundles, `order_by = "ids"` ordering; verify tests cover the
+      retired-chart exclusion scenario, missing-id error, re-staged corrected
+      page appearing with updated content alongside untouched pages, and both
+      ordering modes.
+- [ ] 3.5 Implement `pages_per_chunk` chunked compile + `qpdf::pdf_combine()`
       concatenation (qpdf added to `Suggests`, `rlang::check_installed()`
       gate); verify tests: chunked run produces same page count/order as
       single compile, intermediates removed on success and on simulated error,
       helpful error when qpdf is absent.
+
+- [ ] 3.6 Implement `bfh_prune_page_cache()` (keep-list, `older_than` on
+      `created_at`, `dry_run`, id validation on keep-list entries, bundle-only
+      deletion); verify tests: keep-list prune, age prune, dry run deletes
+      nothing and lists candidates, foreign files in cache_dir untouched,
+      return value contains removed ids.
 
 ## 4. Equivalence, fonts, and scale verification
 
@@ -76,15 +88,16 @@
 
 ## 5. Documentation and package hygiene
 
-- [ ] 5.1 Roxygen for both exports (trust model of cache_dir, ordering
-      semantics, chunking guidance, cross-refs to `bfh_export_pdf()` /
-      `bfh_create_export_session()`), run `devtools::document()`; verify
-      NAMESPACE gains exactly the two new exports and `R CMD check`
-      documentation checks pass.
+- [ ] 5.1 Roxygen for all three exports (trust model of cache_dir, ordering
+      semantics, manifest-as-source-of-truth workflow, chunking guidance,
+      cross-refs to `bfh_export_pdf()` / `bfh_create_export_session()`), run
+      `devtools::document()`; verify NAMESPACE gains exactly the three new
+      exports and `R CMD check` documentation checks pass.
 - [ ] 5.2 Update `vignettes/safe-exports.Rmd` (cache trust model) and add a
       batch-report section to the export vignette/README with an end-to-end
-      example (stage in loop → `bfh_export_batch_pdf()`); verify vignette
-      builds via `devtools::build_vignettes()`.
+      example (stage new/corrected pages → `bfh_export_batch_pdf(ids = ...)`
+      → optional `bfh_prune_page_cache(keep = ids)`); verify vignette builds
+      via `devtools::build_vignettes()`.
 - [ ] 5.3 Add `NEWS.md` entry describing the new capability and the
       font-embedding motivation; verify entry present under the dev version
       heading.

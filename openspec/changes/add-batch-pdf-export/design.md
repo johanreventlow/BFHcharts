@@ -76,7 +76,7 @@ fidelity (integer vs double matters for the Typst injection guards in
 `bfh_create_typst_document()`), and the trust model is unchanged since the SVG
 must be trusted anyway.
 
-### D2: Public API — `bfh_stage_pdf_page()` and `bfh_export_batch_pdf()`
+### D2: Public API — `bfh_stage_pdf_page()`, `bfh_export_batch_pdf()`, `bfh_prune_page_cache()`
 
 ```r
 bfh_stage_pdf_page(x, cache_dir,
@@ -90,6 +90,8 @@ bfh_stage_pdf_page(x, cache_dir,
 # -> invisible bfh_staged_page (list: id, path, order)
 
 bfh_export_batch_pdf(cache_dir, output,
+                     ids = NULL,          # manifest: exactly these pages (D8)
+                     order_by = c("staged", "ids"),
                      pages_per_chunk = NULL,
                      skip_invalid = FALSE,
                      font_path = NULL,
@@ -98,6 +100,12 @@ bfh_export_batch_pdf(cache_dir, output,
                      restrict_template = TRUE,
                      template_path = NULL)
 # -> invisible output path
+
+bfh_prune_page_cache(cache_dir,
+                     keep = NULL,         # delete bundles NOT in keep
+                     older_than = NULL,   # or: staged before this POSIXct/Date
+                     dry_run = FALSE)
+# -> character vector of removed (or would-be removed) ids
 ```
 
 `bfh_export_*` prefix matches `bfh_export_pdf()` / `bfh_export_png()`;
@@ -193,6 +201,60 @@ reason about; an explicit parameter with a documented recommendation
 version, supported version, and the re-stage remedy. Bump the constant whenever
 the bundle contract changes shape.
 
+### D8: The manifest, not the cache, is the source of truth for inclusion
+
+A persistent cache accumulates: pages staged last week for charts that have
+since been retired would silently reappear in every future combined PDF if
+"compile everything in the directory" were the only mode. The `ids` manifest
+inverts the relationship: the caller derives the authoritative page list from
+their production data source each run and passes it to
+`bfh_export_batch_pdf()`; the cache is merely a materialization layer. Strict
+semantics make drift visible in both directions — a manifest id without a
+bundle is an error (the caller forgot to stage or mistyped), a bundle without a
+manifest entry is silently excluded (retired charts need no cleanup before
+compiling). The recommended workflow becomes:
+
+```r
+ids <- production_chart_ids()                 # caller's source of truth
+for (id in ids_needing_restaging) {           # new or corrected charts only
+  bfh_stage_pdf_page(result_for(id), cache_dir, id = id)
+}
+bfh_export_batch_pdf(cache_dir, "samlet.pdf", ids = ids)
+```
+
+Corrected charts are handled by re-staging under the same id (atomic overwrite
+per D3); untouched charts are reused from the cache with zero recomputation.
+`order_by = "ids"` lets the manifest double as page ordering; the default keeps
+the staged `order` keys so a partial re-stage cannot reshuffle the document.
+
+*Alternative considered:* freshness filters (`max_age` / staged-after cutoffs)
+as the primary staleness mechanism — rejected: age is a proxy, not truth; an
+old-but-current chart would be dropped and a freshly staged retired chart kept.
+Age-based cleanup exists only in the pruning helper (D9), where it is an
+explicit maintenance action.
+
+*Alternative considered:* compiler-side content hashing (stage-if-changed
+convenience that skips re-rendering unchanged charts) — deferred: it optimizes
+staging cost, not correctness, and requires hashing input data + config with
+stable semantics across versions. Additive later; noted under Open Questions.
+
+### D9: Cache pruning is an explicit, separate helper
+
+`bfh_prune_page_cache()` deletes bundles by keep-list (typically the same
+manifest vector) or by `older_than` staging timestamp (`created_at` in
+`page.rds`), with `dry_run = TRUE` for inspection. Pruning is deliberately NOT
+folded into `bfh_export_batch_pdf()` (no `prune = TRUE` argument): compiling a
+subset is a read operation and deleting data is a destructive one, and coupling
+them means a typo in a manifest both breaks the document AND destroys staged
+work. Only directories that validate as page bundles are candidates — foreign
+files in the cache directory are never touched. Identifier validation (D3
+regex) applies to keep-list entries before any filesystem match.
+
+*Alternative considered:* automatic garbage collection (delete bundles not
+compiled in N days) — rejected: implicit deletion in a package that renders
+clinical quality reports is a footgun; the two explicit selectors cover the
+"udgaaede grafer" case predictably.
+
 ## Risks / Trade-offs
 
 - [Typst compile time/memory at ~1,800 svglite SVGs in one document] →
@@ -218,8 +280,12 @@ the bundle contract changes shape.
   format version (D7) guards the structural contract, not cosmetic template
   evolution.
 - [Disk footprint of the cache (~100–350 MB at 1,800 pages)] → user-managed
-  directory; `print()` method on the staging return value and docs show how to
-  measure/clear it.
+  directory; `bfh_prune_page_cache()` (keep-list or age) plus docs on
+  measuring/clearing it.
+- [Manifest typo excludes a wanted page silently (unlisted = ignored)] →
+  missing-id direction is strict (error), and docs recommend deriving `ids`
+  programmatically from the production source, never hand-typing; `dry_run`
+  pruning against the same vector reveals what the manifest excludes.
 
 ## Migration Plan
 
@@ -232,5 +298,6 @@ Rollback = removing the two exports before any release ships them.
 
 - Recommended default guidance for `pages_per_chunk` (a docs question, settled
   by the benchmark task; the API default of NULL/single-compile is fixed).
-- Whether a future `order_by` convenience (e.g., stage-time ordering vs
-  explicit keys) is needed by biSPCharts — deferable, additive.
+- Whether a stage-if-changed convenience (content hash of data + config in the
+  bundle, skipping re-render when unchanged) is worth adding for callers who
+  re-stage everything defensively — deferable, additive (see D8).

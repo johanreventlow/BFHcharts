@@ -109,6 +109,70 @@ face exactly once per compilation.
 - **AND** an opt-in argument SHALL allow skipping invalid bundles with a warning
   that lists each skipped identifier
 
+### Requirement: Batch compilation SHALL support manifest-based page selection
+
+The batch compile function SHALL accept an optional character vector of page
+identifiers (a manifest). When supplied, the compiled document SHALL contain
+exactly the pages named in the manifest — no more, no fewer:
+
+- an identifier in the manifest with no valid bundle in the cache SHALL cause
+  an error before any PDF is written, listing every missing identifier;
+- bundles present in the cache but not named in the manifest SHALL be excluded
+  from the document without warning (stale or retired bundles in the cache
+  cannot affect the output);
+- page order SHALL follow the staged ordering keys by default, with an option
+  to order pages by manifest position instead.
+
+When no manifest is supplied, all valid bundles in the cache directory are
+compiled (existing default behavior).
+
+#### Scenario: Retired charts excluded via manifest
+
+- **GIVEN** a cache directory with bundles "a", "b", "c" where "c" is retired
+- **WHEN** the batch compile function is called with the manifest `c("a", "b")`
+- **THEN** the output PDF SHALL contain exactly the pages for "a" and "b"
+- **AND** bundle "c" SHALL remain untouched in the cache and absent from the PDF
+
+#### Scenario: Manifest names a missing page
+
+- **GIVEN** a cache directory with bundles "a" and "b"
+- **WHEN** the batch compile function is called with the manifest
+  `c("a", "b", "d")`
+- **THEN** it SHALL abort before compilation with an error listing "d" as
+  missing, and no PDF SHALL be written
+
+#### Scenario: Corrected pages after re-staging
+
+- **GIVEN** bundles "a" and "b" compiled previously, after which "b" is
+  re-staged with corrected content under the same identifier
+- **WHEN** the batch compile function is called with the manifest `c("a", "b")`
+- **THEN** the output PDF SHALL contain the corrected content for "b" and the
+  unchanged content for "a", with no re-staging of "a" required
+
+### Requirement: Package SHALL export a cache pruning function
+
+The package SHALL export a function that removes page bundles from a cache
+directory, selected by an explicit keep-list (delete everything not named) or
+by staging age (delete bundles staged before a cutoff). It SHALL support a
+dry-run mode that reports which bundles would be removed without deleting
+anything, and SHALL return the identifiers of removed (or would-be removed)
+bundles. Non-bundle files in the cache directory SHALL never be deleted.
+
+#### Scenario: Prune to a keep-list
+
+- **GIVEN** a cache directory with bundles "a", "b", "c"
+- **WHEN** the pruning function is called with keep-list `c("a", "b")`
+- **THEN** bundle "c" SHALL be deleted, bundles "a" and "b" SHALL remain, and
+  the returned value SHALL contain "c"
+
+#### Scenario: Dry run deletes nothing
+
+- **GIVEN** a cache directory with bundles "a", "b", "c"
+- **WHEN** the pruning function is called with keep-list `c("a")` and dry-run
+  enabled
+- **THEN** all three bundles SHALL remain on disk and the returned value SHALL
+  list "b" and "c" as removal candidates
+
 ### Requirement: Batch compilation SHALL support chunked compilation
 
 The batch compile function SHALL accept an optional pages-per-chunk limit. When
@@ -150,9 +214,10 @@ rather than producing incorrect output.
 
 ### Requirement: Batch functions SHALL preserve existing export security guarantees
 
-Staging and batch compilation SHALL apply the same path validation (traversal
-and shell-metacharacter guards) as existing export entry points to all
-user-supplied paths (cache directory, page identifiers used in paths, output
+Staging, batch compilation, and cache pruning SHALL apply the same path
+validation (traversal and shell-metacharacter guards) as existing export entry
+points to all user-supplied paths and identifiers (cache directory, page
+identifiers used in paths — including manifest and keep-list entries — output
 path, `font_path`). Batch compilation SHALL use only the packaged template
 unless the caller explicitly opts out via the same `restrict_template`
 mechanism and semantics as `bfh_export_pdf()`. Documentation SHALL state that

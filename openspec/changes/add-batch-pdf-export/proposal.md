@@ -27,9 +27,19 @@ statistics or re-rendering ggplot objects at assembly time.
   template already exposes this function), and compiles ONE multi-page PDF via
   the existing Quarto/Typst infrastructure. Fonts (Mari or fallbacks) are thereby
   embedded exactly once per face for the entire document.
+  - **Manifest-based selection:** the caller MAY pass an explicit vector of page
+    ids; the combined PDF then contains exactly those pages (missing id =
+    error, unlisted bundles are ignored). The caller's
+    production list — not the accumulated cache contents — is thereby the source
+    of truth for what the combined document contains, so stale/retired bundles
+    cannot pollute the output.
   - Optional chunking parameter (pages per compile) as a safety valve for very
     large documents; chunk outputs are concatenated so the font-subset count is
     bounded by the number of chunks, not the number of pages.
+- **Cache maintenance:** re-staging an existing id atomically replaces its
+  bundle (supports "correct one or two charts, recompile everything"), and a
+  new exported pruning helper removes bundles by keep-list or age so retired
+  charts can also be deleted from the cache physically.
 - **Cache format versioning:** each page bundle records a format version so a
   future BFHcharts can refuse (with a clear error) to compile bundles staged by
   an incompatible version, instead of producing broken output.
@@ -46,8 +56,9 @@ Not breaking. No existing exported signature changes.
 - `batch-pdf-export`: staging of per-chart page bundles (SVG + serialized
   metadata/stats) to a persistent cache directory, cache format validation,
   and single-compile assembly of a multi-page PDF from staged bundles,
-  including page ordering, chunked compilation, and font-embedding guarantees
-  (one font subset per face per compiled document).
+  including page ordering, manifest-based page selection, cache pruning,
+  chunked compilation, and font-embedding guarantees (one font subset per
+  face per compiled document).
 
 ### Modified Capabilities
 
@@ -67,9 +78,9 @@ Not breaking. No existing exported signature changes.
     one document (template file `inst/templates/typst/bfh-template/bfh-template.typ`
     already defines `bfh-diagram` as a callable function; no template rewrite
     expected, at most a `pagebreak()` between pages in the generated main file).
-- **Public API:** two new exports (naming decided in design.md, working names
-  `bfh_stage_pdf_page()` and `bfh_compile_batch_pdf()`). Additive only; NAMESPACE
-  regenerated via `devtools::document()`.
+- **Public API:** three new exports (naming decided in design.md, working names
+  `bfh_stage_pdf_page()`, `bfh_export_batch_pdf()`, `bfh_prune_page_cache()`).
+  Additive only; NAMESPACE regenerated via `devtools::document()`.
 - **biSPCharts impact:** none required (additive API). biSPCharts MAY adopt the
   staging call in its per-chart export path to enable combined-report generation;
   coordinate via issue with `enhancement` label once merged.
