@@ -64,5 +64,10 @@
 ## directive below silences the "Namespace not imported from" R CMD check
 ## NOTE without altering call-site behaviour.
 #' @importFrom svglite svglite
+## The null-coalescing operator is used throughout the package. Base R only
+## ships %||% from 4.4.0, while DESCRIPTION declares R >= 4.1.0 -- import
+## it from rlang so the declared minimum actually loads. Identical
+## semantics on newer R (the import shadows base with the same definition).
+#' @importFrom rlang %||%
 ## usethis namespace: end
 NULL

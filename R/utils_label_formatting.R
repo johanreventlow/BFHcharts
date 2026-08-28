@@ -9,19 +9,29 @@
 
 #' Formater procent med kontekstuel praecision
 #'
-#' Viser decimaler kun naar vaerdien er taet paa target (inden for threshold).
-#' Bruges til centerline-labels hvor praecision er vigtig naer maalet.
+#' Viser decimaler naar vaerdien er taet paa target (inden for threshold),
+#' eller -- naar intet target afgoer det -- naar y-aksens egne breaks kraever
+#' decimaler for at vaere skelnelige (samme regel som styrer aksens labels,
+#' se resolve_percent_axis_accuracy()). Bruges til centerline-labels hvor
+#' praecision er vigtig naer maalet, og til at holde labels konsistente med
+#' en snaever akse ogsaa naar der intet target er.
 #'
 #' @param val numeric vaerdi (0-1 skala, f.eks. 0.887 for 88.7%)
 #' @param target numeric target vaerdi (0-1 skala), eller NULL
 #' @param threshold numeric afstand i procentpoint hvor decimaler vises (default 0.02 = 2%)
+#' @param axis_limits numeric(2) y-akse-limits (0-1 skala), eller NULL. Naar
+#'   target ikke afgoer decimal-visning, bruges disse limits til at udlede
+#'   samme accuracy som y-aksens egne labels ville faa (resolve_percent_axis_accuracy()).
+#'   NULL bevarer den gamle adfaerd (altid hel procent naar intet target er naert).
 #' @param language Locale code: "da" (default, Danish) or "en" (English)
 #' @return character formateret string
 #'
 #' @details
-#' Logik:
-#' - Hvis target er NULL eller val er > threshold fra target: hele procent ("89%")
-#' - Hvis val er <= threshold fra target: en decimal ("88,7%" da / "88.7%" en)
+#' Logik, i prioriteret raekkefoelge:
+#' 1. Naer target (inden for threshold): en decimal ("88,7%" da / "88.7%" en)
+#' 2. Ellers, hvis axis_limits er givet: accuracy udledt fra aksens breaks
+#'    (fx snaevert 0,5%-interval -> en decimal, bredt 0-100% -> hel procent)
+#' 3. Ellers: hele procent ("89%")
 #'
 #' @examples
 #' \dontrun{
@@ -32,12 +42,16 @@
 #' # Returns: "63%" (langt fra target)
 #'
 #' format_percent_contextual(0.887, target = NULL)
-#' # Returns: "89%" (intet target)
+#' # Returns: "89%" (intet target, intet axis_limits)
+#'
+#' format_percent_contextual(0.016, target = NULL, axis_limits = c(0.005, 0.03))
+#' # Returns: "1,6%" (intet target, men snaevert akse-vindue kraever decimal)
 #' }
 #'
 #' @keywords internal
 #' @noRd
-format_percent_contextual <- function(val, target = NULL, threshold = 0.02, language = "da") {
+format_percent_contextual <- function(val, target = NULL, threshold = 0.02,
+                                      axis_limits = NULL, language = "da") {
   if (length(val) != 1 || !(is.numeric(val) || is.na(val))) {
     stop("val must be a single numeric value", call. = FALSE)
   }
@@ -57,16 +71,28 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02, lang
   }
 
   pct <- val * 100
+  dm <- if (language == "en") "." else ","
 
-  # Hvis intet target eller langt fra target: hele procent
-  if (is.null(target) || is.na(target) || abs(val - target) > threshold) {
-    return(paste0(round(pct), "%"))
+  # Naer target: altid en decimal, uanset axis_limits
+  near_target <- !is.null(target) && !is.na(target) && abs(val - target) <= threshold
+  if (near_target) {
+    formatted <- format(round(pct, 1), decimal.mark = dm, nsmall = 1)
+    return(paste0(formatted, "%"))
   }
 
-  # Near target: show one decimal with locale-appropriate separator
-  dm <- if (language == "en") "." else ","
-  formatted <- format(round(pct, 1), decimal.mark = dm, nsmall = 1)
-  return(paste0(formatted, "%"))
+  # Intet target-naert: arv accuracy fra y-aksens egne breaks, hvis kendt
+  if (!is.null(axis_limits)) {
+    breaks <- resolve_percent_axis_breaks(axis_limits)
+    accuracy <- resolve_percent_axis_accuracy(breaks)
+    if (accuracy < 1) {
+      decimals <- -log10(accuracy)
+      formatted <- format(round(pct, decimals), decimal.mark = dm, nsmall = decimals)
+      return(paste0(formatted, "%"))
+    }
+  }
+
+  # Default: hele procent
+  paste0(round(pct), "%")
 }
 
 #' Formater y-akse vaerdi til display string
@@ -76,10 +102,11 @@ format_percent_contextual <- function(val, target = NULL, threshold = 0.02, lang
 #'
 #' @param val numeric vaerdi at formatere
 #' @param y_unit character enhedstype ("count", "percent", "rate", "time", "clock", eller andet)
-#' @param y_range numeric(2) y-akse range. Legacy-parameter bibeholdt for
-#'   bagudkompatibilitet; ignoreres for `"time"` (komposit-format
-#'   auto-detekterer minutter/timer/dage) og bruges kun som signatur-
-#'   placeholder for andre enheder.
+#' @param y_range numeric(2) y-akse range (paa data-skala, 0-1 for percent).
+#'   For `"percent"` bruges den til at lade labels arve samme decimal-
+#'   praecision som y-aksens egne breaks, naar intet target afgoer det
+#'   (se `format_percent_contextual()`). Ignoreres for `"time"` (komposit-
+#'   format auto-detekterer minutter/timer/dage) og for andre enheder.
 #' @param target numeric target vaerdi for kontekstuel praecision (kun for "percent")
 #' @param language Locale code: "da" (default, Danish) or "en" (English)
 #' @return character formateret string
@@ -124,9 +151,13 @@ format_y_value <- function(val, y_unit, y_range = NULL, target = NULL, language 
     return(as.character(val))
   }
 
-  # Percent formatting - kontekstuel praecision naar target er sat
+  # Percent formatting - kontekstuel praecision naar target er sat, ellers
+  # arvet fra y-aksens egne breaks via y_range
   if (y_unit == "percent") {
-    return(format_percent_contextual(val, target = target, language = language))
+    return(format_percent_contextual(
+      val,
+      target = target, axis_limits = y_range, language = language
+    ))
   }
 
   # Count formatting - locale-aware dispatcher

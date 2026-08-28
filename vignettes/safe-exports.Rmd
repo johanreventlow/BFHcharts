@@ -173,6 +173,34 @@ for (afdeling in afdelinger) {
 `inject_assets` kaldes **én gang** ved session-opret; assets deles på tværs af
 alle eksporter. Trust-kravet er det samme som single-call mode.
 
+## Samlerapporter med side-cache (`bfh_stage_pdf_page()` + `bfh_export_batch_pdf()`)
+
+Til store samlerapporter (hundredvis af grafer i ét PDF-dokument) staged hver
+graf som et *side-bundt* (chart-SVG + serialiseret metadata) i en persistent
+cache-mappe, og den samlede PDF kompileres i ét hug. Det indlejrer hvert
+font-snit præcis én gang — i modsætning til fletning af enkelt-PDF'er, der
+duplikerer font-subsets per side:
+
+```{r batch-cache, eval = FALSE}
+ids <- production_chart_ids()          # produktionslisten er sandheden
+for (id in ids_der_skal_restages) {    # kun nye/rettede grafer
+  bfh_stage_pdf_page(result_for(id), cache_dir, id = id)
+}
+bfh_export_batch_pdf(cache_dir, "samlet.pdf",
+  ids = ids,                           # manifest: praecis disse sider
+  inject_assets = inject_my_org_assets
+)
+bfh_prune_page_cache(cache_dir, keep = ids)   # ryd udgaaede bundter
+```
+
+**Trust-model for cache-mappen:** bundterne deserialiseres (RDS) i den
+kaldende R-session ved kompilering. Cache-mappen skal derfor behandles som
+betroet input på linje med `template_path`: peg aldrig `cache_dir` på en
+mappe, andre (utroede) processer kan skrive i, og udled `ids`-manifestet
+programmatisk fra jeres datakilde frem for håndskrevne lister. Kompileringen
+validerer hvert bundts format-version og felttyper og afviser bundter, der
+ikke overholder kontrakten.
+
 ## Font-fallback chain
 
 Hvis `font_path` ikke matcher Typst's font-lookup, falder den tilbage på
