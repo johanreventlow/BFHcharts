@@ -1,4 +1,4 @@
-# BFHcharts (udviklingsversion)
+# BFHcharts 0.29.0
 
 ## Nye funktioner
 
