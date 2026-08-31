@@ -78,12 +78,16 @@ test_that(".file_copy_capture reports success with no warnings for a normal copy
 test_that(".file_copy_capture captures the warning and reports failure", {
   src <- withr::local_tempfile(lines = "hello")
   # Destination's parent directory does not exist -> file.copy() fails and
-  # emits a "problem copying ..." warning instead of erroring outright.
+  # emits a warning instead of erroring outright. The exact wording differs
+  # by platform/call shape (observed: "problem copying ... to ...: <reason>"
+  # for recursive/multi-file copies on Windows, "cannot create file '...',
+  # reason '...'" for this single-file case on Linux) -- assert only that a
+  # non-empty, path-specific warning was captured, not a fixed prefix.
   bad_dest <- file.path(withr::local_tempdir(), "no_such_subdir", "out.txt")
   result <- BFHcharts:::.file_copy_capture(src, bad_dest)
   expect_false(result$success)
   expect_gt(length(result$warnings), 0L)
-  expect_match(result$warnings[[1]], "problem copying", fixed = TRUE)
+  expect_match(result$warnings[[1]], "no_such_subdir", fixed = TRUE)
 })
 
 test_that(".format_copy_failure_reason formats and redacts the first warning", {
