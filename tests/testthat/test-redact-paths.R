@@ -47,3 +47,85 @@ test_that("S2 regression: template-not-found error redacts tempdir path", {
   expect_match(msg, "<tmpdir>", fixed = TRUE)
   expect_false(grepl(td, msg, fixed = TRUE))
 })
+
+test_that(".redact_paths also strips the Windows backslash form of tempdir", {
+  # file.copy()/system2() report OS-native paths -- on Windows that means
+  # "\" separators, even though tempdir()/normalizePath(winslash = "/")
+  # always return "/". Simulate a Windows-native warning message on any
+  # test platform by backslash-ifying the real tempdir() path.
+  td_norm <- normalizePath(tempdir(), winslash = "/", mustWork = FALSE)
+  td_bslash <- gsub("/", "\\", td_norm, fixed = TRUE)
+  msg <- paste0(
+    "problem copying ", td_bslash, "\\bfh-template\\images\\logo.png",
+    " to ", td_bslash, "\\out\\images\\logo.png: No space left on device"
+  )
+  redacted <- BFHcharts:::.redact_paths(msg)
+  expect_match(redacted, "<tmpdir>", fixed = TRUE)
+  expect_false(grepl(td_bslash, redacted, fixed = TRUE),
+    info = "backslash-form tempdir-prefix must not appear in redacted output"
+  )
+  expect_match(redacted, "No space left on device", fixed = TRUE)
+})
+
+test_that(".file_copy_capture reports success with no warnings for a normal copy", {
+  src <- withr::local_tempfile(lines = "hello")
+  dest_dir <- withr::local_tempdir()
+  result <- BFHcharts:::.file_copy_capture(src, file.path(dest_dir, "out.txt"))
+  expect_true(result$success)
+  expect_length(result$warnings, 0L)
+})
+
+test_that(".file_copy_capture captures the warning and reports failure", {
+  src <- withr::local_tempfile(lines = "hello")
+  # Destination's parent directory does not exist -> file.copy() fails and
+  # emits a warning instead of erroring outright. The exact wording differs
+  # by platform/call shape (observed: "problem copying ... to ...: <reason>"
+  # for recursive/multi-file copies on Windows, "cannot create file '...',
+  # reason '...'" for this single-file case on Linux) -- assert only that a
+  # non-empty, path-specific warning was captured, not a fixed prefix.
+  bad_dest <- file.path(withr::local_tempdir(), "no_such_subdir", "out.txt")
+  result <- BFHcharts:::.file_copy_capture(src, bad_dest)
+  expect_false(result$success)
+  expect_gt(length(result$warnings), 0L)
+  expect_match(result$warnings[[1]], "no_such_subdir", fixed = TRUE)
+})
+
+test_that(".format_copy_failure_reason formats and redacts the first warning", {
+  td <- normalizePath(tempdir(), winslash = "/", mustWork = FALSE)
+  warnings <- paste0("problem copying ", td, "/a.txt to ", td, "/b.txt: disk full")
+  formatted <- BFHcharts:::.format_copy_failure_reason(warnings)
+  expect_match(formatted, "^\\n  Reason: ")
+  expect_match(formatted, "disk full", fixed = TRUE)
+  expect_false(grepl(td, formatted, fixed = TRUE))
+})
+
+test_that(".format_copy_failure_reason returns empty string for no warnings", {
+  expect_equal(BFHcharts:::.format_copy_failure_reason(character(0)), "")
+})
+
+test_that(".stage_packaged_template_dir stop() includes the Reason detail on copy failure", {
+  # End-to-end wiring check via a deterministic, cross-platform copy
+  # failure: file.copy(src_dir, output_dir, recursive = TRUE) needs to
+  # create output_dir/<basename(src_dir)>/ as a directory, but a regular
+  # file already occupies that path -- no disk-full or permission tricks
+  # needed, and the real file.copy()-warning path (not a hand-crafted
+  # message) is what reaches the stop().
+  src_dir <- withr::local_tempdir()
+  writeLines("x", file.path(src_dir, "a.txt"))
+
+  output_dir <- withr::local_tempdir()
+  writeLines("blocker", file.path(output_dir, basename(src_dir)))
+
+  testthat::local_mocked_bindings(
+    .get_or_stage_template_cache = function() src_dir,
+    .package = "BFHcharts"
+  )
+
+  err <- tryCatch(
+    BFHcharts:::.stage_packaged_template_dir(output_dir),
+    error = function(e) e
+  )
+  expect_s3_class(err, "error")
+  expect_match(conditionMessage(err), "Failed to copy template directory", fixed = TRUE)
+  expect_match(conditionMessage(err), "Reason:", fixed = TRUE)
+})
