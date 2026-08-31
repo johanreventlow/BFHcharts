@@ -22,6 +22,14 @@
 
 ## Bug fixes
 
+* **PDF-tabellen viser nu "?" for serielængde/antal kryds ved auto-skiftet
+  centerlinje.** Når `bfh_qic()` auto-skifter et run charts centerlinje fra
+  median til gennemsnit (>= 50 % af punkterne lå på medianen), viste
+  SPC-tabellen i PDF-eksporten stadig tal for FORVENTET/FAKTISK
+  serielængde og antal kryds — selvom disse Anhøj-signaler er beregnet mod
+  den nye centerlinje og ikke længere er statistisk pålidelige. Tabellen
+  viser nu "?" for de fire felter i den situation, samme visning som
+  allerede bruges for ukendte/manglende tal.
 * **`%||%` importeres nu fra rlang.** Pakken brugte operatoren overalt,
   men uden import — den fandtes kun via base R på R >= 4.4, selvom
   DESCRIPTION erklærer R >= 4.1. Pakken loader nu også på R 4.1–4.3.

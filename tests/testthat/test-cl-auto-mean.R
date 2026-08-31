@@ -324,6 +324,86 @@ test_that("bfh_extract_spc_stats.data.frame surfaces cl_auto_mean from attribute
   expect_true(stats_from_summary$cl_auto_mean)
 })
 
+test_that("build_typst_page_params masks runs/crossings to \"?\" when cl_auto_mean", {
+  spc_stats <- list(
+    runs_expected = 8, runs_actual = 6,
+    crossings_expected = 10, crossings_actual = 12,
+    outliers_expected = 0, outliers_actual = 2,
+    cl_auto_mean = TRUE
+  )
+  params <- BFHcharts:::build_typst_page_params(metadata = list(), spc_stats = spc_stats)
+
+  expect_match(params, "runs_expected: \"\\?\"")
+  expect_match(params, "runs_actual: \"\\?\"")
+  expect_match(params, "crossings_expected: \"\\?\"")
+  expect_match(params, "crossings_actual: \"\\?\"")
+
+  # Outliers are untouched by the auto-mean mask.
+  expect_match(params, "outliers_expected: 0")
+  expect_match(params, "outliers_actual: 2")
+})
+
+test_that("build_typst_page_params leaves runs/crossings numeric when cl_auto_mean is FALSE", {
+  spc_stats <- list(
+    runs_expected = 8, runs_actual = 6,
+    crossings_expected = 10, crossings_actual = 12,
+    cl_auto_mean = FALSE
+  )
+  params <- BFHcharts:::build_typst_page_params(metadata = list(), spc_stats = spc_stats)
+
+  expect_match(params, "runs_expected: 8")
+  expect_match(params, "runs_actual: 6")
+  expect_match(params, "crossings_expected: 10")
+  expect_match(params, "crossings_actual: 12")
+})
+
+test_that("build_typst_page_params masking respects NULL fields (no synthetic param)", {
+  # Only runs_* present; crossings_* absent entirely (NULL, not just NA).
+  spc_stats <- list(
+    runs_expected = 8, runs_actual = 6,
+    cl_auto_mean = TRUE
+  )
+  params <- BFHcharts:::build_typst_page_params(metadata = list(), spc_stats = spc_stats)
+
+  expect_match(params, "runs_expected: \"\\?\"")
+  expect_match(params, "runs_actual: \"\\?\"")
+  expect_no_match(params, "crossings_expected")
+  expect_no_match(params, "crossings_actual")
+})
+
+test_that("bfh_create_typst_document shows \"?\" for runs/crossings when cl_auto_mean is TRUE", {
+  chart_dir <- tempfile("chart_source_")
+  dir.create(chart_dir)
+  output_dir <- tempfile("typst_output_")
+  dir.create(output_dir)
+
+  chart_path <- file.path(chart_dir, "chart.png")
+  png(chart_path, width = 400, height = 300)
+  plot(1:10)
+  dev.off()
+
+  output_path <- file.path(output_dir, "document.typ")
+
+  BFHcharts:::bfh_create_typst_document(
+    chart_image = chart_path,
+    output = output_path,
+    metadata = list(title = "Auto-mean Test"),
+    spc_stats = list(
+      runs_expected = 8, runs_actual = 6,
+      crossings_expected = 10, crossings_actual = 12,
+      cl_auto_mean = TRUE
+    ),
+    template = "bfh-diagram"
+  )
+
+  content <- paste(readLines(output_path), collapse = "\n")
+
+  expect_match(content, "runs_expected: \"\\?\"")
+  expect_match(content, "runs_actual: \"\\?\"")
+  expect_match(content, "crossings_expected: \"\\?\"")
+  expect_match(content, "crossings_actual: \"\\?\"")
+})
+
 # Acceptance demo: pre-substitution Anhoej output collapses on discrete data
 # (many ties with CL). Post-substitution moves CL off the ties so signals
 # become meaningful again. This is the real-world fix being delivered.
