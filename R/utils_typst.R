@@ -715,6 +715,22 @@ build_typst_page_params <- function(metadata, spc_stats) {
     )
   }
 
+  # Anhoej run/crossing-tal er upaalidelige naar CL blev auto-skiftet til
+  # gennemsnit (>=50% af punkter paa median, se bfh_qic()). Tallene er
+  # stadig beregnet, men signalfortolkningen bag dem holder ikke -- maskeres
+  # til NA saa de rammer samme "?"-visning som spc_val() allerede bruger for
+  # ukendte outlier-tal. Outliers roeres ikke: auto-mean fires kun for run
+  # charts, hvor outlier-raekken alligevel er skjult (is_run_chart).
+  if (isTRUE(spc_stats$cl_auto_mean)) {
+    for (f in c(
+      "runs_expected", "runs_actual", "crossings_expected", "crossings_actual"
+    )) {
+      if (!is.null(spc_stats[[f]])) {
+        spc_stats[[f]] <- NA_real_
+      }
+    }
+  }
+
   # SPC statistics - send "?" for NA (vises i tabel), udelad kun NULL
   spc_val <- function(x) {
     if (is.null(x)) {
