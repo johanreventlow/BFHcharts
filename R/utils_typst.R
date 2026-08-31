@@ -125,12 +125,13 @@ bfh_create_typst_document <- function(chart_image,
           call. = FALSE
         )
       }
-      success <- file.copy(src, output_dir, recursive = TRUE, overwrite = TRUE)
-      if (!success) {
+      copy_result <- .file_copy_capture(src, output_dir, recursive = TRUE, overwrite = TRUE)
+      if (!copy_result$success) {
         stop(
           "Failed to copy template directory\n",
           "  Source: ", basename(src), "\n",
           "  Destination: ", basename(output_dir),
+          .format_copy_failure_reason(copy_result$warnings),
           call. = FALSE
         )
       }
@@ -241,6 +242,35 @@ bfh_create_typst_document <- function(chart_image,
   invisible(output)
 }
 
+# Wraps file.copy() and captures any per-file warnings it emits when a
+# recursive copy partially fails (e.g. "No space left on device", a locked
+# file). Base R's file.copy() only returns a single FALSE on failure -- the
+# OS-level reason is otherwise visible solely via warning(), which is easy
+# to miss (stop() message vs. a separate warnings() call). Callers fold the
+# captured reason into their own error text via .format_copy_failure_reason().
+.file_copy_capture <- function(...) {
+  copy_warnings <- character(0)
+  success <- withCallingHandlers(
+    file.copy(...),
+    warning = function(w) {
+      copy_warnings <<- c(copy_warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  list(success = success, warnings = copy_warnings)
+}
+
+# Formats warnings captured by .file_copy_capture() into a single redacted
+# "  Reason: ..." detail line for a stop() message (first warning only --
+# a failed recursive copy typically emits one per failed file, and the
+# first is representative). Returns "" when there is nothing to report.
+.format_copy_failure_reason <- function(copy_warnings) {
+  if (length(copy_warnings) == 0L) {
+    return("")
+  }
+  paste0("\n  Reason: ", .redact_paths(copy_warnings[[1]]))
+}
+
 # Redact filsystem-stier fra strings der kan ende i user-visible errors.
 # Cycle 01 finding S2: stop()/warning()-paths returnerede tidligere raa
 # absolutte stier (template-cache, chart-staging, .typ-files), som
@@ -252,23 +282,35 @@ bfh_create_typst_document <- function(chart_image,
     return(text)
   }
   text <- paste(text, collapse = "\n")
-  # tempdir: redact baade raw tempdir() form og normalizePath()-form
-  # (paa macOS er tempdir() "/var/folders/..." mens normalizePath returnerer
-  # "/private/var/folders/..."; begge kan optraede i error-strings afhaengigt
-  # af om path'en er passed gennem normalizePath foer interpolation).
+  # tempdir: redact raw tempdir() form, normalizePath()-form, og Windows'
+  # native backslash-form. file.copy()/system2() rapporterer OS-native
+  # stier -- paa Windows betyder det "\" separatorer, selvom
+  # tempdir()/normalizePath(winslash = "/") altid returnerer "/". Uden
+  # backslash-varianten matcher redaction ikke fx file.copy()-advarsler
+  # ("problem copying C:\Users\<bruger>\...\Temp\...: No space left on
+  # device"), og brugernavnet i stien laekker uredigeret i fejlbeskeden.
   td_raw <- tryCatch(tempdir(), error = function(e) "")
   td_norm <- tryCatch(normalizePath(tempdir(), winslash = "/", mustWork = FALSE),
     error = function(e) ""
   )
-  for (td in unique(c(td_raw, td_norm))) {
+  td_variants <- unique(c(td_raw, td_norm))
+  td_variants <- unique(c(td_variants, gsub("/", "\\", td_variants, fixed = TRUE)))
+  for (td in td_variants) {
     if (nzchar(td)) text <- gsub(td, "<tmpdir>", text, fixed = TRUE)
   }
   # HOME (kan vaere "" i CI / non-interactive sessions)
   home <- Sys.getenv("HOME", unset = "")
-  if (nzchar(home)) text <- gsub(home, "<home>", text, fixed = TRUE)
+  if (nzchar(home)) {
+    for (h in unique(c(home, gsub("/", "\\", home, fixed = TRUE)))) {
+      text <- gsub(h, "<home>", text, fixed = TRUE)
+    }
+  }
   # R-library paths
   for (lp in tryCatch(.libPaths(), error = function(e) character(0))) {
-    if (nzchar(lp)) text <- gsub(lp, "<lib>", text, fixed = TRUE)
+    if (!nzchar(lp)) next
+    for (l in unique(c(lp, gsub("/", "\\", lp, fixed = TRUE)))) {
+      text <- gsub(l, "<lib>", text, fixed = TRUE)
+    }
   }
   text
 }
@@ -372,12 +414,13 @@ bfh_create_typst_document <- function(chart_image,
       call. = FALSE
     )
   }
-  success <- file.copy(src, output_dir, recursive = TRUE, overwrite = TRUE)
-  if (!success) {
+  copy_result <- .file_copy_capture(src, output_dir, recursive = TRUE, overwrite = TRUE)
+  if (!copy_result$success) {
     stop(
       "Failed to copy template directory\n",
       "  Source: ", basename(src), "\n",
       "  Destination: ", basename(output_dir),
+      .format_copy_failure_reason(copy_result$warnings),
       call. = FALSE
     )
   }

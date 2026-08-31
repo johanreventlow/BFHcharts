@@ -33,6 +33,15 @@
 * **`%||%` importeres nu fra rlang.** Pakken brugte operatoren overalt,
   men uden import — den fandtes kun via base R på R >= 4.4, selvom
   DESCRIPTION erklærer R >= 4.1. Pakken loader nu også på R 4.1–4.3.
+* **Fejlbeskeden ved mislykket skabelon-kopiering viser nu den reelle
+  årsag.** `"Failed to copy template directory"` afslørede tidligere ikke,
+  *hvorfor* kopieringen fejlede (fx pladsmangel på disken, en låst fil) —
+  årsagen stod kun i en separat `warnings()`-besked, som let overses ved
+  batch-PDF-eksport af mange filer i træk. Fejlbeskeden indeholder nu en
+  `Reason:`-linje med den underliggende OS-fejl. Samtidig rettet: sti-
+  redaction (`.redact_paths()`, bruges til at skjule brugernavn/sti i
+  fejltekster) matchede kun forward-slash-stier og ville derfor ikke have
+  renset Windows' native backslash-stier i den nye `Reason:`-tekst.
 
 # BFHcharts 0.28.2
 
