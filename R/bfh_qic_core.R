@@ -1237,6 +1237,10 @@ apply_spc_labels_to_export <- function(plot,
 #' @param agg.fun Normaliseret aggregeringsfunktionsstreng eller NULL
 #' @param viewport_width_inches Plotbredde i inches eller NULL
 #' @param viewport_height_inches Plothoejde i inches eller NULL
+#' @param has_denominator Logical: blev en rigtig naevner-kolonne (`n`)
+#'   angivet til bfh_qic()? Bruges kun af `bfh_generate_details()` for
+#'   chart_type = "ip", hvor pbcharts() ellers internt saetter en konstant
+#'   naevner (1), som ikke maa fortolkes som rigtig taeller/naevner-data.
 #' @return Liste med chart-konfiguration inkl. label_config
 #' @keywords internal
 #' @noRd
@@ -1253,7 +1257,8 @@ build_bfh_qic_config <- function(chart_type,
                                  multiply,
                                  agg.fun,
                                  viewport_width_inches,
-                                 viewport_height_inches) {
+                                 viewport_height_inches,
+                                 has_denominator = FALSE) {
   label_size <- resolve_label_size(viewport_width_inches, viewport_height_inches)
 
   # label_config$centerline_value, $has_frys_column og $has_skift_column er
@@ -1273,6 +1278,7 @@ build_bfh_qic_config <- function(chart_type,
     cl = cl,
     multiply = multiply,
     agg.fun = agg.fun,
+    has_denominator = has_denominator,
     label_config = list(
       original_viewport_width = viewport_width_inches,
       original_viewport_height = viewport_height_inches,

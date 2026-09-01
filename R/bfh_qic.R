@@ -954,7 +954,8 @@ bfh_qic <- function(data,
     multiply = multiply,
     agg.fun = agg.fun,
     viewport_width_inches = vp$width_inches,
-    viewport_height_inches = vp$height_inches
+    viewport_height_inches = vp$height_inches,
+    has_denominator = !is.null(n_expr)
   )
 
   # ---- Return-routing ----
