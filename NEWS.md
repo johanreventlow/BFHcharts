@@ -1,4 +1,22 @@
-# BFHcharts 0.29.0
+# BFHcharts (udviklingsversion)
+
+## Bug fixes
+
+* **`bfh_generate_details()` viste ikke tæller/nævner for pp/up/ip-charts.**
+  Detalje-linjen i toppen af hver PDF-eksport ("Gns. uge: X • Seneste uge:
+  Y") skulle vise tæller/nævner (fx "75/80") for diagramtyper, der har en
+  naturlig tæller/nævner-struktur — men tjekket kendte kun de gamle
+  koder `p`/`u`, ikke Laney-varianterne `pp`/`up` eller `ip`. Resultatet
+  var en meningsløs afrundet brøkværdi (typisk "0" eller "1") for enhver
+  P'-, U'- eller I'-graf. `pp`/`up` er nu ligestillet med `p`/`u` (samme
+  tæller/nævner-kontrakt, blot Laney-justerede kontrolgrænser). `ip`
+  (I-prime, via den valgfrie `pbcharts`-pakke) viser tæller/nævner kun når
+  en reel nævner blev angivet til `bfh_qic(n = ...)` — uden den
+  degenererer chartet til et almindeligt individuals-chart, og detalje-
+  linjen viser fortsat kun værdien. Denne skelnen krævede et nyt internt
+  `has_denominator`-felt i `bfh_qic_result$config`, da `pbcharts` sætter
+  en konstant naevner (1) internt, når ingen er angivet — det kunne ikke
+  skelnes fra ægte nævnerdata ud fra `qic_data` alene.
 
 ## Nye funktioner
 
@@ -33,6 +51,15 @@
 * **`%||%` importeres nu fra rlang.** Pakken brugte operatoren overalt,
   men uden import — den fandtes kun via base R på R >= 4.4, selvom
   DESCRIPTION erklærer R >= 4.1. Pakken loader nu også på R 4.1–4.3.
+* **Fejlbeskeden ved mislykket skabelon-kopiering viser nu den reelle
+  årsag.** `"Failed to copy template directory"` afslørede tidligere ikke,
+  *hvorfor* kopieringen fejlede (fx pladsmangel på disken, en låst fil) —
+  årsagen stod kun i en separat `warnings()`-besked, som let overses ved
+  batch-PDF-eksport af mange filer i træk. Fejlbeskeden indeholder nu en
+  `Reason:`-linje med den underliggende OS-fejl. Samtidig rettet: sti-
+  redaction (`.redact_paths()`, bruges til at skjule brugernavn/sti i
+  fejltekster) matchede kun forward-slash-stier og ville derfor ikke have
+  renset Windows' native backslash-stier i den nye `Reason:`-tekst.
 
 # BFHcharts 0.28.2
 
