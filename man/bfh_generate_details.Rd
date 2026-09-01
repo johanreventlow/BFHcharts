@@ -38,7 +38,11 @@ period range, averages, latest values, and current level (centerline).
 
 \strong{Chart Type Handling:}
 \itemize{
-\item p-chart, u-chart: Shows numerator/denominator (e.g., "58938/97266")
+\item p, pp, u, up: Shows numerator/denominator (e.g., "58938/97266") -- pp/up
+(Laney-adjusted) share the same numerator/denominator contract as p/u.
+\item ip: Shows numerator/denominator only when a real denominator was
+supplied to \code{bfh_qic(n = ...)}. Without one, ip degenerates to a plain
+individuals chart and shows only the value, same as chart type "i".
 \item Other chart types: Shows only the value (e.g., "127")
 }
 

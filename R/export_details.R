@@ -18,7 +18,11 @@
 #' - Current level (centerline value) with appropriate unit formatting
 #'
 #' **Chart Type Handling:**
-#' - p-chart, u-chart: Shows numerator/denominator (e.g., "58938/97266")
+#' - p, pp, u, up: Shows numerator/denominator (e.g., "58938/97266") -- pp/up
+#'   (Laney-adjusted) share the same numerator/denominator contract as p/u.
+#' - ip: Shows numerator/denominator only when a real denominator was
+#'   supplied to `bfh_qic(n = ...)`. Without one, ip degenerates to a plain
+#'   individuals chart and shows only the value, same as chart type "i".
 #' - Other chart types: Shows only the value (e.g., "127")
 #'
 #' **Interval Detection:**
@@ -117,19 +121,39 @@ bfh_generate_details <- function(x, language = "da", x_labels = NULL) {
 
   chart_type <- config$chart_type
 
-  has_denominator_data <- "y.sum" %in% names(qic_data) &&
+  has_qicharts2_denominator <- "y.sum" %in% names(qic_data) &&
     "n" %in% names(qic_data) &&
     !all(is.na(qic_data$n))
 
-  # run charts med naevnerdata viser broek, ligesom p/u-charts
-  uses_denominator <- (chart_type %in% c("p", "u")) ||
-    (chart_type == "run" && has_denominator_data)
+  # I' (ip) har kun en AEGTE naevner, naar brugeren rent faktisk angav n=
+  # til bfh_qic(). Uden den saetter pbcharts() internt en konstant naevner
+  # (1) for hver raekke, saa chartet degenererer til et almindeligt
+  # individuals-chart -- den konstante 1-naevner maa IKKE fortolkes som
+  # rigtig taeller/naevner-data. Det kan ikke afgoeres paalideligt ud fra
+  # qic_data alene (en konstant-1-naevner ligner enhver anden konstant
+  # naevner), saa config$has_denominator baerer denne information fra
+  # bfh_qic()'s kald-tidspunkt. pbcharts' adapter laegger raa-taelleren i
+  # `num` (ikke `y.sum`, som er qicharts2's eget kolonnenavn for p/u).
+  has_ip_denominator <- identical(chart_type, "ip") &&
+    isTRUE(config$has_denominator) &&
+    "num" %in% names(qic_data) &&
+    "n" %in% names(qic_data)
+
+  # run charts med naevnerdata viser broek, ligesom p/u-charts. P'/U' (pp/up)
+  # er strukturelt identiske med P/U - samme taeller/naevner-kontrakt, blot
+  # Laney-justerede kontrolgraenser - saa de foelger samme regel uden at
+  # kraeve saerskilt data-tjek.
+  uses_denominator <- (chart_type %in% c("p", "pp", "u", "up")) ||
+    (chart_type == "run" && has_qicharts2_denominator) ||
+    has_ip_denominator
+
+  numerator_col <- if (has_ip_denominator) "num" else "y.sum"
 
   lbl_gns <- i18n_lookup("labels.details.gns", language)
   lbl_seneste <- i18n_lookup("labels.details.seneste", language)
 
   if (uses_denominator) {
-    avg_num <- round(mean(qic_data$y.sum, na.rm = TRUE))
+    avg_num <- round(mean(qic_data[[numerator_col]], na.rm = TRUE))
     avg_den <- round(mean(qic_data$n, na.rm = TRUE))
     gns <- sprintf(
       "%s %s: %s/%s", lbl_gns, interval_label,
@@ -147,7 +171,7 @@ bfh_generate_details <- function(x, language = "da", x_labels = NULL) {
   last_row <- utils::tail(qic_data, 1)
 
   if (uses_denominator) {
-    last_num <- round(last_row$y.sum)
+    last_num <- round(last_row[[numerator_col]])
     last_den <- round(last_row$n)
     seneste <- sprintf(
       "%s %s: %s/%s", lbl_seneste, interval_label,

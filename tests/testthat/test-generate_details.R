@@ -49,6 +49,91 @@ test_that("bfh_generate_details viser numerator/denominator for p-chart", {
   expect_true(grepl("/", details))
 })
 
+test_that("bfh_generate_details viser numerator/denominator for pp-chart (Laney P-prime)", {
+  set.seed(42)
+
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
+    events = rpois(24, lambda = 10),
+    total = rpois(24, lambda = 5000) # stort/varierende -> Laney-justering
+  )
+
+  result <- bfh_qic(data,
+    x = date, y = events, n = total,
+    chart_type = "pp", y_axis_unit = "percent"
+  )
+
+  details <- bfh_generate_details(result)
+
+  # pp-chart skal vise numerator/denominator ligesom p-chart, ikke en
+  # afrundet raa proportion (regression for manglende "pp" i chart_type-listen)
+  expect_true(grepl("/", details))
+})
+
+test_that("bfh_generate_details viser numerator/denominator for up-chart (Laney U-prime)", {
+  set.seed(42)
+
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 24),
+    events = rpois(24, lambda = 10),
+    total = rpois(24, lambda = 5000)
+  )
+
+  result <- bfh_qic(data,
+    x = date, y = events, n = total,
+    chart_type = "up", y_axis_unit = "rate"
+  )
+
+  details <- bfh_generate_details(result)
+
+  expect_true(grepl("/", details))
+})
+
+# ---- ip-chart (I-prime): numerator/denominator kun med rigtig naevner ------
+#
+# Bygger syntetiske bfh_qic_result-objekter direkte (samme moenster som
+# make_result_with_x() nedenfor) i stedet for at kalde bfh_qic(chart_type =
+# "ip"), som kraever den valgfrie pbcharts-pakke. Det isolerer testen af
+# bfh_generate_details()'s formateringslogik fra pbcharts-adapteren.
+make_ip_result <- function(has_denominator) {
+  qic_data <- data.frame(
+    x = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 6),
+    y = c(10, 12, 9, 11, 13, 10),
+    num = c(10, 12, 9, 11, 13, 10),
+    n = if (has_denominator) c(100, 120, 90, 110, 130, 100) else rep(1, 6),
+    cl = rep(11, 6),
+    sigma.signal = rep(FALSE, 6)
+  )
+  structure(
+    list(
+      qic_data = qic_data,
+      config = list(
+        chart_type = "ip", y_axis_unit = "count",
+        has_denominator = has_denominator
+      )
+    ),
+    class = c("bfh_qic_result", "list")
+  )
+}
+
+test_that("ip-chart MED rigtig naevner viser numerator/denominator (fra num-kolonnen)", {
+  details <- bfh_generate_details(make_ip_result(has_denominator = TRUE))
+
+  expect_true(grepl("/", details))
+  # Taelleren skal komme fra 'num', ikke en afledt/afrundet 'y'-vaerdi
+  expect_true(grepl("11/108", details)) # mean(num)=10.83->11, mean(n)=108.33->108
+})
+
+test_that("ip-chart UDEN rigtig naevner viser kun vaerdien (degenereret til 'i')", {
+  # pbcharts saetter internt en konstant naevner (1) naar ingen n= er
+  # angivet - den maa IKKE fejlagtigt tolkes som rigtig taeller/naevner-data
+  # (regression for den falske positiv, has_denominator = FALSE afvaerger).
+  details <- bfh_generate_details(make_ip_result(has_denominator = FALSE))
+
+  expect_false(grepl("/", details))
+  expect_true(grepl("Gns\\. måned: 11", details))
+})
+
 test_that("bfh_generate_details afviser ikke-bfh_qic_result input", {
   expect_error(
     bfh_generate_details("not a result"),
