@@ -1,4 +1,4 @@
-# BFHcharts (udviklingsversion)
+# BFHcharts 0.29.1
 
 ## Bug fixes
 
@@ -17,6 +17,25 @@
   `has_denominator`-felt i `bfh_qic_result$config`, da `pbcharts` sætter
   en konstant naevner (1) internt, når ingen er angivet — det kunne ikke
   skelnes fra ægte nævnerdata ud fra `qic_data` alene.
+* **PDF-tabellen viser nu "?" for serielængde/antal kryds ved auto-skiftet
+  centerlinje.** Når `bfh_qic()` auto-skifter et run charts centerlinje fra
+  median til gennemsnit (>= 50 % af punkterne lå på medianen), viste
+  SPC-tabellen i PDF-eksporten stadig tal for FORVENTET/FAKTISK
+  serielængde og antal kryds — selvom disse Anhøj-signaler er beregnet mod
+  den nye centerlinje og ikke længere er statistisk pålidelige. Tabellen
+  viser nu "?" for de fire felter i den situation, samme visning som
+  allerede bruges for ukendte/manglende tal.
+* **Fejlbeskeden ved mislykket skabelon-kopiering viser nu den reelle
+  årsag.** `"Failed to copy template directory"` afslørede tidligere ikke,
+  *hvorfor* kopieringen fejlede (fx pladsmangel på disken, en låst fil) —
+  årsagen stod kun i en separat `warnings()`-besked, som let overses ved
+  batch-PDF-eksport af mange filer i træk. Fejlbeskeden indeholder nu en
+  `Reason:`-linje med den underliggende OS-fejl. Samtidig rettet: sti-
+  redaction (`.redact_paths()`, bruges til at skjule brugernavn/sti i
+  fejltekster) matchede kun forward-slash-stier og ville derfor ikke have
+  renset Windows' native backslash-stier i den nye `Reason:`-tekst.
+
+# BFHcharts 0.29.0
 
 ## Nye funktioner
 
@@ -40,26 +59,9 @@
 
 ## Bug fixes
 
-* **PDF-tabellen viser nu "?" for serielængde/antal kryds ved auto-skiftet
-  centerlinje.** Når `bfh_qic()` auto-skifter et run charts centerlinje fra
-  median til gennemsnit (>= 50 % af punkterne lå på medianen), viste
-  SPC-tabellen i PDF-eksporten stadig tal for FORVENTET/FAKTISK
-  serielængde og antal kryds — selvom disse Anhøj-signaler er beregnet mod
-  den nye centerlinje og ikke længere er statistisk pålidelige. Tabellen
-  viser nu "?" for de fire felter i den situation, samme visning som
-  allerede bruges for ukendte/manglende tal.
 * **`%||%` importeres nu fra rlang.** Pakken brugte operatoren overalt,
   men uden import — den fandtes kun via base R på R >= 4.4, selvom
   DESCRIPTION erklærer R >= 4.1. Pakken loader nu også på R 4.1–4.3.
-* **Fejlbeskeden ved mislykket skabelon-kopiering viser nu den reelle
-  årsag.** `"Failed to copy template directory"` afslørede tidligere ikke,
-  *hvorfor* kopieringen fejlede (fx pladsmangel på disken, en låst fil) —
-  årsagen stod kun i en separat `warnings()`-besked, som let overses ved
-  batch-PDF-eksport af mange filer i træk. Fejlbeskeden indeholder nu en
-  `Reason:`-linje med den underliggende OS-fejl. Samtidig rettet: sti-
-  redaction (`.redact_paths()`, bruges til at skjule brugernavn/sti i
-  fejltekster) matchede kun forward-slash-stier og ville derfor ikke have
-  renset Windows' native backslash-stier i den nye `Reason:`-tekst.
 
 # BFHcharts 0.28.2
 
