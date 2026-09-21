@@ -89,37 +89,37 @@
       afvises, og at kalderen ejer tema/typografi inkl. font-oploesningen
       og anbefalingen af `BFHtheme::theme_bfh()` (D11). Kryds-henvis fra
       `?bfh_export_pdf` ("for grafer uden SPC-statistik, se ...")
-- [ ] 5.7 Render-gatet test i `test-production-template-renders.R`
+- [x] 5.7 Render-gatet test i `test-production-template-renders.R`
       (`skip_if_not_render_test()`): `bfh_export_figure_pdf()` mod
       produktionsskabelonen giver en gyldig 1-sides PDF. Koeres af
       `pdf-smoke` og `render-tests` i CI og fanger Typst-fejl i
       `spc_panel == false`-grenen, som mock-baserede tests ikke ser.
       Tilsvarende render-gatet blandet batch (SPC + figur) i
       `test-export-batch-render.R` → 2 sider
-- [ ] 5.8 Test: ikke-tom `metadata$data_definition` giver klassificeret
+- [x] 5.8 Test: ikke-tom `metadata$data_definition` giver klassificeret
       advarsel (`bfhcharts_warning`) og eksporten gennemfoeres; ingen
       advarsel naar feltet er `NULL`/tomt. Samme test for
       `bfh_stage_figure_page()`
 
 ## 6. `bfh_stage_figure_page()` (TDD)
 
-- [ ] 6.1 Tests: samme validering som 5.1 for `plot`/`title`; `cache_dir`,
+- [x] 6.1 Tests: samme validering som 5.1 for `plot`/`title`; `cache_dir`,
       `id`, `order`, `overwrite`-semantik identisk med `bfh_stage_pdf_page()`
       (genbrug eksisterende testmoenstre)
-- [ ] 6.2 Tests: bundle har `format_version == BATCH_CACHE_FORMAT_VERSION`,
+- [x] 6.2 Tests: bundle har `format_version == BATCH_CACHE_FORMAT_VERSION`,
       `metadata$spc_panel == FALSE`, `spc_stats` med alle `NULL`, og
       `chart.svg` i 264 × 109 mm (pt → mm som i 5.2)
-- [ ] 6.3 Test: blandet batch — eét SPC-bundle + eét figur-bundle →
+- [x] 6.3 Test: blandet batch — eét SPC-bundle + eét figur-bundle →
       `bfh_export_batch_pdf()` (mocket compile) producerer eét `.typ` med to
       `bfh-diagram`-kald, hvor kun det andet har `spc_panel: false`
-- [ ] 6.4 Implementér i `R/export_batch.R` ved siden af `bfh_stage_pdf_page()`;
+- [x] 6.4 Implementér i `R/export_batch.R` ved siden af `bfh_stage_pdf_page()`;
       genbrug `.validate_cache_dir()`, `.validate_page_id()`, id/order-
       resolution og den atomiske rename-blok (udtraek til helper hvis
       duplikering ellers overstiger ~15 linjer)
-- [ ] 6.5 Roxygen inkl. trust-model-afsnit (som `bfh_stage_pdf_page()`) og
+- [x] 6.5 Roxygen inkl. trust-model-afsnit (som `bfh_stage_pdf_page()`) og
       note om at aeldre BFHcharts-versioner rendrer figur-bundles med
       SPC-layout
-- [ ] 6.6 `bfh_export_batch_pdf()`: de to fejltekster der henviser til
+- [x] 6.6 `bfh_export_batch_pdf()`: de to fejltekster der henviser til
       `bfh_stage_pdf_page()` ("Manifest ids without a staged bundle",
       "No staged page bundles found") naevner ogsaa
       `bfh_stage_figure_page()`. Tjek foerst om eksisterende tests laaser

@@ -400,3 +400,301 @@ test_that("ingen data_definition-advarsel naar feltet er NULL eller tomt", {
     expect_no_warning(bfh_export_figure_pdf(fixture_figure(), out, metadata = md))
   }
 })
+
+# ============================================================================
+# bfh_stage_figure_page() (batch-pdf-export)
+# ============================================================================
+
+local_figure_cache <- function(env = parent.frame()) {
+  withr::local_tempdir(.local_envir = env)
+}
+
+read_bundle <- function(cache, id) {
+  readRDS(file.path(cache, id, "page.rds"))
+}
+
+# Run bfh_export_batch_pdf() with the Typst compiler mocked out; returns the
+# captured .typ documents.
+capture_batch_docs <- function(expr_fn, env = parent.frame()) {
+  captured <- new.env(parent = emptyenv())
+  captured$docs <- list()
+  testthat::local_mocked_bindings(
+    bfh_compile_typst = function(typst_file, output, ...) {
+      captured$docs[[length(captured$docs) + 1L]] <- readLines(typst_file)
+      writeLines("%PDF-fake", output)
+      invisible(output)
+    },
+    quarto_available = function(...) TRUE,
+    .package = "BFHcharts",
+    .env = env
+  )
+  expr_fn()
+  captured$docs
+}
+
+# ---- 6.1 Input-validering + staging-semantik --------------------------------
+
+test_that("bfh_stage_figure_page() afviser ugyldigt plot og skriver intet", {
+  cache <- local_figure_cache()
+  composite <- fixture_figure()
+  class(composite) <- c("patchwork", class(composite))
+
+  for (bad in list(data.frame(), NULL, "plot", composite)) {
+    expect_error(
+      bfh_stage_figure_page(bad, cache, metadata = list(title = "x")),
+      "plot",
+      class = "bfhcharts_export_error"
+    )
+  }
+  expect_length(list.files(cache, all.files = TRUE, no.. = TRUE), 0L)
+})
+
+test_that("bfh_stage_figure_page() afviser manglende eller ugyldig title", {
+  cache <- local_figure_cache()
+  p <- fixture_figure()
+
+  for (md in list(
+    list(), list(title = ""), list(title = "  "), list(title = NA_character_),
+    list(title = c("a", "b")), list(title = 1)
+  )) {
+    expect_error(
+      bfh_stage_figure_page(p, cache, metadata = md),
+      "title",
+      class = "bfhcharts_export_error"
+    )
+  }
+  expect_length(list.files(cache, all.files = TRUE, no.. = TRUE), 0L)
+})
+
+test_that("bfh_stage_figure_page() afviser ugyldige argumenter som bfh_stage_pdf_page()", {
+  cache <- local_figure_cache()
+  p <- fixture_figure()
+  md <- list(title = "x")
+
+  expect_error(
+    bfh_stage_figure_page(p, file.path(tempdir(), "does-not-exist-xyz"),
+      metadata = md
+    ),
+    "cache_dir",
+    class = "bfhcharts_export_error"
+  )
+  for (bad_id in c("../evil", "a/b", "a\\b", "a;b", ".hidden", "", "a b")) {
+    expect_error(
+      bfh_stage_figure_page(p, cache, id = bad_id, metadata = md),
+      class = "bfhcharts_export_error"
+    )
+  }
+  expect_error(
+    bfh_stage_figure_page(p, cache, metadata = "not-a-list"),
+    "metadata",
+    class = "bfhcharts_export_error"
+  )
+  expect_error(
+    bfh_stage_figure_page(p, cache, metadata = md, dpi = -1),
+    "dpi",
+    class = "bfhcharts_export_error"
+  )
+  expect_error(
+    bfh_stage_figure_page(p, cache, metadata = md, template = "1bad; import"),
+    "template",
+    class = "bfhcharts_export_error"
+  )
+  expect_error(
+    bfh_stage_figure_page(p, cache, metadata = md, overwrite = NA),
+    "overwrite",
+    class = "bfhcharts_export_error"
+  )
+  expect_error(
+    bfh_stage_figure_page(p, cache, metadata = md, order = "first"),
+    "order",
+    class = "bfhcharts_export_error"
+  )
+  expect_length(list.files(cache, all.files = TRUE, no.. = TRUE), 0L)
+})
+
+test_that("bfh_stage_figure_page() returnerer usynligt og folger id/order-sekvensen", {
+  cache <- local_figure_cache()
+  p <- fixture_figure()
+  md <- list(title = "x")
+
+  expect_invisible(bfh_stage_figure_page(p, cache, id = "inv", metadata = md))
+  s1 <- bfh_stage_figure_page(p, cache, metadata = md)
+  s2 <- bfh_stage_figure_page(p, cache, metadata = md)
+
+  expect_s3_class(s1, "bfh_staged_page")
+  expect_identical(s1$id, "page-0001")
+  expect_identical(s2$id, "page-0002")
+  expect_gt(s2$order, s1$order)
+})
+
+test_that("bfh_stage_figure_page() overwrite = FALSE fejler; TRUE erstatter atomisk", {
+  cache <- local_figure_cache()
+  p <- fixture_figure()
+
+  bfh_stage_figure_page(p, cache, id = "dup", metadata = list(title = "Foer"))
+  expect_error(
+    bfh_stage_figure_page(p, cache,
+      id = "dup", metadata = list(title = "x"), overwrite = FALSE
+    ),
+    "already exists",
+    class = "bfhcharts_export_error"
+  )
+
+  bfh_stage_figure_page(p, cache, id = "dup", metadata = list(title = "Efter"))
+  expect_identical(read_bundle(cache, "dup")$metadata$title, "Efter")
+  expect_length(
+    list.files(cache, pattern = "^\\.(staging|replaced)-", all.files = TRUE), 0L
+  )
+})
+
+test_that("afbrudt figur-staging efterlader ingen synlig bundle", {
+  cache <- local_figure_cache()
+  testthat::local_mocked_bindings(
+    export_chart_svg = function(...) stop("simulated render failure"),
+    .package = "BFHcharts"
+  )
+  expect_error(
+    bfh_stage_figure_page(fixture_figure(), cache,
+      id = "boom", metadata = list(title = "x")
+    )
+  )
+  expect_false(dir.exists(file.path(cache, "boom")))
+  expect_length(list.files(cache, pattern = "^\\.staging-", all.files = TRUE), 0L)
+})
+
+# ---- 6.2 Bundle-indhold ------------------------------------------------------
+
+test_that("figur-bundle har SPC-bundlens format med spc_panel = FALSE og tom stats", {
+  cache <- local_figure_cache()
+  bfh_stage_figure_page(fixture_figure(), cache,
+    id = "fig-1",
+    metadata = list(title = "Ventetid", department = "Kirurgi")
+  )
+
+  bundle <- read_bundle(cache, "fig-1")
+  expect_identical(bundle$format_version, BFHcharts:::BATCH_CACHE_FORMAT_VERSION)
+  expect_identical(bundle$id, "fig-1")
+  expect_identical(bundle$template, "bfh-diagram")
+  expect_identical(bundle$metadata$title, "Ventetid")
+  expect_identical(bundle$metadata$department, "Kirurgi")
+  expect_identical(bundle$metadata$spc_panel, FALSE)
+  expect_true(is.list(bundle$spc_stats))
+  expect_true(all(vapply(bundle$spc_stats, is.null, logical(1))))
+
+  expect_true(file.exists(file.path(cache, "fig-1", "chart.svg")))
+  root <- grep("<svg", readLines(file.path(cache, "fig-1", "chart.svg"),
+    warn = FALSE
+  ), value = TRUE)[1]
+  size <- svg_size_mm(root)
+  expect_equal(unname(size["width"]), 264, tolerance = 0.1 / 264)
+  expect_equal(unname(size["height"]), 109, tolerance = 0.1 / 109)
+  # Ingen PDF produceres ved staging
+  expect_length(list.files(cache, pattern = "\\.pdf$", recursive = TRUE), 0L)
+})
+
+test_that("bruger-leveret spc_panel i metadata ignoreres ved staging", {
+  cache <- local_figure_cache()
+  bfh_stage_figure_page(fixture_figure(), cache,
+    id = "fig-1", metadata = list(title = "x", spc_panel = TRUE)
+  )
+  expect_identical(read_bundle(cache, "fig-1")$metadata$spc_panel, FALSE)
+})
+
+test_that("SPC-bundles baerer stadig ingen spc_panel-vaerdi", {
+  cache <- local_figure_cache()
+  bfh_stage_pdf_page(fixture_test_chart(), cache, id = "spc-1")
+  expect_false("spc_panel" %in% names(read_bundle(cache, "spc-1")$metadata))
+})
+
+# ---- 5.8 (stage) Datadefinition ----------------------------------------------
+
+test_that("bfh_stage_figure_page() advarer om data_definition, men stager", {
+  cache <- local_figure_cache()
+  expect_warning(
+    bfh_stage_figure_page(fixture_figure(), cache,
+      id = "fig-1",
+      metadata = list(title = "x", data_definition = "Antal patienter")
+    ),
+    class = "bfhcharts_warning"
+  )
+  expect_true(dir.exists(file.path(cache, "fig-1")))
+
+  expect_no_warning(
+    bfh_stage_figure_page(fixture_figure(), cache,
+      id = "fig-2", metadata = list(title = "x")
+    )
+  )
+})
+
+# ---- 6.3 Blandet batch -------------------------------------------------------
+
+test_that("blandet batch (SPC + figur) har kun spc_panel: false paa figur-siden", {
+  cache <- local_figure_cache()
+  bfh_stage_pdf_page(fixture_test_chart(), cache, id = "spc-1", order = 1)
+  bfh_stage_figure_page(fixture_figure(), cache,
+    id = "fig-1", order = 2, metadata = list(title = "Figurtitel")
+  )
+  out <- file.path(withr::local_tempdir(), "out.pdf")
+
+  docs <- capture_batch_docs(function() {
+    bfh_export_batch_pdf(cache, out, ids = c("spc-1", "fig-1"))
+  })
+
+  expect_length(docs, 1L)
+  doc <- docs[[1]]
+  # Eet template-import og to sidekald
+  expect_length(grep("^#import ", doc), 1L)
+  calls <- grep("^#bfh-diagram\\(", doc)
+  expect_length(calls, 2L)
+  # spc_panel forekommer praecis een gang og hoerer til det andet kald
+  panel_line <- grep("spc_panel: false", doc, fixed = TRUE)
+  expect_length(panel_line, 1L)
+  expect_gt(panel_line, calls[[2]])
+  expect_true(any(grepl("Figurtitel", doc, fixed = TRUE)))
+  expect_true(file.exists(out))
+})
+
+test_that("figur-bundles behandles som sider ved manifest og pruning", {
+  cache <- local_figure_cache()
+  bfh_stage_figure_page(fixture_figure(), cache,
+    id = "fig-1", metadata = list(title = "x")
+  )
+  out <- file.path(withr::local_tempdir(), "out.pdf")
+
+  docs <- capture_batch_docs(function() {
+    bfh_export_batch_pdf(cache, out, ids = "fig-1")
+  })
+  expect_length(docs, 1L)
+
+  removed <- bfh_prune_page_cache(cache, keep = character(0))
+  expect_identical(removed, "fig-1")
+
+  expect_error(
+    bfh_export_batch_pdf(cache, out, ids = "fig-1"),
+    "fig-1",
+    class = "bfhcharts_export_error"
+  )
+})
+
+# ---- 6.6 Fejltekster i bfh_export_batch_pdf() ----------------------------------
+
+test_that("batch-fejltekster naevner baade SPC- og figur-staging", {
+  cache <- local_figure_cache()
+  out <- file.path(withr::local_tempdir(), "out.pdf")
+
+  empty_msg <- tryCatch(bfh_export_batch_pdf(cache, out),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(empty_msg, "bfh_stage_pdf_page()", fixed = TRUE)
+  expect_match(empty_msg, "bfh_stage_figure_page()", fixed = TRUE)
+
+  bfh_stage_figure_page(fixture_figure(), cache,
+    id = "fig-1", metadata = list(title = "x")
+  )
+  missing_msg <- tryCatch(bfh_export_batch_pdf(cache, out, ids = c("fig-1", "nope")),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(missing_msg, "nope", fixed = TRUE)
+  expect_match(missing_msg, "bfh_stage_pdf_page()", fixed = TRUE)
+  expect_match(missing_msg, "bfh_stage_figure_page()", fixed = TRUE)
+})

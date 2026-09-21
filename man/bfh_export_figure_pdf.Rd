@@ -133,6 +133,7 @@ bfh_export_figure_pdf(
 Other export-functions:
 \code{\link[=bfh_export_batch_pdf]{bfh_export_batch_pdf()}},
 \code{\link[=bfh_prune_page_cache]{bfh_prune_page_cache()}},
+\code{\link[=bfh_stage_figure_page]{bfh_stage_figure_page()}},
 \code{\link[=bfh_stage_pdf_page]{bfh_stage_pdf_page()}}
 }
 \concept{export-functions}
