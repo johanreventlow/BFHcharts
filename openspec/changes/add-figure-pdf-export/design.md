@@ -192,6 +192,12 @@ Skabelonen accepterer stadig `data_definition`, men rendrer den ikke naar
 `spc_panel == false`. R-siden filtrerer ikke — parametren sendes med, saa
 en senere placering under grafen kun kraever en skabelonaendring.
 
+Figur-stierne udsender en klassificeret advarsel (`bfh_warn(...,
+class = "bfhcharts_warning")`) naar `metadata$data_definition` er sat til
+en ikke-tom vaerdi: teksten er kalder-leveret klinisk indhold, og den maa
+ikke forsvinde tavst fra den faerdige side. Advarslen udsendes een gang pr.
+kald og stopper ikke eksporten.
+
 *Rationale:* brugerbeslutning ("drop i foerste omgang"). Eneste alternative
 placering er under grafen i footer-omraadet (13,2 mm), som ikke kan baere
 den nuvaerende 52,8 mm-hoeje kaskade-rendering.

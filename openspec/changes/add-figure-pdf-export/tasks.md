@@ -69,6 +69,10 @@
       (regression mod `plot$labels`-faelden i ggplot2 >= 4.0, jf. D6).
       Afklar her om `ggplot2::get_labs()` findes i mindste understoettede
       ggplot2-version; ellers fallback via `ggplot_build()`
+- [ ] 5.8 Test: ikke-tom `metadata$data_definition` giver klassificeret
+      advarsel (`bfhcharts_warning`) og eksporten gennemfoeres; ingen
+      advarsel naar feltet er `NULL`/tomt. Samme test for
+      `bfh_stage_figure_page()`
 - [ ] 5.4 Test: `batch_session` genbruges (template-dir kopieres ikke igen)
       — spejl af eksisterende session-test
 - [ ] 5.5 Implementér `bfh_export_figure_pdf()` i ny fil `R/export_figure.R`:

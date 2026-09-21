@@ -62,6 +62,8 @@ The function SHALL:
 - render the chart SVG at the full-width dimensions (264 mm × 109 mm), not
   the SPC chart dimensions;
 - send `spc_panel: false` and no SPC statistics parameters to the template;
+- warn (classed BFHcharts warning) when `metadata$data_definition` is
+  non-empty, because full-width mode does not render it;
 - reuse the existing export pipeline: output path validation
   (`validate_export_path()`), `restrict_template` semantics, `inject_assets`
   validation, font auto-detection and `font_path`, logo auto-detection,
@@ -117,6 +119,14 @@ recalculation or statistics extraction.
 - **THEN** the axis titles "wt" and "mpg" SHALL be preserved
 - **AND** blankness SHALL be decided from the resolved labels, not from
   `plot$labels` (which is NULL for mapped aesthetics in ggplot2 >= 4.0)
+
+#### Scenario: Data definition is not dropped silently
+
+- **GIVEN** `metadata$data_definition` set to a non-empty string
+- **WHEN** `bfh_export_figure_pdf()` is called
+- **THEN** it SHALL emit a classed BFHcharts warning stating that the data
+  definition is not rendered in full-width mode
+- **AND** the export SHALL still complete
 
 #### Scenario: Chart SVG uses full-width dimensions
 
