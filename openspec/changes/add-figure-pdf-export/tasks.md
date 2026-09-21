@@ -78,6 +78,13 @@
       `metadata_full$spc_panel <- FALSE` (efter merge, jf. D3),
       + `empty_spc_stats()` → `bfh_compile_typst()`. Samme temp-workspace-
       og on.exit-oprydning som `bfh_export_pdf()`
+- [ ] 5.7 Render-gatet test i `test-production-template-renders.R`
+      (`skip_if_not_render_test()`): `bfh_export_figure_pdf()` mod
+      produktionsskabelonen giver en gyldig 1-sides PDF. Koeres af
+      `pdf-smoke` og `render-tests` i CI og fanger Typst-fejl i
+      `spc_panel == false`-grenen, som mock-baserede tests ikke ser.
+      Tilsvarende render-gatet blandet batch (SPC + figur) i
+      `test-export-batch-render.R` → 2 sider
 - [ ] 5.6 Roxygen: `@family export-functions`, eksempel med `ggplot2`,
       dokumentér at datadefinition ikke rendres, at titlen strippes, og
       at `metadata$title` er paakraevet. Kryds-henvis fra

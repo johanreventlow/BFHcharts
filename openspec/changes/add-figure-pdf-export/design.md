@@ -225,10 +225,20 @@ smoke-templaten validerer kun at pipelinen kompilerer, ikke udseende.
 
 ## Risks / Trade-offs
 
-- **Visuel kalibrering kan ikke verificeres af agenten.** Ingen R/Quarto i
-  agentens miljoe; `pdf-smoke` i CI bruger smoke-templaten, ikke
-  produktionsskabelonen. Mitigering: task med eksplicit brugergodkendelse
-  paa lokalt renderede PDF'er (enkelt + blandet batch) foer merge.
+- **Visuel kalibrering kan ikke verificeres af den foreslaaende agent**
+  (ingen R/Quarto i dens miljoe). *Kompilerbarhed* kan derimod verificeres
+  i CI: `pdf-smoke` saetter `BFHCHARTS_SMOKE_USE_PRODUCTION_TEMPLATE=true`
+  og koerer `tests/testthat/test-production-template-renders.R` mod
+  produktionsskabelonen; `render-tests` koerer de render-gatede tests.
+  (Kun `git-archive-render` bruger smoke-templaten.) Mitigering: (a)
+  render-gatet test der kompilerer produktionsskabelonen med `spc_panel:
+  false` (task 5.7), saa Typst-fejl i den nye gren fanges i CI; (b)
+  eksplicit brugergodkendelse af udseendet paa lokalt renderede PDF'er
+  (enkelt + blandet batch) foer merge.
+  *Review 2026-09-21:* layoutet er afproevet paa en patchet skabelonkopi
+  (raekke 3 som een kolonne): 264 mm SVG fylder kolonnen praecis, 191,4 mm
+  SVG efterlader ~72 mm tomrum (Typst opskalerer ikke), og 264 mm SVG i den
+  nuvaerende skabelon skaleres ned uden clipping (understoetter D5).
 - **Bredt aspektforhold (2,4:1).** Nogle figurtyper (fx hoeje soejlediagrammer)
   passer daarligt. Accepteret: samme betingelse som SPC-charts, og brugeren
   ejer plottet. Hoejde/bredde eksponeres ikke som parametre i v1 (ville
