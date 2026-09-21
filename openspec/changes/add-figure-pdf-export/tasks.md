@@ -57,24 +57,23 @@
 - [ ] 5.1 Tests (uden Quarto): afviser ikke-`ggplot` med klassificeret fejl
       der naevner `plot`; afviser `patchwork`-objekt (D10;
       `skip_if_not_installed("patchwork")`, eller konstruér klassen manuelt
-      med `structure()`); afviser manglende/tom `metadata$title`; afviser
+      med `structure()`); afviser manglende/tom/whitespace/`NA`/
+      laengde-2/ikke-character `metadata$title`; afviser
       `template_path` uden `restrict_template = FALSE` (samme tekst som
       `bfh_export_pdf()`); output-sti valideres via `validate_export_path()`
 - [ ] 5.2 Tests (uden Quarto, mock `bfh_compile_typst` + fang `.typ`):
       genereret dokument indeholder `spc_panel: false`, ingen
       `runs_*`/`crossings_*`/`outliers_*`/`is_run_chart`-params, titel fra
       `metadata$title`, `analysis`/`details`/`footer_content` sendes igennem;
-      SVG'en er renderet i 264 × 109 mm (laes `width`/`height` fra SVG-root)
+      SVG'en er renderet i 264 × 109 mm (laes `width`/`height` fra SVG-root;
+      svglite skriver **pt** — konvertér med 25,4/72 og sammenlign med
+      tolerance 0,1 mm)
 - [ ] 5.3 Tests: plottets `title`/`subtitle` er strippet og margins er 0 mm
       (inspicér `plot_for_export`, ikke SVG); blank aksetitel (`labs(x =
       "")`) fjernes; aksetitler udledt af `aes()` uden `labs()` **bevares**
       (regression mod `plot$labels`-faelden i ggplot2 >= 4.0, jf. D6).
       Afklar her om `ggplot2::get_labs()` findes i mindste understoettede
       ggplot2-version; ellers fallback via `ggplot_build()`
-- [ ] 5.8 Test: ikke-tom `metadata$data_definition` giver klassificeret
-      advarsel (`bfhcharts_warning`) og eksporten gennemfoeres; ingen
-      advarsel naar feltet er `NULL`/tomt. Samme test for
-      `bfh_stage_figure_page()`
 - [ ] 5.4 Test: `batch_session` genbruges (template-dir kopieres ikke igen)
       — spejl af eksisterende session-test
 - [ ] 5.5 Implementér `bfh_export_figure_pdf()` i ny fil `R/export_figure.R`:
@@ -84,6 +83,12 @@
       `metadata_full$spc_panel <- FALSE` (efter merge, jf. D3),
       + `empty_spc_stats()` → `bfh_compile_typst()`. Samme temp-workspace-
       og on.exit-oprydning som `bfh_export_pdf()`
+- [ ] 5.6 Roxygen: `@family export-functions`, eksempel med `ggplot2`,
+      dokumentér at datadefinition ikke rendres (og udloeser advarsel), at
+      titlen strippes, at `metadata$title` er paakraevet, at patchwork
+      afvises, og at kalderen ejer tema/typografi inkl. font-oploesningen
+      og anbefalingen af `BFHtheme::theme_bfh()` (D11). Kryds-henvis fra
+      `?bfh_export_pdf` ("for grafer uden SPC-statistik, se ...")
 - [ ] 5.7 Render-gatet test i `test-production-template-renders.R`
       (`skip_if_not_render_test()`): `bfh_export_figure_pdf()` mod
       produktionsskabelonen giver en gyldig 1-sides PDF. Koeres af
@@ -91,12 +96,10 @@
       `spc_panel == false`-grenen, som mock-baserede tests ikke ser.
       Tilsvarende render-gatet blandet batch (SPC + figur) i
       `test-export-batch-render.R` → 2 sider
-- [ ] 5.6 Roxygen: `@family export-functions`, eksempel med `ggplot2`,
-      dokumentér at datadefinition ikke rendres (og udloeser advarsel), at
-      titlen strippes, at `metadata$title` er paakraevet, at patchwork
-      afvises, og at kalderen ejer tema/typografi inkl. font-oploesningen
-      og anbefalingen af `BFHtheme::theme_bfh()` (D11). Kryds-henvis fra
-      `?bfh_export_pdf` ("for grafer uden SPC-statistik, se ...")
+- [ ] 5.8 Test: ikke-tom `metadata$data_definition` giver klassificeret
+      advarsel (`bfhcharts_warning`) og eksporten gennemfoeres; ingen
+      advarsel naar feltet er `NULL`/tomt. Samme test for
+      `bfh_stage_figure_page()`
 
 ## 6. `bfh_stage_figure_page()` (TDD)
 
@@ -105,7 +108,7 @@
       (genbrug eksisterende testmoenstre)
 - [ ] 6.2 Tests: bundle har `format_version == BATCH_CACHE_FORMAT_VERSION`,
       `metadata$spc_panel == FALSE`, `spc_stats` med alle `NULL`, og
-      `chart.svg` i 264 × 109 mm
+      `chart.svg` i 264 × 109 mm (pt → mm som i 5.2)
 - [ ] 6.3 Test: blandet batch — eét SPC-bundle + eét figur-bundle →
       `bfh_export_batch_pdf()` (mocket compile) producerer eét `.typ` med to
       `bfh-diagram`-kald, hvor kun det andet har `spc_panel: false`
@@ -116,6 +119,11 @@
 - [ ] 6.5 Roxygen inkl. trust-model-afsnit (som `bfh_stage_pdf_page()`) og
       note om at aeldre BFHcharts-versioner rendrer figur-bundles med
       SPC-layout
+- [ ] 6.6 `bfh_export_batch_pdf()`: de to fejltekster der henviser til
+      `bfh_stage_pdf_page()` ("Manifest ids without a staged bundle",
+      "No staged page bundles found") naevner ogsaa
+      `bfh_stage_figure_page()`. Tjek foerst om eksisterende tests laaser
+      teksten; tilpas i saa fald kun ved at **tilfoeje**, ikke omformulere
 
 ## 7. Dokumentation + kvalitet
 

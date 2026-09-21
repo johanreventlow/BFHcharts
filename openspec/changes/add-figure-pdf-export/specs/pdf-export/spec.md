@@ -54,9 +54,10 @@ The function SHALL:
   that inherit from `ggplot` (class `patchwork`) SHALL be rejected the same
   way, because title stripping and margins would only reach the last
   sub-plot;
-- require a non-empty `metadata$title` (the template title has no other
-  source for figures) and abort before any filesystem operation when it is
-  missing;
+- require `metadata$title` to be a single non-NA character string with at
+  least one non-whitespace character (the template title has no other
+  source for figures; an empty title would make the template render its
+  placeholder text) and abort before any filesystem operation otherwise;
 - strip the plot's own title and subtitle and apply zero plot margins,
   mirroring `bfh_export_pdf()` (the title is rendered in the header);
 - remove axis titles that resolve to NULL or blank, and preserve all other
@@ -118,6 +119,12 @@ recalculation or statistics extraction.
 - **THEN** it SHALL abort with a classed export error naming `title`
 - **AND** no Typst compile process SHALL be spawned
 
+#### Scenario: Malformed title is rejected
+
+- **WHEN** `metadata$title` is `""`, `"   "`, `NA_character_`, a character
+  vector of length 2, or a non-character value
+- **THEN** it SHALL abort with a classed export error naming `title`
+
 #### Scenario: Plot title does not appear twice
 
 - **GIVEN** a `ggplot` with `labs(title = "A", subtitle = "B")`
@@ -160,8 +167,9 @@ recalculation or statistics extraction.
 #### Scenario: Chart SVG uses full-width dimensions
 
 - **WHEN** a figure is exported
-- **THEN** the intermediate SVG SHALL declare a width of 264 mm and a
-  height of 109 mm
+- **THEN** the intermediate SVG SHALL declare dimensions equivalent to
+  264 mm × 109 mm within 0.1 mm (svglite writes points: 748.35 pt ×
+  308.98 pt)
 
 #### Scenario: Security guards match single-chart export
 

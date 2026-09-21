@@ -13,8 +13,8 @@ A figure page bundle SHALL:
 - carry `metadata$spc_panel = FALSE` and empty SPC statistics (all `NULL`),
   so the batch compiler renders the page in full-width mode without any
   page-type branching;
-- contain a chart SVG rendered at the full-width dimensions
-  (264 mm × 109 mm);
+- contain a chart SVG rendered at the full-width dimensions (equivalent to
+  264 mm × 109 mm within 0.1 mm; svglite declares them in points);
 - be subject to the same input validation as `bfh_export_figure_pdf()`
   (`ggplot` class, non-empty `metadata$title`) and the same cache-directory,
   page-identifier, ordering, overwrite and atomic-replacement semantics as

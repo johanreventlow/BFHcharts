@@ -159,6 +159,20 @@ korrupt. Nyere versioner der laeser gamle SPC-bundles ser `spc_panel = NULL`
 → default `TRUE`. Ingen af delene retfaerdiggoer en version-bump med
 tvungen re-staging af tusindvis af sider.
 
+*Verificeret (review 2026-09-21):* bundle-laeseren afviser med strikt
+`!=` paa `format_version` (`R/export_batch.R:811`), saa et globalt bump
+ville goere alle eksisterende bundles ulaeselige — begrundelsen holder.
+Nedskaleringen er maalt: en 264 mm SVG i SPC-skabelonens 191,4 mm-kolonne
+skaleres ned uden clipping.
+
+*Alternativ overvejet, ikke valgt:* laeseren accepterer `{1, 2}`, og kun
+figur-bundles skrives som version 2. Aeldre BFHcharts ville da afvise
+figur-bundles hoejlydt ("re-stage this page") i stedet for at rendere dem
+degraderet. Fravalgt fordi det goer formatversionen sidetype-afhaengig og
+"re-stage"-beskeden vildledende (re-staging hjaelper ikke paa en gammel
+installation). Kan genovervejes hvis cache-deling paa tvaers af versioner
+viser sig udbredt.
+
 ### D6: Titel/undertitel strippes fra plottet, som i SPC-stien
 
 `prepare_figure_plot(plot)` = `plot + labs(title = NULL, subtitle = NULL)` +
