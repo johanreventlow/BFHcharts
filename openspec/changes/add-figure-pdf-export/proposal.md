@@ -47,10 +47,12 @@ eksport-dimension, ikke blot en skabelonaendring.
   ...)`:** batch-modstykket til `bfh_stage_pdf_page()`. Bundles kan blandes
   frit med SPC-bundles i `bfh_export_batch_pdf()` uden aendring af
   compile-funktionen.
-- **Flag-transport:** `spc_panel` baeres som `metadata$spc_panel`
-  (whitelistes i `bfh_merge_metadata()`), saa det flyder gennem den
-  eksisterende parameter-builder og bundle-formatet uden signaturaendringer
-  paa eksisterede funktioner. Parametren emitteres kun naar `FALSE`.
+- **Flag-transport:** figur-stierne saetter `metadata_full$spc_panel <-
+  FALSE` efter `bfh_merge_metadata()` (som `cl_caveat_text` i dag), saa
+  flaget flyder gennem den eksisterende parameter-builder og bundle-formatet
+  uden aendring af eksisterende funktioner — heller ikke
+  `bfh_merge_metadata()`. Parametren emitteres kun naar `FALSE`, og en
+  kalder kan ikke saette den via `metadata`.
 - **Intern refaktor:** den del af `compose_typst_document()` /
   `bfh_export_pdf()` der ikke afhaenger af `bfh_qic_result` udtraekkes til
   helpers, saa SPC- og figur-stierne deler een implementation.
@@ -83,7 +85,6 @@ eksport-dimension, ikke blot en skabelonaendring.
 - `tests/smoke/test-template.typ`: samme parameter (Typst afviser ukendte
   named-params; CI's `pdf-smoke` bruger denne).
 - `R/globals.R`: `PDF_IMAGE_WIDTH_FULL_MM`.
-- `R/utils_metadata.R`: `spc_panel` i `bfh_merge_metadata()`-whitelist.
 - `R/utils_typst.R`: `build_typst_page_params()` emitterer `spc_panel: false`.
 - `R/export_pdf.R` (eller ny `R/export_figure.R`): `bfh_export_figure_pdf()`.
 - `R/export_batch.R`: `bfh_stage_figure_page()`.

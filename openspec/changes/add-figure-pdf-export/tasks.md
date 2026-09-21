@@ -6,10 +6,10 @@
 - [ ] 1.2 Ny konstant i `R/globals.R`: `PDF_IMAGE_WIDTH_FULL_MM <- 264` med
       kommentar der udleder tallet (297 − 26,4 − 6,6) parallelt med de
       eksisterende konstanter
-- [ ] 1.3 `spc_panel = TRUE` i `bfh_merge_metadata()`-defaults
-      (`R/utils_metadata.R`) + roxygen-note om at flaget saettes af
-      `bfh_export_figure_pdf()`; test: whitelist lader `spc_panel` passere,
-      ukendte noegler filtreres stadig
+- [ ] 1.3 Regressionstest: `bfh_merge_metadata()` er uaendret —
+      `names()` paa resultatet er de samme 10 felter, og en bruger-leveret
+      `spc_panel` filtreres fra (flaget saettes kun af figur-stierne efter
+      merge, jf. design D3)
 
 ## 2. Skabelon (kan verificeres i CI uafhaengigt af R-koden)
 
@@ -70,7 +70,8 @@
 - [ ] 5.5 Implementér `bfh_export_figure_pdf()` i ny fil `R/export_figure.R`:
       validering → `prepare_figure_plot()` → `export_chart_svg(..., width_mm
       = PDF_IMAGE_WIDTH_FULL_MM)` → `compose_typst_from_parts()` med
-      `bfh_merge_metadata(metadata, metadata$title)` + `spc_panel = FALSE`
+      `bfh_merge_metadata(metadata, metadata$title)`, derefter
+      `metadata_full$spc_panel <- FALSE` (efter merge, jf. D3),
       + `empty_spc_stats()` → `bfh_compile_typst()`. Samme temp-workspace-
       og on.exit-oprydning som `bfh_export_pdf()`
 - [ ] 5.6 Roxygen: `@family export-functions`, eksempel med `ggplot2`,

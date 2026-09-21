@@ -32,7 +32,8 @@ Verificerede forudsaetninger (kodelaesning 2026-09-21):
 - `build_typst_page_params()` er det **eneste** sted parametre til
   skabelonen produceres, delt af enkelt- og batch-sti.
 - `bfh_merge_metadata()` filtrerer ukendte metadata-noegler fra via
-  `intersect()` — et nyt flag i metadata skal whitelistes dér.
+  `intersect()` — et nyt flag kan derfor ikke komme ind via kalderens
+  `metadata`; det skal saettes efter merge (D3).
 - Bundle-laeseren validerer `format_version`, ikke metadata-noegler; en ny
   noegle i `metadata` er bagudkompatibel i begge retninger.
 - `tests/smoke/test-template.typ` skal acceptere praecis samme named-params
@@ -102,21 +103,31 @@ ggplot laegger plottet ud til den stoerrelse (ikke straekning).
 
 ### D3: Flaget transporteres i `metadata$spc_panel`
 
-`bfh_merge_metadata()` faar `spc_panel = TRUE` i defaults (og dermed i
-whitelisten). `build_typst_page_params()` emitterer `spc_panel: false` **kun**
-naar `isFALSE(metadata$spc_panel)`; ved `TRUE`/`NULL` emitteres intet, saa
+De to figur-stier saetter `metadata_full$spc_panel <- FALSE` **efter**
+`bfh_merge_metadata()`-kaldet — samme moenster som `cl_caveat_text`, der i
+dag saettes paa `metadata_full` efter merge. `bfh_merge_metadata()` roeres
+**ikke**: `spc_panel` er fortsat ikke i whitelisten, saa en bruger-leveret
+`metadata$spc_panel` filtreres fra i alle stier.
+`build_typst_page_params()` emitterer `spc_panel: false` **kun** naar
+`isFALSE(metadata$spc_panel)`; ved `TRUE`/`NULL` emitteres intet, saa
 eksisterende `.typ`-output er byte-identisk.
 
-*Rationale:* Flaget naar dermed baade enkelt-sti (`compose_typst_document()`)
-og batch-sti (bundle → `build_typst_page_call()`) uden at roere signaturen
-paa `bfh_create_typst_document()`, `bfh_export_pdf()` eller bundle-laeseren.
+*Rationale:* Flaget naar baade enkelt-sti (`compose_typst_from_parts()`) og
+batch-sti (bundle → `build_typst_page_call()`) uden at roere signaturen paa
+`bfh_create_typst_document()`, `bfh_export_pdf()` eller bundle-laeseren.
 Bundles serialiserer allerede `metadata` som liste.
 
-*Sideeffekt (accepteret):* en kalder kan saette `metadata = list(spc_panel =
-FALSE)` paa et almindeligt `bfh_export_pdf()`-kald og faa et SPC-chart uden
-statistik-kolonne — men grafen vil da vaere for smal (191,4 mm i en 264 mm
-kolonne). Dokumenteres i roxygen som "brug `bfh_export_figure_pdf()`";
-ingen guard, da det ikke er farligt, kun grimt.
+*Alternativ forkastet (review 2026-09-21):* `spc_panel = TRUE` i
+`bfh_merge_metadata()`-defaults. `bfh_stage_pdf_page()` gemmer merge-
+resultatet uaendret i `page.rds`, saa alle SPC-bundles ville faa
+`spc_panel = TRUE` — i strid med batch-deltaens krav om at SPC-bundles ikke
+baerer en `spc_panel`-vaerdi. Det ville ogsaa aendre returformen paa en
+eksporteret funktion, hvis felter `public-api`-spec'en opregner, og lade en
+kalder slaa statistik-kolonnen fra paa et SPC-chart (smal graf i bred
+kolonne).
+
+*Konsekvens:* flaget er ikke kalder-styret. Eneste vej til fuld-bredde-
+tilstand er de to figur-funktioner.
 
 ### D4: To nye exports, ingen udvidelse af eksisterende
 
@@ -180,7 +191,7 @@ chart_svg, typst_file, template, template_path, batch_session, font_path,
 inject_assets)`, som indeholder template-staging, `inject_assets`, logo-
 auto-detect og `bfh_create_typst_document()`-kaldet. Figur-stien kalder
 kernen direkte med `bfh_merge_metadata(metadata, chart_title =
-metadata$title)` og `empty_spc_stats()`.
+metadata$title)` tilfoejet `spc_panel = FALSE` (D3) og `empty_spc_stats()`.
 
 Tilsvarende splittes `validate_bfh_export_pdf_inputs()` saa sti/dpi/
 font_path/inject_assets/session-tjekkene kan genbruges af
@@ -208,8 +219,6 @@ smoke-templaten validerer kun at pipelinen kompilerer, ikke udseende.
   passer daarligt. Accepteret: samme betingelse som SPC-charts, og brugeren
   ejer plottet. Hoejde/bredde eksponeres ikke som parametre i v1 (ville
   bryde "grafen passer praecis i skabelonen"-invarianten).
-- **`metadata$spc_panel = FALSE` paa SPC-eksport** giver smal graf (D3).
-  Lav risiko; dokumenteret.
 - **Refaktor af compose/validate (D8)** roerer den mest testede del af
   eksport-koden. Mitigering: wrapper-signaturer bevares; eksisterende
   export-tests skal passere uden aendrede forventninger (regression guard
