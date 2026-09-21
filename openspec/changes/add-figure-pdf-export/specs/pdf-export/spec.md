@@ -114,13 +114,11 @@ recalculation or statistics extraction.
 - **THEN** it SHALL abort with the same classed errors and messages as
   `bfh_export_pdf()` in the same situations
 
-## MODIFIED Requirements
-
 ### Requirement: Existing single-chart export behavior SHALL be unchanged
 
-Introducing the full-width template mode and the figure export functions
-SHALL NOT change the observable behavior, signatures, defaults or generated
-Typst output of `bfh_export_pdf()`, `bfh_create_export_session()`,
+The full-width template mode and the figure export functions SHALL NOT
+change the observable behavior, signatures, defaults or generated Typst
+output of `bfh_export_pdf()`, `bfh_create_export_session()`,
 `bfh_create_typst_document()` or `bfh_stage_pdf_page()`. In particular, the
 `spc_panel` parameter SHALL be emitted to the template only when explicitly
 `FALSE`, so Typst documents generated for SPC charts are byte-identical to
