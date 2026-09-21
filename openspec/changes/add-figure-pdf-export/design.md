@@ -244,6 +244,29 @@ En hoejlydt afvisning er bedre end et halvt-behandlet plot. Understoettelse
 signaturen. Tjekket bruger klassenavnet og kraever ikke patchwork som
 afhaengighed.
 
+### D11: Kalderen ejer figurens tema og typografi
+
+Figur-stien paalaegger **ikke** `BFHtheme::theme_bfh()` og aendrer ikke
+andet ved plottet end D6 (titel/undertitel, blanke aksetitler, margins).
+"Fuld BFH-branding" gaelder siden (blaa top, analyse, details, footer,
+logo, skabelonens fonte) — ikke figurens indre. Roxygen anbefaler
+`+ BFHtheme::theme_bfh()` og forklarer font-konsekvensen nedenfor.
+
+*Rationale:* et vilkaarligt ggplot kan have et bevidst tema; at overskrive
+det tavst er vaerre end at lade vaere. SPC-stien faar sit tema fra
+`bfh_qic()`, ikke fra eksporten — figur-stien foelger samme ansvarsdeling.
+
+*Font-konsekvens (delvist maalt 2026-09-21):* svglite skriver plottets
+fontfamilie ind i SVG'en; et default-ggplot giver `font-family: "Arial"`.
+Typst oploeser SVG-tekst mod sin egen font-bog. Med `ignore_system_fonts =
+TRUE` (default) og en `font_path` der kun indeholder Mari, findes Arial
+ikke, og figurens tekst falder til Typst' fallback-font. Maalt: uden nogen
+fonte blev figurteksten serif. **Ikke maalt:** udfaldet med Mari via
+`font_path`/`inject_assets` — afklares i task 8.1(d). Falder teksten ogsaa
+dér til en forkert font, er mulighederne (i prioriteret raekkefoelge):
+dokumentér kravet om et tema med en font fra `font_path`; eller advar naar
+SVG'ens fontfamilier ikke findes i den effektive `font_path`.
+
 ## Risks / Trade-offs
 
 - **Visuel kalibrering kan ikke verificeres af den foreslaaende agent**
@@ -285,6 +308,11 @@ Ingen migration — additiv aendring.
    ved naeste release-PR.
 
 ## Open Questions
+
+- Hvilken font faar figurtekst, naar plottet bruger en fontfamilie der ikke
+  ligger i den effektive `font_path` (D11)? Kraever maaling med Mari
+  installeret — task 8.1(d). Svaret afgoer om v1 noejes med dokumentation
+  eller skal have en advarsel.
 
 - Skal `bfh_export_figure_pdf()` acceptere et allerede renderet billede
   (SVG/PNG-sti) som alternativ til `ggplot`? Udenfor v1; kan tilfoejes som

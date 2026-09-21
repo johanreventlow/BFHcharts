@@ -92,8 +92,10 @@
       Tilsvarende render-gatet blandet batch (SPC + figur) i
       `test-export-batch-render.R` → 2 sider
 - [ ] 5.6 Roxygen: `@family export-functions`, eksempel med `ggplot2`,
-      dokumentér at datadefinition ikke rendres, at titlen strippes, og
-      at `metadata$title` er paakraevet. Kryds-henvis fra
+      dokumentér at datadefinition ikke rendres (og udloeser advarsel), at
+      titlen strippes, at `metadata$title` er paakraevet, at patchwork
+      afvises, og at kalderen ejer tema/typografi inkl. font-oploesningen
+      og anbefalingen af `BFHtheme::theme_bfh()` (D11). Kryds-henvis fra
       `?bfh_export_pdf` ("for grafer uden SPC-statistik, se ...")
 
 ## 6. `bfh_stage_figure_page()` (TDD)
@@ -136,7 +138,10 @@
 - [ ] 8.1 **Bruger** renderer lokalt: (a) en figur-PDF med analyse, details,
       footer og logo via `inject_assets`; (b) en blandet batch-PDF med een
       SPC-side og een figur-side; (c) en eksisterende SPC-PDF foer/efter
-      (skal vaere identisk). Godkendelse noteres her med dato
+      (skal vaere identisk); (d) en figur **uden** `theme_bfh()` (default-
+      tema, Arial i SVG'en) med Mari via `font_path`/`inject_assets` —
+      notér hvilken font figurteksten faar (D11, Open Questions).
+      Godkendelse noteres her med dato
 - [ ] 8.2 Justér inset/spacing i fuld-bredde-tilstand efter feedback (kun
       skabelonen; ingen R-aendring forventet)
 - [ ] 8.3 Draft-PR mod `develop`; alle CI-jobs groenne (3× R CMD check,

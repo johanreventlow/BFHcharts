@@ -72,6 +72,15 @@ The function SHALL:
   validation, font auto-detection and `font_path`, logo auto-detection,
   `batch_session` reuse, temp-workspace protection and cleanup.
 
+The function SHALL NOT apply a theme to the plot or otherwise alter it
+beyond the title/subtitle strip, blank axis title removal and zero margins
+listed above: the caller owns the figure's theme and typography. The
+function documentation SHALL state that text in the figure is rendered with
+the font family the plot declares, resolved against the fonts available to
+the Typst compile (`font_path`, injected assets, and system fonts only when
+`ignore_system_fonts = FALSE`), and SHALL recommend `BFHtheme::theme_bfh()`
+for consistency with SPC pages.
+
 The function SHALL NOT offer SPC-specific arguments (`auto_analysis`,
 `use_ai`, `strict_baseline` and related) and SHALL NOT perform SPC label
 recalculation or statistics extraction.
@@ -138,6 +147,15 @@ recalculation or statistics extraction.
 - **THEN** it SHALL emit a classed BFHcharts warning stating that the data
   definition is not rendered in full-width mode
 - **AND** the export SHALL still complete
+
+#### Scenario: Caller's theme is preserved
+
+- **GIVEN** a `ggplot` with `theme_minimal()` and a user-set
+  `panel.grid` override
+- **WHEN** it is exported
+- **THEN** the plot prepared for export SHALL carry the caller's theme
+  elements unchanged, apart from `plot.margin`, the stripped title and
+  subtitle, and blanked empty axis titles
 
 #### Scenario: Chart SVG uses full-width dimensions
 
