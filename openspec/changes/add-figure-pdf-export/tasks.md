@@ -22,16 +22,16 @@
       indhold (SPC-overskrift, tabel, caveat, datadefinition) udelades
 - [x] 2.3 `tests/smoke/test-template.typ`: tilfoej `spc_panel: true` og skip
       SPC-summary-blokken naar `false`
-- [ ] 2.4 Verificér at default-stien er byte-identisk: diff af det
+- [x] 2.4 Verificér at default-stien er byte-identisk: diff af det
       genererede `.typ` for et eksisterende test-fixture foer/efter (ingen
       `spc_panel`-param emitteres ved `TRUE`)
 
 ## 3. Parameter-builder
 
-- [ ] 3.1 Test: `build_typst_page_params()` emitterer `spc_panel: false` naar
+- [x] 3.1 Test: `build_typst_page_params()` emitterer `spc_panel: false` naar
       `metadata$spc_panel` er `FALSE`; emitterer **intet** ved `TRUE` og
       `NULL` (regression: eksisterende param-output uaendret)
-- [ ] 3.2 Implementér i `build_typst_page_params()` (`R/utils_typst.R`)
+- [x] 3.2 Implementér i `build_typst_page_params()` (`R/utils_typst.R`)
 
 ## 4. Refaktor af delt pipeline (egen commit, groen suite foer trin 5)
 

@@ -30,3 +30,32 @@ test_that("bfh_merge_metadata() er uaendret og filtrerer spc_panel fra", {
   expect_null(merged$spc_panel)
   expect_false("spc_panel" %in% names(merged))
 })
+
+# ---- 3. Parameter-builder ---------------------------------------------------
+
+test_that("build_typst_page_params() emitterer spc_panel: false kun naar FALSE", {
+  spc_stats <- list(runs_expected = 7, runs_actual = 5, is_run_chart = FALSE)
+  base_md <- list(hospital = "H", title = "T")
+
+  params_false <- BFHcharts:::build_typst_page_params(
+    c(base_md, list(spc_panel = FALSE)), spc_stats
+  )
+  expect_match(params_false, "spc_panel: false", fixed = TRUE)
+
+  # TRUE og NULL: ingen spc_panel-param, output byte-identisk med foer
+  baseline <- BFHcharts:::build_typst_page_params(base_md, spc_stats)
+  params_true <- BFHcharts:::build_typst_page_params(
+    c(base_md, list(spc_panel = TRUE)), spc_stats
+  )
+  expect_false(grepl("spc_panel", baseline, fixed = TRUE))
+  expect_identical(params_true, baseline)
+})
+
+test_that("build_typst_page_params() ignorerer ikke-logiske spc_panel-vaerdier", {
+  for (bad in list("false", 0, NA, c(FALSE, FALSE))) {
+    params <- BFHcharts:::build_typst_page_params(
+      list(title = "T", spc_panel = bad), list()
+    )
+    expect_false(grepl("spc_panel", params, fixed = TRUE))
+  }
+})

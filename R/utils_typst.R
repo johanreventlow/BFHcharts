@@ -747,6 +747,14 @@ build_typst_page_params <- function(metadata, spc_stats) {
     params$logo_path <- sprintf('"%s"', escape_typst_string(metadata$logo_path))
   }
 
+  # Full-width figure mode: emitted ONLY when explicitly FALSE (set by
+  # bfh_export_figure_pdf()/bfh_stage_figure_page() after bfh_merge_metadata()).
+  # TRUE/NULL emit nothing so SPC documents stay byte-identical and the
+  # template default (true) applies. isFALSE() ignores non-logical values.
+  if (isFALSE(metadata$spc_panel)) {
+    params$spc_panel <- "false"
+  }
+
   # Date parameter - format for Typst template
   if (!is.null(metadata$date)) {
     date_obj <- as.Date(metadata$date)
