@@ -109,6 +109,50 @@
 }
 
 
+#' Valider restrict_template + template_path (security-gate)
+#'
+#' Delt af bfh_export_pdf() og bfh_export_figure_pdf(). Skal koere FOER alle
+#' filsystem-operationer og Quarto-kald.
+#'
+#' @noRd
+validate_restrict_template <- function(restrict_template, template_path) {
+  # Threat model: template_path compiles arbitrary Typst code with the privileges
+  # of the calling R session (equivalent to source()). When restrict_template=TRUE,
+  # only the packaged template is allowed, preventing custom-template injection
+  # from untrusted Shiny inputs or API parameters.
+  #
+  # Type validation runs BEFORE the isTRUE() guard: isTRUE(NA) and
+  # isTRUE("TRUE") return FALSE, which would silently fail-open when a caller
+  # forwards a coerced/serialized non-logical value (e.g. from JSON or a
+  # Shiny input with strict_json = FALSE).
+  if (!is.logical(restrict_template) || length(restrict_template) != 1L ||
+    is.na(restrict_template)) {
+    bfh_abort(
+      paste0(
+        "restrict_template must be TRUE or FALSE (single non-NA logical)",
+        "\n  Got: ", paste(class(restrict_template), collapse = "/"),
+        " (length ", length(restrict_template), ")"
+      ),
+      class = "bfhcharts_export_error"
+    )
+  }
+  if (restrict_template && !is.null(template_path)) {
+    bfh_abort(
+      paste0(
+        "template_path is not allowed when restrict_template = TRUE.",
+        "\n  Only the packaged BFHcharts template may be used in this configuration.",
+        "\n  To opt in to a trusted custom Typst template, pass",
+        " restrict_template = FALSE explicitly.",
+        "\n  WARNING: custom templates are compiled with full filesystem access",
+        " (equivalent to source()) -- never forward user-supplied input to",
+        " template_path."
+      ),
+      class = "bfhcharts_export_error"
+    )
+  }
+}
+
+
 #' Valider inputs til bfh_export_pdf()
 #'
 #' Kaster fejl ved ugyldige input-vaerdier. Klasse-tjekket ligger her; de

@@ -54,36 +54,36 @@
 
 ## 5. `bfh_export_figure_pdf()` (TDD)
 
-- [ ] 5.1 Tests (uden Quarto): afviser ikke-`ggplot` med klassificeret fejl
+- [x] 5.1 Tests (uden Quarto): afviser ikke-`ggplot` med klassificeret fejl
       der naevner `plot`; afviser `patchwork`-objekt (D10;
       `skip_if_not_installed("patchwork")`, eller konstruér klassen manuelt
       med `structure()`); afviser manglende/tom/whitespace/`NA`/
       laengde-2/ikke-character `metadata$title`; afviser
       `template_path` uden `restrict_template = FALSE` (samme tekst som
       `bfh_export_pdf()`); output-sti valideres via `validate_export_path()`
-- [ ] 5.2 Tests (uden Quarto, mock `bfh_compile_typst` + fang `.typ`):
+- [x] 5.2 Tests (uden Quarto, mock `bfh_compile_typst` + fang `.typ`):
       genereret dokument indeholder `spc_panel: false`, ingen
       `runs_*`/`crossings_*`/`outliers_*`/`is_run_chart`-params, titel fra
       `metadata$title`, `analysis`/`details`/`footer_content` sendes igennem;
       SVG'en er renderet i 264 × 109 mm (laes `width`/`height` fra SVG-root;
       svglite skriver **pt** — konvertér med 25,4/72 og sammenlign med
       tolerance 0,1 mm)
-- [ ] 5.3 Tests: plottets `title`/`subtitle` er strippet og margins er 0 mm
+- [x] 5.3 Tests: plottets `title`/`subtitle` er strippet og margins er 0 mm
       (inspicér `plot_for_export`, ikke SVG); blank aksetitel (`labs(x =
       "")`) fjernes; aksetitler udledt af `aes()` uden `labs()` **bevares**
       (regression mod `plot$labels`-faelden i ggplot2 >= 4.0, jf. D6).
       Afklar her om `ggplot2::get_labs()` findes i mindste understoettede
       ggplot2-version; ellers fallback via `ggplot_build()`
-- [ ] 5.4 Test: `batch_session` genbruges (template-dir kopieres ikke igen)
+- [x] 5.4 Test: `batch_session` genbruges (template-dir kopieres ikke igen)
       — spejl af eksisterende session-test
-- [ ] 5.5 Implementér `bfh_export_figure_pdf()` i ny fil `R/export_figure.R`:
+- [x] 5.5 Implementér `bfh_export_figure_pdf()` i ny fil `R/export_figure.R`:
       validering → `prepare_figure_plot()` → `export_chart_svg(..., width_mm
       = PDF_IMAGE_WIDTH_FULL_MM)` → `compose_typst_from_parts()` med
       `bfh_merge_metadata(metadata, metadata$title)`, derefter
       `metadata_full$spc_panel <- FALSE` (efter merge, jf. D3),
       + `empty_spc_stats()` → `bfh_compile_typst()`. Samme temp-workspace-
       og on.exit-oprydning som `bfh_export_pdf()`
-- [ ] 5.6 Roxygen: `@family export-functions`, eksempel med `ggplot2`,
+- [x] 5.6 Roxygen: `@family export-functions`, eksempel med `ggplot2`,
       dokumentér at datadefinition ikke rendres (og udloeser advarsel), at
       titlen strippes, at `metadata$title` er paakraevet, at patchwork
       afvises, og at kalderen ejer tema/typografi inkl. font-oploesningen

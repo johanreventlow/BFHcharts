@@ -106,8 +106,9 @@ bfh_stage_pdf_page(result, cache_dir,
 \code{\link[=bfh_prune_page_cache]{bfh_prune_page_cache()}} to remove stale bundles,
 \code{\link[=bfh_export_pdf]{bfh_export_pdf()}} for single-chart export.
 
-Other export-functions: 
-\code{\link{bfh_export_batch_pdf}()},
-\code{\link{bfh_prune_page_cache}()}
+Other export-functions:
+\code{\link[=bfh_export_batch_pdf]{bfh_export_batch_pdf()}},
+\code{\link[=bfh_export_figure_pdf]{bfh_export_figure_pdf()}},
+\code{\link[=bfh_prune_page_cache]{bfh_prune_page_cache()}}
 }
 \concept{export-functions}
