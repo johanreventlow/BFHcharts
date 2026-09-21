@@ -13,14 +13,14 @@
 
 ## 2. Skabelon (kan verificeres i CI uafhaengigt af R-koden)
 
-- [ ] 2.1 `bfh-template.typ`: tilfoej `spc_panel: true` til signaturen +
+- [x] 2.1 `bfh-template.typ`: tilfoej `spc_panel: true` til signaturen +
       parameter-dokumentation i fil-headeren
-- [ ] 2.2 `bfh-template.typ`: raekke 3 rendres betinget — `spc_panel == true`
+- [x] 2.2 `bfh-template.typ`: raekke 3 rendres betinget — `spc_panel == true`
       → eksisterende 2-kolonne-grid uaendret; `false` → een `grid.cell`
       med venstrekolonnens inset (`left: 26.4mm, top: 2mm, right: 6.6mm`)
       indeholdende details-linje, graf og footer-grid. Hoejrekolonnens
       indhold (SPC-overskrift, tabel, caveat, datadefinition) udelades
-- [ ] 2.3 `tests/smoke/test-template.typ`: tilfoej `spc_panel: true` og skip
+- [x] 2.3 `tests/smoke/test-template.typ`: tilfoej `spc_panel: true` og skip
       SPC-summary-blokken naar `false`
 - [ ] 2.4 Verificér at default-stien er byte-identisk: diff af det
       genererede `.typ` for et eksisterende test-fixture foer/efter (ingen
