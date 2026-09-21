@@ -820,7 +820,6 @@ local({
 })
 ```
 
-
 ### Requirement: `restrict_template` SHALL default to TRUE
 
 `bfh_export_pdf(restrict_template)` SHALL default to `TRUE`. Callers
@@ -958,3 +957,207 @@ text <- pdftools::pdf_text(out)
 expect_match(paste(text, collapse = "\n"), "manually specified")
 expect_no_match(paste(text, collapse = "\n"), "fastsat manuelt")
 ```
+
+### Requirement: Typst template SHALL support a full-width figure layout
+
+The `bfh-diagram` Typst template SHALL accept a boolean parameter
+`spc_panel` (default `true`). When `false`, the chart row SHALL render as a
+single full-width column containing the details line, the chart and the
+footer, and SHALL NOT render the SPC statistics column (heading, statistics
+table, centerline caveat, data definition). The header block (hospital,
+department, auto-scaled title) and the analysis row SHALL be unchanged in
+both modes.
+
+**Rationale:**
+- Non-SPC figures (distributions, bar charts, plain time series) need the
+  same branded page without an empty statistics column.
+- A flag on the existing template keeps the calibrated header/title code
+  single-sourced and lets one batch document mix SPC and figure pages under
+  one template import.
+
+#### Scenario: Default mode is unchanged
+
+- **GIVEN** a Typst document that does not pass `spc_panel`
+- **WHEN** it is compiled
+- **THEN** the page SHALL render exactly as before this change (two-column
+  chart row with the 72.6 mm SPC column)
+
+#### Scenario: Full-width mode omits the SPC column
+
+- **GIVEN** a Typst document passing `spc_panel: false`
+- **WHEN** it is compiled
+- **THEN** the chart row SHALL contain no "Statistisk Proceskontrol"
+  heading, no statistics table, no centerline caveat and no data definition
+- **AND** the chart SHALL occupy the width between the 26.4 mm left inset
+  and the 6.6 mm right inset (264 mm on A4 landscape)
+- **AND** the header block and analysis row SHALL render identically to
+  default mode
+
+#### Scenario: Smoke template accepts the parameter
+
+- **GIVEN** the CI smoke template (`tests/smoke/test-template.typ`)
+- **WHEN** a document passes `spc_panel: false`
+- **THEN** compilation SHALL succeed (Typst rejects unknown named
+  parameters, so the smoke template mirrors the production signature)
+
+### Requirement: Package SHALL export a figure PDF export function
+
+The package SHALL export `bfh_export_figure_pdf(plot, output, metadata,
+...)` which renders an arbitrary `ggplot` object to a single-page branded
+PDF using the packaged template in full-width mode.
+
+The function SHALL:
+- accept a single `ggplot` object as `plot` and reject any other class with
+  a classed BFHcharts export error naming the argument; composite plots
+  that inherit from `ggplot` (class `patchwork`) SHALL be rejected the same
+  way, because title stripping and margins would only reach the last
+  sub-plot;
+- require `metadata$title` to be a single non-NA character string with at
+  least one non-whitespace character (the template title has no other
+  source for figures; an empty title would make the template render its
+  placeholder text) and abort before any filesystem operation otherwise;
+- strip the plot's own title and subtitle and apply zero plot margins,
+  mirroring `bfh_export_pdf()` (the title is rendered in the header);
+- remove axis titles that resolve to NULL or blank, and preserve all other
+  axis titles, including titles derived from aesthetic mappings rather than
+  set with `labs()`;
+- render the chart SVG at the full-width dimensions (264 mm × 109 mm), not
+  the SPC chart dimensions;
+- send `spc_panel: false` and no SPC statistics parameters to the template;
+- warn (classed BFHcharts warning) when `metadata$data_definition` is
+  non-empty, because full-width mode does not render it;
+- reuse the existing export pipeline: output path validation
+  (`validate_export_path()`), `restrict_template` semantics, `inject_assets`
+  validation, font auto-detection and `font_path`, logo auto-detection,
+  `batch_session` reuse, temp-workspace protection and cleanup.
+
+The function SHALL NOT apply a theme to the plot or otherwise alter it
+beyond the title/subtitle strip, blank axis title removal and zero margins
+listed above: the caller owns the figure's theme and typography. The
+function documentation SHALL state that text in the figure is rendered with
+the font family the plot declares, resolved against the fonts available to
+the Typst compile (`font_path`, injected assets, and system fonts only when
+`ignore_system_fonts = FALSE`), and SHALL recommend `BFHtheme::theme_bfh()`
+for consistency with SPC pages.
+
+The function SHALL NOT offer SPC-specific arguments (`auto_analysis`,
+`use_ai`, `strict_baseline` and related) and SHALL NOT perform SPC label
+recalculation or statistics extraction.
+
+#### Scenario: Figure exported with branding
+
+- **GIVEN** a `ggplot` object and `metadata = list(title = "Ventetid",
+  department = "Kirurgi", analysis = "...", details = "2025")`
+- **WHEN** `bfh_export_figure_pdf(p, "out.pdf", metadata = metadata)` is
+  called
+- **THEN** one PDF SHALL be written whose page shows the blue header with
+  hospital/department/title, the analysis row, the details line, the
+  figure across the full chart width, and the footer
+- **AND** no SPC statistics column SHALL be present
+
+#### Scenario: Non-ggplot input is rejected
+
+- **WHEN** `bfh_export_figure_pdf(data.frame(), "out.pdf", metadata =
+  list(title = "x"))` is called
+- **THEN** it SHALL abort with a classed export error naming `plot`
+- **AND** no file SHALL be written
+
+#### Scenario: Composite plot is rejected
+
+- **GIVEN** a `patchwork` object composed of two `ggplot` objects
+- **WHEN** it is passed as `plot`
+- **THEN** the function SHALL abort with a classed export error naming
+  `plot` and stating that composite plots are not supported
+- **AND** no file SHALL be written
+
+#### Scenario: Missing title is rejected
+
+- **WHEN** `bfh_export_figure_pdf(p, "out.pdf")` is called without
+  `metadata$title`
+- **THEN** it SHALL abort with a classed export error naming `title`
+- **AND** no Typst compile process SHALL be spawned
+
+#### Scenario: Malformed title is rejected
+
+- **WHEN** `metadata$title` is `""`, `"   "`, `NA_character_`, a character
+  vector of length 2, or a non-character value
+- **THEN** it SHALL abort with a classed export error naming `title`
+
+#### Scenario: Plot title does not appear twice
+
+- **GIVEN** a `ggplot` with `labs(title = "A", subtitle = "B")`
+- **WHEN** it is exported with `metadata$title = "C"`
+- **THEN** the rendered chart SHALL contain neither "A" nor "B"
+- **AND** the header SHALL show "C"
+
+#### Scenario: Blank axis titles are removed
+
+- **GIVEN** a `ggplot` with `labs(x = "", y = "Ventetid")`
+- **WHEN** it is exported
+- **THEN** the x-axis title SHALL be removed (`element_blank()`)
+- **AND** the y-axis title "Ventetid" SHALL be preserved
+
+#### Scenario: Aesthetic-derived axis titles are preserved
+
+- **GIVEN** `ggplot(df, aes(wt, mpg)) + geom_point()` with no `labs()` call
+- **WHEN** it is exported
+- **THEN** the axis titles "wt" and "mpg" SHALL be preserved
+- **AND** blankness SHALL be decided from the resolved labels, not from
+  `plot$labels` (which is NULL for mapped aesthetics in ggplot2 >= 4.0)
+
+#### Scenario: Data definition is not dropped silently
+
+- **GIVEN** `metadata$data_definition` set to a non-empty string
+- **WHEN** `bfh_export_figure_pdf()` is called
+- **THEN** it SHALL emit a classed BFHcharts warning stating that the data
+  definition is not rendered in full-width mode
+- **AND** the export SHALL still complete
+
+#### Scenario: Caller's theme is preserved
+
+- **GIVEN** a `ggplot` with `theme_minimal()` and a user-set
+  `panel.grid` override
+- **WHEN** it is exported
+- **THEN** the plot prepared for export SHALL carry the caller's theme
+  elements unchanged, apart from `plot.margin`, the stripped title and
+  subtitle, and blanked empty axis titles
+
+#### Scenario: Chart SVG uses full-width dimensions
+
+- **WHEN** a figure is exported
+- **THEN** the intermediate SVG SHALL declare dimensions equivalent to
+  264 mm × 109 mm within 0.1 mm (svglite writes points: 748.35 pt ×
+  308.98 pt)
+
+#### Scenario: Security guards match single-chart export
+
+- **WHEN** `bfh_export_figure_pdf()` is called with a traversal output path,
+  a `template_path` without `restrict_template = FALSE`, or an
+  `inject_assets` callback failing validation
+- **THEN** it SHALL abort with the same classed errors and messages as
+  `bfh_export_pdf()` in the same situations
+
+### Requirement: Existing single-chart export behavior SHALL be unchanged
+
+The full-width template mode and the figure export functions SHALL NOT
+change the observable behavior, signatures, defaults or generated Typst
+output of `bfh_export_pdf()`, `bfh_create_export_session()`,
+`bfh_create_typst_document()` or `bfh_stage_pdf_page()`. In particular, the
+`spc_panel` parameter SHALL be emitted to the template only when explicitly
+`FALSE`, so Typst documents generated for SPC charts are byte-identical to
+those generated before this change.
+
+#### Scenario: Single-chart export regression guard
+
+- **GIVEN** the existing single-chart export test suite
+- **WHEN** this change is implemented
+- **THEN** all existing pdf-export tests SHALL pass without modification of
+  their expectations
+
+#### Scenario: SPC documents carry no spc_panel parameter
+
+- **GIVEN** a `bfh_qic_result` exported via `bfh_export_pdf()` or staged via
+  `bfh_stage_pdf_page()`
+- **WHEN** the Typst document is generated
+- **THEN** it SHALL NOT contain a `spc_panel` parameter
+
