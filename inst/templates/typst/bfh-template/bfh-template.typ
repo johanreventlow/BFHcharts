@@ -35,6 +35,12 @@
 //              foreground logo is rendered -- PDF compiles successfully without
 //              proprietary branding assets. Companion packages (BFHchartsAssets)
 //              populate this via inject_assets callback or auto-detection.
+//   spc_panel: Boolean (default true). When false, the chart row renders as one
+//              full-width column (details line, chart, footer) and the SPC
+//              statistics column (heading, table, caveat, data definition) is
+//              omitted. Used by bfh_export_figure_pdf() / bfh_stage_figure_page()
+//              for non-SPC figures. data_definition is accepted but not
+//              rendered in this mode.
 //   chart: Chart content (image or other content) (required via content parameter)
 //
 #let bfh-diagram(
@@ -58,6 +64,7 @@
   cl_caveat_text: none,
   footer_content: none,
   logo_path: none,
+  spc_panel: true,
   chart
 ) = {
   set text(font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
@@ -98,6 +105,35 @@ show table.cell: it => {
        dx: 0mm)
      } else { none }
   )
+
+  // Left column of the chart row: details line, chart and footer. Hoisted so the
+  // same content object is used in both layouts (spc_panel true/false).
+  let chart-column = block(inset: (left: 26.4mm, top: 2mm, right: 6.6mm, bottom: 0mm),
+      width: 100%,
+      //fill: rgb("ccebfa"), //Blå baggrundsfarve - husk at fjerne
+          block(inset: (0mm),
+          text(fill: rgb("888888"),
+               //weight: "light",
+               size: 9pt,
+               upper(details))) +
+
+          text(
+               chart
+             ) +
+
+          // Production date and footer content below chart
+          v(1fr) +
+          grid(
+            columns: (1fr, 1fr),
+            align: bottom,
+            align(left, text(fill: rgb("888888"), size: 6pt, [
+              PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")
+              #if author != none { [ · #author] }
+            ])),
+            align(right, if footer_content != none { text(fill: rgb("888888"), size: 6pt, upper(footer_content)) })
+          )
+
+        )
 
     grid(
       //rows: (51.33mm, 22.66mm, 1fr),
@@ -186,35 +222,11 @@ show table.cell: it => {
 
 grid.cell(
     fill: rgb("ffffff"),
+    if spc_panel {
     grid(
       rows: (auto),
       columns: (auto, 72.6mm),
-      block(inset: (left: 26.4mm, top: 2mm, right: 6.6mm, bottom: 0mm),
-      width: 100%,
-      //fill: rgb("ccebfa"), //Blå baggrundsfarve - husk at fjerne
-          block(inset: (0mm),
-          text(fill: rgb("888888"),
-               //weight: "light",
-               size: 9pt,
-               upper(details))) +
-
-          text(
-               chart
-             ) +
-
-          // Production date and footer content below chart
-          v(1fr) +
-          grid(
-            columns: (1fr, 1fr),
-            align: bottom,
-            align(left, text(fill: rgb("888888"), size: 6pt, [
-              PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")
-              #if author != none { [ · #author] }
-            ])),
-            align(right, if footer_content != none { text(fill: rgb("888888"), size: 6pt, upper(footer_content)) })
-          )
-
-        ),
+      chart-column,
       block(inset: (left: 0mm, top: 2mm, right: 6.6mm),
       //fill: rgb("ccebfa"),
       width: 100%,
@@ -389,6 +401,10 @@ grid.cell(
 )
 
     )
+    } else {
+      // Full-width figure mode: no SPC column, chart fills the row
+      chart-column
+    }
   )
 )
 

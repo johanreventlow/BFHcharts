@@ -194,6 +194,7 @@ funktioner bruges kun til eksport, analysetekst og introspektion af resultatet.
 |----------|--------|
 | `bfh_export_pdf()` | Eksporterer et resultat til PDF via Typst-skabeloner med hospitalsbranding (kræver Quarto CLI). Returnerer resultatet usynligt (pipe-venlig). |
 | `bfh_export_png()` | Eksporterer til PNG i millimeter-dimensioner med konfigurerbar opløsning. Pipe-venlig. |
+| `bfh_export_figure_pdf()` | Eksporterer et vilkårligt `ggplot` (ikke et SPC-diagram) til en brandet PDF-side i fuld bredde. Se [Eksport af andre grafer end SPC](#eksport-af-andre-grafer-end-spc). |
 | `bfh_create_export_session()` | Opretter en genbrugelig batch-session der deler Typst-skabelonens assets på tværs af mange eksporter (IO-optimering ved loops). |
 
 ### Analysetekst
@@ -321,6 +322,37 @@ Bundterne overlever R-sessioner og processer: skal to grafer rettes, re-stages
 kun de to id'er, hvorefter `bfh_export_batch_pdf()` genbruger resten fra
 cachen uden nogen genberegning. Se `vignette("safe-exports")` for
 trust-modellen for cache-mappen.
+
+### Eksport af andre grafer end SPC
+
+Samme brandede side (blå header, analyse, detaljelinje, footer, logo) kan bruges
+til grafer, der ikke er seriediagrammer — fx fordelinger eller søjlediagrammer
+uden Anhøj-analyse. Grafen fylder hele bredden, og SPC-statistik-kolonnen
+udelades. `metadata$title` er påkrævet og står i den blå header (grafens egen
+titel og undertitel fjernes, så titlen ikke står to gange):
+
+```r
+library(ggplot2)
+
+p <- ggplot(mtcars, aes(factor(cyl))) +
+  geom_bar() +
+  labs(x = "Cylindre", y = "Biler") +
+  BFHtheme::theme_bfh()          # anbefalet: ensartet typografi med SPC-siderne
+
+bfh_export_figure_pdf(
+  p, "cylindre.pdf",
+  metadata = list(
+    title    = "De fleste biler har fire eller otte cylindre",
+    analysis = "Fordelingen af cylindre i stikprøven.",
+    details  = "Kilde: mtcars"
+  )
+)
+```
+
+I samlerapporter stages figuren med `bfh_stage_figure_page()` og blandes frit
+med SPC-sider i `bfh_export_batch_pdf()`. Bemærk: kalderen ejer figurens tema
+og skrifttype; sammensatte plots (`patchwork`) understøttes ikke endnu, og en
+`data_definition` rendres ikke i fuld bredde (der udsendes en advarsel).
 
 ### Skrifttyper og branding
 

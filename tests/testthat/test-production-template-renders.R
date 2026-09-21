@@ -105,3 +105,37 @@ test_that("production template renders with simulated inject_assets (Mari skippe
   info <- pdftools::pdf_info(output_pdf)
   expect_gte(info$pages, 1L)
 })
+
+test_that("figure export renders a valid 1-page PDF in full-width mode", {
+  skip_if_not_render_test()
+  skip_if_no_pdf_render_deps()
+
+  # Fanger Typst-fejl i spc_panel == false-grenen af produktionsskabelonen,
+  # som mock-baserede tests ikke ser (change add-figure-pdf-export).
+  plot <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) +
+    ggplot2::geom_point() +
+    ggplot2::labs(title = "Plot title must not appear")
+
+  output_pdf <- withr::local_tempfile(fileext = ".pdf")
+  expect_no_error(
+    bfh_export_figure_pdf(
+      plot, output_pdf,
+      metadata = list(
+        title = "Figurtitel i headeren",
+        department = "Kirurgi",
+        analysis = "Analysetekst",
+        details = "Periode 2025"
+      )
+    )
+  )
+
+  expect_true(file.exists(output_pdf))
+  info <- pdftools::pdf_info(output_pdf)
+  expect_equal(info$pages, 1L)
+
+  text <- paste(pdftools::pdf_text(output_pdf), collapse = "\n")
+  expect_match(text, "Figurtitel i headeren", fixed = TRUE)
+  expect_false(grepl("Plot title must not appear", text, fixed = TRUE))
+  # SPC-kolonnen er ikke rendret
+  expect_false(grepl("PROCESKONTROL", toupper(text), fixed = TRUE))
+})

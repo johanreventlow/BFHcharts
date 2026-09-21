@@ -106,25 +106,7 @@ bfh_stage_pdf_page <- function(x, cache_dir,
       class = "bfhcharts_export_error"
     )
   }
-  cache_dir <- .validate_cache_dir(cache_dir, require_writable = TRUE)
-  if (!is.list(metadata)) {
-    bfh_abort("metadata must be a list", class = "bfhcharts_export_error")
-  }
-  if (!is.numeric(dpi) || length(dpi) != 1L || is.na(dpi) || dpi <= 0) {
-    bfh_abort("dpi must be a single positive number",
-      class = "bfhcharts_export_error"
-    )
-  }
-  if (!is.character(template) || length(template) != 1L ||
-    !grepl("^[a-zA-Z][a-zA-Z0-9_-]*$", template)) {
-    bfh_abort(
-      "template must be a valid Typst identifier (letters, numbers, hyphens, underscores)",
-      class = "bfhcharts_export_error"
-    )
-  }
-  if (!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) {
-    bfh_abort("overwrite must be TRUE or FALSE", class = "bfhcharts_export_error")
-  }
+  cache_dir <- .validate_stage_args(cache_dir, metadata, dpi, template, overwrite)
   if (!is.logical(strict_baseline) || length(strict_baseline) != 1L ||
     is.na(strict_baseline)) {
     bfh_abort("strict_baseline must be TRUE or FALSE",
@@ -134,30 +116,10 @@ bfh_stage_pdf_page <- function(x, cache_dir,
   .validate_strict_baseline(x, strict_baseline)
 
   # ---- 2. Resolve id + order -------------------------------------------------
-  existing <- .list_bundle_ids(cache_dir)
-  if (is.null(id)) {
-    id <- .next_default_page_id(existing)
-  }
-  .validate_page_id(id)
-  target <- file.path(cache_dir, id)
-  if (dir.exists(target) && !overwrite) {
-    bfh_abort(
-      paste0(
-        "A page bundle with id '", id, "' already exists in the cache.\n",
-        "  Pass overwrite = TRUE to replace it, or choose another id."
-      ),
-      class = "bfhcharts_export_error"
-    )
-  }
-  if (is.null(order)) {
-    order <- .next_default_order(cache_dir, existing)
-  }
-  if (!is.numeric(order) || length(order) != 1L || is.na(order)) {
-    bfh_abort("order must be a single non-NA number",
-      class = "bfhcharts_export_error"
-    )
-  }
-  order <- as.numeric(order)
+  target_info <- .resolve_stage_target(cache_dir, id, order, overwrite)
+  id <- target_info$id
+  order <- target_info$order
+  target <- target_info$target
 
   # ---- 3. Finalize metadata + stats (same pipeline as bfh_export_pdf) --------
   metadata <- prepare_export_metadata(
@@ -183,7 +145,91 @@ bfh_stage_pdf_page <- function(x, cache_dir,
     )
   }
 
-  # ---- 4. Render chart SVG into a hidden staging dir -------------------------
+  # ---- 4. Render chart SVG + write bundle atomically -------------------------
+  .stage_bundle_atomically(cache_dir, id, target, function(staging) {
+    plot_for_export <- prepare_export_plot(x)
+    export_chart_svg(plot_for_export, file.path(staging, "chart.svg"), dpi)
+
+    bundle <- list(
+      format_version = BATCH_CACHE_FORMAT_VERSION,
+      id = id,
+      order = order,
+      metadata = metadata_full,
+      spc_stats = spc_stats,
+      template = template,
+      created_at = Sys.time(),
+      bfhcharts_version = as.character(utils::packageVersion("BFHcharts"))
+    )
+    saveRDS(bundle, file.path(staging, "page.rds"))
+  })
+
+  invisible(structure(
+    list(id = id, path = target, order = order),
+    class = "bfh_staged_page"
+  ))
+}
+
+
+# Validate the arguments shared by all staging functions (cache_dir, metadata,
+# dpi, template, overwrite). Returns the normalized cache_dir.
+.validate_stage_args <- function(cache_dir, metadata, dpi, template, overwrite) {
+  cache_dir <- .validate_cache_dir(cache_dir, require_writable = TRUE)
+  if (!is.list(metadata)) {
+    bfh_abort("metadata must be a list", class = "bfhcharts_export_error")
+  }
+  if (!is.numeric(dpi) || length(dpi) != 1L || is.na(dpi) || dpi <= 0) {
+    bfh_abort("dpi must be a single positive number",
+      class = "bfhcharts_export_error"
+    )
+  }
+  if (!is.character(template) || length(template) != 1L ||
+    !grepl("^[a-zA-Z][a-zA-Z0-9_-]*$", template)) {
+    bfh_abort(
+      "template must be a valid Typst identifier (letters, numbers, hyphens, underscores)",
+      class = "bfhcharts_export_error"
+    )
+  }
+  if (!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) {
+    bfh_abort("overwrite must be TRUE or FALSE", class = "bfhcharts_export_error")
+  }
+  cache_dir
+}
+
+
+# Resolve bundle id, target directory and ordering key for staging.
+.resolve_stage_target <- function(cache_dir, id, order, overwrite) {
+  existing <- .list_bundle_ids(cache_dir)
+  if (is.null(id)) {
+    id <- .next_default_page_id(existing)
+  }
+  .validate_page_id(id)
+  target <- file.path(cache_dir, id)
+  if (dir.exists(target) && !overwrite) {
+    bfh_abort(
+      paste0(
+        "A page bundle with id '", id, "' already exists in the cache.\n",
+        "  Pass overwrite = TRUE to replace it, or choose another id."
+      ),
+      class = "bfhcharts_export_error"
+    )
+  }
+  if (is.null(order)) {
+    order <- .next_default_order(cache_dir, existing)
+  }
+  if (!is.numeric(order) || length(order) != 1L || is.na(order)) {
+    bfh_abort("order must be a single non-NA number",
+      class = "bfhcharts_export_error"
+    )
+  }
+  list(id = id, order = as.numeric(order), target = target)
+}
+
+
+# Write a bundle into a hidden staging directory via `write_fn(staging)` and
+# rename it into place atomically. A failed or interrupted write never leaves
+# a half-written bundle visible; an existing bundle is displaced to a backup
+# first and restored if the final rename fails.
+.stage_bundle_atomically <- function(cache_dir, id, target, write_fn) {
   staging <- file.path(
     cache_dir, sprintf(".staging-%s-%d", id, Sys.getpid())
   )
@@ -194,22 +240,8 @@ bfh_stage_pdf_page <- function(x, cache_dir,
     add = TRUE
   )
 
-  plot_for_export <- prepare_export_plot(x)
-  export_chart_svg(plot_for_export, file.path(staging, "chart.svg"), dpi)
+  write_fn(staging)
 
-  bundle <- list(
-    format_version = BATCH_CACHE_FORMAT_VERSION,
-    id = id,
-    order = order,
-    metadata = metadata_full,
-    spc_stats = spc_stats,
-    template = template,
-    created_at = Sys.time(),
-    bfhcharts_version = as.character(utils::packageVersion("BFHcharts"))
-  )
-  saveRDS(bundle, file.path(staging, "page.rds"))
-
-  # ---- 5. Atomic rename into place ------------------------------------------
   backup <- NULL
   if (dir.exists(target)) {
     backup <- file.path(cache_dir, sprintf(".replaced-%s-%d", id, Sys.getpid()))
@@ -230,6 +262,122 @@ bfh_stage_pdf_page <- function(x, cache_dir,
     )
   }
   if (!is.null(backup) && dir.exists(backup)) unlink(backup, recursive = TRUE)
+  invisible(target)
+}
+
+
+#' Stage a ggplot Figure as a Page Bundle for Batch PDF Export
+#'
+#' Batch counterpart of \code{\link{bfh_export_figure_pdf}}: renders one
+#' arbitrary \code{ggplot} object (not an SPC chart) into a persistent "page
+#' bundle" in \code{cache_dir}, producing no PDF. Figure bundles use the same
+#' on-disk format and \code{format_version} as bundles from
+#' \code{\link{bfh_stage_pdf_page}}, so \code{\link{bfh_export_batch_pdf}}
+#' compiles SPC pages and figure pages into one document without any change
+#' to its interface. Order, manifest selection, chunking and pruning treat
+#' figure bundles exactly like SPC bundles.
+#'
+#' The bundle carries \code{metadata$spc_panel = FALSE} and empty SPC
+#' statistics, so the batch compiler renders the page in full-width mode
+#' (chart SVG at 264 x 109 mm) without page-type branching. Plot handling is
+#' identical to \code{\link{bfh_export_figure_pdf}}: the plot's own title and
+#' subtitle are removed, blank axis titles are removed, margins are set to
+#' 0 mm, and the caller owns the figure's theme and typography (see the font
+#' note there).
+#'
+#' Staging is atomic and re-staging an existing \code{id} replaces the bundle,
+#' exactly as for \code{\link{bfh_stage_pdf_page}}.
+#'
+#' @section Trust model:
+#' The cache directory is trusted input: bundles are deserialized (RDS) in
+#' the calling R session by \code{bfh_export_batch_pdf()}. Never populate a
+#' cache directory from untrusted sources, and do not point \code{cache_dir}
+#' at world-writable locations in multi-tenant deployments.
+#'
+#' @section Compatibility:
+#' Older BFHcharts versions do not know the full-width layout: reading a figure
+#' bundle from a cache shared with such a version renders the page with the SPC
+#' layout (empty statistics column, narrower chart). Re-staging does not help
+#' on the old installation; upgrade it instead.
+#'
+#' @param plot A single \code{ggplot} object. Composite plots (class
+#'   \code{patchwork}) are rejected.
+#' @param cache_dir Existing, writable directory holding the page cache.
+#' @param id Bundle identifier (single string matching
+#'   \code{^[A-Za-z0-9][A-Za-z0-9_-]*$}). Default: a zero-padded sequence id.
+#' @param order Numeric ordering key for page sorting at compile time.
+#'   Default: one past the highest order currently staged in the cache.
+#' @param metadata Named list of template metadata; \code{title} is
+#'   \strong{required}. Same fields and \code{data_definition} behavior as
+#'   \code{\link{bfh_export_figure_pdf}}.
+#' @param template Typst template function name (default \code{"bfh-diagram"}).
+#'   All bundles compiled into one document must share the same template.
+#' @param dpi Resolution passed to the SVG device (default 150).
+#' @param overwrite Logical. Replace an existing bundle with this \code{id}
+#'   (default TRUE). \code{FALSE} raises an error on duplicate ids.
+#'
+#' @return Invisibly, a \code{bfh_staged_page} object: a list with
+#'   \code{id}, \code{path} (bundle directory), and \code{order}.
+#'
+#' @examples
+#' \dontrun{
+#' cache_dir <- "~/reports/spc-cache"
+#' dir.create(cache_dir, showWarnings = FALSE)
+#' p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) +
+#'   ggplot2::geom_point()
+#' bfh_stage_figure_page(p, cache_dir,
+#'   id = "vaegt-vs-forbrug",
+#'   metadata = list(title = "Tunge biler koerer kortere")
+#' )
+#' }
+#'
+#' @export
+#' @family export-functions
+#' @seealso [bfh_export_batch_pdf()] to compile staged bundles,
+#'   [bfh_stage_pdf_page()] for SPC charts,
+#'   [bfh_export_figure_pdf()] for single-figure export.
+bfh_stage_figure_page <- function(plot, cache_dir,
+                                  id = NULL,
+                                  order = NULL,
+                                  metadata = list(),
+                                  template = "bfh-diagram",
+                                  dpi = 150,
+                                  overwrite = TRUE) {
+  # ---- 1. Input validation ---------------------------------------------------
+  .validate_figure_plot(plot)
+  cache_dir <- .validate_stage_args(cache_dir, metadata, dpi, template, overwrite)
+  .validate_figure_title(metadata)
+  .warn_figure_data_definition(metadata)
+
+  # ---- 2. Resolve id + order -------------------------------------------------
+  target_info <- .resolve_stage_target(cache_dir, id, order, overwrite)
+  id <- target_info$id
+  order <- target_info$order
+  target <- target_info$target
+
+  # ---- 3. Finalize metadata (full-width flag set after merge) ----------------
+  metadata_full <- build_figure_metadata(metadata)
+
+  # ---- 4. Render full-width chart SVG + write bundle atomically --------------
+  .stage_bundle_atomically(cache_dir, id, target, function(staging) {
+    plot_for_export <- prepare_figure_plot(plot)
+    export_chart_svg(
+      plot_for_export, file.path(staging, "chart.svg"), dpi,
+      width_mm = PDF_IMAGE_WIDTH_FULL_MM
+    )
+
+    bundle <- list(
+      format_version = BATCH_CACHE_FORMAT_VERSION,
+      id = id,
+      order = order,
+      metadata = metadata_full,
+      spc_stats = empty_spc_stats(),
+      template = template,
+      created_at = Sys.time(),
+      bfhcharts_version = as.character(utils::packageVersion("BFHcharts"))
+    )
+    saveRDS(bundle, file.path(staging, "page.rds"))
+  })
 
   invisible(structure(
     list(id = id, path = target, order = order),
@@ -392,7 +540,8 @@ bfh_export_batch_pdf <- function(cache_dir, output,
         paste0(
           "Manifest ids without a staged bundle in the cache:\n",
           paste0("  - ", missing_ids, collapse = "\n"), "\n",
-          "  Stage the missing pages with bfh_stage_pdf_page() and retry."
+          "  Stage the missing pages with bfh_stage_pdf_page() (or bfh_stage_figure_page()",
+          " for figures) and retry."
         ),
         class = "bfhcharts_export_error"
       )
@@ -403,7 +552,8 @@ bfh_export_batch_pdf <- function(cache_dir, output,
     bfh_abort(
       paste0(
         "No staged page bundles found in cache directory.\n",
-        "  Stage pages with bfh_stage_pdf_page() before compiling."
+        "  Stage pages with bfh_stage_pdf_page() (or bfh_stage_figure_page() for",
+        " figures) before compiling."
       ),
       class = "bfhcharts_export_error"
     )

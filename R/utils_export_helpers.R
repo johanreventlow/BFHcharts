@@ -109,10 +109,55 @@
 }
 
 
+#' Valider restrict_template + template_path (security-gate)
+#'
+#' Delt af bfh_export_pdf() og bfh_export_figure_pdf(). Skal koere FOER alle
+#' filsystem-operationer og Quarto-kald.
+#'
+#' @noRd
+validate_restrict_template <- function(restrict_template, template_path) {
+  # Threat model: template_path compiles arbitrary Typst code with the privileges
+  # of the calling R session (equivalent to source()). When restrict_template=TRUE,
+  # only the packaged template is allowed, preventing custom-template injection
+  # from untrusted Shiny inputs or API parameters.
+  #
+  # Type validation runs BEFORE the isTRUE() guard: isTRUE(NA) and
+  # isTRUE("TRUE") return FALSE, which would silently fail-open when a caller
+  # forwards a coerced/serialized non-logical value (e.g. from JSON or a
+  # Shiny input with strict_json = FALSE).
+  if (!is.logical(restrict_template) || length(restrict_template) != 1L ||
+    is.na(restrict_template)) {
+    bfh_abort(
+      paste0(
+        "restrict_template must be TRUE or FALSE (single non-NA logical)",
+        "\n  Got: ", paste(class(restrict_template), collapse = "/"),
+        " (length ", length(restrict_template), ")"
+      ),
+      class = "bfhcharts_export_error"
+    )
+  }
+  if (restrict_template && !is.null(template_path)) {
+    bfh_abort(
+      paste0(
+        "template_path is not allowed when restrict_template = TRUE.",
+        "\n  Only the packaged BFHcharts template may be used in this configuration.",
+        "\n  To opt in to a trusted custom Typst template, pass",
+        " restrict_template = FALSE explicitly.",
+        "\n  WARNING: custom templates are compiled with full filesystem access",
+        " (equivalent to source()) -- never forward user-supplied input to",
+        " template_path."
+      ),
+      class = "bfhcharts_export_error"
+    )
+  }
+}
+
+
 #' Valider inputs til bfh_export_pdf()
 #'
-#' Kaster fejl ved ugyldige input-vaerdier. Daekker class, metadata,
-#' dpi, font_path, inject_assets og batch_session validering.
+#' Kaster fejl ved ugyldige input-vaerdier. Klasse-tjekket ligger her; de
+#' x-uafhaengige tjek (sti, metadata, dpi, font_path, inject_assets,
+#' batch_session) er delt med figur-stien via validate_export_common_inputs().
 #'
 #' @noRd
 validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
@@ -129,6 +174,31 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
     )
   }
 
+  validate_export_common_inputs(
+    output, metadata, dpi, font_path, inject_assets, batch_session, template_path
+  )
+}
+
+
+# Metadata-felter som SPC-eksport accepterer uden "Unknown metadata fields"-advarsel.
+EXPORT_KNOWN_METADATA_FIELDS <- c(
+  "hospital", "department", "analysis", "details", "author",
+  "date", "data_definition", "target", "footer_content", "logo_path"
+)
+
+
+#' Valider de x-uafhaengige eksport-inputs (delt af SPC- og figur-stien)
+#'
+#' Daekker output-sti, metadata, dpi, font_path, inject_assets og
+#' batch_session. `known_fields` styrer hvilke metadata-felter der ikke
+#' udloeser "Unknown metadata fields"-advarslen; figur-stien tilfoejer
+#' `title` (paakraevet der, men ikke et SPC-metadatafelt).
+#'
+#' @noRd
+validate_export_common_inputs <- function(output, metadata, dpi,
+                                          font_path, inject_assets,
+                                          batch_session, template_path,
+                                          known_fields = EXPORT_KNOWN_METADATA_FIELDS) {
   # Fix #455: PDF export warned on extension mismatch (same as PNG export)
   # for consistency. Both now use "warn" so users are informed but not blocked.
   validate_export_path(output, extension = "pdf", ext_action = "warn")
@@ -138,11 +208,6 @@ validate_bfh_export_pdf_inputs <- function(x, output, metadata, dpi,
   }
 
   # Metadata felt-validering
-  known_fields <- c(
-    "hospital", "department", "analysis", "details", "author",
-    "date", "data_definition", "target", "footer_content", "logo_path"
-  )
-
   unknown_fields <- setdiff(names(metadata), known_fields)
   if (length(unknown_fields) > 0) {
     warning(
@@ -426,13 +491,15 @@ prepare_export_plot <- function(x) {
 #' Eksporter chart til SVG via ggsave
 #'
 #' @noRd
-export_chart_svg <- function(plot_for_export, chart_svg, dpi) {
+export_chart_svg <- function(plot_for_export, chart_svg, dpi,
+                             width_mm = PDF_IMAGE_WIDTH_MM,
+                             height_mm = PDF_IMAGE_HEIGHT_MM) {
   tryCatch(
     ggplot2::ggsave(
       filename = chart_svg,
       plot     = plot_for_export,
-      width    = PDF_IMAGE_WIDTH_MM / 25.4, # 250mm original arbejdsstoerrelse
-      height   = PDF_IMAGE_HEIGHT_MM / 25.4, # 140mm
+      width    = width_mm / 25.4,
+      height   = height_mm / 25.4,
       units    = "in",
       dpi      = dpi,
       device   = "svg"
@@ -447,21 +514,11 @@ export_chart_svg <- function(plot_for_export, chart_svg, dpi) {
 }
 
 
-#' Sammensaet Typst-dokument og loes font_path op
+#' Sammensaet Typst-dokument for et bfh_qic_result og loes font_path op
 #'
-#' Stager template, koerer inject_assets, auto-detekterer logo + font_path
-#' fra injicerede assets, og skriver derefter .typ-filen via
-#' bfh_create_typst_document() med finaliseret metadata.
-#'
-#' Order matters: template-staging og inject_assets SKAL koere FOER
-#' bfh_create_typst_document(), saa logo_path-auto-detect kan se de injicerede
-#' filer og populere metadata$logo_path inden Typst-content genereres. Hvis
-#' .typ skrives foer inject, ser den hard-coded `logo_path: none` selv naar
-#' companion-pakker har droppet et logo (regression mod design-malet).
-#'
-#' For custom template_path (single .typ-fil, ikke directory): bfh_create_typst_document
-#' haandterer copy selv, og logo-auto-detect skipper (custom templates har ikke
-#' bfh-template/images/-konvention).
+#' Tynd wrapper om compose_typst_from_parts(): udleder titel, sprog og
+#' centerline-caveat fra `x` og delegerer resten (template-staging,
+#' inject_assets, logo-detect, .typ-skrivning) til den `x`-uafhaengige kerne.
 #'
 #' Returnerer den effektive font_path (kan vaere NULL).
 #'
@@ -475,6 +532,60 @@ compose_typst_document <- function(x, chart_svg, typst_file,
   if (is.null(chart_title)) chart_title <- ""
   metadata_full <- bfh_merge_metadata(metadata, chart_title)
 
+  # Resolve cl_user_supplied / cl_auto_mean caveat text server-side. The
+  # Typst template receives a pre-translated string rather than embedding
+  # i18n logic. See ADR-003: PDF caveat is the second surface for
+  # warning-blind clinical readers when centerline derivation deviates
+  # from data-estimated median.
+  #
+  # Mutual exclusivity: cl_auto_mean only fires when cl_user_supplied is
+  # FALSE (auto-sub guarded by is.null(cl) in bfh_qic()). Branching here
+  # is therefore safe; precedence given to cl_user_supplied for defense
+  # in depth.
+  caveat_lang <- x$config$language %||% "da"
+  if (isTRUE(spc_stats$cl_user_supplied)) {
+    metadata_full$cl_caveat_text <- i18n_lookup(
+      "labels.caveats.cl_user_supplied",
+      caveat_lang
+    )
+  } else if (isTRUE(spc_stats$cl_auto_mean)) {
+    metadata_full$cl_caveat_text <- i18n_lookup(
+      "labels.caveats.cl_auto_mean",
+      caveat_lang
+    )
+  }
+
+  compose_typst_from_parts(
+    metadata_full, spc_stats, chart_svg, typst_file, template,
+    template_path, batch_session, font_path, inject_assets
+  )
+}
+
+
+#' x-uafhaengig kerne af Typst-dokument-sammensaetningen
+#'
+#' Stager template, koerer inject_assets, auto-detekterer logo + font_path
+#' fra injicerede assets, og skriver derefter .typ-filen via
+#' bfh_create_typst_document() med finaliseret metadata. Delt af SPC-stien
+#' (via compose_typst_document()) og figur-stien (bfh_export_figure_pdf()).
+#'
+#' Order matters: template-staging og inject_assets SKAL koere FOER
+#' bfh_create_typst_document(), saa logo_path-auto-detect kan se de injicerede
+#' filer og populere metadata$logo_path inden Typst-content genereres. Hvis
+#' .typ skrives foer inject, ser den hard-coded `logo_path: none` selv naar
+#' companion-pakker har droppet et logo (regression mod design-malet).
+#'
+#' For custom template_path (single .typ-fil, ikke directory): bfh_create_typst_document
+#' haandterer copy selv, og logo-auto-detect skipper (custom templates har ikke
+#' bfh-template/images/-konvention).
+#'
+#' @param metadata_full Allerede flettet metadata (bfh_merge_metadata()) inkl.
+#'   eventuelle senere tilfoejelser (cl_caveat_text, spc_panel).
+#' @return Den effektive font_path (kan vaere NULL).
+#' @noRd
+compose_typst_from_parts <- function(metadata_full, spc_stats, chart_svg,
+                                     typst_file, template, template_path,
+                                     batch_session, font_path, inject_assets) {
   # Effektiv font_path: per-eksport arg > session default > NULL
   effective_font_path <- font_path %||% batch_session$font_path
 
@@ -513,29 +624,6 @@ compose_typst_document <- function(x, chart_svg, typst_file,
     if (!is.null(detected_logo)) {
       metadata_full$logo_path <- detected_logo
     }
-  }
-
-  # Resolve cl_user_supplied / cl_auto_mean caveat text server-side. The
-  # Typst template receives a pre-translated string rather than embedding
-  # i18n logic. See ADR-003: PDF caveat is the second surface for
-  # warning-blind clinical readers when centerline derivation deviates
-  # from data-estimated median.
-  #
-  # Mutual exclusivity: cl_auto_mean only fires when cl_user_supplied is
-  # FALSE (auto-sub guarded by is.null(cl) in bfh_qic()). Branching here
-  # is therefore safe; precedence given to cl_user_supplied for defense
-  # in depth.
-  caveat_lang <- x$config$language %||% "da"
-  if (isTRUE(spc_stats$cl_user_supplied)) {
-    metadata_full$cl_caveat_text <- i18n_lookup(
-      "labels.caveats.cl_user_supplied",
-      caveat_lang
-    )
-  } else if (isTRUE(spc_stats$cl_auto_mean)) {
-    metadata_full$cl_caveat_text <- i18n_lookup(
-      "labels.caveats.cl_auto_mean",
-      caveat_lang
-    )
   }
 
   # Write .typ with finalized metadata. skip_template_copy=TRUE for packaged

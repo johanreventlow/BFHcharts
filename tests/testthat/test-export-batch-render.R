@@ -110,3 +110,34 @@ test_that("chunked batch bounds font subsets by chunk count", {
   # 2 chunks -> each face embedded at most twice
   expect_true(all(table(base_names) <= 2L))
 })
+
+test_that("mixed batch (SPC + figure page) renders 2 pages", {
+  skip_if_not_render_test()
+  skip_if_no_quarto()
+  skip_if_not_installed("pdftools")
+
+  # Fanger Typst-fejl i spc_panel == false-grenen naar begge sidetyper
+  # deler et dokument (change add-figure-pdf-export).
+  cache <- withr::local_tempdir()
+  bfh_stage_pdf_page(fixture_test_chart(title = "SPC-side"), cache,
+    id = "spc-1", order = 1
+  )
+  figure <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) +
+    ggplot2::geom_point()
+  bfh_stage_figure_page(figure, cache,
+    id = "fig-1", order = 2,
+    metadata = list(title = "Figur-side")
+  )
+  out <- file.path(withr::local_tempdir(), "mixed.pdf")
+
+  bfh_export_batch_pdf(cache, out, font_path = smoke_font_path())
+
+  expect_true(file.exists(out))
+  info <- pdftools::pdf_info(out)
+  expect_identical(info$pages, 2L)
+
+  pages <- pdftools::pdf_text(out)
+  expect_match(toupper(pages[[1]]), "PROCESKONTROL", fixed = TRUE)
+  expect_match(pages[[2]], "Figur-side", fixed = TRUE)
+  expect_false(grepl("PROCESKONTROL", toupper(pages[[2]]), fixed = TRUE))
+})
