@@ -2,11 +2,11 @@
 
 ## 1. Forudsaetninger
 
-- [ ] 1.1 Feature-branch fra `origin/develop`: `feat/figure-pdf-export`
-- [ ] 1.2 Ny konstant i `R/globals.R`: `PDF_IMAGE_WIDTH_FULL_MM <- 264` med
+- [x] 1.1 Feature-branch fra `origin/develop`: `feat/figure-pdf-export`
+- [x] 1.2 Ny konstant i `R/globals.R`: `PDF_IMAGE_WIDTH_FULL_MM <- 264` med
       kommentar der udleder tallet (297 − 26,4 − 6,6) parallelt med de
       eksisterende konstanter
-- [ ] 1.3 Regressionstest: `bfh_merge_metadata()` er uaendret —
+- [x] 1.3 Regressionstest: `bfh_merge_metadata()` er uaendret —
       `names()` paa resultatet er de samme 10 felter, og en bruger-leveret
       `spc_panel` filtreres fra (flaget saettes kun af figur-stierne efter
       merge, jf. design D3)

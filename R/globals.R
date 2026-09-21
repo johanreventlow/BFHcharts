@@ -52,6 +52,13 @@ ARROW_PADDING_NORM <- 0.03
 PDF_IMAGE_WIDTH_MM <- 191.4
 PDF_IMAGE_HEIGHT_MM <- 109
 
+# Full-width figure export (bfh_export_figure_pdf / bfh_stage_figure_page):
+# with spc_panel = false the template drops the 72.6 mm SPC column, so the
+# chart fills the whole chart row.
+# Image width: 297 - 26.4 (left inset) - 6.6 (right inset) = 264mm
+# Height is unchanged (PDF_IMAGE_HEIGHT_MM): rows 1-2 and the footer are the same.
+PDF_IMAGE_WIDTH_FULL_MM <- 264
+
 # NOTE: Chart width/height matcher image dimensions i den nuvaerende Typst-layout.
 # Vi beholder separate konstanter for semantisk tydelighed:
 # - PDF_IMAGE_* bruges ved eksport-rendering (ggsave output)
