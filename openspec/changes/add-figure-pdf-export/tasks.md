@@ -35,21 +35,21 @@
 
 ## 4. Refaktor af delt pipeline (egen commit, groen suite foer trin 5)
 
-- [ ] 4.1 `export_chart_svg(plot_for_export, chart_svg, dpi, width_mm =
+- [x] 4.1 `export_chart_svg(plot_for_export, chart_svg, dpi, width_mm =
       PDF_IMAGE_WIDTH_MM, height_mm = PDF_IMAGE_HEIGHT_MM)` — defaults
       bevarer nuvaerende adfaerd; test at eksisterende mock-baserede
       batch-tests (`local_mocked_bindings(export_chart_svg = ...)`) stadig
       passerer
-- [ ] 4.2 Udtraek `compose_typst_from_parts(metadata_full, spc_stats,
+- [x] 4.2 Udtraek `compose_typst_from_parts(metadata_full, spc_stats,
       chart_svg, typst_file, template, template_path, batch_session,
       font_path, inject_assets)` fra `compose_typst_document()`; sidstnaevnte
       bliver wrapper der udleder titel/sprog/caveat fra `x`. Signatur og
       returvaerdi (effektiv `font_path`) uaendret
-- [ ] 4.3 Udtraek de `x`-uafhaengige tjek fra `validate_bfh_export_pdf_inputs()`
+- [x] 4.3 Udtraek de `x`-uafhaengige tjek fra `validate_bfh_export_pdf_inputs()`
       til `validate_export_common_inputs(output, metadata, dpi, font_path,
       inject_assets, batch_session, template_path)`; wrapper bevarer
       klasse-tjek + fejltekst
-- [ ] 4.4 Fuld testsuite groen paa refaktoren alene (`devtools::test()` —
+- [x] 4.4 Fuld testsuite groen paa refaktoren alene (`devtools::test()` —
       koeres af brugeren lokalt eller verificeres via CI paa branchen)
 
 ## 5. `bfh_export_figure_pdf()` (TDD)
