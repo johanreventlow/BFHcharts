@@ -54,9 +54,8 @@ Verificerede forudsaetninger (kodelaesning 2026-09-21):
 
 - Datadefinition i fuld-bredde-tilstand (droppes i v1; kan tilfoejes under
   grafen senere).
-- Andre inputtyper end `ggplot` (fx billedfiler, grid-grobs, patchwork).
-  Patchwork/gtable er ggplot-kompatible nok til `ggsave()`, men testes ikke
-  eksplicit.
+- Andre inputtyper end et enkelt `ggplot` (fx billedfiler, grid-grobs,
+  patchwork). Sammensatte plots **afvises** eksplicit i v1, se D10.
 - Auto-analyse/AI-tekst for figurer (`auto_analysis`, `use_ai`) — kraever
   SPC-kontekst.
 - Aendring af raekkehoejder eller grafhoejden (109 mm) — kun bredden aendres.
@@ -228,6 +227,22 @@ signaturen bevares saa eksisterende tests og mocks
 `tests/smoke/test-template.typ` faar `spc_panel: true` i signaturen og
 udelader SPC-summary-blokken naar `false`. Ingen layout-aendring i oevrigt —
 smoke-templaten validerer kun at pipelinen kompilerer, ikke udseende.
+
+### D10: Sammensatte plots (patchwork) afvises i v1
+
+Valideringen er `inherits(plot, "ggplot") && !inherits(plot, "patchwork")`.
+Et patchwork-objekt afvises med en klassificeret eksport-fejl der naevner
+`plot` og forklarer at sammensatte plots ikke understoettes endnu.
+
+*Rationale (reproduceret 2026-09-21):* patchwork-objekter arver `ggplot` og
+ville passere en ren klasse-check. Men `+ labs(title = NULL)` og
+`+ theme(plot.margin = ...)` rammer kun det **sidste** delplot: efter strip
+har foerste delplot stadig sin titel, og margins er uens. Resultatet er en
+side der bryder "titlen staar kun i den blaa top"-reglen uden nogen fejl.
+En hoejlydt afvisning er bedre end et halvt-behandlet plot. Understoettelse
+(`&`-operatoren + `plot_annotation()`) kan tilfoejes senere uden at bryde
+signaturen. Tjekket bruger klassenavnet og kraever ikke patchwork som
+afhaengighed.
 
 ## Risks / Trade-offs
 

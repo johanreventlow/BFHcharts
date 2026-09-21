@@ -55,7 +55,9 @@
 ## 5. `bfh_export_figure_pdf()` (TDD)
 
 - [ ] 5.1 Tests (uden Quarto): afviser ikke-`ggplot` med klassificeret fejl
-      der naevner `plot`; afviser manglende/tom `metadata$title`; afviser
+      der naevner `plot`; afviser `patchwork`-objekt (D10;
+      `skip_if_not_installed("patchwork")`, eller konstruér klassen manuelt
+      med `structure()`); afviser manglende/tom `metadata$title`; afviser
       `template_path` uden `restrict_template = FALSE` (samme tekst som
       `bfh_export_pdf()`); output-sti valideres via `validate_export_path()`
 - [ ] 5.2 Tests (uden Quarto, mock `bfh_compile_typst` + fang `.typ`):

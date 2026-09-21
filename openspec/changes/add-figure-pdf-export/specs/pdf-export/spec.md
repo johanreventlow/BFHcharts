@@ -49,8 +49,11 @@ The package SHALL export `bfh_export_figure_pdf(plot, output, metadata,
 PDF using the packaged template in full-width mode.
 
 The function SHALL:
-- accept a `ggplot` object as `plot` and reject any other class with a
-  classed BFHcharts export error naming the argument;
+- accept a single `ggplot` object as `plot` and reject any other class with
+  a classed BFHcharts export error naming the argument; composite plots
+  that inherit from `ggplot` (class `patchwork`) SHALL be rejected the same
+  way, because title stripping and margins would only reach the last
+  sub-plot;
 - require a non-empty `metadata$title` (the template title has no other
   source for figures) and abort before any filesystem operation when it is
   missing;
@@ -89,6 +92,14 @@ recalculation or statistics extraction.
 - **WHEN** `bfh_export_figure_pdf(data.frame(), "out.pdf", metadata =
   list(title = "x"))` is called
 - **THEN** it SHALL abort with a classed export error naming `plot`
+- **AND** no file SHALL be written
+
+#### Scenario: Composite plot is rejected
+
+- **GIVEN** a `patchwork` object composed of two `ggplot` objects
+- **WHEN** it is passed as `plot`
+- **THEN** the function SHALL abort with a classed export error naming
+  `plot` and stating that composite plots are not supported
 - **AND** no file SHALL be written
 
 #### Scenario: Missing title is rejected
