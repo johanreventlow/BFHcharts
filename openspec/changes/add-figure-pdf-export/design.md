@@ -163,8 +163,22 @@ tvungen re-staging af tusindvis af sider.
 ### D6: Titel/undertitel strippes fra plottet, som i SPC-stien
 
 `prepare_figure_plot(plot)` = `plot + labs(title = NULL, subtitle = NULL)` +
-`prepare_plot_for_export(margin_mm = 0)` (eksisterende helper; nulstiller
-margins og fjerner blanke aksetitler). Ingen label-genberegning.
+fjernelse af blanke aksetitler + `prepare_plot_for_export(margin_mm = 0)`.
+Ingen label-genberegning.
+
+`prepare_plot_for_export()` saetter **kun** `plot.margin` (verificeret
+2026-09-21; aksetitel-fjernelsen ligger i `apply_spc_theme()`,
+`R/themes.R:76-87`, som figur-stien ikke gaar igennem). Figur-stien skal
+derfor selv opfylde pdf-export-kravet "Export functions SHALL conditionally
+remove blank axis titles".
+
+Logikken i `apply_spc_theme()` kan **ikke** genbruges direkte: den laeser
+`plot$labels$x`/`$y`, som i ggplot2 >= 4.0 er `NULL` naar titlen udledes af
+`aes()` (maalt paa 4.0.3: `plot$labels$x` er `NULL`, `get_labs(plot)$x` er
+`"wt"`). Genbrug ville fjerne gyldige aksetitler fra naesten alle figurer.
+Figur-stien afgoer "blank" paa de **oploeste** labels
+(`ggplot2::get_labs()`; fallback til `ggplot_build(plot)$plot$labels` hvis
+den installerede ggplot2 ikke har funktionen — afklares i task 5.3).
 
 *Rationale:* brugerbeslutning — titlen gaar i den blaa top via
 `metadata$title`; to titler er en fejl. `metadata$title` er derfor

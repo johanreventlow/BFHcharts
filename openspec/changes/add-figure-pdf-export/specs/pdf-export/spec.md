@@ -56,6 +56,9 @@ The function SHALL:
   missing;
 - strip the plot's own title and subtitle and apply zero plot margins,
   mirroring `bfh_export_pdf()` (the title is rendered in the header);
+- remove axis titles that resolve to NULL or blank, and preserve all other
+  axis titles, including titles derived from aesthetic mappings rather than
+  set with `labs()`;
 - render the chart SVG at the full-width dimensions (264 mm × 109 mm), not
   the SPC chart dimensions;
 - send `spc_panel: false` and no SPC statistics parameters to the template;
@@ -99,6 +102,21 @@ recalculation or statistics extraction.
 - **WHEN** it is exported with `metadata$title = "C"`
 - **THEN** the rendered chart SHALL contain neither "A" nor "B"
 - **AND** the header SHALL show "C"
+
+#### Scenario: Blank axis titles are removed
+
+- **GIVEN** a `ggplot` with `labs(x = "", y = "Ventetid")`
+- **WHEN** it is exported
+- **THEN** the x-axis title SHALL be removed (`element_blank()`)
+- **AND** the y-axis title "Ventetid" SHALL be preserved
+
+#### Scenario: Aesthetic-derived axis titles are preserved
+
+- **GIVEN** `ggplot(df, aes(wt, mpg)) + geom_point()` with no `labs()` call
+- **WHEN** it is exported
+- **THEN** the axis titles "wt" and "mpg" SHALL be preserved
+- **AND** blankness SHALL be decided from the resolved labels, not from
+  `plot$labels` (which is NULL for mapped aesthetics in ggplot2 >= 4.0)
 
 #### Scenario: Chart SVG uses full-width dimensions
 

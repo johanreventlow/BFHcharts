@@ -64,7 +64,11 @@
       `metadata$title`, `analysis`/`details`/`footer_content` sendes igennem;
       SVG'en er renderet i 264 × 109 mm (laes `width`/`height` fra SVG-root)
 - [ ] 5.3 Tests: plottets `title`/`subtitle` er strippet og margins er 0 mm
-      (inspicér `plot_for_export`, ikke SVG)
+      (inspicér `plot_for_export`, ikke SVG); blank aksetitel (`labs(x =
+      "")`) fjernes; aksetitler udledt af `aes()` uden `labs()` **bevares**
+      (regression mod `plot$labels`-faelden i ggplot2 >= 4.0, jf. D6).
+      Afklar her om `ggplot2::get_labs()` findes i mindste understoettede
+      ggplot2-version; ellers fallback via `ggplot_build()`
 - [ ] 5.4 Test: `batch_session` genbruges (template-dir kopieres ikke igen)
       — spejl af eksisterende session-test
 - [ ] 5.5 Implementér `bfh_export_figure_pdf()` i ny fil `R/export_figure.R`:
