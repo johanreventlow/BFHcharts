@@ -127,15 +127,15 @@
 
 ## 7. Dokumentation + kvalitet
 
-- [ ] 7.1 `devtools::document()` → NAMESPACE + `man/` regenereret (to nye
+- [x] 7.1 `devtools::document()` → NAMESPACE + `man/` regenereret (to nye
       exports); verificér `R CMD check` ikke klager over udokumenterede
       argumenter
-- [ ] 7.2 ASCII-check paa alle nye/aendrede `R/*.R` (`test-source-ascii.R`)
-- [ ] 7.3 `styler::style_file()` paa aendrede R-filer; lint groen
-- [ ] 7.4 NEWS-entry under naeste version, "Nye funktioner": figur-eksport
+- [x] 7.2 ASCII-check paa alle nye/aendrede `R/*.R` (`test-source-ascii.R`)
+- [x] 7.3 `styler::style_file()` paa aendrede R-filer; lint groen
+- [x] 7.4 NEWS-entry under naeste version, "Nye funktioner": figur-eksport
       (enkelt + batch), `spc_panel`-flaget, og at eksisterende output er
       uaendret
-- [ ] 7.5 README: kort afsnit "Eksport af andre grafer end SPC" med
+- [x] 7.5 README: kort afsnit "Eksport af andre grafer end SPC" med
       eksempel
 - [ ] 7.6 Opdatér `openspec/specs/pdf-export/spec.md` og
       `openspec/specs/batch-pdf-export/spec.md` med delta-kravene fra denne

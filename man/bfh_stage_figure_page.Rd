@@ -85,7 +85,8 @@ on the old installation; upgrade it instead.
 \dontrun{
 cache_dir <- "~/reports/spc-cache"
 dir.create(cache_dir, showWarnings = FALSE)
-p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) +
+  ggplot2::geom_point()
 bfh_stage_figure_page(p, cache_dir,
   id = "vaegt-vs-forbrug",
   metadata = list(title = "Tunge biler koerer kortere")
