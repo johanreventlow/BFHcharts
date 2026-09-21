@@ -91,9 +91,11 @@ typography. The chart is rendered at 264 x 109 mm (the full chart row).
 declares, resolved against the fonts available to the Typst compile
 (\code{font_path}, injected assets, and system fonts only when
 \code{ignore_system_fonts = FALSE}). A default ggplot theme declares
-"Arial"; when that font is not available the figure text falls back to
-Typst's default font. Add \code{BFHtheme::theme_bfh()} to the plot for
-typography consistent with SPC pages.
+"Arial". With the \code{BFHchartsAssets} companion injected (it ships both
+Arial and Mari), the figure text renders in Arial; without any Arial font
+in the effective font path it falls back to Typst's default font. Add
+\code{BFHtheme::theme_bfh()} to the plot for typography consistent with SPC
+pages (Mari).
 }
 \section{Security}{
 

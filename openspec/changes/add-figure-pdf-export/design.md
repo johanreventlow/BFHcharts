@@ -323,10 +323,15 @@ Ingen migration — additiv aendring.
 
 ## Open Questions
 
-- Hvilken font faar figurtekst, naar plottet bruger en fontfamilie der ikke
-  ligger i den effektive `font_path` (D11)? Kraever maaling med Mari
-  installeret — task 8.1(d). Svaret afgoer om v1 noejes med dokumentation
-  eller skal have en advarsel.
+- ~~Hvilken font faar figurtekst, naar plottet bruger en fontfamilie der ikke
+  ligger i den effektive `font_path` (D11)?~~ **Afklaret 2026-09-21
+  (implementation):** med `BFHchartsAssets::inject_bfh_assets` (leverer
+  baade Arial og Mari) renderes et default-tema-plot i `ArialMT` (verificeret
+  med `pdffonts`); med `theme_bfh()` i Mari. Kun uden Arial i den effektive
+  font-sti falder teksten til Typst' fallback (serif, maalt tidligere).
+  Afgoerelse: v1 noejes med dokumentation (roxygen `@details`, Fonts) — ingen
+  advarsel. Lokalt-udviklet `inst/templates/typst/*/fonts/` er gitignoreret og
+  ikke en del af pakken.
 
 - Skal `bfh_export_figure_pdf()` acceptere et allerede renderet billede
   (SVG/PNG-sti) som alternativ til `ggplot`? Udenfor v1; kan tilfoejes som
