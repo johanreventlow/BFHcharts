@@ -137,20 +137,25 @@
       uaendret
 - [x] 7.5 README: kort afsnit "Eksport af andre grafer end SPC" med
       eksempel
-- [ ] 7.6 Opdatér `openspec/specs/pdf-export/spec.md` og
+- [x] 7.6 Opdatér `openspec/specs/pdf-export/spec.md` og
       `openspec/specs/batch-pdf-export/spec.md` med delta-kravene fra denne
       change (ved arkivering)
 
 ## 8. Visuel validering + afslutning
 
-- [ ] 8.1 **Bruger** renderer lokalt: (a) en figur-PDF med analyse, details,
+- [x] 8.1 **Bruger** renderer lokalt: (a) en figur-PDF med analyse, details,
       footer og logo via `inject_assets`; (b) en blandet batch-PDF med een
       SPC-side og een figur-side; (c) en eksisterende SPC-PDF foer/efter
       (skal vaere identisk); (d) en figur **uden** `theme_bfh()` (default-
       tema, Arial i SVG'en) med Mari via `font_path`/`inject_assets` —
       notér hvilken font figurteksten faar (D11, Open Questions).
       Godkendelse noteres her med dato
-- [ ] 8.2 Justér inset/spacing i fuld-bredde-tilstand efter feedback (kun
+      **Godkendt 2026-09-21** (bruger merged PR #540 efter gennemsyn af de
+      fire PDF'er). Font (D11) maalt: Arial via BFHchartsAssets, Mari med
+      `theme_bfh()`; se design.md, Open Questions.
+- [x] 8.2 Justér inset/spacing i fuld-bredde-tilstand efter feedback (kun
       skabelonen; ingen R-aendring forventet)
-- [ ] 8.3 Draft-PR mod `develop`; alle CI-jobs groenne (3× R CMD check,
+      Ikke noedvendig: ingen justering efterspurgt; PR merged uaendret
+- [x] 8.3 Draft-PR mod `develop`; alle CI-jobs groenne (3× R CMD check,
       lint, test-coverage, pdf-smoke, git-archive-render)
+      PR #540, alle 7 CI-jobs groenne, merged 2026-09-21
