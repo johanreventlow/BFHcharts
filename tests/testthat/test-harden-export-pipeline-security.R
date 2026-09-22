@@ -602,13 +602,23 @@ test_that("bfh_export_pdf with restrict_template=FALSE allows custom template_pa
 # ============================================================================
 
 test_that("bfh_create_typst_document rejects non-numeric spc_stats fields", {
+  # Isolated output dir (withr::local_tempdir(), not the shared session
+  # tempdir() root): bfh_create_typst_document() copies the whole packaged
+  # bfh-template/ tree into dirname(output) as a side effect BEFORE it
+  # validates spc_stats, even on the error path tested here. An output path
+  # at the tempdir() root would leak that copy into the pool other tests'
+  # tempfile()/tempfile(fileext=...) calls also draw from, causing
+  # order-dependent failures elsewhere (regression: .system2 mock success
+  # path in test-quarto-isolation.R picked up a stray --font-path).
+  local_dir <- withr::local_tempdir()
+
   # Minimal SVG image so chart_image validation passes.
-  tmp_svg <- withr::local_tempfile(fileext = ".svg")
+  tmp_svg <- file.path(local_dir, "chart.svg")
   writeLines(
     '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>',
     tmp_svg
   )
-  tmp_typ <- withr::local_tempfile(fileext = ".typ")
+  tmp_typ <- file.path(local_dir, "document.typ")
 
   for (field in c(
     "runs_expected", "runs_actual",
@@ -632,12 +642,15 @@ test_that("bfh_create_typst_document rejects non-numeric spc_stats fields", {
 })
 
 test_that("bfh_create_typst_document rejects non-logical spc_stats$is_run_chart", {
-  tmp_svg <- withr::local_tempfile(fileext = ".svg")
+  # Isolated output dir -- see rationale in the preceding test.
+  local_dir <- withr::local_tempdir()
+
+  tmp_svg <- file.path(local_dir, "chart.svg")
   writeLines(
     '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>',
     tmp_svg
   )
-  tmp_typ <- withr::local_tempfile(fileext = ".typ")
+  tmp_typ <- file.path(local_dir, "document.typ")
 
   expect_error(
     BFHcharts:::bfh_create_typst_document(
@@ -651,12 +664,18 @@ test_that("bfh_create_typst_document rejects non-logical spc_stats$is_run_chart"
 })
 
 test_that("bfh_create_typst_document accepts valid numeric and NULL spc_stats fields", {
-  tmp_svg <- withr::local_tempfile(fileext = ".svg")
+  # Isolated output dir -- see rationale two tests above. This test succeeds
+  # (no error), so it also actually stages the template -- with a shared
+  # tempdir() root output that copy would be a permanent leak for the rest
+  # of the R session instead of a withr-cleaned one.
+  local_dir <- withr::local_tempdir()
+
+  tmp_svg <- file.path(local_dir, "chart.svg")
   writeLines(
     '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>',
     tmp_svg
   )
-  tmp_typ <- withr::local_tempfile(fileext = ".typ")
+  tmp_typ <- file.path(local_dir, "document.typ")
 
   # NULL fields + one numeric field: should pass type-validation guard.
   # (May fail later on template copy -- that is unrelated to type guard.)
