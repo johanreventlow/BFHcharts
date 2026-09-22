@@ -1,3 +1,34 @@
+# BFHcharts (development version)
+
+## Nye funktioner
+
+* **PDF-eksport af andre grafer end SPC: `bfh_export_figure_pdf()` og
+  `bfh_stage_figure_page()`.** Den brandede PDF-side (blå header med
+  hospital/afdeling/titel, analyse-række, detaljelinje, footer og logo)
+  kunne hidtil kun bruges til `bfh_qic()`-resultater. Nu kan et vilkårligt
+  `ggplot` — fx en fordeling, et søjlediagram eller en almindelig tidsserie
+  uden Anhøj-analyse — eksporteres i samme skabelon: som enkelt-PDF med
+  `bfh_export_figure_pdf(plot, output, metadata = list(title = ...))` eller
+  som side i en samlerapport med `bfh_stage_figure_page()` (SPC-sider og
+  figur-sider kan blandes frit i `bfh_export_batch_pdf()`). Grafen fylder
+  hele bredden (264 mm) i stedet for at dele rækken med SPC-statistikken.
+  Bemærk: `metadata$title` er påkrævet (figurer har ingen anden
+  titel-kilde), grafens egen titel/undertitel fjernes så titlen kun står i
+  den blå header, sammensatte plots (`patchwork`) afvises, og en udfyldt
+  `data_definition` rendres ikke i fuld bredde (der udsendes en advarsel).
+  Kalderen ejer figurens tema og skrifttype — anbefalet: tilføj
+  `BFHtheme::theme_bfh()`.
+* **Skabelonen `bfh-diagram` har fået en `spc_panel`-parameter** (default
+  `true`). Ved `false` udelades SPC-kolonnen, og grafen fylder rækken.
+  Parameteren sættes kun af de to nye funktioner; den kan ikke styres via
+  `metadata`.
+
+Eksisterende output er uændret: `bfh_export_pdf()`, `bfh_stage_pdf_page()`
+og alle eksisterende signaturer, standardværdier og genererede
+Typst-dokumenter er byte-identiske med før. Bundle-formatet er uændret
+(`format_version` forbliver 1); et figur-bundt læst af en ældre BFHcharts
+rendres med SPC-layout (tom statistik-kolonne, smallere graf).
+
 # BFHcharts 0.29.1
 
 ## Bug fixes

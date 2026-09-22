@@ -34,6 +34,7 @@
   outliers_actual: none,
   is_run_chart: false,
   footer_content: none,
+  spc_panel: true,
   chart
 ) = {
   set text(font: ("DejaVu Sans", "sans-serif"), lang: "da")
@@ -93,8 +94,9 @@
     chart
   )
 
-  // Minimal SPC stats summary (only if at least one value provided)
-  if (runs_expected != none or runs_actual != none or
+  // Minimal SPC stats summary (only if at least one value provided).
+  // Skipped when spc_panel is false (full-width figure mode).
+  if spc_panel and (runs_expected != none or runs_actual != none or
       crossings_expected != none or crossings_actual != none or
       outliers_expected != none or outliers_actual != none) {
     block(

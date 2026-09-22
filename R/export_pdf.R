@@ -239,6 +239,8 @@
 #' @seealso
 #'   - [bfh_qic()] to create SPC charts
 #'   - [bfh_export_png()] to export as PNG
+#'   - [bfh_export_figure_pdf()] for graphs without SPC statistics (any
+#'     `ggplot`, rendered full-width in the same template)
 #'   - [bfh_create_export_session()] for batch workflows (same trust
 #'     requirement applies to its `inject_assets` parameter)
 #' @examples
@@ -323,40 +325,7 @@ bfh_export_pdf <- function(x,
   strict_baseline_supplied <- !missing(strict_baseline)
 
   # ---- 0. restrict_template guard --------------------------------------------
-  # Threat model: template_path compiles arbitrary Typst code with the privileges
-  # of the calling R session (equivalent to source()). When restrict_template=TRUE,
-  # only the packaged template is allowed, preventing custom-template injection
-  # from untrusted Shiny inputs or API parameters.
-  #
-  # Type validation runs BEFORE the isTRUE() guard: isTRUE(NA) and
-  # isTRUE("TRUE") return FALSE, which would silently fail-open when a caller
-  # forwards a coerced/serialized non-logical value (e.g. from JSON or a
-  # Shiny input with strict_json = FALSE).
-  if (!is.logical(restrict_template) || length(restrict_template) != 1L ||
-    is.na(restrict_template)) {
-    bfh_abort(
-      paste0(
-        "restrict_template must be TRUE or FALSE (single non-NA logical)",
-        "\n  Got: ", paste(class(restrict_template), collapse = "/"),
-        " (length ", length(restrict_template), ")"
-      ),
-      class = "bfhcharts_export_error"
-    )
-  }
-  if (restrict_template && !is.null(template_path)) {
-    bfh_abort(
-      paste0(
-        "template_path is not allowed when restrict_template = TRUE.",
-        "\n  Only the packaged BFHcharts template may be used in this configuration.",
-        "\n  To opt in to a trusted custom Typst template, pass",
-        " restrict_template = FALSE explicitly.",
-        "\n  WARNING: custom templates are compiled with full filesystem access",
-        " (equivalent to source()) -- never forward user-supplied input to",
-        " template_path."
-      ),
-      class = "bfhcharts_export_error"
-    )
-  }
+  validate_restrict_template(restrict_template, template_path)
 
   # ---- 1. Input-validering (class, metadata, dpi, font_path, session) --------
   validate_bfh_export_pdf_inputs(

@@ -353,6 +353,8 @@ for (dept in departments) {
 \itemize{
 \item \code{\link[=bfh_qic]{bfh_qic()}} to create SPC charts
 \item \code{\link[=bfh_export_png]{bfh_export_png()}} to export as PNG
+\item \code{\link[=bfh_export_figure_pdf]{bfh_export_figure_pdf()}} for graphs without SPC statistics (any
+\code{ggplot}, rendered full-width in the same template)
 \item \code{\link[=bfh_create_export_session]{bfh_create_export_session()}} for batch workflows (same trust
 requirement applies to its \code{inject_assets} parameter)
 }
