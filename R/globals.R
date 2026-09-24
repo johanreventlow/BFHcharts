@@ -234,6 +234,15 @@ BFHCHARTS_OPT_ALLOW_GLOBALENV_INJECT <- "BFHcharts.allow_globalenv_inject"
 #' @keywords internal
 BFHCHARTS_OPT_QUARTO_PATH <- "BFHcharts.quarto_path"
 
+#' Option name: call Quarto's bundled Typst binary directly
+#'
+#' Default `TRUE`: `bfh_compile_typst()` runs the Typst binary that ships
+#' inside the Quarto installation instead of going through
+#' `quarto typst compile`. Same binary, same output -- only Quarto's own
+#' start-up is skipped. Set to `FALSE` to force the Quarto pass-through.
+#' @keywords internal
+BFHCHARTS_OPT_TYPST_DIRECT <- "BFHcharts.typst_direct"
+
 #' Option name: analysis_date override
 #'
 #' When set, `.resolve_analysis_date()` uses this Date as the analysis

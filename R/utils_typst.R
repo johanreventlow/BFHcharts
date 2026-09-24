@@ -510,6 +510,9 @@ KNOWN_TYPST_FLAGS <- c("--ignore-system-fonts", "--font-path", "--root")
 #' Compile Typst Document to PDF
 #'
 #' Compiles a .typ file to PDF using Quarto's bundled Typst compiler.
+#' The bundled binary is called directly when it can be located (see
+#' \code{find_bundled_typst()}); otherwise via \code{quarto typst compile},
+#' which runs the same binary with the same arguments.
 #'
 #' @param typst_file Path to .typ file
 #' @param output Path for output PDF file
@@ -529,6 +532,9 @@ KNOWN_TYPST_FLAGS <- c("--ignore-system-fonts", "--font-path", "--root")
 #' @param .quarto_path Path to the Quarto executable. When \code{NULL}
 #'   (default), resolved via \code{get_quarto_path()}. Tests can supply
 #'   \code{"/fake/quarto"} to avoid filesystem lookups.
+#' @param .typst_path Path to the Typst executable. When \code{NULL}
+#'   (default), resolved via \code{find_bundled_typst(.quarto_path)};
+#'   \code{NULL} from there means compile through Quarto instead.
 #'
 #' @return Path to created PDF file (invisibly)
 #'
@@ -536,7 +542,8 @@ KNOWN_TYPST_FLAGS <- c("--ignore-system-fonts", "--font-path", "--root")
 #' @noRd
 bfh_compile_typst <- function(typst_file, output, font_path = NULL,
                               ignore_system_fonts = TRUE,
-                              .system2 = system2, .quarto_path = NULL) {
+                              .system2 = system2, .quarto_path = NULL,
+                              .typst_path = NULL) {
   if (!file.exists(typst_file)) {
     stop("Typst file not found: ", .redact_paths(typst_file), call. = FALSE)
   }
@@ -582,7 +589,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   # args. system2(stdout=TRUE, stderr=TRUE) routes through /bin/sh on
   # macOS/Linux for stream capture, so paths with spaces/parens/brackets/$
   # must be quoted. Flag args (--ignore-system-fonts, --font-path, --root)
-  # are passed through without quoting so Quarto's flag parser sees them
+  # are passed through without quoting so Typst's flag parser sees them
   # intact.
   #
   # --root <typst_dir> confines all template file accesses (image(),
@@ -592,7 +599,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   # sandbox prevents reads outside the staged tempdir.
   typst_dir <- dirname(typst_file)
   compile_args <- c(
-    "typst", "compile", typst_file, output,
+    "compile", typst_file, output,
     "--root", typst_dir
   )
   if (!is.null(font_path)) {
@@ -602,11 +609,22 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
     compile_args <- c(compile_args, "--ignore-system-fonts")
   }
 
-  # Use quarto typst compile (not quarto render which expects .qmd files)
-  quarto_cmd <- .quarto_path %||% get_quarto_path()
+  # Prefer Quarto's bundled Typst binary directly: `quarto typst` only
+  # passes the arguments through to that binary, so the output is identical
+  # while Quarto's start-up cost per call is skipped. Fall back to
+  # `quarto typst compile` (not quarto render, which expects .qmd files).
+  typst_cmd <- .typst_path %||% find_bundled_typst(.quarto_path)
+  if (!is.null(typst_cmd)) {
+    engine <- "Typst"
+    cmd <- typst_cmd
+  } else {
+    engine <- "Quarto"
+    cmd <- .quarto_path %||% get_quarto_path()
+    compile_args <- c("typst", compile_args)
+  }
   result <- tryCatch(
     .safe_system2_capture(
-      quarto_cmd,
+      cmd,
       args = compile_args,
       stdout = TRUE,
       stderr = TRUE,
@@ -614,7 +632,7 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
     ),
     error = function(e) {
       stop(
-        "Failed to execute Quarto command\n",
+        "Failed to execute ", engine, " command\n",
         "  Error: ", conditionMessage(e),
         call. = FALSE
       )
@@ -626,18 +644,18 @@ bfh_compile_typst <- function(typst_file, output, font_path = NULL,
   if (!is.null(exit_status) && exit_status != 0) {
     safe_output <- .truncate_compile_output(result)
     stop(
-      "Quarto compilation failed with exit code ", exit_status, "\n",
+      engine, " compilation failed with exit code ", exit_status, "\n",
       "  Output: ", safe_output,
       call. = FALSE
     )
   }
 
-  # Check if PDF was created (quarto typst compile outputs directly to target)
+  # Check if PDF was created (typst compile outputs directly to target)
   if (!file.exists(output)) {
     safe_output <- .truncate_compile_output(result)
     stop(
       "PDF compilation failed.\n",
-      "  Quarto output: ", safe_output,
+      "  ", engine, " output: ", safe_output,
       call. = FALSE
     )
   }

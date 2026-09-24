@@ -548,3 +548,161 @@ test_that("bfh_compile_typst: reel Quarto integration (kun med BFHCHARTS_TEST_FU
   expect_no_error(BFHcharts:::bfh_compile_typst(typst_file, output))
   expect_true(file.exists(output))
 })
+
+# ============================================================================
+# DIREKTE TYPST: find_bundled_typst() + bfh_compile_typst(.typst_path)
+# ============================================================================
+#
+# `quarto typst` er ren pass-through til Quartos medfoelgende Typst-binary.
+# BFHcharts kalder den binary direkte naar den kan findes, og falder tilbage
+# til `quarto typst compile` ellers.
+
+# Bygger en falsk Quarto-installation: <root>/bin/quarto[.exe] + evt. typst
+local_fake_quarto_install <- function(typst_rel = NULL, env = parent.frame()) {
+  root <- withr::local_tempdir(.local_envir = env)
+  bin <- file.path(root, "bin")
+  dir.create(bin)
+  quarto <- file.path(bin, if (BFHcharts:::.is_windows()) "quarto.exe" else "quarto")
+  file.create(quarto)
+  Sys.chmod(quarto, "755")
+  typst <- NULL
+  if (!is.null(typst_rel)) {
+    typst <- file.path(bin, typst_rel)
+    dir.create(dirname(typst), recursive = TRUE, showWarnings = FALSE)
+    file.create(typst)
+    Sys.chmod(typst, "755")
+    typst <- normalizePath(typst, winslash = "/")
+  }
+  list(quarto = quarto, typst = typst)
+}
+
+typst_exe <- function() if (BFHcharts:::.is_windows()) "typst.exe" else "typst"
+
+test_that("find_bundled_typst finder tools/<arch>/typst ved siden af quarto", {
+  withr::local_envvar(QUARTO_TYPST = NA)
+  inst <- local_fake_quarto_install(file.path("tools", R.version$arch, typst_exe()))
+  expect_equal(BFHcharts:::find_bundled_typst(inst$quarto), inst$typst)
+})
+
+test_that("find_bundled_typst falder tilbage til tools/typst uden arch-mappe", {
+  withr::local_envvar(QUARTO_TYPST = NA)
+  inst <- local_fake_quarto_install(file.path("tools", typst_exe()))
+  expect_equal(BFHcharts:::find_bundled_typst(inst$quarto), inst$typst)
+})
+
+test_that("find_bundled_typst returnerer NULL naar ingen Typst-binary findes", {
+  withr::local_envvar(QUARTO_TYPST = NA)
+  inst <- local_fake_quarto_install()
+  expect_null(BFHcharts:::find_bundled_typst(inst$quarto))
+  expect_null(BFHcharts:::find_bundled_typst("/fake/quarto"))
+})
+
+test_that("find_bundled_typst respekterer options(BFHcharts.typst_direct = FALSE)", {
+  withr::local_envvar(QUARTO_TYPST = NA)
+  inst <- local_fake_quarto_install(file.path("tools", R.version$arch, typst_exe()))
+  withr::local_options(BFHcharts.typst_direct = FALSE)
+  expect_null(BFHcharts:::find_bundled_typst(inst$quarto))
+})
+
+test_that("find_bundled_typst respekterer QUARTO_TYPST som Quarto selv goer", {
+  inst <- local_fake_quarto_install(file.path("tools", typst_exe()))
+  override <- withr::local_tempfile()
+  file.create(override)
+  Sys.chmod(override, "755")
+  withr::local_envvar(QUARTO_TYPST = override)
+  expect_equal(BFHcharts:::find_bundled_typst(inst$quarto), override)
+})
+
+test_that("find_bundled_typst cacher opslaget og bfh_reset_caches rydder det", {
+  withr::local_envvar(QUARTO_TYPST = NA)
+  inst <- local_fake_quarto_install(file.path("tools", typst_exe()))
+  withr::defer(BFHcharts:::bfh_reset_caches())
+  BFHcharts:::bfh_reset_caches()
+  assign("quarto_path", inst$quarto, envir = BFHcharts:::.quarto_cache)
+  expect_equal(BFHcharts:::find_bundled_typst(), inst$typst)
+  unlink(inst$typst)
+  expect_equal(BFHcharts:::find_bundled_typst(), inst$typst) # cached
+  BFHcharts:::bfh_reset_caches()
+  assign("quarto_path", inst$quarto, envir = BFHcharts:::.quarto_cache)
+  expect_null(BFHcharts:::find_bundled_typst())
+})
+
+test_that(".typst_path: bfh_compile_typst kalder Typst direkte uden 'typst'-praefiks", {
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[test]", typst_file)
+  withr::defer(unlink(typst_file))
+  output <- tempfile(fileext = ".pdf")
+  withr::defer(unlink(output))
+
+  captured_command <- NULL
+  captured_args <- NULL
+  success_mock <- function(command, args, ...) {
+    captured_command <<- command
+    captured_args <<- args
+    file.create(output)
+    character(0)
+  }
+
+  BFHcharts:::bfh_compile_typst(
+    typst_file, output,
+    .system2 = success_mock,
+    .quarto_path = "/fake/quarto",
+    .typst_path = "/fake/typst"
+  )
+
+  expect_equal(captured_command, "/fake/typst")
+  # Positional args er shQuote()'et af .safe_system2_capture()
+  unquoted <- gsub("[\"']", "", unname(captured_args))
+  expect_equal(unquoted[1], "compile")
+  expect_false("typst" %in% unquoted)
+  # compile <in> <out> --root <dir> --ignore-system-fonts
+  expect_equal(length(captured_args), 6L)
+  expect_true(grepl(basename(output), captured_args[3], fixed = TRUE))
+})
+
+test_that(".typst_path: fejl navngiver Typst, ikke Quarto", {
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#text[test]", typst_file)
+  withr::defer(unlink(typst_file))
+
+  expect_error(
+    BFHcharts:::bfh_compile_typst(
+      typst_file, tempfile(fileext = ".pdf"),
+      .system2 = make_system2_failure_mock(exit_code = 1L, output = "error: boom"),
+      .typst_path = "/fake/typst"
+    ),
+    "Typst compilation failed"
+  )
+  expect_error(
+    BFHcharts:::bfh_compile_typst(
+      typst_file, tempfile(fileext = ".pdf"),
+      .system2 = make_system2_error_mock("cannot run"),
+      .typst_path = "/fake/typst"
+    ),
+    "Failed to execute Typst command"
+  )
+})
+
+test_that("direkte Typst og quarto typst giver samme PDF (live, BFHCHARTS_TEST_FULL)", {
+  skip_if_not_full_test()
+  skip_if_no_quarto()
+  typst_bin <- BFHcharts:::find_bundled_typst()
+  skip_if(is.null(typst_bin), "Ingen medfoelgende Typst-binary ved siden af quarto")
+
+  typst_file <- tempfile(fileext = ".typ")
+  writeLines("#set document(date: none)\n#text[direkte vs quarto]", typst_file)
+  withr::defer(unlink(typst_file))
+  out_direct <- tempfile(fileext = ".pdf")
+  out_quarto <- tempfile(fileext = ".pdf")
+  withr::defer(unlink(c(out_direct, out_quarto)))
+
+  BFHcharts:::bfh_compile_typst(typst_file, out_direct, .typst_path = typst_bin)
+  withr::with_options(
+    list(BFHcharts.typst_direct = FALSE),
+    BFHcharts:::bfh_compile_typst(typst_file, out_quarto)
+  )
+  expect_identical(
+    unname(tools::md5sum(out_direct)),
+    unname(tools::md5sum(out_quarto))
+  )
+})

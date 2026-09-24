@@ -248,6 +248,76 @@ get_quarto_path <- function() {
   find_quarto()
 }
 
+#' Find Quarto's Bundled Typst Binary
+#'
+#' `quarto typst <args>` is a pure pass-through: Quarto resolves its bundled
+#' Typst binary (the `QUARTO_TYPST` env var, else
+#' `<quarto>/bin/tools/<arch>/typst`) and runs it with the arguments
+#' unmodified. Calling that binary directly gives the same PDF but skips
+#' Quarto's own start-up (Deno runtime), which dominates the cost of a
+#' single-page compile.
+#'
+#' Returns `NULL` when no bundled binary is found (e.g. Quarto installed via
+#' pip, where `quarto` is a Python wrapper) or when disabled via
+#' `options(BFHcharts.typst_direct = FALSE)`. Callers then fall back to
+#' `quarto typst compile`.
+#'
+#' @param quarto_path Quarto executable. `NULL` (default) resolves via
+#'   `get_quarto_path()` and caches the result in `.quarto_cache`; an
+#'   explicit path (test hook) is resolved uncached.
+#' @return Character path to the Typst binary, or `NULL`.
+#' @keywords internal
+#' @noRd
+find_bundled_typst <- function(quarto_path = NULL) {
+  if (isFALSE(getOption(BFHCHARTS_OPT_TYPST_DIRECT, TRUE))) {
+    return(NULL)
+  }
+  if (!is.null(quarto_path)) {
+    return(.resolve_bundled_typst(quarto_path))
+  }
+  if (exists("typst_path", envir = .quarto_cache)) {
+    return(get("typst_path", envir = .quarto_cache))
+  }
+  result <- .resolve_bundled_typst(get_quarto_path())
+  assign("typst_path", result, envir = .quarto_cache)
+  result
+}
+
+.resolve_bundled_typst <- function(quarto_path) {
+  # Parity with Quarto: QUARTO_TYPST overrides the bundled binary
+  env_path <- Sys.getenv("QUARTO_TYPST", "")
+  if (nzchar(env_path)) {
+    return(.validate_binary_path(env_path, source = "QUARTO_TYPST env var"))
+  }
+
+  if (!is.character(quarto_path) || length(quarto_path) != 1L ||
+    !nzchar(quarto_path)) {
+    return(NULL)
+  }
+  # find_quarto() falls back to the bare command name "quarto"
+  if (!file.exists(quarto_path)) {
+    quarto_path <- unname(Sys.which(quarto_path))
+    if (!nzchar(quarto_path)) {
+      return(NULL)
+    }
+  }
+  # Resolve symlinks (e.g. /usr/local/bin/quarto -> /opt/quarto/bin/quarto)
+  quarto_path <- normalizePath(quarto_path, winslash = "/", mustWork = FALSE)
+
+  tools_dir <- file.path(dirname(quarto_path), "tools")
+  exe <- if (.is_windows()) "typst.exe" else "typst"
+  candidates <- c(
+    file.path(tools_dir, R.version$arch, exe),
+    file.path(tools_dir, exe)
+  )
+  for (candidate in candidates) {
+    if (!file.exists(candidate) || dir.exists(candidate)) next
+    if (!.is_windows() && file.access(candidate, mode = 1L) != 0L) next
+    return(candidate)
+  }
+  NULL
+}
+
 #' Check Quarto Version Against Minimum
 #'
 #' @param version_string Version string from quarto --version (e.g., "1.4.557")
