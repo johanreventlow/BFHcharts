@@ -1,5 +1,22 @@
 # BFHcharts (development version)
 
+## Forbedringer
+
+* **PDF-kompilering kalder Quartos Typst direkte.** `quarto typst compile`
+  starter blot den Typst-binary, som ligger i Quarto-installationen, og
+  sender argumenterne uændret videre. BFHcharts kalder nu den binary
+  direkte og sparer dermed Quartos egen opstart ved hver PDF (målt ca.
+  0,3 s pr. PDF på Linux; ikke målt på Windows). Samme binary og samme
+  argumenter betyder samme PDF — verificeret byte-for-byte. Quarto skal
+  stadig være installeret. Findes der ingen medfølgende Typst ved siden af
+  `quarto` (fx når Quarto er installeret via pip), bruges
+  `quarto typst compile` som før. `QUARTO_TYPST` respekteres som i Quarto,
+  og `options(BFHcharts.typst_direct = FALSE)` tvinger den gamle vej.
+  Fejlbeskeder hedder nu "Typst compilation failed" når Typst kaldes
+  direkte.
+
+# BFHcharts 0.30.0
+
 ## Nye funktioner
 
 * **PDF-eksport af andre grafer end SPC: `bfh_export_figure_pdf()` og
@@ -29,20 +46,12 @@ Typst-dokumenter er byte-identiske med før. Bundle-formatet er uændret
 (`format_version` forbliver 1); et figur-bundt læst af en ældre BFHcharts
 rendres med SPC-layout (tom statistik-kolonne, smallere graf).
 
-## Forbedringer
+## Interne ændringer
 
-* **PDF-kompilering kalder Quartos Typst direkte.** `quarto typst compile`
-  starter blot den Typst-binary, som ligger i Quarto-installationen, og
-  sender argumenterne uændret videre. BFHcharts kalder nu den binary
-  direkte og sparer dermed Quartos egen opstart ved hver PDF (målt ca.
-  0,3 s pr. PDF på Linux; ikke målt på Windows). Samme binary og samme
-  argumenter betyder samme PDF — verificeret byte-for-byte. Quarto skal
-  stadig være installeret. Findes der ingen medfølgende Typst ved siden af
-  `quarto` (fx når Quarto er installeret via pip), bruges
-  `quarto typst compile` som før. `QUARTO_TYPST` respekteres som i Quarto,
-  og `options(BFHcharts.typst_direct = FALSE)` tvinger den gamle vej.
-  Fejlbeskeder hedder nu "Typst compilation failed" når Typst kaldes
-  direkte.
+* Claude-instruktionerne (`CLAUDE.md`, `openspec/config.yaml` og
+  review-agenten) er rettet, så de matcher den faktiske kode: forældede
+  API-beskrivelser, døde henvisninger og et ASCII-eksempel, der viste det
+  modsatte af reglen (#545). Ingen ændringer i pakkens kode.
 
 # BFHcharts 0.29.1
 
