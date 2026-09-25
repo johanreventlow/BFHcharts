@@ -1,4 +1,4 @@
-# BFHcharts (development version)
+# BFHcharts 0.30.0
 
 ## Nye funktioner
 
@@ -28,6 +28,13 @@ og alle eksisterende signaturer, standardværdier og genererede
 Typst-dokumenter er byte-identiske med før. Bundle-formatet er uændret
 (`format_version` forbliver 1); et figur-bundt læst af en ældre BFHcharts
 rendres med SPC-layout (tom statistik-kolonne, smallere graf).
+
+## Interne ændringer
+
+* Claude-instruktionerne (`CLAUDE.md`, `openspec/config.yaml` og
+  review-agenten) er rettet, så de matcher den faktiske kode: forældede
+  API-beskrivelser, døde henvisninger og et ASCII-eksempel, der viste det
+  modsatte af reglen (#545). Ingen ændringer i pakkens kode.
 
 # BFHcharts 0.29.1
 
