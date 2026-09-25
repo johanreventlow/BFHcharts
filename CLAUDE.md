@@ -1,19 +1,15 @@
 
 # Claude Instructions – BFHcharts
 
-@~/.claude/rules/CLAUDE_BOOTSTRAP_WORKFLOW.md
 @~/.claude/rules-profiles/r/R_STANDARDS.md
 
 ---
 
-## ⚠️ OBLIGATORISKE REGLER (KRITISK)
+## Git-regler
 
-❌ **ALDRIG:**
-1. Merge til master/main uden eksplicit godkendelse
-2. Push til remote uden anmodning
-3. Tilføj Claude attribution footers:
-   - ❌ "🤖 Generated with [Claude Code]"
-   - ❌ "Co-Authored-By: Claude <noreply@anthropic.com>"
+- Merge til main og push til remote kræver eksplicit godkendelse fra brugeren.
+- Ingen Claude-attribution i commits eller PRs ("Generated with Claude Code",
+  "Co-Authored-By: Claude").
 
 ✅ **BRANCHING + PR-MODEL:**
 
@@ -52,8 +48,8 @@ feature/fix/chore branch  ──PR──▶  develop  ──PR──▶  main  �
 BFHcharts/
 ├── R/
 │   ├── bfh_qic.R              # bfh_qic() — main public API
-│   ├── spc_*.R                # Chart type implementations
-│   ├── anhoej_*.R             # Anhøj rules
+│   ├── bfh_qic_core.R         # Pipeline incl. Anhøj-signaler (add_anhoej_signal)
+│   ├── spc_*.R                # Plot compose/render/features
 │   ├── utils_*.R              # Utilities
 │   └── globals.R               # Global variables & constants
 ├── inst/examples/             # Example data/scripts
@@ -141,7 +137,7 @@ bfh_qic <- function(data, x, y,
 
 Centerlinje (median/mean), serielaengde og antal kryds beregnes via
 `qicharts2` + interne helpers (fx `add_anhoej_signal()` i
-`R/utils_bfh_qic_helpers.R`). Nedenstaaende er **illustrativ pseudo-kode**
+`R/bfh_qic_core.R`). Nedenstaaende er **illustrativ pseudo-kode**
 for konceptet - ikke eksporterede funktioner:
 
 ```r
@@ -210,53 +206,12 @@ Kræver:
 
 ### API Design Principles
 
-**Consistent Interface:**
-
-```r
-bfh_qic(
-  data,              # Data frame
-  x,                 # X-axis variable name
-  y,                 # Y-axis variable name
-  chart_type,        # Optional chart type
-  notes_column,      # Optional notes for annotations
-  target,            # Optional target line
-  freeze_period,     # Optional period for baseline
-  ...                # Additional ggplot2 layers
-)
-```
-
-**Composability:**
-
-```r
-# Charts returnerer ggplot objects som kan modificeres
-p <- bfh_qic(data, "date", "value", "p")
-
-# Add custom layers
-p <- p +
-  labs(title = "Custom Title") +
-  scale_y_continuous(limits = c(0, 1))
-```
-
-**Graceful Defaults:**
-- Auto-detect chart type
-- Auto-calculate limits
-- Use BFHtheme by default
-
-### Integration with BFHtheme
-
-```r
-# Charts skal bruge BFHtheme som default
-bfh_qic <- function(..., theme = BFHtheme::theme_bfh()) {
-  p <- base_plot + theme
-
-  # Tilføj hospital branding hvis ønsket
-  if (add_bfh_logo) {
-    p <- BFHtheme::add_bfh_logo(p)
-  }
-
-  return(p)
-}
-```
+- `bfh_qic()` returnerer et `bfh_qic_result`-objekt, ikke et ggplot. Hent
+  ggplot-objektet med `bfh_get_plot()` før der tilføjes lag (`+ labs(...)`).
+- Defaults: `chart_type = "run"`; kontrolgrænser beregnes automatisk.
+- BFHtheme (`theme_bfh()`) anvendes internt; `bfh_qic()` har ingen
+  `theme`-parameter. Logo tilføjes af brugeren via `BFHtheme::add_bfh_logo()`.
+- Parameternavne: se signaturen i afsnit 2 og `R/bfh_qic.R`.
 
 ### Development Commands
 
@@ -290,9 +245,10 @@ devtools::build_vignettes() # Build vignettes
 
 **Available commands for structured change management:**
 
-- `/openspec:proposal` - Scaffold a new OpenSpec change proposal
-- `/openspec:apply` - Implement an approved OpenSpec change
-- `/openspec:archive` - Archive a deployed OpenSpec change
+- `/opsx:explore` - Think through a change before proposing it
+- `/opsx:propose` - Scaffold a new OpenSpec change proposal
+- `/opsx:apply` - Implement an approved OpenSpec change
+- `/opsx:archive` - Archive a deployed OpenSpec change
 
 **When to use:**
 - Major feature additions that need design review
@@ -300,7 +256,7 @@ devtools::build_vignettes() # Build vignettes
 - Architectural decisions that need documentation
 - Changes requiring cross-repository coordination (e.g., with biSPCharts)
 
-**See:** `openspec/AGENTS.md` for detailed workflow instructions
+**See:** `openspec/config.yaml` and `openspec/specs/` for project context and current specs
 
 ### /end-Skill R-Package Adaptation
 
@@ -318,8 +274,7 @@ diskussion. Opdatér kun `NEWS.md` ved adfærdsændrende code-merge; ADR
 oprettes per arkitektur-beslutning (ikke per session).
 
 **Canonical ADR-location:** `inst/adr/` (ships med installed package; ADR'er
-tilgængelige via `system.file("adr", ..., package = "BFHcharts")`). `docs/adr/`
-deprecated efter consolidation 2026-05-26.
+tilgængelige via `system.file("adr", ..., package = "BFHcharts")`).
 
 ---
 
@@ -358,26 +313,9 @@ LCL <- max(0, u_bar - 3 * sqrt(u_bar / n))
 * **100% på exported functions**
 * **Statistical accuracy** - Verify control limits
 
-**Key Test Areas:**
-
-```r
-test_that("p-chart calculates correct control limits", {
-  data <- data.frame(x = 1:10, y = c(0.1, 0.15, 0.12, ...))
-  chart <- bfh_qic(data, "x", "y", chart_type = "p")
-
-  # Verify UCL/LCL calculations
-  expect_equal(chart$ucl, expected_ucl, tolerance = 0.001)
-  expect_equal(chart$lcl, expected_lcl, tolerance = 0.001)
-})
-
-test_that("Anhøj rules detect runs correctly", {
-  # Construct data med known run
-  data <- data.frame(y = c(rep(110, 8), rep(90, 8)))
-  runs <- detect_runs(data$y, cl = 100)
-
-  expect_equal(runs, 8)
-})
-```
+**Key Test Areas:** se `tests/testthat/test-statistical-accuracy.R`
+(kontrolgrænser) og `tests/testthat/test-anhoej-precision.R` (Anhøj-regler)
+for projektets faktiske testmønstre.
 
 ### Danish Language
 
@@ -388,7 +326,7 @@ test_that("Anhøj rules detect runs correctly", {
 
 **Exports:**
 - `bfh_qic()` ikke `lav_spc_diagram()`
-- `add_control_limits()` ikke `tilfoej_kontrolgraenser()`
+- `bfh_export_pdf()` ikke `eksporter_pdf()`
 
 **Internal terminology (comments):**
 - Serieplot = SPC chart
@@ -401,7 +339,7 @@ test_that("Anhøj rules detect runs correctly", {
 Håndhæves automatisk via `tests/testthat/test-source-ascii.R`.
 
 **Begrundelse:** `R CMD check --as-cran` advarer om non-ASCII i R-kilder
-(blokerer warning-clean releases). Global `~/.claude/rules/R_STANDARDS.md`
+(blokerer warning-clean releases). Global `~/.claude/rules-profiles/r/R_STANDARDS.md`
 siger "Kommentarer: dansk" — den regel **overrides** for `R/*.R` her.
 
 **Hvor er dansk OK?**
@@ -414,14 +352,14 @@ siger "Kommentarer: dansk" — den regel **overrides** for `R/*.R` her.
 
 **Hvor SKAL det være ASCII?**
 - ❌ R-kommentarer (`# ...`) i `R/*.R` — engelsk eller transliteret
-- ❌ R-strings i `R/*.R` med dansk indhold — brug `æ`/`ø`/`å`
+- ❌ R-strings i `R/*.R` med dansk indhold — brug `\u00e6`/`\u00f8`/`\u00e5`
   escapes (kompiler-fortolket; runtime-string forbliver UTF-8)
 - ❌ Identifiers — engelsk altid
 
 **Eksempler:**
 ```r
 # ✅ Korrekt: ASCII-kommentar + Danish via \u-escape i string
-warning("Kontrolgrænser er statistisk usikre")
+warning("Kontrolgr\u00e6nser er statistisk usikre")
 
 # ❌ Forkert: dansk char direkte i source
 warning("Kontrolgrænser er statistisk usikre")  # æ trigger CRAN warning
@@ -432,15 +370,9 @@ warning("Kontrolgrænser er statistisk usikre")  # æ trigger CRAN warning
 ## 📚 Global Standards Reference
 
 **Dette projekt følger:**
-- **R Development:** `~/.claude/rules-profiles/r/R_STANDARDS.md`
+- **R Development:** `~/.claude/rules-profiles/r/R_STANDARDS.md` (importeret øverst)
 - **Architecture Patterns:** `~/.claude/rules-profiles/shiny/ARCHITECTURE_PATTERNS.md`
-- **Git Workflow:** `~/.claude/rules/GIT_WORKFLOW.md`
-- **Development Philosophy:** `~/.claude/rules/DEVELOPMENT_PHILOSOPHY.md`
 
 **Globale agents:** tidyverse-code-reviewer, performance-optimizer, security-reviewer, test-coverage-analyzer, refactoring-advisor, legacy-code-detector
 
-**Globale commands:** /boost, /code-review-recent, /double-check, /debugger
-
----
-
-**Original documentation:** Se `CLAUDE.md.backup` for fuld dokumentation.
+**Globale commands:** /boost, /debugger
