@@ -1,5 +1,25 @@
 # BFHcharts (development version)
 
+## Nye funktioner
+
+* **`bfh_qic_stats()`: SPC-tallene uden graf.** Kaldere, der kun skal bruge
+  `$summary` og `$qic_data` — fx signal-scanning over tusindvis af serier —
+  betalte hidtil for en fuld graf ved hvert kald, fordi `bfh_qic()` altid
+  bygger plottet og placerer labels. `bfh_qic_stats()` tager de samme
+  beregningsargumenter (`data`, `x`, `y`, `n`, `chart_type`, `y_axis_unit`,
+  `part`, `freeze`, `exclude`, `cl`, `multiply`, `agg_fun`, `target_value`,
+  `notes`) og returnerer et `bfh_qic_stats`-objekt med `$summary`,
+  `$qic_data` og `$config` — uden at tegne. Målt på en 36-punkts serie:
+  ca. 450 ms → 40 ms pr. kald (run/i/p), I' ca. 400 ms → 5 ms.
+
+  `bfh_qic()` og `bfh_qic_stats()` deler nu én intern beregningsfase, så
+  tallene er `identical()` for samme argumenter — inklusive `summary`'s
+  attributter `cl_user_supplied` og `cl_auto_mean`. Det er testet for alle
+  charttyper samt med faser, freeze, exclude, brugerdefineret centerlinje,
+  nævner og auto-mean. `bfh_extract_spc_stats()` virker på begge typer.
+  Objektet har ingen graf og er ikke et `bfh_qic_result`; brug `bfh_qic()`,
+  når der skal tegnes eller eksporteres. `bfh_qic()`'s output er uændret.
+
 ## Forbedringer
 
 * **PDF-kompilering kalder Quartos Typst direkte.** `quarto typst compile`

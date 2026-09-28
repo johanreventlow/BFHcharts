@@ -754,142 +754,37 @@ bfh_qic <- function(data,
   validate_language(language)
   # ylim normaliseres til enten NULL (no-op) eller gyldig c(min, max) m. NA.
   ylim <- validate_ylim(ylim)
-  agg.fun <- validate_bfh_qic_inputs(
+  # ---- Beregningsfase (delt med bfh_qic_stats()) ----
+  # Validering, qicharts2/pbcharts, auto-mean og cl-advarslen. Samme
+  # funktion kaldes af bfh_qic_stats(), saa de to ikke kan glide fra
+  # hinanden. NSE er allerede fanget ovenfor i dette scope.
+  computed <- bfh_qic_compute(
     data = data,
+    x_expr = x_expr,
+    y_expr = y_expr,
+    n_expr = n_expr,
     chart_type = chart_type,
     y_axis_unit = y_axis_unit,
     part = part,
     freeze = freeze,
-    base_size = base_size,
-    width = width,
-    height = height,
     exclude = exclude,
     cl = cl,
     multiply = multiply,
-    agg_fun_supplied = agg_fun_supplied,
     agg.fun = agg.fun,
-    return.data = return.data,
-    plot_margin = plot_margin,
+    agg_fun_supplied = agg_fun_supplied,
     target_value = target_value,
-    y_expr_char = as.character(y_expr),
-    n_expr_char = if (!is.null(n_expr)) as.character(n_expr) else NULL,
-    x_expr_char = as.character(x_expr),
+    target_text = target_text,
     notes = notes,
-    target_text = target_text
+    return.data = return.data,
+    base_size = base_size,
+    width = width,
+    height = height,
+    plot_margin = plot_margin,
+    qic_envir = qic_envir
   )
-
-  # ---- Byg qic_args + kald qicharts2 (eller pbcharts for ip) ----
-  if (identical(chart_type, "ip")) {
-    # Guards: emit before compute so they fire regardless of pbc outcome.
-    if (is.null(n_expr)) {
-      message(
-        "chart_type = \"ip\": no denominator column supplied. ",
-        "Without a denominator, the I-prime chart degenerates to a standard ",
-        "individuals chart with constant control limits."
-      )
-    }
-    if (isTRUE(agg_fun_supplied)) {
-      warning(
-        "chart_type = \"ip\": pbc() auto-sums numerator and denominator ",
-        "within each time period, so the 'agg.fun' argument is ignored ",
-        "for I-prime charts.",
-        call. = FALSE
-      )
-    }
-
-    # input_x = user x-vector in input order, for the notes lookup (pbc sorts
-    # its output rows). x_expr is a validated simple column name, so read it
-    # straight from data -- no eval()/qic_envir dependency needed here.
-    input_x <- data[[as.character(x_expr)]]
-
-    # ---- I-prime: compute via pbcharts adapter ----
-    pbc_args <- build_pbc_args(
-      data         = data,
-      x_expr       = x_expr,
-      y_expr       = y_expr,
-      n_expr       = n_expr,
-      part         = part,
-      freeze       = freeze,
-      target_value = target_value,
-      exclude      = exclude,
-      cl           = cl,
-      multiply     = multiply,
-      y_axis_unit  = y_axis_unit
-    )
-    pbc_data <- invoke_pbcharts(pbc_args, envir = qic_envir)
-    qic_data <- map_pbc_to_qic_data(pbc_data, notes = notes, input_x = input_x)
-    qic_data <- add_anhoej_signal(qic_data)
-  } else {
-    qic_args <- build_qic_args(
-      data         = data,
-      x_expr       = x_expr,
-      y_expr       = y_expr,
-      n_expr       = n_expr,
-      chart_type   = chart_type,
-      part         = part,
-      freeze       = freeze,
-      target_value = target_value,
-      notes        = notes,
-      exclude      = exclude,
-      cl           = cl,
-      multiply     = multiply,
-      agg.fun      = agg.fun,
-      y_axis_unit  = y_axis_unit
-    )
-    qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
-  }
-
-  # Auto-mean substitution for run charts: when >=50% of a phase's included
-  # observations sit exactly on the qicharts2-computed median, switch that
-  # phase's centerline to its mean. Skipped when:
-  #   - user supplied cl= explicitly (cl is non-NULL)
-  #   - freeze is set: freeze deliberately fixes CL to the freeze-window
-  #     median, so a high tie-ratio is by design (baseline = 10, later
-  #     phase = 20 -> 50% on CL is expected and informative)
-  # Implementation piggybacks on qicharts2's NA-fallback: non-trigger
-  # phases get NA cl -> qic.run() falls back to median per phase for
-  # those; trigger phases get their mean -> qic.run uses our value.
-  #
-  # Cycle 02 fixes:
-  # - H1: detection iterates ALL phases (not just last) so earlier phases
-  #   tied to median are also substituted.
-  # - H3: include-mask respected for both trigger ratio + replacement mean
-  #   (rows excluded via exclude= no longer skew CL).
-  # Auto-mean substitution is only possible for run charts (other chart
-  # types return integer(0) from detect_majority_at_median_per_phase, so
-  # skipping the outer block saves the function call overhead entirely).
-  cl_auto_mean_substituted <- FALSE
-  if (identical(chart_type, "run") && is.null(cl) && is.null(freeze)) {
-    trigger_phases <- detect_majority_at_median_per_phase(qic_data, chart_type)
-    if (length(trigger_phases) > 0L) {
-      new_cl <- build_auto_cl_for_phases(
-        raw_data = data,
-        qic_data = qic_data,
-        x_col_name = as.character(x_expr),
-        trigger_phases = trigger_phases,
-        multiply = multiply
-      )
-      # Cycle 02 H4 guard: only proceed if the cl-vector actually contains
-      # non-NA values for trigger phases. Otherwise qic.run()'s NA-fallback
-      # would silently revert to median for everything, leaving the user
-      # with a caveat that claims substitution while CL is unchanged.
-      if (any(!is.na(new_cl))) {
-        qic_args$cl <- new_cl
-        qic_data <- invoke_qicharts2(qic_args, envir = qic_envir)
-        cl_auto_mean_substituted <- TRUE
-      }
-    }
-  }
-
-  # Warn when custom cl overrides the data-estimated process mean in Anhoej calculation
-  if (!is.null(cl) && any(c("runs.signal", "crossings.signal") %in% names(qic_data))) {
-    warning(
-      "Custom cl supplied: Anhoej run/crossing signals are computed against ",
-      "the supplied centerline, not the data-estimated process mean. ",
-      "Interpret with caution.",
-      call. = FALSE
-    )
-  }
+  qic_data <- computed$qic_data
+  agg.fun <- computed$agg.fun
+  cl_auto_mean_substituted <- computed$cl_auto_mean
 
   # ---- Viewport + responsiv base_size ----
   vp <- compute_viewport_base_size(
