@@ -15,7 +15,8 @@ bfh_export_figure_pdf(
   font_path = NULL,
   ignore_system_fonts = TRUE,
   inject_assets = NULL,
-  batch_session = NULL
+  batch_session = NULL,
+  panel = NULL
 )
 }
 \arguments{
@@ -32,9 +33,9 @@ title only appears once. Optional fields: \code{hospital},
 \code{department}, \code{analysis}, \code{details}, \code{author},
 \code{date}, \code{footer_content}, \code{logo_path}. Unlike
 \code{\link{bfh_export_pdf}}, \code{details} is not auto-generated.
-\code{data_definition} is accepted but \strong{not rendered} in
-full-width mode; a non-empty value triggers a warning so the text does
-not vanish silently.}
+\code{data_definition} is rendered in the side panel when \code{panel}
+is given; in full-width mode it is \strong{not rendered} and a non-empty
+value triggers a warning so the text does not vanish silently.}
 
 \item{template}{Character string specifying template name
 (default: "bfh-diagram").}
@@ -64,6 +65,10 @@ in \code{\link{bfh_export_pdf}}.}
 \code{\link{bfh_create_export_session}}. Reuses the staged template
 directory across calls. Cannot be combined with \code{template_path} or
 \code{inject_assets}.}
+
+\item{panel}{Optional side panel from \code{\link{bfh_figure_panel}}:
+key figures, colour legend and data definition in a 72.6 mm column to the
+right of the figure. Default \code{NULL} renders the figure full width.}
 }
 \value{
 The input \code{plot} invisibly, enabling pipe chaining.
@@ -85,7 +90,10 @@ Requires Quarto CLI (>= 1.4.0) for compilation, like
 and subtitle, removes axis titles that are blank (\code{NULL}, \code{""} or
 whitespace; titles derived from \code{aes()} are kept), and sets the plot
 margins to 0 mm. Nothing else: the caller owns the figure's theme and
-typography. The chart is rendered at 264 x 109 mm (the full chart row).
+typography. The chart is rendered 264 mm wide (full width) or 191.4 mm
+wide next to a \code{panel}. Without \code{analysis} the page has no
+analysis row and the chart is 130.8 mm high; with \code{analysis} it is
+109 mm high, as on SPC pages.
 
 \strong{Fonts:} text inside the figure is rendered with the font family the plot
 declares, resolved against the fonts available to the Typst compile
@@ -134,6 +142,7 @@ bfh_export_figure_pdf(
 
 Other export-functions:
 \code{\link[=bfh_export_batch_pdf]{bfh_export_batch_pdf()}},
+\code{\link[=bfh_figure_panel]{bfh_figure_panel()}},
 \code{\link[=bfh_prune_page_cache]{bfh_prune_page_cache()}},
 \code{\link[=bfh_stage_figure_page]{bfh_stage_figure_page()}},
 \code{\link[=bfh_stage_pdf_page]{bfh_stage_pdf_page()}}

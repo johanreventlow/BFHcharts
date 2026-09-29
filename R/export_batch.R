@@ -277,9 +277,9 @@ bfh_stage_pdf_page <- function(x, cache_dir,
 #' to its interface. Order, manifest selection, chunking and pruning treat
 #' figure bundles exactly like SPC bundles.
 #'
-#' The bundle carries \code{metadata$spc_panel = FALSE} and empty SPC
-#' statistics, so the batch compiler renders the page in full-width mode
-#' (chart SVG at 264 x 109 mm) without page-type branching. Plot handling is
+#' The bundle carries \code{metadata$spc_panel = FALSE}, the optional
+#' \code{panel} and empty SPC statistics, so the batch compiler renders the
+#' figure layout without page-type branching. Chart size and plot handling are
 #' identical to \code{\link{bfh_export_figure_pdf}}: the plot's own title and
 #' subtitle are removed, blank axis titles are removed, margins are set to
 #' 0 mm, and the caller owns the figure's theme and typography (see the font
@@ -315,6 +315,8 @@ bfh_stage_pdf_page <- function(x, cache_dir,
 #' @param dpi Resolution passed to the SVG device (default 150).
 #' @param overwrite Logical. Replace an existing bundle with this \code{id}
 #'   (default TRUE). \code{FALSE} raises an error on duplicate ids.
+#' @param panel Optional side panel from \code{\link{bfh_figure_panel}}.
+#'   Same behavior as in \code{\link{bfh_export_figure_pdf}}.
 #'
 #' @return Invisibly, a \code{bfh_staged_page} object: a list with
 #'   \code{id}, \code{path} (bundle directory), and \code{order}.
@@ -342,12 +344,14 @@ bfh_stage_figure_page <- function(plot, cache_dir,
                                   metadata = list(),
                                   template = "bfh-diagram",
                                   dpi = 150,
-                                  overwrite = TRUE) {
+                                  overwrite = TRUE,
+                                  panel = NULL) {
   # ---- 1. Input validation ---------------------------------------------------
   .validate_figure_plot(plot)
   cache_dir <- .validate_stage_args(cache_dir, metadata, dpi, template, overwrite)
   .validate_figure_title(metadata)
-  .warn_figure_data_definition(metadata)
+  .validate_figure_panel(panel)
+  if (is.null(panel)) .warn_figure_data_definition(metadata)
 
   # ---- 2. Resolve id + order -------------------------------------------------
   target_info <- .resolve_stage_target(cache_dir, id, order, overwrite)
@@ -355,15 +359,16 @@ bfh_stage_figure_page <- function(plot, cache_dir,
   order <- target_info$order
   target <- target_info$target
 
-  # ---- 3. Finalize metadata (full-width flag set after merge) ----------------
-  metadata_full <- build_figure_metadata(metadata)
+  # ---- 3. Finalize metadata (figure flag + panel set after merge) ------------
+  metadata_full <- build_figure_metadata(metadata, panel)
+  dims <- figure_chart_dims(metadata_full)
 
-  # ---- 4. Render full-width chart SVG + write bundle atomically --------------
+  # ---- 4. Render chart SVG sized to the page layout + write bundle -----------
   .stage_bundle_atomically(cache_dir, id, target, function(staging) {
     plot_for_export <- prepare_figure_plot(plot)
     export_chart_svg(
       plot_for_export, file.path(staging, "chart.svg"), dpi,
-      width_mm = PDF_IMAGE_WIDTH_FULL_MM
+      width_mm = dims$width_mm, height_mm = dims$height_mm
     )
 
     bundle <- list(
@@ -1003,6 +1008,12 @@ bfh_prune_page_cache <- function(cache_dir,
     if (!is.null(val) && (!is.character(val) || length(val) != 1L || is.na(val))) {
       return(list(data = NULL, error = sprintf("metadata$%s is not a single string", f)))
     }
+  }
+  # Figure side panel: must be a bfh_figure_panel when present (a raw list
+  # would bypass the constructor's validation before stringification).
+  if (!is.null(data$metadata$figure_panel) &&
+    !inherits(data$metadata$figure_panel, "bfh_figure_panel")) {
+    return(list(data = NULL, error = "metadata$figure_panel is not a bfh_figure_panel"))
   }
   list(data = data, error = NULL)
 }

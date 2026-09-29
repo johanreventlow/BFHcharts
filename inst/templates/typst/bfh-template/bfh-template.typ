@@ -41,6 +41,20 @@
 //              omitted. Used by bfh_export_figure_pdf() / bfh_stage_figure_page()
 //              for non-SPC figures. data_definition is accepted but not
 //              rendered in this mode.
+//   figure_panel: Dictionary (default none). Only used when spc_panel is false:
+//              adds a right column (72.6 mm, same width as the SPC column) next
+//              to the figure. Keys, all optional:
+//                kpis: array of (label:, value:, color:) - large key figures
+//                kpi_title: heading above the key figures
+//                legend: array of (label:, color:, group:) - colour legend;
+//                        a group heading is shown each time group changes
+//                legend_title: heading above the legend (default "Tegnforklaring")
+//                definition_height: height of the data definition block
+//                        (default 39.6mm)
+//              data_definition IS rendered in the figure panel.
+//   Figure pages (spc_panel: false) without analysis drop the analysis row, so
+//   the figure takes over its 26.4 mm. The R side renders the chart SVG
+//   correspondingly taller (PDF_IMAGE_HEIGHT_FIGURE_MM).
 //   chart: Chart content (image or other content) (required via content parameter)
 //
 #let bfh-diagram(
@@ -65,6 +79,7 @@
   footer_content: none,
   logo_path: none,
   spc_panel: true,
+  figure_panel: none,
   chart
 ) = {
   set text(font: ("Mari", "Roboto", "Arial", "Helvetica", "sans-serif"),
@@ -106,9 +121,13 @@ show table.cell: it => {
      } else { none }
   )
 
+  // Figure pages without analysis text: the analysis row is dropped and the
+  // chart row starts right below the header (with a 6.6 mm gap instead of 2 mm).
+  let drop-analysis = not spc_panel and analysis == none
+
   // Left column of the chart row: details line, chart and footer. Hoisted so the
   // same content object is used in both layouts (spc_panel true/false).
-  let chart-column = block(inset: (left: 26.4mm, top: 2mm, right: 6.6mm, bottom: 0mm),
+  let chart-column = block(inset: (left: 26.4mm, top: if drop-analysis { 6.6mm } else { 2mm }, right: 6.6mm, bottom: 0mm),
       width: 100%,
       //fill: rgb("ccebfa"), //Blå baggrundsfarve - husk at fjerne
           block(inset: (0mm),
@@ -135,10 +154,127 @@ show table.cell: it => {
 
         )
 
+
+  // Data definition - cascade-rendering:
+  //   1) Forsøg 9pt -> 8.5pt -> 8pt med tæt leading + hyphenation
+  //   2) Vælg største font hvor indholdet passer i target-height
+  //   3) Hvis selv 8pt overflower, render ved 8pt + clip + ellipsis
+  // Newlines i input splittes til separate paragraffer.
+  // Bruges af både SPC-kolonnen (52.8mm) og figur-panelet.
+  let definition-block(target-height) = {
+    text(fill: rgb("888888"),
+             weight: "bold",
+             size: 9pt,
+             upper([Datadefinition]))
+    linebreak()
+    set text(hyphenate: true)
+    let paragraphs = data_definition
+      .split("\n")
+      .map(p => p.trim())
+      .filter(p => p != "")
+    let render-at(size) = {
+      for (i, p) in paragraphs.enumerate() {
+        if i > 0 { parbreak() }
+        par(justify: true, leading: 0.55em,
+          text(fill: rgb("888888"), size: size, p))
+      }
+    }
+    let candidate-sizes = (9pt, 8.5pt, 8pt)
+    layout(size => context {
+      let fits(sz) = measure(
+        block(width: size.width, render-at(sz))
+      ).height <= target-height
+      let chosen = candidate-sizes.find(fits)
+      let final-size = if chosen != none { chosen } else { 8pt }
+      let overflows = chosen == none
+      block(
+        height: target-height,
+        width: 100%,
+        clip: true,
+        {
+          render-at(final-size)
+          if overflows {
+            place(bottom + left,
+              block(width: 100%, fill: white,
+                text(fill: rgb("888888"), size: final-size, "...")))
+          }
+        }
+      )
+    })
+  }
+
+  // Right column in figure mode (spc_panel: false + figure_panel): key
+  // figures, colour legend and data definition. Same inset and width as the
+  // SPC column, so figure pages line up with SPC pages in batch reports.
+  let figure-column = if figure_panel != none {
+    let panel-heading(t) = text(fill: rgb("888888"), weight: "bold", size: 9pt, upper(t))
+    let kpis = figure_panel.at("kpis", default: none)
+    let legend = figure_panel.at("legend", default: none)
+    block(inset: (left: 0mm, top: if drop-analysis { 6.6mm } else { 2mm }, right: 6.6mm),
+      width: 100%, {
+        if kpis != none and kpis.len() > 0 {
+          let kpi-title = figure_panel.at("kpi_title", default: none)
+          if kpi-title != none { block(below: 2mm, panel-heading(kpi-title)) }
+          grid(
+            columns: (auto, 1fr),
+            column-gutter: 3.3mm,
+            row-gutter: 1.5mm,
+            align: (right + horizon, left + horizon),
+            ..kpis.map(k => (
+              text(fill: rgb(k.at("color", default: "888888")),
+                   weight: "extrabold", size: 28pt, str(k.value)),
+              text(fill: rgb("888888"), size: 9pt, upper(k.label)),
+            )).flatten()
+          )
+          v(4mm)
+        }
+        if legend != none and legend.len() > 0 {
+          block(below: 1.5mm,
+            panel-heading(figure_panel.at("legend_title", default: "Tegnforklaring")))
+          let forrige = none
+          for item in legend {
+            let gruppe = item.at("group", default: none)
+            if gruppe != none and gruppe != forrige {
+              block(above: 2mm, below: 1mm,
+                text(fill: rgb("888888"), weight: "bold", size: 8pt, gruppe))
+              forrige = gruppe
+            }
+            block(above: 0.8mm, below: 0.8mm,
+              grid(
+                columns: (3.3mm, 1fr),
+                column-gutter: 2mm,
+                align: (horizon, horizon),
+                box(width: 3.3mm, height: 3.3mm, fill: rgb(item.color)),
+                text(fill: rgb("666666"), size: 8pt, item.label),
+              ))
+          }
+          v(4mm)
+        }
+        if data_definition != none {
+          definition-block(figure_panel.at("definition_height", default: 39.6mm))
+        }
+      })
+  } else { none }
+
+  let analysis-cell = grid.cell(
+  fill: rgb("ffffff"),
+        if analysis != none {
+          block(inset: (left: 26.4mm, top: 6.6mm, right: 6.6mm, bottom: 0mm),
+          par(
+            //leading: .6em,
+          text(
+               size: 15pt,
+               //font: ("Mari Book", "Roboto", "Arial", "Helvetica", "sans-serif"),
+          analysis)
+          )
+        )
+        }
+      )
+
     grid(
       //rows: (51.33mm, 22.66mm, 1fr),
       //rows: (59.4mm, 22.1mm, 1fr),
-      rows: (52.8mm, 26.4mm, 1fr),
+      rows: if drop-analysis { (52.8mm, 1fr) } else { (52.8mm, 26.4mm, 1fr) },
         block(
           //fill: rgb("DCF1FC"),
           fill: rgb("007dbb"),
@@ -204,20 +340,7 @@ show table.cell: it => {
         
       ),
 
-  grid.cell(
-  fill: rgb("ffffff"),
-        if analysis != none {
-          block(inset: (left: 26.4mm, top: 6.6mm, right: 6.6mm, bottom: 0mm),
-          par(
-            //leading: .6em,
-          text(
-               size: 15pt,
-               //font: ("Mari Book", "Roboto", "Arial", "Helvetica", "sans-serif"),
-          analysis)
-          )
-        )
-        }
-      ),
+  ..if drop-analysis { () } else { (analysis-cell,) },
 
 
 grid.cell(
@@ -353,46 +476,7 @@ grid.cell(
          //   3) Hvis selv 8pt overflower, render ved 8pt + clip + ellipsis
          // Newlines i input splittes til separate paragraffer.
          #if data_definition != none {
-           text(fill: rgb("888888"),
-                    weight: "bold",
-                    size: 9pt,
-                    upper([Datadefinition]))
-           linebreak()
-           set text(hyphenate: true)
-           let paragraphs = data_definition
-             .split("\n")
-             .map(p => p.trim())
-             .filter(p => p != "")
-           let render-at(size) = {
-             for (i, p) in paragraphs.enumerate() {
-               if i > 0 { parbreak() }
-               par(justify: true, leading: 0.55em,
-                 text(fill: rgb("888888"), size: size, p))
-             }
-           }
-           let target-height = 52.8mm
-           let candidate-sizes = (9pt, 8.5pt, 8pt)
-           layout(size => context {
-             let fits(sz) = measure(
-               block(width: size.width, render-at(sz))
-             ).height <= target-height
-             let chosen = candidate-sizes.find(fits)
-             let final-size = if chosen != none { chosen } else { 8pt }
-             let overflows = chosen == none
-             block(
-               height: target-height,
-               width: 100%,
-               clip: true,
-               {
-                 render-at(final-size)
-                 if overflows {
-                   place(bottom + left,
-                     block(width: 100%, fill: white,
-                       text(fill: rgb("888888"), size: final-size, "...")))
-                 }
-               }
-             )
-           })
+           definition-block(52.8mm)
          }
        ]
 
@@ -401,6 +485,14 @@ grid.cell(
 )
 
     )
+    } else if figure-column != none {
+      // Figure mode with side panel: figure + key figures/legend/definition
+      grid(
+        rows: (auto),
+        columns: (auto, 72.6mm),
+        chart-column,
+        figure-column
+      )
     } else {
       // Full-width figure mode: no SPC column, chart fills the row
       chart-column
