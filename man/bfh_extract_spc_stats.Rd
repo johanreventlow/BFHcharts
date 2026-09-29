@@ -4,6 +4,7 @@
 \alias{bfh_extract_spc_stats}
 \alias{bfh_extract_spc_stats.default}
 \alias{bfh_extract_spc_stats.data.frame}
+\alias{bfh_extract_spc_stats.bfh_qic_stats}
 \alias{bfh_extract_spc_stats.bfh_qic_result}
 \title{Extract SPC Statistics}
 \usage{
@@ -12,6 +13,8 @@ bfh_extract_spc_stats(x)
 \method{bfh_extract_spc_stats}{default}(x)
 
 \method{bfh_extract_spc_stats}{data.frame}(x)
+
+\method{bfh_extract_spc_stats}{bfh_qic_stats}(x)
 
 \method{bfh_extract_spc_stats}{bfh_qic_result}(x)
 }

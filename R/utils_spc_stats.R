@@ -132,6 +132,14 @@ bfh_extract_spc_stats.data.frame <- function(x) {
 
 #' @export
 #' @rdname bfh_extract_spc_stats
+bfh_extract_spc_stats.bfh_qic_stats <- function(x) {
+  # Resultat-metoden laeser kun $summary, $config$chart_type og $qic_data,
+  # som bfh_qic_stats-objekter har i samme form - derfor identisk output.
+  bfh_extract_spc_stats.bfh_qic_result(x)
+}
+
+#' @export
+#' @rdname bfh_extract_spc_stats
 bfh_extract_spc_stats.bfh_qic_result <- function(x) {
   stats <- bfh_extract_spc_stats(x$summary)
 
