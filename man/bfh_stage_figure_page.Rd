@@ -104,6 +104,7 @@ bfh_stage_figure_page(p, cache_dir,
 \code{\link[=bfh_export_figure_pdf]{bfh_export_figure_pdf()}} for single-figure export.
 
 Other export-functions:
+\code{\link[=bfh_apply_date_axis]{bfh_apply_date_axis()}},
 \code{\link[=bfh_export_batch_pdf]{bfh_export_batch_pdf()}},
 \code{\link[=bfh_export_figure_pdf]{bfh_export_figure_pdf()}},
 \code{\link[=bfh_figure_panel]{bfh_figure_panel()}},

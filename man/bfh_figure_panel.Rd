@@ -9,12 +9,16 @@ bfh_figure_panel(
   kpis = NULL,
   legend_title = NULL,
   kpi_title = NULL,
-  definition_height_mm = NULL
+  definition_height_mm = NULL,
+  placement = c("side", "bottom")
 )
 }
 \arguments{
 \item{legend}{Optional data frame with columns \code{label} and
-\code{colour} (hex, e.g. \code{"#007dbb"}) and optionally \code{group}.}
+\code{colour} (hex, e.g. \code{"#007dbb"}) and optionally \code{group},
+\code{key} (\code{"box"}, the default, or \code{"line"} for a line
+series) and \code{linewidth} (ggplot2 linewidth of a \code{"line"} key,
+default 0.5).}
 
 \item{kpis}{Optional data frame with columns \code{label} and \code{value}
 (numbers are formatted as text) and optionally \code{colour}.}
@@ -26,7 +30,10 @@ template default ("Tegnforklaring").}
 
 \item{definition_height_mm}{Optional height of the data definition block in
 millimetres (template default 39.6). Text that does not fit is clipped
-with an ellipsis.}
+with an ellipsis. Ignored with \code{placement = "bottom"}.}
+
+\item{placement}{\code{"side"} (default): a 72.6 mm column right of the
+figure. \code{"bottom"}: a row below a full-width figure.}
 }
 \value{
 An object of class \code{bfh_figure_panel}.
@@ -46,6 +53,11 @@ in the order it should be read (typically the stacking order, top first).
 
 With a panel, \code{metadata$data_definition} is rendered at the bottom of
 the panel (no warning, unlike full-width mode).
+
+With \code{placement = "bottom"} the figure uses the full page width and
+the panel becomes a row below it: key figures side by side (number above,
+label below), then the legend, then the data definition to the right.
+Legend group headings are not shown in that row.
 }
 \examples{
 bfh_figure_panel(
@@ -61,6 +73,7 @@ bfh_figure_panel(
 \code{\link[=bfh_export_figure_pdf]{bfh_export_figure_pdf()}}, \code{\link[=bfh_stage_figure_page]{bfh_stage_figure_page()}}
 
 Other export-functions:
+\code{\link[=bfh_apply_date_axis]{bfh_apply_date_axis()}},
 \code{\link[=bfh_export_batch_pdf]{bfh_export_batch_pdf()}},
 \code{\link[=bfh_export_figure_pdf]{bfh_export_figure_pdf()}},
 \code{\link[=bfh_prune_page_cache]{bfh_prune_page_cache()}},

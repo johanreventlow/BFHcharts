@@ -24,8 +24,16 @@
 #' With a panel, \code{metadata$data_definition} is rendered at the bottom of
 #' the panel (no warning, unlike full-width mode).
 #'
+#' With \code{placement = "bottom"} the figure uses the full page width and
+#' the panel becomes a row below it: key figures side by side (number above,
+#' label below), then the legend, then the data definition to the right.
+#' Legend group headings are not shown in that row.
+#'
 #' @param legend Optional data frame with columns \code{label} and
-#'   \code{colour} (hex, e.g. \code{"#007dbb"}) and optionally \code{group}.
+#'   \code{colour} (hex, e.g. \code{"#007dbb"}) and optionally \code{group},
+#'   \code{key} (\code{"box"}, the default, or \code{"line"} for a line
+#'   series) and \code{linewidth} (ggplot2 linewidth of a \code{"line"} key,
+#'   default 0.5).
 #' @param kpis Optional data frame with columns \code{label} and \code{value}
 #'   (numbers are formatted as text) and optionally \code{colour}.
 #' @param legend_title Heading above the legend. Default \code{NULL} uses the
@@ -33,7 +41,9 @@
 #' @param kpi_title Optional heading above the key figures.
 #' @param definition_height_mm Optional height of the data definition block in
 #'   millimetres (template default 39.6). Text that does not fit is clipped
-#'   with an ellipsis.
+#'   with an ellipsis. Ignored with \code{placement = "bottom"}.
+#' @param placement \code{"side"} (default): a 72.6 mm column right of the
+#'   figure. \code{"bottom"}: a row below a full-width figure.
 #'
 #' @return An object of class \code{bfh_figure_panel}.
 #' @export
@@ -52,10 +62,33 @@ bfh_figure_panel <- function(legend = NULL,
                              kpis = NULL,
                              legend_title = NULL,
                              kpi_title = NULL,
-                             definition_height_mm = NULL) {
+                             definition_height_mm = NULL,
+                             placement = c("side", "bottom")) {
+  placement <- match.arg(placement)
+  legend_in <- legend
   legend <- .validate_panel_table(legend, "legend",
     required = c("label", "colour"), optional = "group"
   )
+  if (!is.null(legend)) {
+    legend$key <- if ("key" %in% names(legend_in)) as.character(legend_in$key) else "box"
+    legend$key[is.na(legend$key)] <- "box"
+    if (!all(legend$key %in% c("box", "line"))) {
+      bfh_abort("legend$key must be \"box\" or \"line\".",
+        class = "bfhcharts_export_error"
+      )
+    }
+    legend$linewidth <- if ("linewidth" %in% names(legend_in)) {
+      as.numeric(legend_in$linewidth)
+    } else {
+      NA_real_
+    }
+    bad_lw <- !is.na(legend$linewidth) & legend$linewidth <= 0
+    if (any(bad_lw)) {
+      bfh_abort("legend$linewidth must be positive or NA.",
+        class = "bfhcharts_export_error"
+      )
+    }
+  }
   if (!is.null(legend) && !all(.is_hex_colour(legend$colour))) {
     bfh_abort(
       "legend$colour must contain hex colours like \"#007dbb\" (no NA).",
@@ -100,7 +133,8 @@ bfh_figure_panel <- function(legend = NULL,
       kpis = kpis,
       legend_title = legend_title,
       kpi_title = kpi_title,
-      definition_height_mm = definition_height_mm
+      definition_height_mm = definition_height_mm,
+      placement = placement
     ),
     class = "bfh_figure_panel"
   )
@@ -191,23 +225,28 @@ print.bfh_figure_panel <- function(x, ...) {
 
 #' Chart SVG size for a figure page
 #'
-#' Width: 191.4 mm next to a side panel, 264 mm full width. Height: 130.8 mm
-#' when the page has no analysis text (the template then drops the analysis
-#' row), otherwise 109 mm. Must stay in sync with bfh-template.typ.
+#' Width: 191.4 mm next to a side panel, 264 mm full width (no panel or a
+#' bottom panel). Height: 130.8 mm when the page has no analysis text (the
+#' template then drops the analysis row), otherwise 109 mm; a bottom panel
+#' takes PDF_FIGURE_BOTTOM_PANEL_MM of that. Must stay in sync with
+#' bfh-template.typ.
 #'
 #' @param metadata_full Finalized metadata from build_figure_metadata().
 #' @noRd
 figure_chart_dims <- function(metadata_full) {
+  panel <- metadata_full$figure_panel
+  bottom <- !is.null(panel) && identical(panel$placement, "bottom")
+  height <- if (is.null(metadata_full$analysis)) {
+    PDF_IMAGE_HEIGHT_FIGURE_MM
+  } else {
+    PDF_IMAGE_HEIGHT_MM
+  }
   list(
-    width_mm = if (is.null(metadata_full$figure_panel)) {
+    width_mm = if (is.null(panel) || bottom) {
       PDF_IMAGE_WIDTH_FULL_MM
     } else {
       PDF_IMAGE_WIDTH_MM
     },
-    height_mm = if (is.null(metadata_full$analysis)) {
-      PDF_IMAGE_HEIGHT_FIGURE_MM
-    } else {
-      PDF_IMAGE_HEIGHT_MM
-    }
+    height_mm = if (bottom) height - PDF_FIGURE_BOTTOM_PANEL_MM else height
   )
 }

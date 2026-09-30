@@ -46,11 +46,18 @@
 //              to the figure. Keys, all optional:
 //                kpis: array of (label:, value:, color:) - large key figures
 //                kpi_title: heading above the key figures
-//                legend: array of (label:, color:, group:) - colour legend;
-//                        a group heading is shown each time group changes
+//                legend: array of (label:, color:, group:, key:, thickness:) -
+//                        colour legend; a group heading is shown each time
+//                        group changes. key: "line" draws a short line of the
+//                        given thickness instead of a filled square.
 //                legend_title: heading above the legend (default "Tegnforklaring")
 //                definition_height: height of the data definition block
 //                        (default 39.6mm)
+//                placement: "side" (default) or "bottom". "bottom" keeps the
+//                        chart full width and puts key figures (side by side),
+//                        legend and data definition in a row below it
+//                        (bottom-panel-height + 3.3 mm gap; the R side renders
+//                        the chart correspondingly lower).
 //              data_definition IS rendered in the figure panel.
 //   Figure pages (spc_panel: false) without analysis drop the analysis row, so
 //   the figure takes over its 26.4 mm. The R side renders the chart SVG
@@ -125,36 +132,6 @@ show table.cell: it => {
   // chart row starts right below the header (with a 6.6 mm gap instead of 2 mm).
   let drop-analysis = not spc_panel and analysis == none
 
-  // Left column of the chart row: details line, chart and footer. Hoisted so the
-  // same content object is used in both layouts (spc_panel true/false).
-  let chart-column = block(inset: (left: 26.4mm, top: if drop-analysis { 6.6mm } else { 2mm }, right: 6.6mm, bottom: 0mm),
-      width: 100%,
-      //fill: rgb("ccebfa"), //Blå baggrundsfarve - husk at fjerne
-          block(inset: (0mm),
-          text(fill: rgb("888888"),
-               //weight: "light",
-               size: 9pt,
-               upper(details))) +
-
-          text(
-               chart
-             ) +
-
-          // Production date and footer content below chart
-          v(1fr) +
-          grid(
-            columns: (1fr, 1fr),
-            align: bottom,
-            align(left, text(fill: rgb("888888"), size: 6pt, [
-              PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")
-              #if author != none { [ · #author] }
-            ])),
-            align(right, if footer_content != none { text(fill: rgb("888888"), size: 6pt, upper(footer_content)) })
-          )
-
-        )
-
-
   // Data definition - cascade-rendering:
   //   1) Forsøg 9pt -> 8.5pt -> 8pt med tæt leading + hyphenation
   //   2) Vælg største font hvor indholdet passer i target-height
@@ -203,11 +180,105 @@ show table.cell: it => {
     })
   }
 
+  let panel-heading(t) = text(fill: rgb("888888"), weight: "bold", size: 9pt, upper(t))
+  // Legend key: filled square, or a short line of the series' thickness
+  let legend-key(item) = if item.at("key", default: "box") == "line" {
+    box(width: 6mm, height: 3.3mm,
+      align(horizon, line(length: 6mm,
+        stroke: (paint: rgb(item.color), thickness: item.at("thickness", default: 1.5pt)))))
+  } else {
+    box(width: 3.3mm, height: 3.3mm, fill: rgb(item.color))
+  }
+
+  // Bottom panel (figure_panel.placement = "bottom"): key figures side by
+  // side, legend and data definition in one row below the full-width chart.
+  let bottom-panel-height = 31.5mm
+  let bottom-panel = if (not spc_panel and figure_panel != none and
+      figure_panel.at("placement", default: "side") == "bottom") {
+    let kpis = figure_panel.at("kpis", default: none)
+    let legend = figure_panel.at("legend", default: none)
+    let cols = ()
+    let cells = ()
+    if kpis != none and kpis.len() > 0 {
+      cols.push(auto)
+      cells.push({
+        let kpi-title = figure_panel.at("kpi_title", default: none)
+        if kpi-title != none { block(below: 2mm, panel-heading(kpi-title)) }
+        grid(
+          columns: kpis.len(),
+          column-gutter: 5mm,
+          ..kpis.map(k => block(width: 34mm,
+            stack(dir: ttb, spacing: 1.2mm,
+              text(fill: rgb(k.at("color", default: "888888")),
+                   weight: "extrabold", size: 26pt, str(k.value)),
+              text(fill: rgb("666666"), size: 7.5pt, k.label))))
+        )
+      })
+    }
+    if legend != none and legend.len() > 0 {
+      cols.push(auto)
+      cells.push({
+        block(below: 2mm,
+          panel-heading(figure_panel.at("legend_title", default: "Tegnforklaring")))
+        grid(
+          columns: if legend.len() > 3 { 2 } else { 1 },
+          column-gutter: 5mm,
+          row-gutter: 1.5mm,
+          ..legend.map(item => grid(
+            columns: (auto, auto),
+            column-gutter: 2mm,
+            align: (horizon, horizon),
+            legend-key(item),
+            text(fill: rgb("666666"), size: 8pt, item.label)))
+        )
+      })
+    }
+    if data_definition != none {
+      cols.push(1fr)
+      cells.push(definition-block(bottom-panel-height - 5mm))
+    }
+    block(above: 3.3mm, height: bottom-panel-height, width: 100%,
+      grid(columns: cols, column-gutter: 8mm, ..cells))
+  } else { none }
+
+  // Left column of the chart row: details line, chart and footer. Hoisted so the
+  // same content object is used in both layouts (spc_panel true/false).
+  let chart-column = block(inset: (left: 26.4mm, top: if drop-analysis { 6.6mm } else { 2mm }, right: 6.6mm, bottom: 0mm),
+      width: 100%,
+      //fill: rgb("ccebfa"), //Blå baggrundsfarve - husk at fjerne
+          block(inset: (0mm),
+          text(fill: rgb("888888"),
+               //weight: "light",
+               size: 9pt,
+               upper(details))) +
+
+          text(
+               chart
+             ) +
+
+          // Figure bottom panel (none unless figure_panel.placement = "bottom")
+          (if bottom-panel != none { bottom-panel } else { [] }) +
+
+          // Production date and footer content below chart
+          v(1fr) +
+          grid(
+            columns: (1fr, 1fr),
+            align: bottom,
+            align(left, text(fill: rgb("888888"), size: 6pt, [
+              PRODUCERET: #datetime.today().display("[day] [month repr:short] [year]")
+              #if author != none { [ · #author] }
+            ])),
+            align(right, if footer_content != none { text(fill: rgb("888888"), size: 6pt, upper(footer_content)) })
+          )
+
+        )
+
+
   // Right column in figure mode (spc_panel: false + figure_panel): key
   // figures, colour legend and data definition. Same inset and width as the
   // SPC column, so figure pages line up with SPC pages in batch reports.
-  let figure-column = if figure_panel != none {
-    let panel-heading(t) = text(fill: rgb("888888"), weight: "bold", size: 9pt, upper(t))
+  let figure-column = if (figure_panel != none and
+      figure_panel.at("placement", default: "side") != "bottom") {
     let kpis = figure_panel.at("kpis", default: none)
     let legend = figure_panel.at("legend", default: none)
     block(inset: (left: 0mm, top: if drop-analysis { 6.6mm } else { 2mm }, right: 6.6mm),
@@ -241,10 +312,10 @@ show table.cell: it => {
             }
             block(above: 0.8mm, below: 0.8mm,
               grid(
-                columns: (3.3mm, 1fr),
+                columns: (if item.at("key", default: "box") == "line" { 6mm } else { 3.3mm }, 1fr),
                 column-gutter: 2mm,
                 align: (horizon, horizon),
-                box(width: 3.3mm, height: 3.3mm, fill: rgb(item.color)),
+                legend-key(item),
                 text(fill: rgb("666666"), size: 8pt, item.label),
               ))
           }

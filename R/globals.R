@@ -65,6 +65,12 @@ PDF_IMAGE_WIDTH_FULL_MM <- 264
 # Image height: 109 + 26.4 - 4.6 = 130.8mm
 PDF_IMAGE_HEIGHT_FIGURE_MM <- 130.8
 
+# Bottom panel on figure pages (bfh_figure_panel(placement = "bottom")): a row
+# of 31.5 mm below the full-width chart plus a 3.3 mm gap. The chart loses
+# exactly that height. Must match `bottom-panel-height` + gap in
+# bfh-template.typ.
+PDF_FIGURE_BOTTOM_PANEL_MM <- 34.8
+
 # NOTE: Chart width/height matcher image dimensions i den nuvaerende Typst-layout.
 # Vi beholder separate konstanter for semantisk tydelighed:
 # - PDF_IMAGE_* bruges ved eksport-rendering (ggsave output)
