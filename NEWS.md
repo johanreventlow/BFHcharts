@@ -16,6 +16,17 @@
   før 264 mm bred. Beregnet til udredningsret-figurerne i BFHddl, som
   tidligere havde tegnforklaring og nøgletal i et felt til højre.
 
+* **Dato-akse som på seriediagrammerne: `bfh_apply_date_axis()`.** Giver en
+  vilkårlig ggplot med dato-akse samme todelte x-akse som SPC-diagrammerne:
+  ugenumre over aksen og måned/år under. Bruges af BFHddl's figurer.
+
+* **Bundpanel og streg-nøgler på figursider.** `bfh_figure_panel()` har fået
+  `placement = "bottom"`. Så er figuren 264 mm bred, og nøgletal (side om
+  side), tegnforklaring og datadefinition står i en række under den.
+  Tegnforklaringen kan vise en streg i serien tykkelse
+  (`legend$key = "line"`, `legend$linewidth`) i stedet for et felt.
+  Sidepanelet og SPC-siderne er uændrede.
+
 ## Forbedringer
 
 * **Figursider uden analysetekst bruger analyse-rækken til figuren.** Den
