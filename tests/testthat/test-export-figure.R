@@ -267,11 +267,24 @@ test_that("figur-eksport sender spc_panel: false og ingen SPC-parametre", {
   expect_true(file.exists(out))
 })
 
-test_that("figur-eksport renderer SVG i fuld bredde (264 x 109 mm)", {
+test_that("figur-eksport uden analyse renderer SVG i fuld bredde og hoejde (264 x 130.8 mm)", {
   mock <- local_figure_compile_mock()
   out <- withr::local_tempfile(fileext = ".pdf")
 
   bfh_export_figure_pdf(fixture_figure(), out, metadata = list(title = "x"))
+
+  size <- svg_size_mm(mock$svg_root)
+  expect_equal(unname(size["width"]), 264, tolerance = 0.1 / 264)
+  expect_equal(unname(size["height"]), 130.8, tolerance = 0.1 / 130.8)
+})
+
+test_that("figur-eksport med analyse beholder analyse-raekken (264 x 109 mm)", {
+  mock <- local_figure_compile_mock()
+  out <- withr::local_tempfile(fileext = ".pdf")
+
+  bfh_export_figure_pdf(fixture_figure(), out,
+    metadata = list(title = "x", analysis = "Analysetekst")
+  )
 
   size <- svg_size_mm(mock$svg_root)
   expect_equal(unname(size["width"]), 264, tolerance = 0.1 / 264)
@@ -587,7 +600,8 @@ test_that("figur-bundle har SPC-bundlens format med spc_panel = FALSE og tom sta
   ), value = TRUE)[1]
   size <- svg_size_mm(root)
   expect_equal(unname(size["width"]), 264, tolerance = 0.1 / 264)
-  expect_equal(unname(size["height"]), 109, tolerance = 0.1 / 109)
+  # Ingen analyse -> analyse-raekken udgaar og figuren faar dens hoejde
+  expect_equal(unname(size["height"]), 130.8, tolerance = 0.1 / 130.8)
   # Ingen PDF produceres ved staging
   expect_length(list.files(cache, pattern = "\\.pdf$", recursive = TRUE), 0L)
 })
@@ -697,4 +711,167 @@ test_that("batch-fejltekster naevner baade SPC- og figur-staging", {
   expect_match(missing_msg, "nope", fixed = TRUE)
   expect_match(missing_msg, "bfh_stage_pdf_page()", fixed = TRUE)
   expect_match(missing_msg, "bfh_stage_figure_page()", fixed = TRUE)
+})
+
+
+# ============================================================================
+# FIGUR-SIDEPANEL (add-figure-side-panel)
+# ============================================================================
+
+fixture_panel <- function() {
+  bfh_figure_panel(
+    legend = data.frame(
+      label = c("Inden for 30 dage", "Frist overskredet \"sent\""),
+      colour = c("#007dbb", "#c0392b"),
+      group = c("Overholdt", "Overskredet")
+    ),
+    kpis = data.frame(label = "Ikke udredte", value = 37, colour = "#333333"),
+    kpi_title = "Aktuelt niveau"
+  )
+}
+
+test_that("bfh_figure_panel() normaliserer tabeller og returnerer klasse", {
+  panel <- fixture_panel()
+  expect_s3_class(panel, "bfh_figure_panel")
+  expect_identical(panel$kpis$value, "37")
+  expect_identical(panel$legend$group, c("Overholdt", "Overskredet"))
+
+  # group/colour er valgfri og fyldes med NA
+  p2 <- bfh_figure_panel(
+    legend = data.frame(label = "A", colour = "#000000"),
+    kpis = data.frame(label = "B", value = "1")
+  )
+  expect_true(is.na(p2$legend$group))
+  expect_true(is.na(p2$kpis$colour))
+
+  # Tomme tabeller svarer til NULL
+  p3 <- bfh_figure_panel(legend = data.frame(label = character(), colour = character()))
+  expect_null(p3$legend)
+})
+
+test_that("bfh_figure_panel() afviser ugyldigt input med klassificeret fejl", {
+  err <- "bfhcharts_export_error"
+  expect_error(bfh_figure_panel(legend = list(label = "a")), class = err)
+  expect_error(bfh_figure_panel(legend = data.frame(label = "a")), class = err)
+  expect_error(
+    bfh_figure_panel(legend = data.frame(label = "a", colour = "blue")),
+    class = err
+  )
+  expect_error(
+    bfh_figure_panel(legend = data.frame(label = "a", colour = NA_character_)),
+    class = err
+  )
+  expect_error(
+    bfh_figure_panel(legend = data.frame(label = "", colour = "#000000")),
+    class = err
+  )
+  expect_error(
+    bfh_figure_panel(kpis = data.frame(label = "a", value = NA)),
+    class = err
+  )
+  expect_error(
+    bfh_figure_panel(kpis = data.frame(label = "a", value = 1, colour = "red")),
+    class = err
+  )
+  expect_error(bfh_figure_panel(legend_title = c("a", "b")), class = err)
+  expect_error(bfh_figure_panel(definition_height_mm = -1), class = err)
+})
+
+test_that("figure_panel_to_typst() laver gyldige Typst-arrays og escaper tekst", {
+  typ <- BFHcharts:::figure_panel_to_typst(fixture_panel())
+  expect_match(typ, 'kpi_title: "Aktuelt niveau"', fixed = TRUE)
+  # Et enkelt element skal stadig vaere et array: afsluttende komma
+  expect_match(
+    typ,
+    'kpis: ((label: "Ikke udredte", value: "37", color: "#333333"),)',
+    fixed = TRUE
+  )
+  expect_match(typ, 'group: "Overholdt"', fixed = TRUE)
+  expect_match(typ, 'Frist overskredet \\"sent\\"', fixed = TRUE)
+
+  # Valgfri felter udelades i stedet for at sende NA
+  minimal <- BFHcharts:::figure_panel_to_typst(bfh_figure_panel(
+    legend = data.frame(label = "A", colour = "#000000")
+  ))
+  expect_false(grepl("group|kpis|NA", minimal))
+  expect_identical(BFHcharts:::figure_panel_to_typst(bfh_figure_panel()), "(:)")
+
+  with_height <- BFHcharts:::figure_panel_to_typst(
+    bfh_figure_panel(definition_height_mm = 30)
+  )
+  expect_match(with_height, "definition_height: 30mm", fixed = TRUE)
+})
+
+test_that("build_typst_page_params() sender figure_panel kun i figur-tilstand", {
+  md <- list(title = "T", figure_panel = fixture_panel())
+  expect_false(grepl("figure_panel",
+    BFHcharts:::build_typst_page_params(md, list()),
+    fixed = TRUE
+  ))
+  params <- BFHcharts:::build_typst_page_params(c(md, list(spc_panel = FALSE)), list())
+  expect_match(params, "spc_panel: false", fixed = TRUE)
+  expect_match(params, "figure_panel: (", fixed = TRUE)
+})
+
+test_that("figur-eksport med panel: 191.4 mm bred, definition uden advarsel", {
+  mock <- local_figure_compile_mock()
+  out <- withr::local_tempfile(fileext = ".pdf")
+
+  expect_no_warning(
+    bfh_export_figure_pdf(fixture_figure(), out,
+      metadata = list(title = "x", data_definition = "Definition"),
+      panel = fixture_panel()
+    )
+  )
+
+  size <- svg_size_mm(mock$svg_root)
+  expect_equal(unname(size["width"]), 191.4, tolerance = 0.1 / 191.4)
+  expect_equal(unname(size["height"]), 130.8, tolerance = 0.1 / 130.8)
+  typ <- paste(mock$typ, collapse = "\n")
+  expect_match(typ, "figure_panel: (", fixed = TRUE)
+  expect_match(typ, "Definition", fixed = TRUE)
+})
+
+test_that("figur-eksport afviser panel der ikke er bfh_figure_panel", {
+  local_figure_compile_mock()
+  out <- withr::local_tempfile(fileext = ".pdf")
+  expect_error(
+    bfh_export_figure_pdf(fixture_figure(), out,
+      metadata = list(title = "x"), panel = list(legend = NULL)
+    ),
+    class = "bfhcharts_export_error"
+  )
+})
+
+test_that("metadata$figure_panel fra kalderen naar ikke templatet", {
+  mock <- local_figure_compile_mock()
+  out <- withr::local_tempfile(fileext = ".pdf")
+  suppressWarnings(
+    bfh_export_figure_pdf(fixture_figure(), out,
+      metadata = list(title = "x", figure_panel = fixture_panel())
+    )
+  )
+  expect_false(any(grepl("figure_panel", mock$typ, fixed = TRUE)))
+})
+
+test_that("bfh_stage_figure_page() gemmer panel i bundle og batch-kompilerer det", {
+  cache <- local_figure_cache()
+  bfh_stage_figure_page(fixture_figure(), cache,
+    id = "fig-panel",
+    metadata = list(title = "Ventetid", data_definition = "Def"),
+    panel = fixture_panel()
+  )
+  bundle <- read_bundle(cache, "fig-panel")
+  expect_s3_class(bundle$metadata$figure_panel, "bfh_figure_panel")
+
+  root <- grep("<svg", readLines(file.path(cache, "fig-panel", "chart.svg"),
+    warn = FALSE
+  ), value = TRUE)[1]
+  size <- svg_size_mm(root)
+  expect_equal(unname(size["width"]), 191.4, tolerance = 0.1 / 191.4)
+
+  call <- BFHcharts:::build_typst_page_call(
+    "charts/fig-panel.svg", bundle$metadata, bundle$spc_stats, "bfh-diagram"
+  )
+  expect_true(any(grepl("figure_panel: (", call, fixed = TRUE)))
 })

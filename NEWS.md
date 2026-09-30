@@ -1,3 +1,31 @@
+# BFHcharts (udviklingsversion)
+
+## Nye funktioner
+
+* **Sidepanel på figursider: `bfh_figure_panel()`.** `bfh_export_figure_pdf()`
+  og `bfh_stage_figure_page()` har fået argumentet `panel`. Med et panel får
+  figursiden en kolonne til højre, lige så bred som SPC-kolonnen (72,6 mm).
+  Kolonnen kan indeholde:
+  - store nøgletal (`kpis`),
+  - en tegnforklaring med gruppeoverskrifter (`legend`), som tegnes af
+    Typst-skabelonen, så ggplot-legenden kan slås fra,
+  - datadefinitionen, som nu vises på figursider i stedet for at blive
+    droppet med en advarsel.
+
+  Figuren tegnes 191,4 mm bred ved siden af panelet. Uden panel er den som
+  før 264 mm bred. Beregnet til udredningsret-figurerne i BFHddl, som
+  tidligere havde tegnforklaring og nøgletal i et felt til højre.
+
+## Forbedringer
+
+* **Figursider uden analysetekst bruger analyse-rækken til figuren.** Den
+  26,4 mm høje analyse-række stod tom på figursider uden `analysis`. Nu
+  udelades rækken, og figuren bliver 130,8 mm høj i stedet for 109 mm.
+  Figursider med analysetekst og alle SPC-sider er uændrede. SPC-siderne er
+  verificeret pixel-identiske. Figur-bundles, der er staget med en ældre
+  version, kompileres stadig, men med tom plads under figuren, til de stages
+  igen.
+
 # BFHcharts 0.31.0
 
 ## Nye funktioner
