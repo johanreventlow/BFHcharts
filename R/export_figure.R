@@ -35,9 +35,9 @@
 #'   \code{department}, \code{analysis}, \code{details}, \code{author},
 #'   \code{date}, \code{footer_content}, \code{logo_path}. Unlike
 #'   \code{\link{bfh_export_pdf}}, \code{details} is not auto-generated.
-#'   \code{data_definition} is accepted but \strong{not rendered} in
-#'   full-width mode; a non-empty value triggers a warning so the text does
-#'   not vanish silently.
+#'   \code{data_definition} is rendered in the side panel when \code{panel}
+#'   is given; in full-width mode it is \strong{not rendered} and a non-empty
+#'   value triggers a warning so the text does not vanish silently.
 #' @param template Character string specifying template name
 #'   (default: "bfh-diagram").
 #' @param template_path Optional path to a custom Typst template file. Requires
@@ -59,6 +59,9 @@
 #'   \code{\link{bfh_create_export_session}}. Reuses the staged template
 #'   directory across calls. Cannot be combined with \code{template_path} or
 #'   \code{inject_assets}.
+#' @param panel Optional side panel from \code{\link{bfh_figure_panel}}:
+#'   key figures, colour legend and data definition in a 72.6 mm column to the
+#'   right of the figure. Default \code{NULL} renders the figure full width.
 #'
 #' @return The input \code{plot} invisibly, enabling pipe chaining.
 #'
@@ -67,7 +70,10 @@
 #' and subtitle, removes axis titles that are blank (\code{NULL}, \code{""} or
 #' whitespace; titles derived from \code{aes()} are kept), and sets the plot
 #' margins to 0 mm. Nothing else: the caller owns the figure's theme and
-#' typography. The chart is rendered at 264 x 109 mm (the full chart row).
+#' typography. The chart is rendered 264 mm wide (full width) or 191.4 mm
+#' wide next to a \code{panel}. Without \code{analysis} the page has no
+#' analysis row and the chart is 130.8 mm high; with \code{analysis} it is
+#' 109 mm high, as on SPC pages.
 #'
 #' **Fonts:** text inside the figure is rendered with the font family the plot
 #' declares, resolved against the fonts available to the Typst compile
@@ -120,7 +126,8 @@ bfh_export_figure_pdf <- function(plot,
                                   font_path = NULL,
                                   ignore_system_fonts = TRUE,
                                   inject_assets = NULL,
-                                  batch_session = NULL) {
+                                  batch_session = NULL,
+                                  panel = NULL) {
   rlang::check_installed(
     c("commonmark", "xml2"),
     reason = "for PDF/Typst export (markdown rendering in document fields)"
@@ -138,8 +145,9 @@ bfh_export_figure_pdf <- function(plot,
   # ---- 1a. Runtime security guard for inject_assets --------------------------
   .validate_inject_assets(inject_assets)
 
-  # ---- 1b. Data definition is not rendered in full-width mode ----------------
-  .warn_figure_data_definition(metadata)
+  # ---- 1b. Side panel; data definition is not rendered without one ----------
+  .validate_figure_panel(panel)
+  if (is.null(panel)) .warn_figure_data_definition(metadata)
 
   # ---- 2. Custom template validation ------------------------------------------
   template_path <- validate_template_path(template_path)
@@ -176,15 +184,16 @@ bfh_export_figure_pdf <- function(plot,
     on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
   }
 
-  # ---- 5. Plot preparation + full-width SVG -----------------------------------
+  # ---- 5. Plot preparation + SVG sized to the page layout ---------------------
+  metadata_full <- build_figure_metadata(metadata, panel)
+  dims <- figure_chart_dims(metadata_full)
   plot_for_export <- prepare_figure_plot(plot)
   export_chart_svg(
     plot_for_export, chart_svg, dpi,
-    width_mm = PDF_IMAGE_WIDTH_FULL_MM
+    width_mm = dims$width_mm, height_mm = dims$height_mm
   )
 
   # ---- 6. Typst document + font_path resolution --------------------------------
-  metadata_full <- build_figure_metadata(metadata)
   effective_font_path <- compose_typst_from_parts(
     metadata_full, empty_spc_stats(), chart_svg, typst_file, template,
     template_path, batch_session, font_path, inject_assets
@@ -308,13 +317,15 @@ validate_bfh_export_figure_inputs <- function(plot, output, metadata, dpi,
 #' Build the finalized template metadata for a figure page
 #'
 #' Merges caller metadata with defaults (title from metadata$title) and sets
-#' the full-width flag AFTER the merge. bfh_merge_metadata() whitelists its
-#' fields, so a caller-supplied spc_panel can never reach the template.
+#' the figure-mode flag and the optional side panel AFTER the merge.
+#' bfh_merge_metadata() whitelists its fields, so a caller-supplied spc_panel
+#' or figure_panel in metadata can never reach the template.
 #'
 #' @noRd
-build_figure_metadata <- function(metadata) {
+build_figure_metadata <- function(metadata, panel = NULL) {
   metadata_full <- bfh_merge_metadata(metadata, chart_title = metadata$title)
   metadata_full$spc_panel <- FALSE
+  metadata_full$figure_panel <- panel
   metadata_full
 }
 

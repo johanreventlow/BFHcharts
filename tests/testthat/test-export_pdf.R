@@ -793,8 +793,14 @@ test_that("bfh template uses fixed 26.4mm height for analysis row", {
 
   template <- paste(readLines(template_file), collapse = "\n")
 
-  expect_match(template, "rows: (52.8mm, 26.4mm, 1fr)", fixed = TRUE)
-  expect_no_match(template, "rows: (52.8mm, auto, 1fr)", fixed = TRUE)
+  # SPC-sider (og figursider med analyse) beholder den faste 26.4mm-raekke.
+  # Kun figursider uden analyse dropper raekken (add-figure-side-panel).
+  expect_match(template, "else { (52.8mm, 26.4mm, 1fr) }", fixed = TRUE)
+  expect_match(
+    template, "let drop-analysis = not spc_panel and analysis == none",
+    fixed = TRUE
+  )
+  expect_no_match(template, "(52.8mm, auto, 1fr)", fixed = TRUE)
 })
 
 test_that("bfh_export_pdf rejects template_path by default (restrict_template = TRUE)", {

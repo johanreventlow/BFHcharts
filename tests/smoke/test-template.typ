@@ -35,6 +35,7 @@
   is_run_chart: false,
   footer_content: none,
   spc_panel: true,
+  figure_panel: none,
   chart
 ) = {
   set text(font: ("DejaVu Sans", "sans-serif"), lang: "da")

@@ -771,6 +771,10 @@ build_typst_page_params <- function(metadata, spc_stats) {
   # template default (true) applies. isFALSE() ignores non-logical values.
   if (isFALSE(metadata$spc_panel)) {
     params$spc_panel <- "false"
+    # Figure side panel (bfh_figure_panel()): only meaningful in figure mode.
+    if (!is.null(metadata$figure_panel)) {
+      params$figure_panel <- figure_panel_to_typst(metadata$figure_panel)
+    }
   }
 
   # Date parameter - format for Typst template
@@ -1105,4 +1109,54 @@ markdown_to_typst <- function(text) {
     return("")
   }
   parse_markdown_ast(text)
+}
+
+
+#' Render a bfh_figure_panel as a Typst dictionary literal
+#'
+#' Arrays always get a trailing comma, so a single legend entry or key figure
+#' is still a Typst array (`(x,)`), not a parenthesised expression.
+#'
+#' @param panel A `bfh_figure_panel` object (validated by bfh_figure_panel()).
+#' @return Single string with a Typst dictionary.
+#' @keywords internal
+#' @noRd
+figure_panel_to_typst <- function(panel) {
+  q <- function(x) sprintf('"%s"', escape_typst_string(as.character(x)))
+  dict <- function(fields) {
+    fields <- fields[!vapply(fields, is.null, logical(1))]
+    if (length(fields) == 0) {
+      return("(:)")
+    }
+    paste0("(", paste0(names(fields), ": ", unlist(fields), collapse = ", "), ")")
+  }
+  arr <- function(items) paste0("(", paste0(items, ",", collapse = " "), ")")
+
+  fields <- list()
+  if (!is.null(panel$kpi_title)) fields$kpi_title <- q(panel$kpi_title)
+  if (!is.null(panel$kpis) && nrow(panel$kpis) > 0) {
+    fields$kpis <- arr(vapply(seq_len(nrow(panel$kpis)), function(i) {
+      k <- panel$kpis[i, , drop = FALSE]
+      dict(list(
+        label = q(k$label),
+        value = q(k$value),
+        color = if (!is.na(k$colour)) q(k$colour) else NULL
+      ))
+    }, character(1)))
+  }
+  if (!is.null(panel$legend_title)) fields$legend_title <- q(panel$legend_title)
+  if (!is.null(panel$legend) && nrow(panel$legend) > 0) {
+    fields$legend <- arr(vapply(seq_len(nrow(panel$legend)), function(i) {
+      l <- panel$legend[i, , drop = FALSE]
+      dict(list(
+        label = q(l$label),
+        color = q(l$colour),
+        group = if (!is.na(l$group)) q(l$group) else NULL
+      ))
+    }, character(1)))
+  }
+  if (!is.null(panel$definition_height_mm)) {
+    fields$definition_height <- sprintf("%smm", format(panel$definition_height_mm))
+  }
+  dict(fields)
 }

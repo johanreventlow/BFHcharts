@@ -59,6 +59,12 @@ PDF_IMAGE_HEIGHT_MM <- 109
 # Height is unchanged (PDF_IMAGE_HEIGHT_MM): rows 1-2 and the footer are the same.
 PDF_IMAGE_WIDTH_FULL_MM <- 264
 
+# Figure pages without analysis text: the template drops the 26.4 mm analysis
+# row and raises the chart-row top inset from 2 mm to 6.6 mm, so the chart
+# gains 26.4 - 4.6 mm. Used for both full-width and side-panel figure pages.
+# Image height: 109 + 26.4 - 4.6 = 130.8mm
+PDF_IMAGE_HEIGHT_FIGURE_MM <- 130.8
+
 # NOTE: Chart width/height matcher image dimensions i den nuvaerende Typst-layout.
 # Vi beholder separate konstanter for semantisk tydelighed:
 # - PDF_IMAGE_* bruges ved eksport-rendering (ggsave output)

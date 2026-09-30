@@ -12,7 +12,8 @@ bfh_stage_figure_page(
   metadata = list(),
   template = "bfh-diagram",
   dpi = 150,
-  overwrite = TRUE
+  overwrite = TRUE,
+  panel = NULL
 )
 }
 \arguments{
@@ -38,6 +39,9 @@ All bundles compiled into one document must share the same template.}
 
 \item{overwrite}{Logical. Replace an existing bundle with this \code{id}
 (default TRUE). \code{FALSE} raises an error on duplicate ids.}
+
+\item{panel}{Optional side panel from \code{\link{bfh_figure_panel}}.
+Same behavior as in \code{\link{bfh_export_figure_pdf}}.}
 }
 \value{
 Invisibly, a \code{bfh_staged_page} object: a list with
@@ -54,9 +58,9 @@ to its interface. Order, manifest selection, chunking and pruning treat
 figure bundles exactly like SPC bundles.
 }
 \details{
-The bundle carries \code{metadata$spc_panel = FALSE} and empty SPC
-statistics, so the batch compiler renders the page in full-width mode
-(chart SVG at 264 x 109 mm) without page-type branching. Plot handling is
+The bundle carries \code{metadata$spc_panel = FALSE}, the optional
+\code{panel} and empty SPC statistics, so the batch compiler renders the
+figure layout without page-type branching. Chart size and plot handling are
 identical to \code{\link{bfh_export_figure_pdf}}: the plot's own title and
 subtitle are removed, blank axis titles are removed, margins are set to
 0 mm, and the caller owns the figure's theme and typography (see the font
@@ -102,6 +106,7 @@ bfh_stage_figure_page(p, cache_dir,
 Other export-functions:
 \code{\link[=bfh_export_batch_pdf]{bfh_export_batch_pdf()}},
 \code{\link[=bfh_export_figure_pdf]{bfh_export_figure_pdf()}},
+\code{\link[=bfh_figure_panel]{bfh_figure_panel()}},
 \code{\link[=bfh_prune_page_cache]{bfh_prune_page_cache()}},
 \code{\link[=bfh_stage_pdf_page]{bfh_stage_pdf_page()}}
 }
