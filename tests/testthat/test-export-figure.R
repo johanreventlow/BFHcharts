@@ -832,6 +832,56 @@ test_that("figur-eksport med panel: 191.4 mm bred, definition uden advarsel", {
   expect_match(typ, "Definition", fixed = TRUE)
 })
 
+test_that("bfh_figure_panel() placement og streg-noegler i tegnforklaringen", {
+  p <- bfh_figure_panel(
+    legend = data.frame(
+      label = c("Henvisninger", "Prognose", "Interval"),
+      colour = c("#b8b8b8", "#002555", "#ccd3dd"),
+      key = c("line", "line", "box"),
+      linewidth = c(0.5, 1.2, NA)
+    ),
+    placement = "bottom"
+  )
+  expect_identical(p$placement, "bottom")
+  expect_identical(p$legend$key, c("line", "line", "box"))
+  expect_identical(bfh_figure_panel()$placement, "side")
+  # key udeladt = box for alle
+  expect_identical(
+    bfh_figure_panel(legend = data.frame(label = "A", colour = "#000000"))$legend$key,
+    "box"
+  )
+
+  typ <- BFHcharts:::figure_panel_to_typst(p)
+  expect_match(typ, 'placement: "bottom"', fixed = TRUE)
+  expect_match(typ, 'key: "line"', fixed = TRUE)
+  # ggplot2-linewidth 1.2 -> 1.2 * .pt * 0.75 pt
+  expect_match(typ, sprintf("thickness: %.2fpt", 1.2 * ggplot2::.pt * 0.75), fixed = TRUE)
+  # side er standard og sendes ikke
+  expect_false(grepl("placement", BFHcharts:::figure_panel_to_typst(fixture_panel())))
+
+  err <- "bfhcharts_export_error"
+  expect_error(bfh_figure_panel(placement = "top"))
+  expect_error(bfh_figure_panel(legend = data.frame(label = "A", colour = "#000000", key = "cirkel")),
+    class = err
+  )
+  expect_error(bfh_figure_panel(legend = data.frame(label = "A", colour = "#000000", linewidth = -1)),
+    class = err
+  )
+})
+
+test_that("figure_chart_dims(): bundpanel giver fuld bredde og lavere graf", {
+  bund <- bfh_figure_panel(kpis = data.frame(label = "a", value = 1), placement = "bottom")
+  d <- BFHcharts:::figure_chart_dims(list(figure_panel = bund))
+  expect_equal(d$width_mm, BFHcharts:::PDF_IMAGE_WIDTH_FULL_MM)
+  expect_equal(d$height_mm, BFHcharts:::PDF_IMAGE_HEIGHT_FIGURE_MM - BFHcharts:::PDF_FIGURE_BOTTOM_PANEL_MM)
+  d2 <- BFHcharts:::figure_chart_dims(list(figure_panel = bund, analysis = "x"))
+  expect_equal(d2$height_mm, BFHcharts:::PDF_IMAGE_HEIGHT_MM - BFHcharts:::PDF_FIGURE_BOTTOM_PANEL_MM)
+  # sidepanel uaendret
+  side <- BFHcharts:::figure_chart_dims(list(figure_panel = fixture_panel()))
+  expect_equal(side$width_mm, BFHcharts:::PDF_IMAGE_WIDTH_MM)
+  expect_equal(side$height_mm, BFHcharts:::PDF_IMAGE_HEIGHT_FIGURE_MM)
+})
+
 test_that("figur-eksport afviser panel der ikke er bfh_figure_panel", {
   local_figure_compile_mock()
   out <- withr::local_tempfile(fileext = ".pdf")

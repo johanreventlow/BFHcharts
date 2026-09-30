@@ -141,6 +141,7 @@ bfh_export_figure_pdf(
 }
 
 Other export-functions:
+\code{\link[=bfh_apply_date_axis]{bfh_apply_date_axis()}},
 \code{\link[=bfh_export_batch_pdf]{bfh_export_batch_pdf()}},
 \code{\link[=bfh_figure_panel]{bfh_figure_panel()}},
 \code{\link[=bfh_prune_page_cache]{bfh_prune_page_cache()}},

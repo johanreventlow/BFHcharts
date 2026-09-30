@@ -1151,12 +1151,20 @@ figure_panel_to_typst <- function(panel) {
       dict(list(
         label = q(l$label),
         color = q(l$colour),
-        group = if (!is.na(l$group)) q(l$group) else NULL
+        group = if (!is.na(l$group)) q(l$group) else NULL,
+        key = if (!is.null(l$key) && identical(l$key, "line")) q("line") else NULL,
+        # ggplot2 linewidth -> pt (lwd = linewidth * .pt; 1 lwd = 0.75 pt)
+        thickness = if (!is.null(l$linewidth) && !is.na(l$linewidth)) {
+          sprintf("%.2fpt", l$linewidth * ggplot2::.pt * 0.75)
+        } else {
+          NULL
+        }
       ))
     }, character(1)))
   }
   if (!is.null(panel$definition_height_mm)) {
     fields$definition_height <- sprintf("%smm", format(panel$definition_height_mm))
   }
+  if (identical(panel$placement, "bottom")) fields$placement <- q("bottom")
   dict(fields)
 }
