@@ -1173,6 +1173,7 @@ figure_panel_to_typst <- function(panel) {
   }
   if (isFALSE(panel$kpi_labels)) fields$kpi_labels <- "false"
   if (!is.null(panel$legend_rows)) fields$legend_rows <- as.character(panel$legend_rows)
+  if (isTRUE(panel$definition_first)) fields$definition_first <- "true"
   if (!is.null(panel$legend_label_width_mm)) {
     fields$legend_label_width <- sprintf("%smm", format(panel$legend_label_width_mm))
   }

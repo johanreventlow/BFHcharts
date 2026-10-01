@@ -15,7 +15,8 @@ bfh_figure_panel(
   kpi_size_pt = NULL,
   kpi_labels = TRUE,
   legend_rows = NULL,
-  legend_label_width_mm = NULL
+  legend_label_width_mm = NULL,
+  definition_first = FALSE
 )
 }
 \arguments{
@@ -31,7 +32,7 @@ default 0.5) and \code{outline} (hex colour of a thin border around a
 (numbers are formatted as text) and optionally \code{colour}.}
 
 \item{legend_title}{Heading above the legend. Default \code{NULL} uses the
-template default ("Tegnforklaring").}
+template default ("Tegnforklaring"); \code{""} shows no heading.}
 
 \item{kpi_title}{Optional heading above the key figures.}
 
@@ -60,6 +61,11 @@ figures, with the rows spread evenly.}
 \item{legend_label_width_mm}{Bottom placement only: maximum width of a
 legend label in millimetres; longer labels wrap onto more lines, which
 leaves more room for the data definition. Default \code{NULL}: no limit.}
+
+\item{definition_first}{Side placement only: show the data definition at
+the top of the column in its natural height, followed by the key figures
+and the legend. Default \code{FALSE}: the definition is a fixed-height
+block at the bottom (see \code{definition_height_mm}).}
 }
 \value{
 An object of class \code{bfh_figure_panel}.

@@ -915,6 +915,20 @@ test_that("bfh_figure_panel(): noegletal i gitter, pile, kontur og raekker i teg
   )
 })
 
+test_that("bfh_figure_panel(): definition foerst og tegnforklaring uden overskrift", {
+  p <- bfh_figure_panel(
+    legend = data.frame(label = "A", colour = "#000000"),
+    legend_title = "", definition_first = TRUE
+  )
+  expect_true(p$definition_first)
+  typ <- BFHcharts:::figure_panel_to_typst(p)
+  expect_match(typ, "definition_first: true", fixed = TRUE)
+  expect_match(typ, 'legend_title: ""', fixed = TRUE)
+  # Standard sendes ikke
+  expect_false(grepl("definition_first", BFHcharts:::figure_panel_to_typst(fixture_panel())))
+  expect_error(bfh_figure_panel(definition_first = NA), class = "bfhcharts_export_error")
+})
+
 test_that("figure_chart_dims(): bundpanel giver fuld bredde og lavere graf", {
   bund <- bfh_figure_panel(kpis = data.frame(label = "a", value = 1), placement = "bottom")
   d <- BFHcharts:::figure_chart_dims(list(figure_panel = bund))

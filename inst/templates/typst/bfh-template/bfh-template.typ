@@ -183,6 +183,19 @@ show table.cell: it => {
   }
 
   let panel-heading(t) = text(fill: rgb("888888"), weight: "bold", size: 9pt, upper(t))
+
+  // Datadefinition i naturlig hoejde (ingen fast boks), til sidepanelet naar
+  // definitionen staar oeverst (figure_panel.definition_first).
+  let definition-natural = {
+    text(fill: rgb("888888"), weight: "bold", size: 9pt, upper([Datadefinition]))
+    linebreak()
+    set text(hyphenate: true)
+    let paragraphs = data_definition.split("\n").map(p => p.trim()).filter(p => p != "")
+    for (i, p) in paragraphs.enumerate() {
+      if i > 0 { parbreak() }
+      par(justify: true, leading: 0.55em, text(fill: rgb("888888"), size: 9pt, p))
+    }
+  }
   // Legend key: filled square, or a short line of the series' thickness
   let legend-key(item) = {
     let key = item.at("key", default: "box")
@@ -340,8 +353,15 @@ show table.cell: it => {
       figure_panel.at("placement", default: "side") != "bottom") {
     let kpis = figure_panel.at("kpis", default: none)
     let legend = figure_panel.at("legend", default: none)
+    // definition_first: datadefinitionen oeverst i naturlig hoejde, derefter
+    // noegletal og tegnforklaring
+    let definition-first = figure_panel.at("definition_first", default: false)
     block(inset: (left: 0mm, top: if drop-analysis { 6.6mm } else { 2mm }, right: 6.6mm),
       width: 100%, {
+        if definition-first and data_definition != none {
+          block(below: 0mm, definition-natural)
+          v(4mm)
+        }
         if kpis != none and kpis.len() > 0 {
           let kpi-title = figure_panel.at("kpi_title", default: none)
           if kpi-title != none { block(below: 2mm, panel-heading(kpi-title)) }
@@ -359,8 +379,9 @@ show table.cell: it => {
           v(4mm)
         }
         if legend != none and legend.len() > 0 {
-          block(below: 1.5mm,
-            panel-heading(figure_panel.at("legend_title", default: "Tegnforklaring")))
+          // legend_title: "" udelader overskriften
+          let legend-title = figure_panel.at("legend_title", default: "Tegnforklaring")
+          if legend-title != "" { block(below: 1.5mm, panel-heading(legend-title)) }
           let forrige = none
           for item in legend {
             let gruppe = item.at("group", default: none)
@@ -380,7 +401,7 @@ show table.cell: it => {
           }
           v(4mm)
         }
-        if data_definition != none {
+        if not definition-first and data_definition != none {
           definition-block(figure_panel.at("definition_height", default: 39.6mm))
         }
       })

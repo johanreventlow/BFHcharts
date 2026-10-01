@@ -43,6 +43,11 @@
   til 7 pt, før den klippes. SPC-siderne og sidepanelet er pixel-identiske
   med før.
 
+* **Datadefinitionen øverst i sidepanelet.** `bfh_figure_panel(definition_first
+  = TRUE)` viser datadefinitionen øverst i sin naturlige højde, efterfulgt af
+  nøgletal og tegnforklaring. `legend_title = ""` udelader overskriften
+  "Tegnforklaring". Uden de to argumenter er siderne pixel-identiske med før.
+
 ## Forbedringer
 
 * **Figursider uden analysetekst bruger analyse-rækken til figuren.** Den

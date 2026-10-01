@@ -39,7 +39,7 @@
 #' @param kpis Optional data frame with columns \code{label} and \code{value}
 #'   (numbers are formatted as text) and optionally \code{colour}.
 #' @param legend_title Heading above the legend. Default \code{NULL} uses the
-#'   template default ("Tegnforklaring").
+#'   template default ("Tegnforklaring"); \code{""} shows no heading.
 #' @param kpi_title Optional heading above the key figures.
 #' @param definition_height_mm Optional height of the data definition block in
 #'   millimetres (template default 39.6). Text that does not fit is clipped
@@ -60,6 +60,10 @@
 #' @param legend_label_width_mm Bottom placement only: maximum width of a
 #'   legend label in millimetres; longer labels wrap onto more lines, which
 #'   leaves more room for the data definition. Default \code{NULL}: no limit.
+#' @param definition_first Side placement only: show the data definition at
+#'   the top of the column in its natural height, followed by the key figures
+#'   and the legend. Default \code{FALSE}: the definition is a fixed-height
+#'   block at the bottom (see \code{definition_height_mm}).
 #'
 #' @return An object of class \code{bfh_figure_panel}.
 #' @export
@@ -84,7 +88,8 @@ bfh_figure_panel <- function(legend = NULL,
                              kpi_size_pt = NULL,
                              kpi_labels = TRUE,
                              legend_rows = NULL,
-                             legend_label_width_mm = NULL) {
+                             legend_label_width_mm = NULL,
+                             definition_first = FALSE) {
   placement <- match.arg(placement)
   legend_in <- legend
   legend <- .validate_panel_table(legend, "legend",
@@ -169,8 +174,11 @@ bfh_figure_panel <- function(legend = NULL,
       )
     }
   }
-  if (!is.logical(kpi_labels) || length(kpi_labels) != 1L || is.na(kpi_labels)) {
-    bfh_abort("kpi_labels must be TRUE or FALSE.", class = "bfhcharts_export_error")
+  for (arg in c("kpi_labels", "definition_first")) {
+    val <- get(arg)
+    if (!is.logical(val) || length(val) != 1L || is.na(val)) {
+      bfh_abort(sprintf("%s must be TRUE or FALSE.", arg), class = "bfhcharts_export_error")
+    }
   }
   if (!is.null(definition_height_mm) &&
     (!is.numeric(definition_height_mm) || length(definition_height_mm) != 1L ||
@@ -192,7 +200,8 @@ bfh_figure_panel <- function(legend = NULL,
       kpi_size_pt = kpi_size_pt,
       kpi_labels = kpi_labels,
       legend_rows = if (is.null(legend_rows)) NULL else as.integer(legend_rows),
-      legend_label_width_mm = legend_label_width_mm
+      legend_label_width_mm = legend_label_width_mm,
+      definition_first = definition_first
     ),
     class = "bfh_figure_panel"
   )
