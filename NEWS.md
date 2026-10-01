@@ -27,6 +27,22 @@
   (`legend$key = "line"`, `legend$linewidth`) i stedet for et felt.
   Sidepanelet og SPC-siderne er uændrede.
 
+* **Mere styring af bundpanelet.** Nye argumenter til `bfh_figure_panel()`
+  (kun ved `placement = "bottom"`):
+  - `kpi_columns`: nøgletal i et gitter, fx 2 x 2 som i udredningsrets flow.
+  - `kpi_size_pt`: større tal (standard 26 pt).
+  - `kpi_labels = FALSE`: kun tallene, når tegnforklaringen forklarer farverne.
+  - `legend_rows`: antal rækker i tegnforklaringen, fyldt kolonnevis.
+    Tegnforklaringen har samme højde som nøgletallene.
+  - `legend_label_width_mm`: lange tekster i tegnforklaringen brydes, så
+    datadefinitionen får mere plads.
+
+  Tegnforklaringen kan desuden vise lodrette pile (`legend$key =
+  "arrow_up"`/`"arrow_down"`) og en tynd kant om et felt (`legend$outline`),
+  fx et konfidensbånd med kontur. Datadefinitionen i bundpanelet må gå ned
+  til 7 pt, før den klippes. SPC-siderne og sidepanelet er pixel-identiske
+  med før.
+
 ## Forbedringer
 
 * **Figursider uden analysetekst bruger analyse-rækken til figuren.** Den

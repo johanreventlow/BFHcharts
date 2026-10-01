@@ -10,15 +10,22 @@ bfh_figure_panel(
   legend_title = NULL,
   kpi_title = NULL,
   definition_height_mm = NULL,
-  placement = c("side", "bottom")
+  placement = c("side", "bottom"),
+  kpi_columns = NULL,
+  kpi_size_pt = NULL,
+  kpi_labels = TRUE,
+  legend_rows = NULL,
+  legend_label_width_mm = NULL
 )
 }
 \arguments{
 \item{legend}{Optional data frame with columns \code{label} and
 \code{colour} (hex, e.g. \code{"#007dbb"}) and optionally \code{group},
-\code{key} (\code{"box"}, the default, or \code{"line"} for a line
-series) and \code{linewidth} (ggplot2 linewidth of a \code{"line"} key,
-default 0.5).}
+\code{key} (\code{"box"}, the default; \code{"line"} for a line
+series; \code{"arrow_up"} or \code{"arrow_down"} for a thick vertical
+arrow), \code{linewidth} (ggplot2 linewidth of a \code{"line"} key,
+default 0.5) and \code{outline} (hex colour of a thin border around a
+\code{"box"} key, e.g. a band drawn with an outline).}
 
 \item{kpis}{Optional data frame with columns \code{label} and \code{value}
 (numbers are formatted as text) and optionally \code{colour}.}
@@ -34,6 +41,25 @@ with an ellipsis. Ignored with \code{placement = "bottom"}.}
 
 \item{placement}{\code{"side"} (default): a 72.6 mm column right of the
 figure. \code{"bottom"}: a row below a full-width figure.}
+
+\item{kpi_columns}{Bottom placement only: number of columns in a grid of
+key figures, filled column by column (e.g. 2 gives a 2 x 2 grid for four
+key figures). Default \code{NULL}: all key figures in one row.}
+
+\item{kpi_size_pt}{Bottom placement only: font size of the key figure
+numbers in points. Default \code{NULL} (26 pt).}
+
+\item{kpi_labels}{Bottom placement only: show the label below each number.
+Set to \code{FALSE} when a legend explains the colours.}
+
+\item{legend_rows}{Bottom placement only: number of legend rows, filled
+column by column. Default \code{NULL}: one column up to three entries,
+otherwise two columns. The legend has the same height as the key
+figures, with the rows spread evenly.}
+
+\item{legend_label_width_mm}{Bottom placement only: maximum width of a
+legend label in millimetres; longer labels wrap onto more lines, which
+leaves more room for the data definition. Default \code{NULL}: no limit.}
 }
 \value{
 An object of class \code{bfh_figure_panel}.

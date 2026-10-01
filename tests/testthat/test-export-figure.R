@@ -869,6 +869,52 @@ test_that("bfh_figure_panel() placement og streg-noegler i tegnforklaringen", {
   )
 })
 
+test_that("bfh_figure_panel(): noegletal i gitter, pile, kontur og raekker i tegnforklaringen", {
+  p <- bfh_figure_panel(
+    kpis = data.frame(label = c("a", "b", "c", "d"), value = 1:4),
+    legend = data.frame(
+      label = c("Nye", "Afsluttede", "Interval"),
+      colour = c("#007dbb", "#002555", "#ecf6fc"),
+      key = c("arrow_up", "arrow_down", "box"),
+      outline = c(NA, NA, "#99d8f6")
+    ),
+    placement = "bottom", kpi_columns = 2, kpi_size_pt = 36, kpi_labels = FALSE,
+    legend_rows = 3, legend_label_width_mm = 32
+  )
+  expect_identical(p$legend$key, c("arrow_up", "arrow_down", "box"))
+  expect_identical(p$legend$outline, c(NA, NA, "#99d8f6"))
+  expect_identical(p$kpi_columns, 2L)
+  expect_identical(p$legend_rows, 3L)
+
+  typ <- BFHcharts:::figure_panel_to_typst(p)
+  expect_match(typ, 'key: "arrow_up"', fixed = TRUE)
+  expect_match(typ, 'key: "arrow_down"', fixed = TRUE)
+  expect_match(typ, 'outline: "#99d8f6"', fixed = TRUE)
+  expect_match(typ, "kpi_columns: 2", fixed = TRUE)
+  expect_match(typ, "kpi_size: 36pt", fixed = TRUE)
+  expect_match(typ, "kpi_labels: false", fixed = TRUE)
+  expect_match(typ, "legend_rows: 3", fixed = TRUE)
+  expect_match(typ, "legend_label_width: 32mm", fixed = TRUE)
+
+  # Standardvaerdier sendes ikke: skabelonen bruger sine egne
+  std <- BFHcharts:::figure_panel_to_typst(
+    bfh_figure_panel(kpis = data.frame(label = "a", value = 1), placement = "bottom")
+  )
+  expect_false(grepl("kpi_columns|kpi_size|kpi_labels|legend_rows|legend_label_width|outline", std))
+
+  err <- "bfhcharts_export_error"
+  expect_error(bfh_figure_panel(kpi_columns = 0), class = err)
+  expect_error(bfh_figure_panel(kpi_columns = 1.5), class = err)
+  expect_error(bfh_figure_panel(legend_rows = "3"), class = err)
+  expect_error(bfh_figure_panel(kpi_size_pt = -2), class = err)
+  expect_error(bfh_figure_panel(legend_label_width_mm = NA_real_), class = err)
+  expect_error(bfh_figure_panel(kpi_labels = NA), class = err)
+  expect_error(
+    bfh_figure_panel(legend = data.frame(label = "A", colour = "#000000", outline = "blaa")),
+    class = err
+  )
+})
+
 test_that("figure_chart_dims(): bundpanel giver fuld bredde og lavere graf", {
   bund <- bfh_figure_panel(kpis = data.frame(label = "a", value = 1), placement = "bottom")
   d <- BFHcharts:::figure_chart_dims(list(figure_panel = bund))

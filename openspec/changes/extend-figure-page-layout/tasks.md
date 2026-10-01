@@ -5,3 +5,5 @@
 - [x] 1.4 `figure_chart_dims()` for bundpanel med test
 - [x] 1.5 SPC- og sidepanel-sider verificeret pixel-identiske
 - [x] 1.6 NEWS og hjælpesider
+- [x] 1.7 Bundpanel: nøgletal i gitter, større tal, uden navne, rækker i tegnforklaringen, maks. tekstbredde
+- [x] 1.8 Tegnforklaring: pile og felt med kontur; definition ned til 7 pt i bundpanelet

@@ -138,7 +138,9 @@ show table.cell: it => {
   //   3) Hvis selv 8pt overflower, render ved 8pt + clip + ellipsis
   // Newlines i input splittes til separate paragraffer.
   // Bruges af både SPC-kolonnen (52.8mm) og figur-panelet.
-  let definition-block(target-height) = {
+  // sizes: skriftstoerrelser der proeves i raekkefoelge (bundpanelet tillader
+  // ned til 7pt, fordi raekken er lav).
+  let definition-block(target-height, sizes: (9pt, 8.5pt, 8pt)) = {
     text(fill: rgb("888888"),
              weight: "bold",
              size: 9pt,
@@ -156,13 +158,13 @@ show table.cell: it => {
           text(fill: rgb("888888"), size: size, p))
       }
     }
-    let candidate-sizes = (9pt, 8.5pt, 8pt)
+    let candidate-sizes = sizes
     layout(size => context {
       let fits(sz) = measure(
         block(width: size.width, render-at(sz))
       ).height <= target-height
       let chosen = candidate-sizes.find(fits)
-      let final-size = if chosen != none { chosen } else { 8pt }
+      let final-size = if chosen != none { chosen } else { candidate-sizes.last() }
       let overflows = chosen == none
       block(
         height: target-height,
@@ -182,60 +184,117 @@ show table.cell: it => {
 
   let panel-heading(t) = text(fill: rgb("888888"), weight: "bold", size: 9pt, upper(t))
   // Legend key: filled square, or a short line of the series' thickness
-  let legend-key(item) = if item.at("key", default: "box") == "line" {
-    box(width: 6mm, height: 3.3mm,
-      align(horizon, line(length: 6mm,
-        stroke: (paint: rgb(item.color), thickness: item.at("thickness", default: 1.5pt)))))
-  } else {
-    box(width: 3.3mm, height: 3.3mm, fill: rgb(item.color))
+  let legend-key(item) = {
+    let key = item.at("key", default: "box")
+    if key == "line" {
+      box(width: 6mm, height: 3.3mm,
+        align(horizon, line(length: 6mm,
+          stroke: (paint: rgb(item.color), thickness: item.at("thickness", default: 1.5pt)))))
+    } else if key == "arrow_up" or key == "arrow_down" {
+      // Lodret pil som i flowet: tyk stamme og lukket hoved
+      let c = rgb(item.color)
+      box(width: 3.3mm, height: 4.4mm, {
+        let op = key == "arrow_up"
+        place(dx: 1.15mm, dy: if op { 1.5mm } else { 0mm }, rect(width: 1mm, height: 2.9mm, fill: c))
+        place(if op { polygon(fill: c, (0mm, 1.6mm), (1.65mm, 0mm), (3.3mm, 1.6mm)) }
+              else { polygon(fill: c, (0mm, 2.8mm), (1.65mm, 4.4mm), (3.3mm, 2.8mm)) })
+      })
+    } else {
+      let outline = item.at("outline", default: none)
+      box(width: 3.3mm, height: 3.3mm, fill: rgb(item.color),
+        stroke: if outline != none { 0.6pt + rgb(outline) } else { none })
+    }
   }
 
-  // Bottom panel (figure_panel.placement = "bottom"): key figures side by
-  // side, legend and data definition in one row below the full-width chart.
+  // Bottom panel (figure_panel.placement = "bottom"): key figures, legend
+  // and data definition in one row below the full-width chart.
+  //   kpi_columns: KPIs i et gitter med saa mange kolonner, fyldt kolonnevis
+  //                (fx 2 -> 2x2 som i det gamle flow). Standard: alle i en raekke.
+  //   kpi_size:    tallenes stoerrelse (standard 26pt).
+  //   kpi_labels:  false skjuler navnet under tallet (tegnforklaringen
+  //                forklarer farverne).
+  //   legend_rows: raekker i tegnforklaringen, fyldt kolonnevis. Standard:
+  //                en kolonne op til 3 punkter, ellers to kolonner.
+  //   legend_label_width: tegnforklaringens tekster ombrydes ved denne bredde.
+  // KPI-gitter og tegnforklaring har samme hoejde; raekkerne fordeles jaevnt.
   let bottom-panel-height = 31.5mm
   let bottom-panel = if (not spc_panel and figure_panel != none and
       figure_panel.at("placement", default: "side") == "bottom") {
     let kpis = figure_panel.at("kpis", default: none)
     let legend = figure_panel.at("legend", default: none)
+    let body-height = bottom-panel-height - 6mm
+    // Kolonnevis fyldning: element i (0-baseret) i kolonne floor(i / rows)
+    let column-major(items, rows) = {
+      let ncol = calc.ceil(items.len() / rows)
+      let cells = ()
+      for r in range(rows) {
+        for c in range(ncol) {
+          let i = c * rows + r
+          cells.push(if i < items.len() { items.at(i) } else { [] })
+        }
+      }
+      (ncol, cells)
+    }
     let cols = ()
     let cells = ()
     if kpis != none and kpis.len() > 0 {
+      let kpi-size = figure_panel.at("kpi_size", default: 26pt)
+      let kpi-cols = figure_panel.at("kpi_columns", default: kpis.len())
+      let kpi-rows = calc.ceil(kpis.len() / kpi-cols)
+      let kpi-labels = figure_panel.at("kpi_labels", default: true)
+      let kpi-cell(k) = {
+        let tal = text(fill: rgb(k.at("color", default: "888888")),
+                       weight: "extrabold", size: kpi-size, str(k.value))
+        if not kpi-labels { align(horizon, tal) } else {
+          block(width: calc.max(34mm, kpi-size * 3.6), stack(dir: ttb, spacing: 1.4mm, tal,
+            text(fill: rgb("666666"), size: 7.5pt, k.label)))
+        }
+      }
+      let (ncol, kcells) = column-major(kpis.map(kpi-cell), kpi-rows)
       cols.push(auto)
       cells.push({
         let kpi-title = figure_panel.at("kpi_title", default: none)
-        if kpi-title != none { block(below: 2mm, panel-heading(kpi-title)) }
-        grid(
-          columns: kpis.len(),
-          column-gutter: 5mm,
-          ..kpis.map(k => block(width: 34mm,
-            stack(dir: ttb, spacing: 1.2mm,
-              text(fill: rgb(k.at("color", default: "888888")),
-                   weight: "extrabold", size: 26pt, str(k.value)),
-              text(fill: rgb("666666"), size: 7.5pt, k.label))))
-        )
+        block(below: 2mm, panel-heading(if kpi-title != none { kpi-title } else { "" }))
+        block(height: body-height, grid(
+          columns: ncol,
+          rows: if kpi-rows > 1 { (1fr,) * kpi-rows } else { auto },
+          column-gutter: 6mm,
+          ..kcells))
       })
     }
     if legend != none and legend.len() > 0 {
+      let rows = figure_panel.at("legend_rows",
+        default: if legend.len() > 3 { calc.ceil(legend.len() / 2) } else { legend.len() })
+      let label-width = figure_panel.at("legend_label_width", default: none)
+      let item-cell(item) = grid(
+        columns: (auto, auto),
+        column-gutter: 2mm,
+        align: (horizon, horizon),
+        legend-key(item),
+        {
+          let t = text(fill: rgb("666666"), size: 8pt, item.label)
+          // Maksimal bredde: korte tekster beholder deres egen bredde
+          if label-width == none { t } else {
+            context if measure(t).width > label-width { block(width: label-width, t) } else { t }
+          }
+        })
+      let (ncol, lcells) = column-major(legend.map(item-cell), rows)
       cols.push(auto)
       cells.push({
         block(below: 2mm,
           panel-heading(figure_panel.at("legend_title", default: "Tegnforklaring")))
-        grid(
-          columns: if legend.len() > 3 { 2 } else { 1 },
+        block(height: body-height, grid(
+          columns: ncol,
+          rows: (1fr,) * rows,
           column-gutter: 5mm,
-          row-gutter: 1.5mm,
-          ..legend.map(item => grid(
-            columns: (auto, auto),
-            column-gutter: 2mm,
-            align: (horizon, horizon),
-            legend-key(item),
-            text(fill: rgb("666666"), size: 8pt, item.label)))
-        )
+          align: horizon,
+          ..lcells))
       })
     }
     if data_definition != none {
       cols.push(1fr)
-      cells.push(definition-block(bottom-panel-height - 5mm))
+      cells.push(definition-block(bottom-panel-height - 5mm,
+        sizes: (9pt, 8.5pt, 8pt, 7.5pt, 7pt)))
     }
     block(above: 3.3mm, height: bottom-panel-height, width: 100%,
       grid(columns: cols, column-gutter: 8mm, ..cells))

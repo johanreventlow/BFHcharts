@@ -1152,7 +1152,8 @@ figure_panel_to_typst <- function(panel) {
         label = q(l$label),
         color = q(l$colour),
         group = if (!is.na(l$group)) q(l$group) else NULL,
-        key = if (!is.null(l$key) && identical(l$key, "line")) q("line") else NULL,
+        key = if (!is.null(l$key) && !is.na(l$key) && l$key != "box") q(l$key) else NULL,
+        outline = if (!is.null(l$outline) && !is.na(l$outline)) q(l$outline) else NULL,
         # ggplot2 linewidth -> pt (lwd = linewidth * .pt; 1 lwd = 0.75 pt)
         thickness = if (!is.null(l$linewidth) && !is.na(l$linewidth)) {
           sprintf("%.2fpt", l$linewidth * ggplot2::.pt * 0.75)
@@ -1166,5 +1167,14 @@ figure_panel_to_typst <- function(panel) {
     fields$definition_height <- sprintf("%smm", format(panel$definition_height_mm))
   }
   if (identical(panel$placement, "bottom")) fields$placement <- q("bottom")
+  if (!is.null(panel$kpi_columns)) fields$kpi_columns <- as.character(panel$kpi_columns)
+  if (!is.null(panel$kpi_size_pt)) {
+    fields$kpi_size <- sprintf("%spt", format(panel$kpi_size_pt))
+  }
+  if (isFALSE(panel$kpi_labels)) fields$kpi_labels <- "false"
+  if (!is.null(panel$legend_rows)) fields$legend_rows <- as.character(panel$legend_rows)
+  if (!is.null(panel$legend_label_width_mm)) {
+    fields$legend_label_width <- sprintf("%smm", format(panel$legend_label_width_mm))
+  }
   dict(fields)
 }
