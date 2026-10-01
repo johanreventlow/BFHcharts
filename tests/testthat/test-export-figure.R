@@ -915,6 +915,43 @@ test_that("bfh_figure_panel(): noegletal i gitter, pile, kontur og raekker i teg
   )
 })
 
+test_that("bfh_figure_panel(): definition foerst og tegnforklaring uden overskrift", {
+  p <- bfh_figure_panel(
+    legend = data.frame(label = "A", colour = "#000000"),
+    legend_title = "", definition_first = TRUE
+  )
+  expect_true(p$definition_first)
+  typ <- BFHcharts:::figure_panel_to_typst(p)
+  expect_match(typ, "definition_first: true", fixed = TRUE)
+  expect_match(typ, 'legend_title: ""', fixed = TRUE)
+  # Standard sendes ikke
+  expect_false(grepl("definition_first", BFHcharts:::figure_panel_to_typst(fixture_panel())))
+  expect_error(bfh_figure_panel(definition_first = NA), class = "bfhcharts_export_error")
+})
+
+test_that("bfh_figure_panel(): noegletal med tekstfarve, linjeskift og faste maal", {
+  p <- bfh_figure_panel(
+    kpis = data.frame(label = c("Patient er d\u00f8d;\nforl\u00f8b", "B"), value = c(2, 2378),
+                      colour = c("#000000", "#bbbbbb"), label_colour = c("#000000", NA)),
+    placement = "bottom", kpi_width_mm = 50, kpi_label_size_pt = 8, kpi_label_gap_mm = 7.5
+  )
+  expect_identical(p$kpis$label_colour, c("#000000", NA))
+  typ <- BFHcharts:::figure_panel_to_typst(p)
+  expect_match(typ, 'label_color: "#000000"', fixed = TRUE)
+  expect_match(typ, "d\u00f8d;\\nforl", fixed = TRUE)
+  expect_match(typ, "kpi_width: 50mm", fixed = TRUE)
+  expect_match(typ, "kpi_label_size: 8pt", fixed = TRUE)
+  expect_match(typ, "kpi_label_gap: 7.5mm", fixed = TRUE)
+  expect_false(grepl("kpi_width|kpi_label_size|kpi_label_gap|label_color",
+    BFHcharts:::figure_panel_to_typst(bfh_figure_panel(kpis = data.frame(label = "a", value = 1)))))
+  err <- "bfhcharts_export_error"
+  expect_error(bfh_figure_panel(kpi_width_mm = 0), class = err)
+  expect_error(bfh_figure_panel(kpi_label_gap_mm = "x"), class = err)
+  expect_error(bfh_figure_panel(kpis = data.frame(label = "a", value = 1, label_colour = "graa")),
+    class = err
+  )
+})
+
 test_that("figure_chart_dims(): bundpanel giver fuld bredde og lavere graf", {
   bund <- bfh_figure_panel(kpis = data.frame(label = "a", value = 1), placement = "bottom")
   d <- BFHcharts:::figure_chart_dims(list(figure_panel = bund))

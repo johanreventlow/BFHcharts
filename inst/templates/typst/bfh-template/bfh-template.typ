@@ -183,6 +183,20 @@ show table.cell: it => {
   }
 
   let panel-heading(t) = text(fill: rgb("888888"), weight: "bold", size: 9pt, upper(t))
+
+  // Datadefinition i naturlig hoejde (ingen fast boks), til sidepanelet naar
+  // definitionen staar oeverst (figure_panel.definition_first).
+  // Funktion (ikke vaerdi): kun evalueret naar der er en datadefinition
+  let definition-natural() = {
+    text(fill: rgb("888888"), weight: "bold", size: 9pt, upper([Datadefinition]))
+    linebreak()
+    set text(hyphenate: true)
+    let paragraphs = data_definition.split("\n").map(p => p.trim()).filter(p => p != "")
+    for (i, p) in paragraphs.enumerate() {
+      if i > 0 { parbreak() }
+      par(justify: true, leading: 0.55em, text(fill: rgb("888888"), size: 9pt, p))
+    }
+  }
   // Legend key: filled square, or a short line of the series' thickness
   let legend-key(item) = {
     let key = item.at("key", default: "box")
@@ -222,7 +236,10 @@ show table.cell: it => {
       figure_panel.at("placement", default: "side") == "bottom") {
     let kpis = figure_panel.at("kpis", default: none)
     let legend = figure_panel.at("legend", default: none)
-    let body-height = bottom-panel-height - 6mm
+    // Overskrift -> indhold: samme luft som fra "Datadefinition" til teksten
+    // under den (maalt: 4.74mm fra overskriftens grundlinje til teksten)
+    let heading-gap = 4.74mm
+    let body-height = bottom-panel-height - 4mm - heading-gap
     // Kolonnevis fyldning: element i (0-baseret) i kolonne floor(i / rows)
     let column-major(items, rows) = {
       let ncol = calc.ceil(items.len() / rows)
@@ -242,23 +259,38 @@ show table.cell: it => {
       let kpi-cols = figure_panel.at("kpi_columns", default: kpis.len())
       let kpi-rows = calc.ceil(kpis.len() / kpi-cols)
       let kpi-labels = figure_panel.at("kpi_labels", default: true)
+      //   kpi_width / kpi_label_size / kpi_label_gap: kolonnebredde, tekstens
+      //   stoerrelse og luften fra tal til tekst. Tekstens farve er
+      //   label_color pr. noegletal (standard graa); "\n" giver linjeskift.
+      let kpi-width = figure_panel.at("kpi_width", default: none)
+      let kpi-label-size = figure_panel.at("kpi_label_size", default: 7.5pt)
+      let kpi-label-gap = figure_panel.at("kpi_label_gap", default: 1.4mm)
       let kpi-cell(k) = {
         let tal = text(fill: rgb(k.at("color", default: "888888")),
                        weight: "extrabold", size: kpi-size, str(k.value))
         if not kpi-labels { align(horizon, tal) } else {
-          block(width: calc.max(34mm, kpi-size * 3.6), stack(dir: ttb, spacing: 1.4mm, tal,
-            text(fill: rgb("666666"), size: 7.5pt, k.label)))
+          let label = text(fill: rgb(k.at("label_color", default: "666666")), size: kpi-label-size,
+            k.label.split("\n").join(linebreak()))
+          // Med kpi_width er bredden et minimum, og teksten brydes kun ved
+          // "\n" (som i det gamle script); ellers fast bredde med ombrydning
+          if kpi-width != none {
+            stack(dir: ttb, spacing: kpi-label-gap, box(width: kpi-width, tal), label)
+          } else {
+            block(width: calc.max(34mm, kpi-size * 3.6),
+              stack(dir: ttb, spacing: kpi-label-gap, tal, label))
+          }
         }
       }
       let (ncol, kcells) = column-major(kpis.map(kpi-cell), kpi-rows)
       cols.push(auto)
       cells.push({
         let kpi-title = figure_panel.at("kpi_title", default: none)
-        block(below: 2mm, panel-heading(if kpi-title != none { kpi-title } else { "" }))
+        block(below: heading-gap, panel-heading(if kpi-title != none { kpi-title } else { "" }))
         block(height: body-height, grid(
           columns: ncol,
           rows: if kpi-rows > 1 { (1fr,) * kpi-rows } else { auto },
-          column-gutter: 6mm,
+          // Faste kolonnebredder (kpi_width) staar taettere
+          column-gutter: if kpi-width != none { 3mm } else { 6mm },
           ..kcells))
       })
     }
@@ -281,7 +313,7 @@ show table.cell: it => {
       let (ncol, lcells) = column-major(legend.map(item-cell), rows)
       cols.push(auto)
       cells.push({
-        block(below: 2mm,
+        block(below: heading-gap,
           panel-heading(figure_panel.at("legend_title", default: "Tegnforklaring")))
         block(height: body-height, grid(
           columns: ncol,
@@ -340,8 +372,15 @@ show table.cell: it => {
       figure_panel.at("placement", default: "side") != "bottom") {
     let kpis = figure_panel.at("kpis", default: none)
     let legend = figure_panel.at("legend", default: none)
+    // definition_first: datadefinitionen oeverst i naturlig hoejde, derefter
+    // noegletal og tegnforklaring
+    let definition-first = figure_panel.at("definition_first", default: false)
     block(inset: (left: 0mm, top: if drop-analysis { 6.6mm } else { 2mm }, right: 6.6mm),
       width: 100%, {
+        if definition-first and data_definition != none {
+          block(below: 0mm, definition-natural())
+          v(4mm)
+        }
         if kpis != none and kpis.len() > 0 {
           let kpi-title = figure_panel.at("kpi_title", default: none)
           if kpi-title != none { block(below: 2mm, panel-heading(kpi-title)) }
@@ -359,8 +398,9 @@ show table.cell: it => {
           v(4mm)
         }
         if legend != none and legend.len() > 0 {
-          block(below: 1.5mm,
-            panel-heading(figure_panel.at("legend_title", default: "Tegnforklaring")))
+          // legend_title: "" udelader overskriften
+          let legend-title = figure_panel.at("legend_title", default: "Tegnforklaring")
+          if legend-title != "" { block(below: 1.5mm, panel-heading(legend-title)) }
           let forrige = none
           for item in legend {
             let gruppe = item.at("group", default: none)
@@ -380,7 +420,7 @@ show table.cell: it => {
           }
           v(4mm)
         }
-        if data_definition != none {
+        if not definition-first and data_definition != none {
           definition-block(figure_panel.at("definition_height", default: 39.6mm))
         }
       })

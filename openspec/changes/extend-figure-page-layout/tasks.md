@@ -7,3 +7,4 @@
 - [x] 1.6 NEWS og hjælpesider
 - [x] 1.7 Bundpanel: nøgletal i gitter, større tal, uden navne, rækker i tegnforklaringen, maks. tekstbredde
 - [x] 1.8 Tegnforklaring: pile og felt med kontur; definition ned til 7 pt i bundpanelet
+- [x] 1.9 Sidepanel: datadefinition øverst (`definition_first`) og tegnforklaring uden overskrift

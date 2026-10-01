@@ -32,6 +32,16 @@ unchanged.
 - **WHEN** a legend row has `key = "box"` and `outline = "#99d8f6"`
 - **THEN** the template draws the square with a thin `#99d8f6` border
 
+### Requirement: Side panel order
+`bfh_figure_panel(definition_first = TRUE)` SHALL render the data definition
+at the top of the side panel in its natural height, followed by key figures
+and legend. `legend_title = ""` SHALL omit the legend heading.
+
+#### Scenario: Definition first
+- **WHEN** a side panel has `definition_first = TRUE` and `legend_title = ""`
+- **THEN** the Typst parameters contain `definition_first: true` and `legend_title: ""`
+- **AND** pages without these arguments are unchanged
+
 ### Requirement: Figure date axis
 The package SHALL export `bfh_apply_date_axis()`, which gives a ggplot with
 a date x-axis the same two-level axis as SPC charts (ISO week numbers above
