@@ -186,7 +186,8 @@ show table.cell: it => {
 
   // Datadefinition i naturlig hoejde (ingen fast boks), til sidepanelet naar
   // definitionen staar oeverst (figure_panel.definition_first).
-  let definition-natural = {
+  // Funktion (ikke vaerdi): kun evalueret naar der er en datadefinition
+  let definition-natural() = {
     text(fill: rgb("888888"), weight: "bold", size: 9pt, upper([Datadefinition]))
     linebreak()
     set text(hyphenate: true)
@@ -377,7 +378,7 @@ show table.cell: it => {
     block(inset: (left: 0mm, top: if drop-analysis { 6.6mm } else { 2mm }, right: 6.6mm),
       width: 100%, {
         if definition-first and data_definition != none {
-          block(below: 0mm, definition-natural)
+          block(below: 0mm, definition-natural())
           v(4mm)
         }
         if kpis != none and kpis.len() > 0 {
