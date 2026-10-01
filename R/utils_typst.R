@@ -1138,9 +1138,11 @@ figure_panel_to_typst <- function(panel) {
     fields$kpis <- arr(vapply(seq_len(nrow(panel$kpis)), function(i) {
       k <- panel$kpis[i, , drop = FALSE]
       dict(list(
-        label = q(k$label),
+        # Linjeskift bevares (skabelonen bryder ved "\n" i bundpanelet)
+        label = sprintf('"%s"', escape_typst_string(as.character(k$label), preserve_newlines = TRUE)),
         value = q(k$value),
-        color = if (!is.na(k$colour)) q(k$colour) else NULL
+        color = if (!is.na(k$colour)) q(k$colour) else NULL,
+        label_color = if (!is.null(k$label_colour) && !is.na(k$label_colour)) q(k$label_colour) else NULL
       ))
     }, character(1)))
   }
@@ -1173,6 +1175,14 @@ figure_panel_to_typst <- function(panel) {
   }
   if (isFALSE(panel$kpi_labels)) fields$kpi_labels <- "false"
   if (!is.null(panel$legend_rows)) fields$legend_rows <- as.character(panel$legend_rows)
+  if (isTRUE(panel$definition_first)) fields$definition_first <- "true"
+  if (!is.null(panel$kpi_width_mm)) fields$kpi_width <- sprintf("%smm", format(panel$kpi_width_mm))
+  if (!is.null(panel$kpi_label_size_pt)) {
+    fields$kpi_label_size <- sprintf("%spt", format(panel$kpi_label_size_pt))
+  }
+  if (!is.null(panel$kpi_label_gap_mm)) {
+    fields$kpi_label_gap <- sprintf("%smm", format(panel$kpi_label_gap_mm))
+  }
   if (!is.null(panel$legend_label_width_mm)) {
     fields$legend_label_width <- sprintf("%smm", format(panel$legend_label_width_mm))
   }

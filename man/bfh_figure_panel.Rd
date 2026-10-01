@@ -15,7 +15,11 @@ bfh_figure_panel(
   kpi_size_pt = NULL,
   kpi_labels = TRUE,
   legend_rows = NULL,
-  legend_label_width_mm = NULL
+  legend_label_width_mm = NULL,
+  definition_first = FALSE,
+  kpi_width_mm = NULL,
+  kpi_label_size_pt = NULL,
+  kpi_label_gap_mm = NULL
 )
 }
 \arguments{
@@ -28,10 +32,13 @@ default 0.5) and \code{outline} (hex colour of a thin border around a
 \code{"box"} key, e.g. a band drawn with an outline).}
 
 \item{kpis}{Optional data frame with columns \code{label} and \code{value}
-(numbers are formatted as text) and optionally \code{colour}.}
+(numbers are formatted as text) and optionally \code{colour} and
+\code{label_colour} (colour of the label below the number in the bottom
+panel; default grey). A \code{"\\n"} in a label is a line break in the
+bottom panel.}
 
 \item{legend_title}{Heading above the legend. Default \code{NULL} uses the
-template default ("Tegnforklaring").}
+template default ("Tegnforklaring"); \code{""} shows no heading.}
 
 \item{kpi_title}{Optional heading above the key figures.}
 
@@ -60,6 +67,17 @@ figures, with the rows spread evenly.}
 \item{legend_label_width_mm}{Bottom placement only: maximum width of a
 legend label in millimetres; longer labels wrap onto more lines, which
 leaves more room for the data definition. Default \code{NULL}: no limit.}
+
+\item{definition_first}{Side placement only: show the data definition at
+the top of the column in its natural height, followed by the key figures
+and the legend. Default \code{FALSE}: the definition is a fixed-height
+block at the bottom (see \code{definition_height_mm}).}
+
+\item{kpi_width_mm, kpi_label_size_pt, kpi_label_gap_mm}{Bottom placement
+only: minimum width of each key figure column (mm), font size of the
+labels (pt, default 7.5) and the space between number and label (mm,
+default 1.4). With \code{kpi_width_mm} labels wrap only at \code{"\\n"}
+and the columns stand closer together.}
 }
 \value{
 An object of class \code{bfh_figure_panel}.
