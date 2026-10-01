@@ -48,6 +48,13 @@
   nøgletal og tegnforklaring. `legend_title = ""` udelader overskriften
   "Tegnforklaring". Uden de to argumenter er siderne pixel-identiske med før.
 
+* **Nøgletal i bundpanelet som i udredningsrets gamle sider.** Mere luft
+  mellem overskrift og indhold (samme som fra "Datadefinition" til teksten).
+  Nye argumenter `kpi_width_mm` (mindstebredde; teksten brydes kun ved
+  `"\n"`), `kpi_label_size_pt` og `kpi_label_gap_mm`, og `kpis$label_colour`
+  giver teksten under tallet sin egen farve. Linjeskift i nøgletallenes
+  tekster bevares.
+
 ## Forbedringer
 
 * **Figursider uden analysetekst bruger analyse-rækken til figuren.** Den

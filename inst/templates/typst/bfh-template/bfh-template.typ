@@ -235,7 +235,10 @@ show table.cell: it => {
       figure_panel.at("placement", default: "side") == "bottom") {
     let kpis = figure_panel.at("kpis", default: none)
     let legend = figure_panel.at("legend", default: none)
-    let body-height = bottom-panel-height - 6mm
+    // Overskrift -> indhold: samme luft som fra "Datadefinition" til teksten
+    // under den (maalt: 4.74mm fra overskriftens grundlinje til teksten)
+    let heading-gap = 4.74mm
+    let body-height = bottom-panel-height - 4mm - heading-gap
     // Kolonnevis fyldning: element i (0-baseret) i kolonne floor(i / rows)
     let column-major(items, rows) = {
       let ncol = calc.ceil(items.len() / rows)
@@ -255,23 +258,38 @@ show table.cell: it => {
       let kpi-cols = figure_panel.at("kpi_columns", default: kpis.len())
       let kpi-rows = calc.ceil(kpis.len() / kpi-cols)
       let kpi-labels = figure_panel.at("kpi_labels", default: true)
+      //   kpi_width / kpi_label_size / kpi_label_gap: kolonnebredde, tekstens
+      //   stoerrelse og luften fra tal til tekst. Tekstens farve er
+      //   label_color pr. noegletal (standard graa); "\n" giver linjeskift.
+      let kpi-width = figure_panel.at("kpi_width", default: none)
+      let kpi-label-size = figure_panel.at("kpi_label_size", default: 7.5pt)
+      let kpi-label-gap = figure_panel.at("kpi_label_gap", default: 1.4mm)
       let kpi-cell(k) = {
         let tal = text(fill: rgb(k.at("color", default: "888888")),
                        weight: "extrabold", size: kpi-size, str(k.value))
         if not kpi-labels { align(horizon, tal) } else {
-          block(width: calc.max(34mm, kpi-size * 3.6), stack(dir: ttb, spacing: 1.4mm, tal,
-            text(fill: rgb("666666"), size: 7.5pt, k.label)))
+          let label = text(fill: rgb(k.at("label_color", default: "666666")), size: kpi-label-size,
+            k.label.split("\n").join(linebreak()))
+          // Med kpi_width er bredden et minimum, og teksten brydes kun ved
+          // "\n" (som i det gamle script); ellers fast bredde med ombrydning
+          if kpi-width != none {
+            stack(dir: ttb, spacing: kpi-label-gap, box(width: kpi-width, tal), label)
+          } else {
+            block(width: calc.max(34mm, kpi-size * 3.6),
+              stack(dir: ttb, spacing: kpi-label-gap, tal, label))
+          }
         }
       }
       let (ncol, kcells) = column-major(kpis.map(kpi-cell), kpi-rows)
       cols.push(auto)
       cells.push({
         let kpi-title = figure_panel.at("kpi_title", default: none)
-        block(below: 2mm, panel-heading(if kpi-title != none { kpi-title } else { "" }))
+        block(below: heading-gap, panel-heading(if kpi-title != none { kpi-title } else { "" }))
         block(height: body-height, grid(
           columns: ncol,
           rows: if kpi-rows > 1 { (1fr,) * kpi-rows } else { auto },
-          column-gutter: 6mm,
+          // Faste kolonnebredder (kpi_width) staar taettere
+          column-gutter: if kpi-width != none { 3mm } else { 6mm },
           ..kcells))
       })
     }
@@ -294,7 +312,7 @@ show table.cell: it => {
       let (ncol, lcells) = column-major(legend.map(item-cell), rows)
       cols.push(auto)
       cells.push({
-        block(below: 2mm,
+        block(below: heading-gap,
           panel-heading(figure_panel.at("legend_title", default: "Tegnforklaring")))
         block(height: body-height, grid(
           columns: ncol,

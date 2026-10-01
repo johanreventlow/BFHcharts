@@ -37,7 +37,10 @@
 #'   default 0.5) and \code{outline} (hex colour of a thin border around a
 #'   \code{"box"} key, e.g. a band drawn with an outline).
 #' @param kpis Optional data frame with columns \code{label} and \code{value}
-#'   (numbers are formatted as text) and optionally \code{colour}.
+#'   (numbers are formatted as text) and optionally \code{colour} and
+#'   \code{label_colour} (colour of the label below the number in the bottom
+#'   panel; default grey). A \code{"\\n"} in a label is a line break in the
+#'   bottom panel.
 #' @param legend_title Heading above the legend. Default \code{NULL} uses the
 #'   template default ("Tegnforklaring"); \code{""} shows no heading.
 #' @param kpi_title Optional heading above the key figures.
@@ -60,6 +63,11 @@
 #' @param legend_label_width_mm Bottom placement only: maximum width of a
 #'   legend label in millimetres; longer labels wrap onto more lines, which
 #'   leaves more room for the data definition. Default \code{NULL}: no limit.
+#' @param kpi_width_mm,kpi_label_size_pt,kpi_label_gap_mm Bottom placement
+#'   only: minimum width of each key figure column (mm), font size of the
+#'   labels (pt, default 7.5) and the space between number and label (mm,
+#'   default 1.4). With \code{kpi_width_mm} labels wrap only at \code{"\\n"}
+#'   and the columns stand closer together.
 #' @param definition_first Side placement only: show the data definition at
 #'   the top of the column in its natural height, followed by the key figures
 #'   and the legend. Default \code{FALSE}: the definition is a fixed-height
@@ -89,7 +97,11 @@ bfh_figure_panel <- function(legend = NULL,
                              kpi_labels = TRUE,
                              legend_rows = NULL,
                              legend_label_width_mm = NULL,
-                             definition_first = FALSE) {
+                             definition_first = FALSE,
+                             kpi_width_mm = NULL,
+                             kpi_label_size_pt = NULL,
+                             kpi_label_gap_mm = NULL) {
+  kpis_in <- kpis
   placement <- match.arg(placement)
   legend_in <- legend
   legend <- .validate_panel_table(legend, "legend",
@@ -148,6 +160,16 @@ bfh_figure_panel <- function(legend = NULL,
         class = "bfhcharts_export_error"
       )
     }
+    kpis$label_colour <- if ("label_colour" %in% names(kpis_in)) {
+      as.character(kpis_in$label_colour)
+    } else {
+      NA_character_
+    }
+    if (any(!is.na(kpis$label_colour) & !.is_hex_colour(kpis$label_colour))) {
+      bfh_abort("kpis$label_colour must contain hex colours or NA.",
+        class = "bfhcharts_export_error"
+      )
+    }
   }
   for (arg in c("legend_title", "kpi_title")) {
     val <- get(arg)
@@ -166,7 +188,8 @@ bfh_figure_panel <- function(legend = NULL,
       )
     }
   }
-  for (arg in c("kpi_size_pt", "legend_label_width_mm")) {
+  for (arg in c("kpi_size_pt", "legend_label_width_mm", "kpi_width_mm",
+                "kpi_label_size_pt", "kpi_label_gap_mm")) {
     val <- get(arg)
     if (!is.null(val) && (!is.numeric(val) || length(val) != 1L || is.na(val) || val <= 0)) {
       bfh_abort(sprintf("%s must be a single positive number or NULL.", arg),
@@ -201,7 +224,10 @@ bfh_figure_panel <- function(legend = NULL,
       kpi_labels = kpi_labels,
       legend_rows = if (is.null(legend_rows)) NULL else as.integer(legend_rows),
       legend_label_width_mm = legend_label_width_mm,
-      definition_first = definition_first
+      definition_first = definition_first,
+      kpi_width_mm = kpi_width_mm,
+      kpi_label_size_pt = kpi_label_size_pt,
+      kpi_label_gap_mm = kpi_label_gap_mm
     ),
     class = "bfh_figure_panel"
   )
