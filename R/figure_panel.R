@@ -31,9 +31,11 @@
 #'
 #' @param legend Optional data frame with columns \code{label} and
 #'   \code{colour} (hex, e.g. \code{"#007dbb"}) and optionally \code{group},
-#'   \code{key} (\code{"box"}, the default, or \code{"line"} for a line
-#'   series) and \code{linewidth} (ggplot2 linewidth of a \code{"line"} key,
-#'   default 0.5).
+#'   \code{key} (\code{"box"}, the default; \code{"line"} for a line
+#'   series; \code{"arrow_up"} or \code{"arrow_down"} for a thick vertical
+#'   arrow), \code{linewidth} (ggplot2 linewidth of a \code{"line"} key,
+#'   default 0.5) and \code{outline} (hex colour of a thin border around a
+#'   \code{"box"} key, e.g. a band drawn with an outline).
 #' @param kpis Optional data frame with columns \code{label} and \code{value}
 #'   (numbers are formatted as text) and optionally \code{colour}.
 #' @param legend_title Heading above the legend. Default \code{NULL} uses the
@@ -44,6 +46,20 @@
 #'   with an ellipsis. Ignored with \code{placement = "bottom"}.
 #' @param placement \code{"side"} (default): a 72.6 mm column right of the
 #'   figure. \code{"bottom"}: a row below a full-width figure.
+#' @param kpi_columns Bottom placement only: number of columns in a grid of
+#'   key figures, filled column by column (e.g. 2 gives a 2 x 2 grid for four
+#'   key figures). Default \code{NULL}: all key figures in one row.
+#' @param kpi_size_pt Bottom placement only: font size of the key figure
+#'   numbers in points. Default \code{NULL} (26 pt).
+#' @param kpi_labels Bottom placement only: show the label below each number.
+#'   Set to \code{FALSE} when a legend explains the colours.
+#' @param legend_rows Bottom placement only: number of legend rows, filled
+#'   column by column. Default \code{NULL}: one column up to three entries,
+#'   otherwise two columns. The legend has the same height as the key
+#'   figures, with the rows spread evenly.
+#' @param legend_label_width_mm Bottom placement only: maximum width of a
+#'   legend label in millimetres; longer labels wrap onto more lines, which
+#'   leaves more room for the data definition. Default \code{NULL}: no limit.
 #'
 #' @return An object of class \code{bfh_figure_panel}.
 #' @export
@@ -63,7 +79,12 @@ bfh_figure_panel <- function(legend = NULL,
                              legend_title = NULL,
                              kpi_title = NULL,
                              definition_height_mm = NULL,
-                             placement = c("side", "bottom")) {
+                             placement = c("side", "bottom"),
+                             kpi_columns = NULL,
+                             kpi_size_pt = NULL,
+                             kpi_labels = TRUE,
+                             legend_rows = NULL,
+                             legend_label_width_mm = NULL) {
   placement <- match.arg(placement)
   legend_in <- legend
   legend <- .validate_panel_table(legend, "legend",
@@ -72,8 +93,20 @@ bfh_figure_panel <- function(legend = NULL,
   if (!is.null(legend)) {
     legend$key <- if ("key" %in% names(legend_in)) as.character(legend_in$key) else "box"
     legend$key[is.na(legend$key)] <- "box"
-    if (!all(legend$key %in% c("box", "line"))) {
-      bfh_abort("legend$key must be \"box\" or \"line\".",
+    if (!all(legend$key %in% .legend_keys)) {
+      bfh_abort(
+        sprintf("legend$key must be one of %s.",
+                paste0("\"", .legend_keys, "\"", collapse = ", ")),
+        class = "bfhcharts_export_error"
+      )
+    }
+    legend$outline <- if ("outline" %in% names(legend_in)) {
+      as.character(legend_in$outline)
+    } else {
+      NA_character_
+    }
+    if (any(!is.na(legend$outline) & !.is_hex_colour(legend$outline))) {
+      bfh_abort("legend$outline must contain hex colours or NA.",
         class = "bfhcharts_export_error"
       )
     }
@@ -119,6 +152,26 @@ bfh_figure_panel <- function(legend = NULL,
       )
     }
   }
+  for (arg in c("kpi_columns", "legend_rows")) {
+    val <- get(arg)
+    if (!is.null(val) && (!is.numeric(val) || length(val) != 1L || is.na(val) ||
+      val < 1 || val != round(val))) {
+      bfh_abort(sprintf("%s must be a single positive whole number or NULL.", arg),
+        class = "bfhcharts_export_error"
+      )
+    }
+  }
+  for (arg in c("kpi_size_pt", "legend_label_width_mm")) {
+    val <- get(arg)
+    if (!is.null(val) && (!is.numeric(val) || length(val) != 1L || is.na(val) || val <= 0)) {
+      bfh_abort(sprintf("%s must be a single positive number or NULL.", arg),
+        class = "bfhcharts_export_error"
+      )
+    }
+  }
+  if (!is.logical(kpi_labels) || length(kpi_labels) != 1L || is.na(kpi_labels)) {
+    bfh_abort("kpi_labels must be TRUE or FALSE.", class = "bfhcharts_export_error")
+  }
   if (!is.null(definition_height_mm) &&
     (!is.numeric(definition_height_mm) || length(definition_height_mm) != 1L ||
       is.na(definition_height_mm) || definition_height_mm <= 0)) {
@@ -134,7 +187,12 @@ bfh_figure_panel <- function(legend = NULL,
       legend_title = legend_title,
       kpi_title = kpi_title,
       definition_height_mm = definition_height_mm,
-      placement = placement
+      placement = placement,
+      kpi_columns = if (is.null(kpi_columns)) NULL else as.integer(kpi_columns),
+      kpi_size_pt = kpi_size_pt,
+      kpi_labels = kpi_labels,
+      legend_rows = if (is.null(legend_rows)) NULL else as.integer(legend_rows),
+      legend_label_width_mm = legend_label_width_mm
     ),
     class = "bfh_figure_panel"
   )
@@ -152,6 +210,10 @@ print.bfh_figure_panel <- function(x, ...) {
   ))
   invisible(x)
 }
+
+
+# Legend key shapes the Typst template can draw
+.legend_keys <- c("box", "line", "arrow_up", "arrow_down")
 
 
 #' Validate one table argument of bfh_figure_panel()
