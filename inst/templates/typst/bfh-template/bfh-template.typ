@@ -140,7 +140,8 @@ show table.cell: it => {
   // Bruges af både SPC-kolonnen (52.8mm) og figur-panelet.
   // sizes: skriftstoerrelser der proeves i raekkefoelge (bundpanelet tillader
   // ned til 7pt, fordi raekken er lav).
-  let definition-block(target-height, sizes: (9pt, 8.5pt, 8pt)) = {
+  // compact: linjerne staar med normal linjeafstand (ingen afsnitsluft)
+  let definition-block(target-height, sizes: (9pt, 8.5pt, 8pt), compact: false) = {
     text(fill: rgb("888888"),
              weight: "bold",
              size: 9pt,
@@ -152,10 +153,15 @@ show table.cell: it => {
       .map(p => p.trim())
       .filter(p => p != "")
     let render-at(size) = {
-      for (i, p) in paragraphs.enumerate() {
-        if i > 0 { parbreak() }
+      if compact {
         par(justify: true, leading: 0.55em,
-          text(fill: rgb("888888"), size: size, p))
+          text(fill: rgb("888888"), size: size, paragraphs.join(linebreak())))
+      } else {
+        for (i, p) in paragraphs.enumerate() {
+          if i > 0 { parbreak() }
+          par(justify: true, leading: 0.55em,
+            text(fill: rgb("888888"), size: size, p))
+        }
       }
     }
     let candidate-sizes = sizes
@@ -236,6 +242,7 @@ show table.cell: it => {
       figure_panel.at("placement", default: "side") == "bottom") {
     let kpis = figure_panel.at("kpis", default: none)
     let legend = figure_panel.at("legend", default: none)
+    let compact = figure_panel.at("compact", default: false)
     // Overskrift -> indhold: samme luft som fra "Datadefinition" til teksten
     // under den (maalt: 4.74mm fra overskriftens grundlinje til teksten)
     let heading-gap = 4.74mm
@@ -315,10 +322,12 @@ show table.cell: it => {
       cells.push({
         block(below: heading-gap,
           panel-heading(figure_panel.at("legend_title", default: "Tegnforklaring")))
+        // compact: punkterne staar oeverst med normal afstand
         block(height: body-height, grid(
           columns: ncol,
-          rows: (1fr,) * rows,
+          rows: if compact { auto } else { (1fr,) * rows },
           column-gutter: 5mm,
+          row-gutter: if compact { 2mm } else { 0pt },
           align: horizon,
           ..lcells))
       })
@@ -326,7 +335,7 @@ show table.cell: it => {
     if data_definition != none {
       cols.push(1fr)
       cells.push(definition-block(bottom-panel-height - 5mm,
-        sizes: (9pt, 8.5pt, 8pt, 7.5pt, 7pt)))
+        sizes: (9pt, 8.5pt, 8pt, 7.5pt, 7pt), compact: compact))
     }
     // kpis_end: en ekstra gruppe noegletal i en kolonne yderst til hoejre,
     // efter datadefinitionen (som paa de gamle belaegningsark)

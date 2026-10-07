@@ -1178,6 +1178,7 @@ figure_panel_to_typst <- function(panel) {
   if (isFALSE(panel$kpi_labels)) fields$kpi_labels <- "false"
   if (!is.null(panel$legend_rows)) fields$legend_rows <- as.character(panel$legend_rows)
   if (isTRUE(panel$definition_first)) fields$definition_first <- "true"
+  if (isTRUE(panel$compact)) fields$compact <- "true"
   if (!is.null(panel$kpi_width_mm)) fields$kpi_width <- sprintf("%smm", format(panel$kpi_width_mm))
   if (!is.null(panel$kpi_label_size_pt)) {
     fields$kpi_label_size <- sprintf("%spt", format(panel$kpi_label_size_pt))

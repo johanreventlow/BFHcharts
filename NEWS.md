@@ -61,6 +61,11 @@
   Samme størrelse og tekstindstillinger som `kpis`. Uden argumenterne er
   siderne uændrede.
 
+* **Tæt bundpanel: `bfh_figure_panel(compact = TRUE)`.** Tegnforklaringen
+  står øverst med normal afstand i stedet for at fylde hele højden, og
+  datadefinitionens linjer har normal linjeafstand uden afsnitsluft. Uden
+  argumentet er siderne uændrede.
+
 ## Forbedringer
 
 * **Figursider uden analysetekst bruger analyse-rækken til figuren.** Den

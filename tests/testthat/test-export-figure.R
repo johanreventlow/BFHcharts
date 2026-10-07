@@ -974,6 +974,14 @@ test_that("bfh_figure_panel(): kpis_end som ekstra noegletal yderst til hoejre",
   expect_error(bfh_figure_panel(kpi_end_title = 1), class = err)
 })
 
+test_that("bfh_figure_panel(compact = TRUE) sendes kun naar den er sat", {
+  p <- bfh_figure_panel(kpis = data.frame(label = "a", value = 1), placement = "bottom",
+                        compact = TRUE)
+  expect_match(BFHcharts:::figure_panel_to_typst(p), "compact: true", fixed = TRUE)
+  expect_false(grepl("compact", BFHcharts:::figure_panel_to_typst(fixture_panel())))
+  expect_error(bfh_figure_panel(compact = NA), class = "bfhcharts_export_error")
+})
+
 test_that("figure_chart_dims(): bundpanel giver fuld bredde og lavere graf", {
   bund <- bfh_figure_panel(kpis = data.frame(label = "a", value = 1), placement = "bottom")
   d <- BFHcharts:::figure_chart_dims(list(figure_panel = bund))

@@ -73,6 +73,10 @@
 #'   one column at the far right of the row, after the data definition (as on
 #'   the old occupancy sheets). Uses the same size and label settings as
 #'   \code{kpis}. Ignored with \code{placement = "side"}.
+#' @param compact Bottom placement only: legend entries stand at the top with
+#'   normal spacing (instead of spread over the full height), and the lines of
+#'   the data definition have normal line spacing (no paragraph gaps).
+#'   Default \code{FALSE}.
 #' @param definition_first Side placement only: show the data definition at
 #'   the top of the column in its natural height, followed by the key figures
 #'   and the legend. Default \code{FALSE}: the definition is a fixed-height
@@ -107,7 +111,8 @@ bfh_figure_panel <- function(legend = NULL,
                              kpi_label_size_pt = NULL,
                              kpi_label_gap_mm = NULL,
                              kpis_end = NULL,
-                             kpi_end_title = NULL) {
+                             kpi_end_title = NULL,
+                             compact = FALSE) {
   placement <- match.arg(placement)
   legend_in <- legend
   legend <- .validate_panel_table(legend, "legend",
@@ -210,7 +215,7 @@ bfh_figure_panel <- function(legend = NULL,
       )
     }
   }
-  for (arg in c("kpi_labels", "definition_first")) {
+  for (arg in c("kpi_labels", "definition_first", "compact")) {
     val <- get(arg)
     if (!is.logical(val) || length(val) != 1L || is.na(val)) {
       bfh_abort(sprintf("%s must be TRUE or FALSE.", arg), class = "bfhcharts_export_error")
@@ -242,7 +247,8 @@ bfh_figure_panel <- function(legend = NULL,
       kpi_label_size_pt = kpi_label_size_pt,
       kpi_label_gap_mm = kpi_label_gap_mm,
       kpis_end = kpis_end,
-      kpi_end_title = kpi_end_title
+      kpi_end_title = kpi_end_title,
+      compact = compact
     ),
     class = "bfh_figure_panel"
   )
