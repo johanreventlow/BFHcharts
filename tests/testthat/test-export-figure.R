@@ -952,6 +952,36 @@ test_that("bfh_figure_panel(): noegletal med tekstfarve, linjeskift og faste maa
   )
 })
 
+test_that("bfh_figure_panel(): kpis_end som ekstra noegletal yderst til hoejre", {
+  p <- bfh_figure_panel(
+    kpis = data.frame(label = "MIN", value = "64 %"),
+    kpis_end = data.frame(label = c("<100 %", ">100 %"), value = c("90 %", "10 %")),
+    kpi_end_title = "Dage over 100 %", placement = "bottom"
+  )
+  expect_identical(p$kpis_end$value, c("90 %", "10 %"))
+  typ <- BFHcharts:::figure_panel_to_typst(p)
+  expect_match(typ, 'kpis_end: ((label: "<100 %", value: "90 %"), (label: ">100 %", value: "10 %"),)',
+    fixed = TRUE)
+  expect_match(typ, 'kpi_end_title: "Dage over 100 %"', fixed = TRUE)
+  # Uden kpis_end sendes intet (og titlen alene sendes ikke)
+  expect_false(grepl("kpis_end|kpi_end_title",
+    BFHcharts:::figure_panel_to_typst(bfh_figure_panel(kpi_end_title = "x"))))
+  err <- "bfhcharts_export_error"
+  expect_error(bfh_figure_panel(kpis_end = data.frame(label = "a", value = NA)), class = err)
+  expect_error(bfh_figure_panel(kpis_end = data.frame(label = "a", value = 1, colour = "red")),
+    class = err
+  )
+  expect_error(bfh_figure_panel(kpi_end_title = 1), class = err)
+})
+
+test_that("bfh_figure_panel(compact = TRUE) sendes kun naar den er sat", {
+  p <- bfh_figure_panel(kpis = data.frame(label = "a", value = 1), placement = "bottom",
+                        compact = TRUE)
+  expect_match(BFHcharts:::figure_panel_to_typst(p), "compact: true", fixed = TRUE)
+  expect_false(grepl("compact", BFHcharts:::figure_panel_to_typst(fixture_panel())))
+  expect_error(bfh_figure_panel(compact = NA), class = "bfhcharts_export_error")
+})
+
 test_that("figure_chart_dims(): bundpanel giver fuld bredde og lavere graf", {
   bund <- bfh_figure_panel(kpis = data.frame(label = "a", value = 1), placement = "bottom")
   d <- BFHcharts:::figure_chart_dims(list(figure_panel = bund))

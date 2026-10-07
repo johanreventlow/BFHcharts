@@ -55,6 +55,17 @@
   giver teksten under tallet sin egen farve. Linjeskift i nøgletallenes
   tekster bevares.
 
+* **Nøgletal yderst til højre i bundpanelet.** `bfh_figure_panel()` har fået
+  `kpis_end` og `kpi_end_title`: en ekstra gruppe nøgletal i én kolonne
+  yderst til højre, efter datadefinitionen, som på de gamle belægningsark.
+  Samme størrelse og tekstindstillinger som `kpis`. Uden argumenterne er
+  siderne uændrede.
+
+* **Tæt bundpanel: `bfh_figure_panel(compact = TRUE)`.** Tegnforklaringen
+  står øverst med normal afstand i stedet for at fylde hele højden, og
+  datadefinitionens linjer har normal linjeafstand uden afsnitsluft. Uden
+  argumentet er siderne uændrede.
+
 ## Forbedringer
 
 * **Figursider uden analysetekst bruger analyse-rækken til figuren.** Den

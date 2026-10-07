@@ -140,7 +140,8 @@ show table.cell: it => {
   // Bruges af både SPC-kolonnen (52.8mm) og figur-panelet.
   // sizes: skriftstoerrelser der proeves i raekkefoelge (bundpanelet tillader
   // ned til 7pt, fordi raekken er lav).
-  let definition-block(target-height, sizes: (9pt, 8.5pt, 8pt)) = {
+  // compact: linjerne staar med normal linjeafstand (ingen afsnitsluft)
+  let definition-block(target-height, sizes: (9pt, 8.5pt, 8pt), compact: false) = {
     text(fill: rgb("888888"),
              weight: "bold",
              size: 9pt,
@@ -152,10 +153,15 @@ show table.cell: it => {
       .map(p => p.trim())
       .filter(p => p != "")
     let render-at(size) = {
-      for (i, p) in paragraphs.enumerate() {
-        if i > 0 { parbreak() }
+      if compact {
         par(justify: true, leading: 0.55em,
-          text(fill: rgb("888888"), size: size, p))
+          text(fill: rgb("888888"), size: size, paragraphs.join(linebreak())))
+      } else {
+        for (i, p) in paragraphs.enumerate() {
+          if i > 0 { parbreak() }
+          par(justify: true, leading: 0.55em,
+            text(fill: rgb("888888"), size: size, p))
+        }
       }
     }
     let candidate-sizes = sizes
@@ -236,6 +242,7 @@ show table.cell: it => {
       figure_panel.at("placement", default: "side") == "bottom") {
     let kpis = figure_panel.at("kpis", default: none)
     let legend = figure_panel.at("legend", default: none)
+    let compact = figure_panel.at("compact", default: false)
     // Overskrift -> indhold: samme luft som fra "Datadefinition" til teksten
     // under den (maalt: 4.74mm fra overskriftens grundlinje til teksten)
     let heading-gap = 4.74mm
@@ -254,33 +261,33 @@ show table.cell: it => {
     }
     let cols = ()
     let cells = ()
-    if kpis != none and kpis.len() > 0 {
-      let kpi-size = figure_panel.at("kpi_size", default: 26pt)
-      let kpi-cols = figure_panel.at("kpi_columns", default: kpis.len())
-      let kpi-rows = calc.ceil(kpis.len() / kpi-cols)
-      let kpi-labels = figure_panel.at("kpi_labels", default: true)
-      //   kpi_width / kpi_label_size / kpi_label_gap: kolonnebredde, tekstens
-      //   stoerrelse og luften fra tal til tekst. Tekstens farve er
-      //   label_color pr. noegletal (standard graa); "\n" giver linjeskift.
-      let kpi-width = figure_panel.at("kpi_width", default: none)
-      let kpi-label-size = figure_panel.at("kpi_label_size", default: 7.5pt)
-      let kpi-label-gap = figure_panel.at("kpi_label_gap", default: 1.4mm)
-      let kpi-cell(k) = {
-        let tal = text(fill: rgb(k.at("color", default: "888888")),
-                       weight: "extrabold", size: kpi-size, str(k.value))
-        if not kpi-labels { align(horizon, tal) } else {
-          let label = text(fill: rgb(k.at("label_color", default: "666666")), size: kpi-label-size,
-            k.label.split("\n").join(linebreak()))
-          // Med kpi_width er bredden et minimum, og teksten brydes kun ved
-          // "\n" (som i det gamle script); ellers fast bredde med ombrydning
-          if kpi-width != none {
-            stack(dir: ttb, spacing: kpi-label-gap, box(width: kpi-width, tal), label)
-          } else {
-            block(width: calc.max(34mm, kpi-size * 3.6),
-              stack(dir: ttb, spacing: kpi-label-gap, tal, label))
-          }
+    let kpi-size = figure_panel.at("kpi_size", default: 26pt)
+    let kpi-labels = figure_panel.at("kpi_labels", default: true)
+    //   kpi_width / kpi_label_size / kpi_label_gap: kolonnebredde, tekstens
+    //   stoerrelse og luften fra tal til tekst. Tekstens farve er
+    //   label_color pr. noegletal (standard graa); "\n" giver linjeskift.
+    let kpi-width = figure_panel.at("kpi_width", default: none)
+    let kpi-label-size = figure_panel.at("kpi_label_size", default: 7.5pt)
+    let kpi-label-gap = figure_panel.at("kpi_label_gap", default: 1.4mm)
+    let kpi-cell(k) = {
+      let tal = text(fill: rgb(k.at("color", default: "888888")),
+                     weight: "extrabold", size: kpi-size, str(k.value))
+      if not kpi-labels { align(horizon, tal) } else {
+        let label = text(fill: rgb(k.at("label_color", default: "666666")), size: kpi-label-size,
+          k.label.split("\n").join(linebreak()))
+        // Med kpi_width er bredden et minimum, og teksten brydes kun ved
+        // "\n" (som i det gamle script); ellers fast bredde med ombrydning
+        if kpi-width != none {
+          stack(dir: ttb, spacing: kpi-label-gap, box(width: kpi-width, tal), label)
+        } else {
+          block(width: calc.max(34mm, kpi-size * 3.6),
+            stack(dir: ttb, spacing: kpi-label-gap, tal, label))
         }
       }
+    }
+    if kpis != none and kpis.len() > 0 {
+      let kpi-cols = figure_panel.at("kpi_columns", default: kpis.len())
+      let kpi-rows = calc.ceil(kpis.len() / kpi-cols)
       let (ncol, kcells) = column-major(kpis.map(kpi-cell), kpi-rows)
       cols.push(auto)
       cells.push({
@@ -315,10 +322,12 @@ show table.cell: it => {
       cells.push({
         block(below: heading-gap,
           panel-heading(figure_panel.at("legend_title", default: "Tegnforklaring")))
+        // compact: punkterne staar oeverst med normal afstand
         block(height: body-height, grid(
           columns: ncol,
-          rows: (1fr,) * rows,
+          rows: if compact { auto } else { (1fr,) * rows },
           column-gutter: 5mm,
+          row-gutter: if compact { 2mm } else { 0pt },
           align: horizon,
           ..lcells))
       })
@@ -326,7 +335,21 @@ show table.cell: it => {
     if data_definition != none {
       cols.push(1fr)
       cells.push(definition-block(bottom-panel-height - 5mm,
-        sizes: (9pt, 8.5pt, 8pt, 7.5pt, 7pt)))
+        sizes: (9pt, 8.5pt, 8pt, 7.5pt, 7pt), compact: compact))
+    }
+    // kpis_end: en ekstra gruppe noegletal i en kolonne yderst til hoejre,
+    // efter datadefinitionen (som paa de gamle belaegningsark)
+    let kpis-end = figure_panel.at("kpis_end", default: none)
+    if kpis-end != none and kpis-end.len() > 0 {
+      if data_definition == none { cols.push(1fr); cells.push([]) }
+      cols.push(auto)
+      cells.push({
+        block(below: heading-gap, panel-heading(figure_panel.at("kpi_end_title", default: "")))
+        block(height: body-height, grid(
+          columns: 1,
+          rows: if kpis-end.len() > 1 { (1fr,) * kpis-end.len() } else { auto },
+          ..kpis-end.map(kpi-cell)))
+      })
     }
     block(above: 3.3mm, height: bottom-panel-height, width: 100%,
       grid(columns: cols, column-gutter: 8mm, ..cells))

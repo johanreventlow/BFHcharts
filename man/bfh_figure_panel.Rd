@@ -19,7 +19,10 @@ bfh_figure_panel(
   definition_first = FALSE,
   kpi_width_mm = NULL,
   kpi_label_size_pt = NULL,
-  kpi_label_gap_mm = NULL
+  kpi_label_gap_mm = NULL,
+  kpis_end = NULL,
+  kpi_end_title = NULL,
+  compact = FALSE
 )
 }
 \arguments{
@@ -68,6 +71,11 @@ figures, with the rows spread evenly.}
 legend label in millimetres; longer labels wrap onto more lines, which
 leaves more room for the data definition. Default \code{NULL}: no limit.}
 
+\item{compact}{Bottom placement only: legend entries stand at the top with
+normal spacing (instead of spread over the full height), and the lines of
+the data definition have normal line spacing (no paragraph gaps).
+Default \code{FALSE}.}
+
 \item{definition_first}{Side placement only: show the data definition at
 the top of the column in its natural height, followed by the key figures
 and the legend. Default \code{FALSE}: the definition is a fixed-height
@@ -78,6 +86,12 @@ only: minimum width of each key figure column (mm), font size of the
 labels (pt, default 7.5) and the space between number and label (mm,
 default 1.4). With \code{kpi_width_mm} labels wrap only at \code{"\\n"}
 and the columns stand closer together.}
+
+\item{kpis_end, kpi_end_title}{Bottom placement only: a second group of
+key figures (same columns as \code{kpis}) with its own heading, shown in
+one column at the far right of the row, after the data definition (as on
+the old occupancy sheets). Uses the same size and label settings as
+\code{kpis}. Ignored with \code{placement = "side"}.}
 }
 \value{
 An object of class \code{bfh_figure_panel}.
