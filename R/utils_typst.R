@@ -1132,11 +1132,9 @@ figure_panel_to_typst <- function(panel) {
   }
   arr <- function(items) paste0("(", paste0(items, ",", collapse = " "), ")")
 
-  fields <- list()
-  if (!is.null(panel$kpi_title)) fields$kpi_title <- q(panel$kpi_title)
-  if (!is.null(panel$kpis) && nrow(panel$kpis) > 0) {
-    fields$kpis <- arr(vapply(seq_len(nrow(panel$kpis)), function(i) {
-      k <- panel$kpis[i, , drop = FALSE]
+  kpi_arr <- function(kpis) {
+    arr(vapply(seq_len(nrow(kpis)), function(i) {
+      k <- kpis[i, , drop = FALSE]
       dict(list(
         # Linjeskift bevares (skabelonen bryder ved "\n" i bundpanelet)
         label = sprintf('"%s"', escape_typst_string(as.character(k$label), preserve_newlines = TRUE)),
@@ -1146,6 +1144,10 @@ figure_panel_to_typst <- function(panel) {
       ))
     }, character(1)))
   }
+
+  fields <- list()
+  if (!is.null(panel$kpi_title)) fields$kpi_title <- q(panel$kpi_title)
+  if (!is.null(panel$kpis) && nrow(panel$kpis) > 0) fields$kpis <- kpi_arr(panel$kpis)
   if (!is.null(panel$legend_title)) fields$legend_title <- q(panel$legend_title)
   if (!is.null(panel$legend) && nrow(panel$legend) > 0) {
     fields$legend <- arr(vapply(seq_len(nrow(panel$legend)), function(i) {
@@ -1185,6 +1187,10 @@ figure_panel_to_typst <- function(panel) {
   }
   if (!is.null(panel$legend_label_width_mm)) {
     fields$legend_label_width <- sprintf("%smm", format(panel$legend_label_width_mm))
+  }
+  if (!is.null(panel$kpis_end) && nrow(panel$kpis_end) > 0) {
+    fields$kpis_end <- kpi_arr(panel$kpis_end)
+    if (!is.null(panel$kpi_end_title)) fields$kpi_end_title <- q(panel$kpi_end_title)
   }
   dict(fields)
 }

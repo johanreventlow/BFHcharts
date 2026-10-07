@@ -68,6 +68,11 @@
 #'   labels (pt, default 7.5) and the space between number and label (mm,
 #'   default 1.4). With \code{kpi_width_mm} labels wrap only at \code{"\\n"}
 #'   and the columns stand closer together.
+#' @param kpis_end,kpi_end_title Bottom placement only: a second group of
+#'   key figures (same columns as \code{kpis}) with its own heading, shown in
+#'   one column at the far right of the row, after the data definition (as on
+#'   the old occupancy sheets). Uses the same size and label settings as
+#'   \code{kpis}. Ignored with \code{placement = "side"}.
 #' @param definition_first Side placement only: show the data definition at
 #'   the top of the column in its natural height, followed by the key figures
 #'   and the legend. Default \code{FALSE}: the definition is a fixed-height
@@ -100,8 +105,9 @@ bfh_figure_panel <- function(legend = NULL,
                              definition_first = FALSE,
                              kpi_width_mm = NULL,
                              kpi_label_size_pt = NULL,
-                             kpi_label_gap_mm = NULL) {
-  kpis_in <- kpis
+                             kpi_label_gap_mm = NULL,
+                             kpis_end = NULL,
+                             kpi_end_title = NULL) {
   placement <- match.arg(placement)
   legend_in <- legend
   legend <- .validate_panel_table(legend, "legend",
@@ -145,33 +151,40 @@ bfh_figure_panel <- function(legend = NULL,
       class = "bfhcharts_export_error"
     )
   }
-  kpis <- .validate_panel_table(kpis, "kpis",
-    required = c("label", "value"), optional = "colour"
-  )
-  if (!is.null(kpis)) {
-    kpis$value <- as.character(kpis$value)
-    if (anyNA(kpis$value)) {
-      bfh_abort("kpis$value must not contain NA.", class = "bfhcharts_export_error")
+  # Noegletal valideres ens, hvad enten de staar foerst eller yderst til hoejre
+  validate_kpis <- function(kpis, name) {
+    kpis_in <- kpis
+    kpis <- .validate_panel_table(kpis, name,
+      required = c("label", "value"), optional = "colour"
+    )
+    if (!is.null(kpis)) {
+      kpis$value <- as.character(kpis$value)
+      if (anyNA(kpis$value)) {
+        bfh_abort(sprintf("%s$value must not contain NA.", name), class = "bfhcharts_export_error")
+      }
+      bad <- !is.na(kpis$colour) & !.is_hex_colour(kpis$colour)
+      if (any(bad)) {
+        bfh_abort(
+          sprintf("%s$colour must contain hex colours like \"#333333\" or NA.", name),
+          class = "bfhcharts_export_error"
+        )
+      }
+      kpis$label_colour <- if ("label_colour" %in% names(kpis_in)) {
+        as.character(kpis_in$label_colour)
+      } else {
+        NA_character_
+      }
+      if (any(!is.na(kpis$label_colour) & !.is_hex_colour(kpis$label_colour))) {
+        bfh_abort(sprintf("%s$label_colour must contain hex colours or NA.", name),
+          class = "bfhcharts_export_error"
+        )
+      }
     }
-    bad <- !is.na(kpis$colour) & !.is_hex_colour(kpis$colour)
-    if (any(bad)) {
-      bfh_abort(
-        "kpis$colour must contain hex colours like \"#333333\" or NA.",
-        class = "bfhcharts_export_error"
-      )
-    }
-    kpis$label_colour <- if ("label_colour" %in% names(kpis_in)) {
-      as.character(kpis_in$label_colour)
-    } else {
-      NA_character_
-    }
-    if (any(!is.na(kpis$label_colour) & !.is_hex_colour(kpis$label_colour))) {
-      bfh_abort("kpis$label_colour must contain hex colours or NA.",
-        class = "bfhcharts_export_error"
-      )
-    }
+    kpis
   }
-  for (arg in c("legend_title", "kpi_title")) {
+  kpis <- validate_kpis(kpis, "kpis")
+  kpis_end <- validate_kpis(kpis_end, "kpis_end")
+  for (arg in c("legend_title", "kpi_title", "kpi_end_title")) {
     val <- get(arg)
     if (!is.null(val) && (!is.character(val) || length(val) != 1L || is.na(val))) {
       bfh_abort(sprintf("%s must be a single string or NULL.", arg),
@@ -227,7 +240,9 @@ bfh_figure_panel <- function(legend = NULL,
       definition_first = definition_first,
       kpi_width_mm = kpi_width_mm,
       kpi_label_size_pt = kpi_label_size_pt,
-      kpi_label_gap_mm = kpi_label_gap_mm
+      kpi_label_gap_mm = kpi_label_gap_mm,
+      kpis_end = kpis_end,
+      kpi_end_title = kpi_end_title
     ),
     class = "bfh_figure_panel"
   )
