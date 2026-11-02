@@ -1,5 +1,12 @@
 # BFHcharts (udviklingsversion)
 
+## Fejlrettelser
+
+* **Detaljelinjen viser tid i samme enhed som y-aksen.** For `y_axis_unit = "time"`
+  viste "Gns.", "Seneste" og "Nuværende niveau" de rå minutter (fx
+  "24.774.400/225" og "95.732,1"). Nu formateres de som på aksen (fx "66d 11t"),
+  og gennemsnittet er den samlede tid delt med det samlede antal.
+
 ## Nye funktioner
 
 * **Sidepanel på figursider: `bfh_figure_panel()`.** `bfh_export_figure_pdf()`

@@ -151,6 +151,23 @@ bfh_generate_details <- function(x, language = "da", x_labels = NULL) {
 
   lbl_gns <- i18n_lookup("labels.details.gns", language)
   lbl_seneste <- i18n_lookup("labels.details.seneste", language)
+  y_axis_unit <- config$y_axis_unit %||% "count"
+  last_row <- utils::tail(qic_data, 1)
+
+  # Tid vises i samme enhed som y-aksen ("66d 11t"). Taeller i minutter
+  # over en naevner giver ingen mening som broek, saa gns. er den samlede
+  # tid delt med det samlede antal (eller gennemsnittet uden naevner).
+  if (identical(y_axis_unit, "time")) {
+    avg_time <- if (uses_denominator) {
+      sum(qic_data[[numerator_col]], na.rm = TRUE) / sum(qic_data$n, na.rm = TRUE)
+    } else {
+      mean(qic_data$y, na.rm = TRUE)
+    }
+    gns <- sprintf("%s %s: %s", lbl_gns, interval_label, format_time_composite(avg_time))
+    seneste <- sprintf("%s %s: %s", lbl_seneste, interval_label, format_time_composite(last_row$y))
+    niveau <- format_centerline_for_details(last_row$cl, y_axis_unit, language)
+    return(paste(periode, gns, seneste, niveau, sep = " \u2022 "))
+  }
 
   if (uses_denominator) {
     avg_num <- round(mean(qic_data[[numerator_col]], na.rm = TRUE))
@@ -167,8 +184,6 @@ bfh_generate_details <- function(x, language = "da", x_labels = NULL) {
       format(avg_val, big.mark = ".", decimal.mark = ",")
     )
   }
-
-  last_row <- utils::tail(qic_data, 1)
 
   if (uses_denominator) {
     last_num <- round(last_row[[numerator_col]])
@@ -187,7 +202,6 @@ bfh_generate_details <- function(x, language = "da", x_labels = NULL) {
   }
 
   cl_value <- last_row$cl
-  y_axis_unit <- config$y_axis_unit %||% "count"
 
   niveau <- format_centerline_for_details(cl_value, y_axis_unit, language)
 
@@ -227,8 +241,8 @@ format_centerline_for_details <- function(cl_value, y_axis_unit, language = "da"
         "%"
       )
     },
-    "rate" = ,
-    "time" = {
+    "time" = format_time_composite(cl_value),
+    "rate" = {
       format(
         round(cl_value, 1),
         big.mark = ".",

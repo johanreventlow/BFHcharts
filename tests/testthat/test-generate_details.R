@@ -631,3 +631,24 @@ test_that("details line reports weekly data in week numbers end to end", {
   expect_match(details, "UGE 49, 2025")
   expect_false(grepl("dec. 2025", details, fixed = TRUE))
 })
+
+test_that("bfh_generate_details viser tid i samme enhed som y-aksen", {
+  # Run chart med naevner: taeller = samlet tid i minutter, naevner = antal
+  data <- data.frame(
+    date = seq.Date(as.Date("2024-01-01"), by = "month", length.out = 12),
+    minutter = rep(c(60 * 1440, 70 * 1440), 6),
+    antal = rep(1, 12)
+  )
+
+  result <- bfh_qic(data,
+    x = date, y = minutter, n = antal,
+    chart_type = "run", y_axis_unit = "time"
+  )
+
+  details <- bfh_generate_details(result)
+
+  expect_match(details, "Gns\\. måned: 65d", fixed = FALSE)
+  expect_match(details, "Seneste måned: 70d")
+  expect_match(details, "Nuværende niveau: 65d")
+  expect_false(grepl("/", details))
+})

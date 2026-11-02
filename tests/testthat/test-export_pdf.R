@@ -1495,6 +1495,7 @@ test_that("format_centerline_for_details handles different y_axis_units", {
 
   # Rate (1 decimal)
   expect_match(BFHcharts:::format_centerline_for_details(5.5, "rate"), "5,5")
+  expect_match(BFHcharts:::format_centerline_for_details(95732, "time"), "66d 11t")
 
   # NA value
   expect_equal(BFHcharts:::format_centerline_for_details(NA, "count"), "Nuværende niveau: -")
